@@ -1,35 +1,16 @@
-<<<<<<< HEAD
+
 This is the artica-postfix program from david Touzeau all rights reserved.
-for any questions, please refer to the web site http://www.artica.fr and for any outstanding bugs
+for any questions, please refer to the web site https://wiki.articatech.com and for any outstanding bugs
 
-								**** IMPORTANT *** 
-						Do not install artica on a production system already set, 
-				Artica will change your system configuration according it's needs that should 
-							not meet your configuration files.
-
-								******************
-
-----------------------------------------------------------------------
+## IMPORTANT
+***************************
+Do not install artica on a production system already set, 
+Artica will change your system configuration according it's needs that should not meet your configuration files.
+***************************
 
 * To obtain updates to this software, visit the web page
-            http://www.artica.fr/download.php
+  https://artica.systems/index.html
             
-* For Ubuntu user, just run "setup-ubuntu" program.
-* For centos user, just run "setup-centos" program.
-* For debian user, just run "setup-ubuntu" program.
-* For SuSe user, just run "setup-suse" program.
-* For mandrake user, just run "setup-mandrake" program. 
-            
-* Be carrefull on Ubuntu, you need to disable or uninstall Apparmor in order to make LDAP running            
-
-
-You need to run automatic-installations gcc,g++,make,c++ installed.
-
-* if you encounter errors on artica-cron, artica-cron is fcron this is the command line to configure for building fcron:
-./configure --prefix=/usr/share/artica-postfix --with-piddir=/etc/artica-postfix
---with-spooldir=/etc/artica-postfix/spool --with-username=root --with-groupname=root
---with-boot-install=no --with-selinux=no --with-pam=no --with-db2man=no  --with-sysfcrontab=no
---with-dsssl-dir=no --exec-prefix=/usr/share/artica-postfix  --sbindir=/usr/share/artica-postfix/bin
 
 
 
@@ -104,7 +85,4 @@ Bs_IniHandler class         : http://www.blueshoes.org/en/framework/util/ini_han
 jpgraph                     : Aditus Consulting, http://www.aditus.nu/jpgraph
 sieve-php					: https://sourceforge.net/project/showfiles.php?group_id=35727
 =======
-# Artica-4.x
 
-Artica 4.X rep
->>>>>>> 367df3ef05adf6b4a702d14d6736739c9ea61313
