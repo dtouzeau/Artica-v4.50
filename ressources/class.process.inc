@@ -144,7 +144,7 @@ function MemoryInstances(){
 		$arrayK["exec.zarafa-backup.php"]=300;
 		$arrayK["exec.mysql.start.php"]=15;
 		$arrayK["exec.squid-rrd.php"]=20;
-		$arrayK["exec.postfix.parse.awstats.php"]=20;
+
 		
 			
 		$array=array();
