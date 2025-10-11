@@ -649,7 +649,7 @@ Do you want to execute this operation ?</confirm_remove_zarafa_db>
 <convert_current_attachments>Convert current attachents</convert_current_attachments>
 <corrupted>Corrupted</corrupted>
 <COULD_NOT_PERF_OP_SOFT_ENABLED>Could not perform this operation until this software is enabled:</COULD_NOT_PERF_OP_SOFT_ENABLED>
-<country_block>Countries block</country_block>
+<country_block>Bloqueo por pa%C3%ADses</country_block>
 <CPU_ASSIGN>assign CPU(s)</CPU_ASSIGN>
 <cpu_rt_period_us>Runtime period</cpu_rt_period_us>
 <cpu_rt_runtime_us>Runtime</cpu_rt_runtime_us>
@@ -1284,11 +1284,7 @@ y se incluir%C3¡ en todos los futuros productos WD Enterprise.</High_Fly_Writes
 <HomeDirectoriesMask>Permissions mask for home directories</HomeDirectoriesMask>
 <HomeUsers>Home service</HomeUsers>
 <HomeUsersExplain>Enable or disable the "Home" shared directory</HomeUsersExplain>
-<HomeUsersFormExplain>By default this feature is enabled.[br]When an user accessing to the server,
- the server always provide a shared directory named has the user with full access.[br]
-This Home directory is displayed only for the user and nobody can access to it.[br]
-Turn to red if you did not wan to provide this default shared directory.
-</HomeUsersFormExplain>
+<HomeUsersFormExplain>De forma predeterminada, esta funci%C3%B3n est%C3¡ habilitada.[br]Cuando un usuario accede al servidor, se crea autom%C3¡ticamente un directorio compartido con su nombre y con acceso completo para ese usuario.[br]Este directorio personal solo es visible para ese usuario; nadie m%C3¡s puede acceder.[br]Ponga el interruptor en Desactivado si no desea ofrecer este directorio compartido predeterminado.</HomeUsersFormExplain>
 <hosts_table>Hosts table</hosts_table>
 <house>house</house>
 <houseads>Houses Ads added by home users, agencies, forums...</houseads>

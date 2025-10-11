@@ -411,6 +411,95 @@ class templates{
 
     }
 
+    function replaceAccentsWithHtmlEntities($string):string {
+        $string=$this->replaceBugged($string);
+        $accentMap = [
+            // Latin letters with accents
+            'À' => '&Agrave;', 'Á' => '&Aacute;', 'Â' => '&Acirc;', 'Ã' => '&Atilde;', 'Ä' => '&Auml;', 'Å' => '&Aring;',
+            'à' => '&agrave;', 'á' => '&aacute;', 'â' => '&acirc;', 'ã' => '&atilde;', 'ä' => '&auml;', 'å' => '&aring;',
+            'È' => '&Egrave;', 'É' => '&Eacute;', 'Ê' => '&Ecirc;', 'Ë' => '&Euml;',
+            'è' => '&egrave;', 'é' => '&eacute;', 'ê' => '&ecirc;', 'ë' => '&euml;',
+            'Ì' => '&Igrave;', 'Í' => '&Iacute;', 'Î' => '&Icirc;', 'Ï' => '&Iuml;',
+            'ì' => '&igrave;', 'í' => '&iacute;', 'î' => '&icirc;', 'ï' => '&iuml;',
+            'Ò' => '&Ograve;', 'Ó' => '&Oacute;', 'Ô' => '&Ocirc;', 'Õ' => '&Otilde;', 'Ö' => '&Ouml;',
+            'ò' => '&ograve;', 'ó' => '&oacute;', 'ô' => '&ocirc;', 'õ' => '&otilde;', 'ö' => '&ouml;',
+            'Ù' => '&Ugrave;', 'Ú' => '&Uacute;', 'Û' => '&Ucirc;', 'Ü' => '&Uuml;',
+            'ù' => '&ugrave;', 'ú' => '&uacute;', 'û' => '&ucirc;', 'ü' => '&uuml;',
+            'Ñ' => '&Ntilde;', 'ñ' => '&ntilde;',
+            'Ç' => '&Ccedil;', 'ç' => '&ccedil;',
+            'Ý' => '&Yacute;', 'ý' => '&yacute;', 'ÿ' => '&yuml;'
+        ];
+
+        return str_replace(
+            array_keys($accentMap),
+            array_values($accentMap),
+            $string
+        );
+    }
+
+    private function replaceBugged($content):string{
+        $content=str_replace("<input type='button'","<input type='button' class='button'",$content);
+        $content=str_replace("reverse-porxy","Reverse-Proxy",$content);
+        $content=str_replace("web sites","websites",$content);
+        $content=str_replace("\`","`",$content);
+        $content=str_replace('\"',"&quot;",$content);
+        $content=str_replace('%C3%89',"&Eacute;",$content);
+        $content=str_replace('%C3§','&ccedil;',$content);
+        $content=str_ireplace('%C3§','&ccedil;',$content);
+        $content=str_ireplace('â%80%99',"'",$content);
+        $content=str_ireplace("â%80%A2","&bull;",$content);
+        $content=str_ireplace('â%80%94','&mdash;',$content);
+        $content=str_ireplace('â%80%A6','&hellip;',$content);
+        $content=str_ireplace('â%86%92',"&rightarrow;",$content);
+        $content=str_ireplace('%E2%80%94','&mdash;',$content);
+        $content=str_ireplace('%E2%86%92','&rightarrow;',$content);
+        $content=str_ireplace('%E2%80%A6','&hellip;',$content);
+        $content=str_ireplace('%C3%A3','&atilde;',$content);
+        $content=str_ireplace('%C3£','&atilde;',$content);
+        $content=str_ireplace('%C3¡','&aacute;',$content);
+        $content=str_ireplace('%C3%B3','&oacute;',$content);
+        $content=str_ireplace('%C3%AD','&iacute;',$content);
+        $content=str_ireplace('%C3µ','&otilde;',$content);
+        $content=str_ireplace('%C3%BA','&uacute;',$content);
+        $content=str_ireplace('%C3%8A','&Ecirc;',$content);
+        $content=str_ireplace('%C3%9A','&uacute;',$content);
+        $content=str_ireplace('%C3%B1','&ntilde;',$content);
+        $content=str_ireplace("%C2%BF","&iquest;",$content);
+        $content=str_ireplace("%C3%C2¡","&aacute;",$content);
+        $content=str_ireplace("%C3²","&ograve;",$content);
+        $content=str_ireplace("%C3%AC","&igrave;",$content);
+        $content=str_ireplace("%C3%A4","&auml;",$content);
+        $content=str_ireplace("%C3%BB","&ucirc;",$content);
+        $content=str_ireplace("%C3%BC","&uuml;",$content);
+        $content=str_ireplace("%C3%B6","&ouml;",$content);
+        $content=str_ireplace("%C3%9F","&szlig;",$content);
+        $content=str_ireplace("%C3%8D","&iacute;",$content);
+        $content=str_ireplace("%C3%84","&Auml;",$content);
+        $content=str_ireplace("%C3%9C","&Uuml;",$content);
+        $content=str_ireplace("%C3%88","&Egrave;",$content);
+        $content=str_ireplace("%C5%BC","&#x142;",$content);
+        $content=str_ireplace("%C5%82","&#x17C;",$content);
+        $content=str_ireplace("%C4%87","&#x107;",$content);
+        $content=str_ireplace("%C5%BA","&#x17A;",$content);
+        $content=str_ireplace("%C5%9A","&#x15A;",$content);
+        $content=str_ireplace("%C4%99","&#x119;",$content);
+        $content=str_ireplace("%C4%85","&#x105;",$content);
+        $content=str_ireplace("%C5%84","&#x144;",$content);
+        $content=str_ireplace("%C5%9B","&#x15B;",$content);
+        $content=str_ireplace("%C5%B9","&#x179;",$content);
+        $content=str_ireplace("%C5%9A","&#x15A;",$content);
+        $content=str_ireplace("%C5%A0","&Scaron;",$content);
+        $content=str_ireplace("%u0142","&#x142;",$content);
+        $content=str_ireplace("%u0105","&#x105;",$content);
+        $content=str_ireplace("%u0107","&#x107;",$content);
+        $content=str_ireplace("%u017C","&#x17C;",$content);
+        $content=str_ireplace("%u0119","&#x119;",$content);
+        $content=str_ireplace("%u015B","&#x15B;",$content);
+        $content=str_ireplace("%u0144","&#x144;",$content);
+        $content=str_ireplace("%C3%80","&Agrave;",$content);
+        return $content;
+    }
+
     private function replace_strings($text){
         $text=str_replace('"',"&quot;",$text);
         $text=str_replace("'","`",$text);
@@ -548,7 +637,7 @@ class templates{
                         $text=str_ireplace("Artica",$_SESSION["change-artica-name"],$text);
                         $text=str_ireplace("artica",$_SESSION["change-artica-name"],$text);
                     }
-
+                    $text=$this->replaceAccentsWithHtmlEntities($text);
                     $content=str_replace("{{$val}}",$text,$content);
                 }
             }}
@@ -564,66 +653,7 @@ class templates{
         }
 
 
-        $content=str_replace("<input type='button'","<input type='button' class='button'",$content);
-        $content=str_replace("reverse-porxy","Reverse-Proxy",$content);
-        $content=str_replace("web sites","websites",$content);
-        $content=str_replace("\`","`",$content);
-        $content=str_replace('\"',"&quot;",$content);
-        $content=str_replace('%C3%89',"&Eacute;",$content);
-        $content=str_replace('%C3§','&ccedil;',$content);
-        $content=str_ireplace('%C3§','&ccedil;',$content);
-        $content=str_ireplace('â%80%99','`',$content);
-        $content=str_ireplace("â%80%A2","&bull;",$content);
-        $content=str_ireplace('â%80%94','&mdash;',$content);
-        $content=str_ireplace('â%80%A6','&hellip;',$content);
-        $content=str_ireplace('â%86%92',"&rightarrow;",$content);
-        $content=str_ireplace('%E2%80%94','&mdash;',$content);
-        $content=str_ireplace('%E2%86%92','&rightarrow;',$content);
-        $content=str_ireplace('%E2%80%A6','&hellip;',$content);
-        $content=str_ireplace('%C3%A3','&atilde;',$content);
-        $content=str_ireplace('%C3£','&atilde;',$content);
-        $content=str_ireplace('%C3¡','&aacute;',$content);
-        $content=str_ireplace('%C3%B3','&oacute;',$content);
-        $content=str_ireplace('%C3%AD','&iacute;',$content);
-        $content=str_ireplace('%C3µ','&otilde;',$content);
-        $content=str_ireplace('%C3%BA','&uacute;',$content);
-        $content=str_ireplace('%C3%8A','&Ecirc;',$content);
-        $content=str_ireplace('%C3%9A','&uacute;',$content);
-        $content=str_ireplace('%C3%B1','&ntilde;',$content);
-        $content=str_ireplace("%C2%BF","&iquest;",$content);
-        $content=str_ireplace("%C3%C2¡","&aacute;",$content);
-        $content=str_ireplace("%C3²","&ograve;",$content);
-        $content=str_ireplace("%C3%AC","&igrave;",$content);
-        $content=str_ireplace("%C3%A4","&auml;",$content);
-        $content=str_ireplace("%C3%BB","&ucirc;",$content);
-        $content=str_ireplace("%C3%BC","&uuml;",$content);
-        $content=str_ireplace("%C3%B6","&ouml;",$content);
-        $content=str_ireplace("%C3%9F","&szlig;",$content);
-        $content=str_ireplace("%C3%8D","&iacute;",$content);
-        $content=str_ireplace("%C3%84","&Auml;",$content);
-        $content=str_ireplace("%C3%9C","&Uuml;",$content);
-        $content=str_ireplace("%C3%88","&Egrave;",$content);
-        $content=str_ireplace("%C5%BC","&#x142;",$content);
-        $content=str_ireplace("%C5%82","&#x17C;",$content);
-        $content=str_ireplace("%C4%87","&#x107;",$content);
-        $content=str_ireplace("%C5%BA","&#x17A;",$content);
-        $content=str_ireplace("%C5%9A","&#x15A;",$content);
-        $content=str_ireplace("%C4%99","&#x119;",$content);
-        $content=str_ireplace("%C4%85","&#x105;",$content);
-        $content=str_ireplace("%C5%84","&#x144;",$content);
-        $content=str_ireplace("%C5%9B","&#x15B;",$content);
-        $content=str_ireplace("%C5%B9","&#x179;",$content);
-        $content=str_ireplace("%C5%9A","&#x15A;",$content);
-        $content=str_ireplace("%C5%A0","&Scaron;",$content);
 
-        $content=str_ireplace("%u0142","&#x142;",$content);
-        $content=str_ireplace("%u0105","&#x105;",$content);
-        $content=str_ireplace("%u0107","&#x107;",$content);
-        $content=str_ireplace("%u017C","&#x17C;",$content);
-        $content=str_ireplace("%u0119","&#x119;",$content);
-        $content=str_ireplace("%u015B","&#x15B;",$content);
-        $content=str_ireplace("%u0144","&#x144;",$content);
-        $content=str_ireplace("%C3%80","&Agrave;",$content);
 
         
         //$content=str_replace("Loadjs(",'$.getScript(',$content);

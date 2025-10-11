@@ -19,6 +19,7 @@ if(isset($_POST["delete-rule"])){rule_delete();exit;}
 if(isset($_GET["enabled-js"])){enabled_js();exit;}
 if(isset($_GET["parameters"])){rule_parameters();exit;}
 if(isset($_POST["parameters-save"])){rule_parameters_save();exit;}
+if(isset($_POST["smtp-messages"])){smtp_messages_save();exit;}
 
 if(isset($_GET["smtp-popup"])){smtp_parameters();exit;}
 if(isset($_GET["rule-proxies-table"])){rule_proxies_table();exit;}
@@ -32,6 +33,7 @@ if(isset($_GET["test-smtp-js"])){smtp_parameters_test();exit;}
 if(isset($_GET["smtp-sendto"])){smtp_parameters_lauch();exit;}
 if(isset($_GET["smtp_sendto"])){tests_smtp();exit;}
 if(isset($_GET["table2"])){table2();exit;}
+if(isset($_GET["smtp-messages"])){smtp_messages();exit;}
 page();
 
 function sync(){
@@ -43,7 +45,6 @@ function sync(){
     }
     $tpl->js_ok("{success}");
 }
-
 function page(){
 	$page=CurrentPageName();
 	$error=null;
@@ -77,7 +78,6 @@ function page(){
 	echo $tpl->_ENGINE_parse_body($html);
 
 }
-
 function table2(){
 	$page=CurrentPageName();
 	echo "<div id='table-loader-webhttp-rules' style='margin-top:10px'></div><script>
@@ -86,7 +86,6 @@ function table2(){
 	</script>";
 	
 }
-
 function smtp_parameters_test(){
 	$tpl=new templates();
 	$page=CurrentPageName();
@@ -112,7 +111,6 @@ function smtp_parameters_test(){
 	
 	
 }
-
 function smtp_parameters_lauch(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
@@ -120,7 +118,6 @@ function smtp_parameters_lauch(){
 	$tpl->js_dialog2($email, "$page?smtp_sendto=$email");
 	
 }
-
 function rule_delete_js(){
 	$tpl=new template_admin();
 	$aclid=$_GET["delete-rule-js"];
@@ -133,10 +130,8 @@ function rule_delete_js(){
 
 	
 }
-
-function rule_delete(){
+function rule_delete():bool{
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-	
 	$ID=$_POST["delete-rule"];
 	$q->QUERY_SQL("DELETE FROM `ufdb_page_rules` WHERE zmd5='$ID'");
 	$mem=new lib_memcached();
@@ -145,11 +140,56 @@ function rule_delete(){
 
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/weberror/rules");
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_PACKAGE();
+    return admin_tracks("Removed Proxy Web error page rule #$ID");
+}
+function smtp_messages():bool{
+    $md5=$_GET["smtp-messages"];
+    $tpl=new template_admin();
+    $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM ufdb_page_rules WHERE zmd5='$md5'");
+    $form[]=$tpl->field_hidden("smtp-messages", $md5);
 
+    if(strlen($ligne["smtp_ticket1_subj"])<3){
+        $ligne["smtp_ticket1_subj"]="New ticket: Claim of a blocked user on %domain";
+    }
+    if(strlen($ligne["smtp_ticket1_body"])<3){
+        $def[]="Hi admin,";
+        $def[]="The user has clicked on the error page button to inform you that he has been blocked in his navigation for the following reasons:";
+        $def[]="Hostname: %host";
+        $def[]="Artica Version: %ver";
+        $def[]="Member: %user";
+        $def[]="Policy: %policy";
+        $def[]="URL: %uri";
+        $def[]="";
+        $def[]="";
+        $def[]="To accept and release the blocked website, please click on the link bellow:";
+        $def[]="%release";
+        $def[]="";
+        $ligne["smtp_ticket1_body"]=@implode("\n",$def);
+    }
 
+    $form[]=$tpl->field_text("smtp_ticket1_subj", "{ticket}:{subject}", $ligne["smtp_ticket1_subj"]);
+    $form[]=$tpl->field_textarea("smtp_ticket1_body", "{ticket}:{body}", $ligne["smtp_ticket1_body"]);
+    echo $tpl->form_outside("", $form,null,"{apply}","blur()","AsDansGuardianAdministrator");
+    return true;
+}
+function smtp_messages_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $md5=$_POST["smtp-messages"];
+    $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
+    $smtp_ticket1_subj=$q->sqlite_escape_string2($_POST["smtp_ticket1_subj"]);
+    $smtp_ticket1_body=$q->sqlite_escape_string2($_POST["smtp_ticket1_body"]);
+    $q->QUERY_SQL("UPDATE `ufdb_page_rules` SET smtp_ticket1_subj='$smtp_ticket1_subj',smtp_ticket1_body='$smtp_ticket1_body' WHERE zmd5='$md5'");
+    if(!$q->ok){
+        echo $tpl->popup_error($q->mysql_error);
+        return false;
+    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/weberror/rules");
+    $GLOBALS["CLASS_SOCKETS"]->CLUSTER_PACKAGE();
+    return admin_tracks("Updated Proxy Web error page rule #$md5 for SMTP message $smtp_ticket1_subj");
 
 }
-
 
 
 
@@ -709,6 +749,7 @@ function rule_tab():bool{
 		$refresh_js="LoadAjaxSilent('proxy-pac-rule-sources','fw.proxy.acls.objects.php?rule-id=$id&TableLink=wpad_sources_link');";
 		$refresh_enc=base64_encode("LoadAjax('table-loader-webhttp-rules','$page?table=yes');");
 		$array["{skin}"]="$page?skin=$id";
+        $array["{messages} (SMTP)"]="$page?smtp-messages=$id";
 		
 		
 	}else{

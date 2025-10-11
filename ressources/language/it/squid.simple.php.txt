@@ -1,6 +1,6 @@
 <acl_is_allowed>is allowed to pass trought the proxy</acl_is_allowed>
 <dansguardian_listen_port>DansGuardian Listen port</dansguardian_listen_port>
-<deny_ext>Deny Files</deny_ext>
+<deny_ext>Bloccare i file</deny_ext>
 <deny_ext_add>Add an extension file</deny_ext_add>
 <deny_ext_add_text>This section restrict users to download remote files by specific extension name (exe,vbs,shs...). it is usefull to protect against malicious programs </deny_ext_add_text>
 <enable_kav4proxy>Enable Kaspersky For SQUID</enable_kav4proxy>

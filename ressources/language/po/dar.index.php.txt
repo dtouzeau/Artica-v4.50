@@ -29,7 +29,7 @@ Bzip2 por defeito utiliza 6, que é a melhor relaç%C3£o velocidade/compress%C3
 <external_storage_text>You can use an external storage in order to store yours backups, currently externals storages supported are USB Mass media and remote Network share</external_storage_text>
 <global_settings>Configuraç%C3µes globais</global_settings>
 <global_settings_text>Define here the global parameters of the backup engine</global_settings_text>
-<homes>Home directories</homes>
+<homes>Diret%C3%B3rios pessoais</homes>
 <homes_folder_exclude>Exclude some home directories</homes_folder_exclude>
 <index>Index</index>
 <indexing>Building indexes</indexing>

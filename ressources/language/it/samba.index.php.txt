@@ -3,7 +3,7 @@ Samba is an Open Source/Free Software suite that provides seamless file and prin
 Samba is freely available, unlike other SMB/CIFS implementations,
 and allows for interoperability between Linux/Unix servers and Windows-based clients
 </about>
-<add_a_shared_folder>Add a new shared folder</add_a_shared_folder>
+<add_a_shared_folder>Nuova cartella condivisa</add_a_shared_folder>
 <add_a_shared_folder_text>Explore your disks and share folders</add_a_shared_folder_text>
 <add_sub_folder>Add a sub-folder</add_sub_folder>
 <Archives>Scanning archives files</Archives>
@@ -113,7 +113,7 @@ This parameter is largely auto-configured in the Samba-3 release series and it i
 <PDC>Primary Domain Controler</PDC>
 <PDC_TEXT>The server simulate Windows PDC Server behavior.It can handle windows clients that establish windows sessions trough this server</PDC_TEXT>
 <public>public</public>
-<public_text>If this parameter is enabled for this folder, then no password is required to connect to the service</public_text>
+<public_text>Se questa impostazione è abilitata per questa cartella, non è necessaria alcuna password per connettersi al servizio.</public_text>
 <query>Query</query>
 <read>Read</read>
 <rebuild_samba_groups>Rebuild Common groups</rebuild_samba_groups>

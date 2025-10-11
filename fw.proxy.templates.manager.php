@@ -199,14 +199,11 @@ function table(){
 
     $jsApply=$tpl->framework_buildjs("/proxy/templates",
         "squid.templates.single.progress","squid.templates.single.log","progress-pxtempl-restart");
-	
-	$btn=array();
-	$btn[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
-    $btn[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?new-template=yes');\"><i class='fas fa-plus'></i> {new_template} </label>";
-    $btn[]="<label class=\"btn btn btn-warning\" OnClick=\"Loadjs('fw.proxy.templates.manager.files.php');\"><i class='fas fa-images'></i> {file_manager} </label>";
-    $btn[]="<label class=\"btn btn btn-success\" OnClick=\"Loadjs('fw.proxy.templates.upload.php');\"><i class='fas fa-download'></i> {import_template} </label>";
-    $btn[]="<label class=\"btn btn btn-info\" OnClick=\"$jsApply\"><i class='fa fa-save'></i> {build_templates} </label>";
-    $btn[]="</div>";
+
+    $topbuttons[] = array("Loadjs('$page?new-template=yes');", ico_plus, "{new_template}");
+    $topbuttons[] = array("Loadjs('fw.proxy.templates.manager.files.php');", "fas fa-images", "{file_manager}");
+    $topbuttons[] = array("Loadjs('fw.proxy.templates.upload.php');", ico_download, "{import_template}");
+    $topbuttons[] = array($jsApply, ico_save, "{build_templates}");
 	
 	
 	$html[]="<table id='table-template-manager' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
@@ -286,7 +283,7 @@ function table(){
     $TINY_ARRAY["ICO"]="fad fa-page-break";
     $TINY_ARRAY["EXPL"]="{proxy_errors_pages_explain}";
     $TINY_ARRAY["URL"]="proxy-errors";
-    $TINY_ARRAY["BUTTONS"]=@implode("\n",$btn);
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
 

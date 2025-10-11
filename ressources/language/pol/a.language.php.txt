@@ -673,7 +673,7 @@ Do you want to execute this operation ?</confirm_remove_zarafa_db>
 <convert_current_attachments>Convert current attachents</convert_current_attachments>
 <corrupted>Corrupted</corrupted>
 <COULD_NOT_PERF_OP_SOFT_ENABLED>Could not perform this operation until this software is enabled:</COULD_NOT_PERF_OP_SOFT_ENABLED>
-<country_block>Countries block</country_block>
+<country_block>Blokowanie kraj%C3%B3w</country_block>
 <CPU_ASSIGN>assign CPU(s)</CPU_ASSIGN>
 <cpu_rt_period_us>Runtime period</cpu_rt_period_us>
 <cpu_rt_runtime_us>Runtime</cpu_rt_runtime_us>
@@ -1336,11 +1336,7 @@ This feature is implemented in most modern Seagate drives and some of Western Di
 <HomeDirectoriesMask>Permissions mask for home directories</HomeDirectoriesMask>
 <HomeUsers>Home service</HomeUsers>
 <HomeUsersExplain>Enable or disable the "Home" shared directory</HomeUsersExplain>
-<HomeUsersFormExplain>By default this feature is enabled.[br]When an user accessing to the server,
- the server always provide a shared directory named has the user with full access.[br]
-This Home directory is displayed only for the user and nobody can access to it.[br]
-Turn to red if you did not wan to provide this default shared directory.
-</HomeUsersFormExplain>
+<HomeUsersFormExplain>Domy%C5%9Blnie ta funkcja jest w%C5%82%C4%85czona.[br]Gdy u%C5%BCytkownik uzyskuje dost%C4%99p do serwera, automatycznie tworzony jest wsp%C3%B3%C5%82dzielony katalog z jego nazw%C4%85 i pe%C5%82nymi uprawnieniami dla tego u%C5%BCytkownika.[br]Ten katalog domowy jest widoczny tylko dla niego; nikt inny nie ma dost%C4%99pu.[br]Ustaw prze%C5%82%C4%85cznik na Wy%C5%82%C4%85czone (disabled), je%C5%9Bli nie chcesz udost%C4%99pnia%C4%87 tego domy%C5%9Blnego katalogu wsp%C3%B3%C5%82dzielonego.</HomeUsersFormExplain>
 <hosts_table>Hosts table</hosts_table>
 <house>house</house>
 <houseads>Houses Ads added by home users, agencies, forums...</houseads>

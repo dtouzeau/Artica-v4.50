@@ -1,7 +1,7 @@
 <about>O Samba &eacute; um Open Source/suite de Software Livre que fornece servi&ccedil;os de partilha de ficheiros e impress&atilde;o a clientes SMB/CIFS. [br]
 O Samba est&aacute; dispon&iacute;vel gratuitamente, ao contr&aacute;rio de outras implementa&ccedil;&otilde;es de SMB/CIFS,
 e permite a interoperabilidade entre servidores Linux/Unix e clientes baseados em Windows.</about>
-<add_a_shared_folder>Add a new shared folder</add_a_shared_folder>
+<add_a_shared_folder>Nova pasta partilhada</add_a_shared_folder>
 <add_a_shared_folder_text>Explore your disks and share folders</add_a_shared_folder_text>
 <add_sub_folder>Add a sub-folder</add_sub_folder>
 <Archives>Scanning archives files</Archives>
@@ -109,7 +109,7 @@ This parameter is largely auto-configured in the Samba-3 release series and it i
 <PDC>Primary Domain Controler</PDC>
 <PDC_TEXT>The server simulate Windows PDC Server behavior.It can handle windows clients that establish windows sessions trough this server</PDC_TEXT>
 <public>public</public>
-<public_text>If this parameter is enabled for this folder, then no password is required to connect to the service</public_text>
+<public_text>Se este parâmetro estiver ativado para esta pasta, n%C3£o é necess%C3¡ria palavra-passe para se ligar ao serviço.</public_text>
 <query>Query</query>
 <read>Read</read>
 <rebuild_samba_groups>Rebuild Common groups</rebuild_samba_groups>

@@ -29,7 +29,7 @@ Bzip2 utilise par d&eacute;faut 6, qui est la meilleure vitesse et taux de compr
 <external_storage_text>Vous pouvez utiliser une unit&eacute; de stockage externe pour stocker vos sauvegardes, actuellement les stockages externes sont des m&eacute;dias de stockage de Masse USB et des partages r&eacute;seaux</external_storage_text>
 <global_settings>Param&egrave;tres globaux</global_settings>
 <global_settings_text>D&eacute;finissez ici les param&egrave;tres globaux du moteur de sauvegarde</global_settings_text>
-<homes>R&eacute;pertoires d'accueil</homes>
+<homes>Répertoire personnel</homes>
 <homes_folder_exclude>Exclure certains r&eacute;pertoires d'accueil</homes_folder_exclude>
 <index>Index</index>
 <indexing>Reconstruire les indexes</indexing>

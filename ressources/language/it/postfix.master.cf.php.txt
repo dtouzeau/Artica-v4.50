@@ -104,7 +104,7 @@ and one endpoint may refer to zero or more connections.</service_scache_text>
 It is the program that emulates the sendmail "mailq" command.[br]
 The showq daemon can also be run in stand-alone mode by the superuser.[br]
 This mode of operation is used to emulate the "mailq" command while the Postfix mail system is down</service_showq_text>
-<service_smtp>SMTP client</service_smtp>
+<service_smtp>Client SMTP</service_smtp>
 <service_smtp_text>The  Postfix  SMTP  client  implements the SMTP mail delivery protocols.[br]
 It processes message delivery requests from the queue manager.[br]
 Each request specifies a queue file, a sender address, a domain or host to deliver to, and recipient information.[br]

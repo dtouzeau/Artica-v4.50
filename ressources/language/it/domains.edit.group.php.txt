@@ -4,7 +4,7 @@
 <add_computer_confirm>Add this computer to your group ?</add_computer_confirm>
 <add_computer_text>Create a new computer entry...</add_computer_text>
 <add_new_kavmilterd_rule>Add a new antivirus rule for this group</add_new_kavmilterd_rule>
-<add_shared_folder>Add a new shared folder</add_shared_folder>
+<add_shared_folder>Nuova cartella condivisa</add_shared_folder>
 <add_shared_folder_text>Create a new point that will be access on each home directory of users of this group</add_shared_folder_text>
 <AllowChangeMailBoxRules>Allow Modify mailbox rule</AllowChangeMailBoxRules>
 <AllowDansGuardianBanned>Allow exclude web sites trough banned web page</AllowDansGuardianBanned>

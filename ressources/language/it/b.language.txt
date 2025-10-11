@@ -5321,7 +5321,7 @@ Using HTTP compression inside a LAN did not make sense...
 <http_error_redirect>Default HTTP error redirection</http_error_redirect>
 <http_header>HTTP Header</http_header>
 <http_headers>HTTP headers</http_headers>
-<http_port>HTTP port</http_port>
+<http_port>Porta HTTP</http_port>
 <HTTP_PROXY_MODE>HTTP Proxy mode</HTTP_PROXY_MODE>
 <http_reply_access_explain>
 This rule are similar to access rule, except that is checked after proxy receives the HTTP response headers for a cache miss.[br]You might want to use this access list to deny requests based on some characteristic of the response, such as the content type.
@@ -6087,7 +6087,7 @@ Do you want to carry out this operation ?
 <link_item>Link item</link_item>
 <link_mac_to_uid>Associate MAC address</link_mac_to_uid>
 <link_member>Collegare un membro</link_member>
-<link_members>Link members</link_members>
+<link_members>Associare membri</link_members>
 <link_object>Oggetto del collegamento</link_object>
 <link_policy>Link a policy</link_policy>
 <link_server>Link a server</link_server>
@@ -7198,7 +7198,7 @@ Fare clic qui per aggiornarla.</NEW_RELEASE_TEXT>
 <new_search>Nuova ricerca</new_search>
 <new_server>New Server</new_server>
 <new_service>Nuovo servizio</new_service>
-<new_shared_folder>New shared folder</new_shared_folder>
+<new_shared_folder>Nuova cartella condivisa</new_shared_folder>
 <new_skin>New skin</new_skin>
 <new_source>Nuova fonte</new_source>
 <new_splash_page>New splash service</new_splash_page>
@@ -8813,7 +8813,7 @@ Connect to %s in order to modify parameters</remote_appliance_error_text>
 <remote_ssl_port>Remote SSL Port</remote_ssl_port>
 <remote_statistics_server>Remote statistics server</remote_statistics_server>
 <remote_statistics_server_text>Send realtime events to a second Artica server</remote_statistics_server_text>
-<remote_synchronization>Remote synchronization</remote_synchronization>
+<remote_synchronization>Sincronizzazione remota</remote_synchronization>
 <remote_syslog_server>Server Syslog remoto</remote_syslog_server>
 <remote_webpage>Remote block page</remote_webpage>
 <remote_webpages_are_cached>Remote content is cached</remote_webpages_are_cached>
@@ -9017,7 +9017,7 @@ Example:[b]Admin123[/b]
 </reset_admin_password_explain>
 <reset_admin_password_text>Reset the [b]Administrator[/b] Web console password.</reset_admin_password_text>
 <reset_ask>Do you want to reset the configuration file and return back to default values ?</reset_ask>
-<reset_connection>Reset connection</reset_connection>
+<reset_connection>Reimpostare la connessione</reset_connection>
 <reset_smtp_logs_ask>Empty the SMTP events table ?
 All datas according SMTP events will be removed</reset_smtp_logs_ask>
 <reset_system>Resettare il sistema</reset_system>
@@ -10979,7 +10979,7 @@ Upload your Squid-Cache log ( access.log file ) trough the Interface and Artica 
 <text_mode>Text mode</text_mode>
 <TEXT_TO_CSV>CSV to LDAP</TEXT_TO_CSV>
 <then_allow_user_to_whitelist_theblocked>Then allow users to unlock the blocked website</then_allow_user_to_whitelist_theblocked>
-<then_just_display_the_error_page>Then, just display the error page</then_just_display_the_error_page>
+<then_just_display_the_error_page>Quindi, visualizza semplicemente la pagina di errore</then_just_display_the_error_page>
 <then_set_proxy_parameters>then set proxy parameters</then_set_proxy_parameters>
 <then_use_default_gateway>Quindi, utilizzare il gateway predefinito</then_use_default_gateway>
 <then_use_parent_proxies>The use parent proxies</then_use_parent_proxies>
@@ -11102,7 +11102,7 @@ If you plan to use MiKrotiK Firewall, you have to use this method.
 <traffic_received>Traffic received</traffic_received>
 <traffic_report>Traffic report</traffic_report>
 <traffic_sent>Traffic sent</traffic_sent>
-<traffic_shapping>Traffic shaping</traffic_shapping>
+<traffic_shapping>Limitazione del traffico</traffic_shapping>
 <traffic_shapping_explain>Traffic shaping is a bandwidth management technique used on computer networks which delays some or all datagrams to bring them into compliance with a desired traffic profile.[br]
 Traffic shaping is used to optimize or guarantee performance, improve latency, or increase usable bandwidth for some kinds of packets by delaying other kinds.[br]It is often confused with traffic policing, the distinct but related practice of packet dropping and packet marking.[br]The most common type of traffic shaping is application-based traffic shaping.
 </traffic_shapping_explain>

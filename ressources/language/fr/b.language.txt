@@ -531,7 +531,7 @@ Si vous activez cette fonctionnalit&eacute;, vous serez en mesure d'ajouter ces 
 <allow_user_to_be_selfregistred>Autoriser l'utilisateur &agrave; s'auto-enregistrer</allow_user_to_be_selfregistred>
 <AllPorts>Tous ports</AllPorts>
 <AllSystems>Tous syst&egrave;mes</AllSystems>
-<AllSystemsDansExpl>Cette r&egrave;gle est une r&egrave;gle qui englobe tous les n?uds de votre r&eacute;seau.[br]
+<AllSystemsDansExpl>Cette r&egrave;gle est une r&egrave;gle qui englobe tous les noeuds de votre r&eacute;seau.[br]
 Elle devrait &ecirc;tre toujours plac&eacute;e &agrave; la fin du tableau comme la derni&egrave;re r&egrave;gle pour &ecirc;tre utilis&eacute;e uniquement si les autres r&egrave;gles ne correspondent pas.</AllSystemsDansExpl>
 <all_browsers>Tous les navigateurs</all_browsers>
 <all_cache_method_are_globally_disabled>Toutes les m&eacute;thodes de caches sont d&eacute;sactiv&eacute;es.[br]Il n'y a pas de sens &agrave; afficher cette section.</all_cache_method_are_globally_disabled>
@@ -9756,7 +9756,7 @@ Si vous d&eacute;sirez combiner un routeur MikroTiK, cette m&eacute;thode est ob
 <traffic_received>Trafic recu</traffic_received>
 <traffic_report>Rapport du trafic</traffic_report>
 <traffic_sent>Trafic envoy&eacute;</traffic_sent>
-<traffic_shapping>Traffic shaping</traffic_shapping>
+<traffic_shapping>Limitation du trafic</traffic_shapping>
 <traffic_shapping_explain>Le Traffic shaping ou r&eacute;gulation de flux est le contr&ocirc;le du volume des &eacute;changes sur un r&eacute;seau informatique dans le but d`optimiser ou de garantir les performances, une latence plus basse ou d`augmenter la bande passante utilisable en retardant les paquets qui correspondent &agrave; certains crit&egrave;res.[br] Plus particuli&egrave;rement, le trafic shaping d&eacute;signe toute action sur un groupe de paquets (un flux r&eacute;seau) qui impose un d&eacute;lai suppl&eacute;mentaire &agrave; ces paquets pour qu`ils se conforment &agrave; une contrainte pr&eacute;d&eacute;termin&eacute;e (contractuelle ou li&eacute;e &agrave; un certain type de trafic).[br]
 Le traffic shaping offre un moyen de contr&ocirc;ler le volume des &eacute;changes en train d`&ecirc;tre envoy&eacute;s &agrave; un r&eacute;seau pendant une p&eacute;riode donn&eacute;e (bandwith throttling), le d&eacute;bit maximum auquel le trafic peut &ecirc;tre envoy&eacute; (rate limiting)</traffic_shapping_explain>
 <transaction>Transaction</transaction>

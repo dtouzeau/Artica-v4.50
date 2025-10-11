@@ -22,7 +22,7 @@
 <repository_manager>repository manager</repository_manager>
 <repository_manager_text>Update and install packages according your system repositories manager</repository_manager_text>
 <services>Dienstleistungen</services>
-<system>System & Hardware</system>
+<system>System &amp; Hardware</system>
 <update>Update & Maintain</update>
 <usb_section>Manage USB devices</usb_section>
 <usb_section_text>Create a dedicated device for backup features and connect/disconnect usb devices</usb_section_text>

@@ -31,7 +31,7 @@ Bzip2 by default uses 6, which is the best speed/compression ratio for most file
 <external_storage_text>You can use an external storage in order to store yours backups, currently externals storages supported are USB Mass media and remote Network share</external_storage_text>
 <global_settings>Globale Einstellungen</global_settings>
 <global_settings_text>Define here the global parameters of the backup engine</global_settings_text>
-<homes>Home directories</homes>
+<homes>Pers%C3%B6nliche Verzeichnisse</homes>
 <homes_folder_exclude>Exclude some home directories</homes_folder_exclude>
 <index>Index</index>
 <indexing>Building indexes</indexing>

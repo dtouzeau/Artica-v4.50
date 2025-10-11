@@ -5122,7 +5122,7 @@ Utilizar la compresi%C3%B3n HTTP dentro de una LAN no ten%C3%ADa sentido...</htt
 <http_error_redirect>Default HTTP error redirection</http_error_redirect>
 <http_header>HTTP Header</http_header>
 <http_headers>HTTP headers</http_headers>
-<http_port>HTTP port</http_port>
+<http_port>Puerto HTTP</http_port>
 <HTTP_PROXY_MODE>HTTP Proxy mode</HTTP_PROXY_MODE>
 <http_reply_access_explain>Esta regla es similar a la regla de acceso, excepto que se comprueba después de que el proxy reciba las cabeceras de la respuesta HTTP para una pérdida de caché.[br]Es posible que desee utilizar esta lista de acceso para denegar solicitudes en funci%C3%B3n de alguna caracter%C3%ADstica de la respuesta, como el tipo de contenido.</http_reply_access_explain>
 <http_service_disabled>HTTP service disabled</http_service_disabled>
@@ -5848,7 +5848,7 @@ Do you want to carry out this operation ?
 <link_item>Link item</link_item>
 <link_mac_to_uid>Asociar la direcci%C3%B3n MAC</link_mac_to_uid>
 <link_member>Vincular a un miembro</link_member>
-<link_members>Link members</link_members>
+<link_members>Vincular miembros</link_members>
 <link_object>Objeto de enlace</link_object>
 <link_policy>Link a policy</link_policy>
 <link_server>Link a server</link_server>
@@ -6935,7 +6935,7 @@ Haga clic aqu%C3%AD para actualizarla.</NEW_RELEASE_TEXT>
 <new_search>Nueva b%C3%BAsqueda</new_search>
 <new_server>New Server</new_server>
 <new_service>Nuevo servicio</new_service>
-<new_shared_folder>New shared folder</new_shared_folder>
+<new_shared_folder>Nueva carpeta compartida</new_shared_folder>
 <new_skin>New skin</new_skin>
 <new_source>Nueva fuente</new_source>
 <new_splash_page>New splash service</new_splash_page>
@@ -8493,7 +8493,7 @@ Connect to %s in order to modify parameters</remote_appliance_error_text>
 <remote_ssl_port>Remote SSL Port</remote_ssl_port>
 <remote_statistics_server>Remote statistics server</remote_statistics_server>
 <remote_statistics_server_text>Send realtime events to a second Artica server</remote_statistics_server_text>
-<remote_synchronization>Remote synchronization</remote_synchronization>
+<remote_synchronization>Sincronizaci%C3%B3n remota</remote_synchronization>
 <remote_syslog_server>Servidor Syslog remoto</remote_syslog_server>
 <remote_webpage>Remote block page</remote_webpage>
 <remote_webpages_are_cached>Remote content is cached</remote_webpages_are_cached>
@@ -8693,7 +8693,7 @@ Debe contener al menos tres s%C3%ADmbolos de los siguientes tipos: una letra may
 Example:[b]Admin123[/b]</reset_admin_password_explain>
 <reset_admin_password_text>Restablecer la contrase%C3%B1a de la consola web del [b]Administrador[/b].</reset_admin_password_text>
 <reset_ask>%C2%BFDesea restablecer el archivo de configuraci%C3%B3n y volver a los valores por defecto?</reset_ask>
-<reset_connection>Reset connection</reset_connection>
+<reset_connection>Restablecer la conexi%C3%B3n</reset_connection>
 <reset_smtp_logs_ask>Empty the SMTP events table ?
 All datas according SMTP events will be removed</reset_smtp_logs_ask>
 <reset_system>Reiniciar el sistema</reset_system>
@@ -10575,7 +10575,7 @@ Sube tu registro de Squid-Cache (archivo access.log) a través de la interfaz y 
 <text_mode>Text mode</text_mode>
 <TEXT_TO_CSV>CSV to LDAP</TEXT_TO_CSV>
 <then_allow_user_to_whitelist_theblocked>Then allow users to unlock the blocked website</then_allow_user_to_whitelist_theblocked>
-<then_just_display_the_error_page>Then, just display the error page</then_just_display_the_error_page>
+<then_just_display_the_error_page>Luego, simplemente muestre la p%C3¡gina de error</then_just_display_the_error_page>
 <then_set_proxy_parameters>then set proxy parameters</then_set_proxy_parameters>
 <then_use_default_gateway>A continuaci%C3%B3n, utilice la pasarela por defecto</then_use_default_gateway>
 <then_use_parent_proxies>Entonces, utiliza los proxys padres</then_use_parent_proxies>
@@ -10696,7 +10696,7 @@ Si tiene previsto utilizar el cortafuegos MiKrotiK, debe utilizar este método.<
 <traffic_received>Traffic received</traffic_received>
 <traffic_report>Traffic report</traffic_report>
 <traffic_sent>Traffic sent</traffic_sent>
-<traffic_shapping>Traffic shaping</traffic_shapping>
+<traffic_shapping>Limitaci%C3%B3n de tr%C3¡fico</traffic_shapping>
 <traffic_shapping_explain>La conformaci%C3%B3n del tr%C3¡fico es una técnica de gesti%C3%B3n del ancho de banda utilizada en las redes inform%C3¡ticas que retrasa algunos o todos los datagramas para que se ajusten a un perfil de tr%C3¡fico deseado[br].
 La conformaci%C3%B3n del tr%C3¡fico se utiliza para optimizar o garantizar el rendimiento, mejorar la latencia o aumentar el ancho de banda utilizable para algunos tipos de paquetes retrasando otros tipos[br]A menudo se confunde con la vigilancia del tr%C3¡fico, la pr%C3¡ctica distinta pero relacionada de la eliminaci%C3%B3n y el marcado de paquetes[br]El tipo m%C3¡s com%C3%BAn de conformaci%C3%B3n del tr%C3¡fico es la conformaci%C3%B3n del tr%C3¡fico basada en la aplicaci%C3%B3n.</traffic_shapping_explain>
 <transaction>transaction</transaction>

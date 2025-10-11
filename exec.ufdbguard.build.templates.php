@@ -104,6 +104,15 @@ function export_rule($ligne){
     if(!is_dir($path)){@mkdir($path,0755,true);}
     foreach ($ligne as $key=>$val){
         echo "Building $path/$key\n";
+        if($key=="smtp_ticket1_subj"){
+            @file_put_contents("$path/$key",$val);
+            continue;
+        }
+        if($key=="smtp_ticket1_body"){
+            @file_put_contents("$path/$key",$val);
+            continue;
+        }
+
         @file_put_contents("$path/$key",utf8_decode_switch($val));
     }
     $temlplateid=intval($ligne["templateid"]);

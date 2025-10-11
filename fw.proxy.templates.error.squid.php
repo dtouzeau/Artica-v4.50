@@ -76,8 +76,8 @@ function TEMPLATE_CONTENT():bool{
 
 	$xtpl=new template_simple($_GET["TEMPLATE_TITLE"],$SquidHTTPTemplateLanguage);
 	$form[]=$tpl->field_hidden("TEMPLATE_TITLE", $TEMPLATE_TITLE);
-	$form[]=$tpl->field_text("TITLE", "{subject}",$xtpl->TITLE);
-	$form[]=$tpl->field_textareacode("BODY","{content}",$xtpl->BODY);
+	$form[]=$tpl->field_text("TITLE", "{subject}",utf8_decode_switch($xtpl->TITLE));
+	$form[]=$tpl->field_textareacode("BODY","{content}",utf8_decode_switch($xtpl->BODY));
 	$tpl->form_add_button("{help}", "Loadjs('$page?help-js')");
 	echo $tpl->form_outside("$TEMPLATE_TITLE ($SquidHTTPTemplateLanguage)", $form,null,"{apply}",null,"AsSquidAdministrator",true);
     return true;
@@ -85,6 +85,7 @@ function TEMPLATE_CONTENT():bool{
 function TEMPLATE_SAVE():bool{
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
+    $TEMPLATE_TITLE=$_POST["TEMPLATE_TITLE"];
 	$SquidHTTPTemplateLanguage=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateLanguage"));
 	if($SquidHTTPTemplateLanguage==null){$SquidHTTPTemplateLanguage="en-us";}
 	$xtpl=new template_simple($_POST["TEMPLATE_TITLE"],$SquidHTTPTemplateLanguage);
@@ -93,7 +94,8 @@ function TEMPLATE_SAVE():bool{
 	}
 
 	$xtpl->Save();
-    return true;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/template/build/$TEMPLATE_TITLE");
+    return admin_tracks("Modified proxy error page template $TEMPLATE_TITLE");
 }
 
 function table():bool{
@@ -133,10 +135,10 @@ function table():bool{
 		
 		
 		$subtitle2=null;
-		$title=$tpl->utf8_decode($TemplateConfig[$TEMPLATE_TITLE][$SquidHTTPTemplateLanguage]["TITLE"]);
+		$title=utf8_decode_switch($TemplateConfig[$TEMPLATE_TITLE][$SquidHTTPTemplateLanguage]["TITLE"]);
 		if($title==null){ $title=$subarray["TITLE"]; }
 		$xtpl=new template_simple($TEMPLATE_TITLE,$SquidHTTPTemplateLanguage);
-		$subtitle=$xtpl->TITLE;
+		$subtitle=utf8_decode_switch($xtpl->TITLE);
 		if($subtitle<>$title){$subtitle2="<br><i>&laquo;&nbsp;$subtitle&nbsp;&raquo;&nbsp;<i>";}
         $linkJS="Loadjs('$page?Zoom-js=$TEMPLATE_TITLE&lang=$SquidHTTPTemplateLanguage')";
 		$linkZoom=$tpl->icon_loupe(1,$linkJS);
@@ -161,13 +163,36 @@ function table():bool{
 	$html[]="</tr>";
 	$html[]="</tfoot>";
 	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	
-	</script>";
+
+    $TINY_ARRAY["TITLE"]="{proxy_error_pages}";
+    $TINY_ARRAY["ICO"]="fad fa-page-break";
+    $TINY_ARRAY["EXPL"]="{proxy_errors_pages_explain}";
+    $TINY_ARRAY["URL"]="proxy-errors";
+
+    $jsApply=$tpl->framework_buildjs("/proxy/templates",
+        "squid.templates.single.progress","squid.templates.single.log","progress-pxtempl-restart");
+
+    $topbuttons[] = array($jsApply, ico_save, "{build_templates}");
+
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
+	$html[]="<script>";
+    $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
+    $html[]=$jstiny;
+    $html[]="</script>";
 
 	echo $tpl->_ENGINE_parse_body($html);
     return true;
 
+}
+function utf8_decode_switch($value):string{
+    if(is_null($value)){
+        return "";
+    }
+    if(PHP_MAJOR_VERSION>7) {
+        return $value;
+    }
+    $tpl=new template_admin();
+    return $tpl->utf8_decode($value);
 }

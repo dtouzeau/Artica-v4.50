@@ -3325,7 +3325,7 @@ You will see here the total of messages events saved</processed_messages_explain
 <proxy_pac_rules>Autoconfiguration file rules</proxy_pac_rules>
 <proxy_pac_rules_text>Define the Autoconfiguration file settings for your users</proxy_pac_rules_text>
 <proxy_pac_text>Use a client autoconfiguration file to configure all of your Navigator clients</proxy_pac_text>
-<PUBLIC_ACCESS>Public Access</PUBLIC_ACCESS>
+<PUBLIC_ACCESS>%C3%96ffentlicher Zugriff</PUBLIC_ACCESS>
 <public_ip>%C3%96ffentliche IP</public_ip>
 <PUBLISHER>Publisher</PUBLISHER>
 <pureftpd_main_settings>Pure-ftpd settings</pureftpd_main_settings>
@@ -3836,7 +3836,7 @@ You will receive a quote from Artica Technology.</shallalist_buye>
 <share_dropbox_path_text>Share the DropBox sync folder in your network and access to all synchronized files</share_dropbox_path_text>
 <SHARE_FOLDER>Share a folder</SHARE_FOLDER>
 <SHARE_FOLDER_TEXT>Share a folder on this system.[br]Browse your hard drives and point a directory to share</SHARE_FOLDER_TEXT>
-<share_name>Share name</share_name>
+<share_name>Freigabename</share_name>
 <SHARE_RSYNC>Rsync share settings</SHARE_RSYNC>
 <share_this_device_text>Share this device and access it from the file server sharing method.[br]This device will be mounted automatically when you want to access trough the network</share_this_device_text>
 <share_this_rsync>Share it using Rsync</share_this_rsync>

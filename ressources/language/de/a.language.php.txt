@@ -670,7 +670,7 @@ Do you want to execute this operation ?</confirm_remove_zarafa_db>
 <convert_current_attachments>Convert current attachents</convert_current_attachments>
 <corrupted>Korrumpiert</corrupted>
 <COULD_NOT_PERF_OP_SOFT_ENABLED>Could not perform this operation until this software is enabled:</COULD_NOT_PERF_OP_SOFT_ENABLED>
-<country_block>Countries block</country_block>
+<country_block>L%C3%A4nderblockierung</country_block>
 <CPU_ASSIGN>assign CPU(s)</CPU_ASSIGN>
 <cpu_rt_period_us>Runtime period</cpu_rt_period_us>
 <cpu_rt_runtime_us>Runtime</cpu_rt_runtime_us>
@@ -1327,11 +1327,7 @@ This feature is implemented in most modern Seagate drives and some of Western Di
 <HomeDirectoriesMask>Permissions mask for home directories</HomeDirectoriesMask>
 <HomeUsers>Home service</HomeUsers>
 <HomeUsersExplain>Enable or disable the "Home" shared directory</HomeUsersExplain>
-<HomeUsersFormExplain>By default this feature is enabled.[br]When an user accessing to the server,
- the server always provide a shared directory named has the user with full access.[br]
-This Home directory is displayed only for the user and nobody can access to it.[br]
-Turn to red if you did not wan to provide this default shared directory.
-</HomeUsersFormExplain>
+<HomeUsersFormExplain>Standardm%C3%A4%C3%9Fig ist diese Funktion aktiviert.[br]Wenn ein Benutzer auf den Server zugreift, wird automatisch ein freigegebenes Verzeichnis mit seinem Namen erstellt, mit Vollzugriff f%C3%BCr diesen Benutzer.[br]Dieses Home-Verzeichnis ist nur f%C3%BCr diesen Benutzer sichtbar; niemand sonst hat Zugriff.[br]Setzen Sie den Schalter auf Deaktiviert, wenn Sie dieses standardm%C3%A4%C3%9Fige freigegebene Verzeichnis nicht bereitstellen m%C3%B6chten.</HomeUsersFormExplain>
 <hosts_table>Hosts table</hosts_table>
 <house>house</house>
 <houseads>Houses Ads added by home users, agencies, forums...</houseads>

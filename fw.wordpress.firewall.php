@@ -242,14 +242,14 @@ function search(){
         if($port==80){$port="80 {or} 443";}
         if($port==443){$port="443 {or} 80";}
         $address = $tpl->td_href($ligne["address"].":".$port,null,"Loadjs('$page?js=$ID')");
-        $description = $ligne["description"];
+        $description = html_entity_decode($ligne["description"]);
         $md = md5(serialize($ligne));
         $enabled = intval($ligne['enabled']);
 
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='width:1%'>". $tpl->icon_check($enabled,"Loadjs('$page?enable=$ID')",null,"AsWebSecurity")."</td>";
-        $html[]="<td><strong id='wpfw1-$ID'>TCP:&nbsp;$address</strong>&nbsp;<small id='wpfw2-$ID'>$description</small></td>";
+        $html[]="<td><strong id='wpfw1-$ID' style='font-size:14px'>TCP:&nbsp;$address</strong>&nbsp;<small id='wpfw2-$ID' style='font-size:14px'>$description</small></td>";
         $html[]="<td style='width:1%'>". $tpl->icon_delete("Loadjs('$page?delete=$ID&md=$md')","AsWebSecurity")."</td>";
         $html[]="</tr>";
     }

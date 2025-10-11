@@ -1080,7 +1080,7 @@ Cette fonctionnalit&eacute; est impl&eacute;ment&eacute;e dans la plupart des di
 <HomeDirectoriesMask>Masque pour les dossiers personnels</HomeDirectoriesMask>
 <HomeUsers>Dossier personnel</HomeUsers>
 <HomeUsersExplain>Activation du dossier personnel</HomeUsersExplain>
-<HomeUsersFormExplain>Par d&eacute;faut, cette fonctionnalit&eacute; est activ&eacute;e.[br]Tout utilisateur qui se connecte sur le serveur b&eacute;n&eacute;ficie d'un r&eacute;pertoire personnel qui lui est d&eacute;di&eacute;.[br]Seul l'utilisateur peut y acc&eacute;der et le visualiser.[br]Mettez en rouge si vous d&eacute;sirez retirer cette fonctionnalit&eacute;</HomeUsersFormExplain>
+<HomeUsersFormExplain>Par défaut, cette fonctionnalité est activée.[br]Lorsquâ%80%99un utilisateur accède au serveur, un répertoire partagé à son nom est automatiquement créé avec un accès complet pour lui.[br]Ce répertoire personnel nâ%80%99est visible que par cet utilisateur ; personne dâ%80%99autre nâ%80%99y a accès.[br]Mettez le commutateur sur Désactivé si vous ne souhaitez pas fournir ce répertoire partagé par défaut.</HomeUsersFormExplain>
 <hosts_table>Table des h&ocirc;tes</hosts_table>
 <house>Maison</house>
 <houseads>Annonces immobili&egrave;res, quelles soient d&eacute;pos&eacute;es par des particuliers ou agences immobili&egrave;res, comprend aussi les forums permettant de promouvoir des maisons &agrave; vendre.</houseads>

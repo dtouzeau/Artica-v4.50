@@ -107,7 +107,7 @@ This parameter is largely auto-configured in the Samba-3 release series and it i
 <PDC>Primary Domain Controler</PDC>
 <PDC_TEXT>El servidor simula el comportamiento del servidor PDC de Windows y puede manejar a los clientes de Windows que establecen sesiones a través de este servidor.</PDC_TEXT>
 <public>Publico</public>
-<public_text>If this parameter is enabled for this folder, then no password is required to connect to the service</public_text>
+<public_text>Si este par%C3¡metro est%C3¡ habilitado para esta carpeta, no se requiere contrase%C3%B1a para conectarse al servicio.</public_text>
 <query>Consulta</query>
 <read>Leer</read>
 <rebuild_samba_groups>Rebuild Common groups</rebuild_samba_groups>

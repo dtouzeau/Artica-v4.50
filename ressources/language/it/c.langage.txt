@@ -127,6 +127,8 @@ Enabling this option allows you to not accept only TLS 1.3 and set which protoco
 <AllowTcpForwarding>Consentire l'inoltro TCP</AllowTcpForwarding>
 <allow_access_except>Accesso libero per tutti, tranne che per</allow_access_except>
 <allow_an_IP_address>Autorizzare un indirizzo IP</allow_an_IP_address>
+<allow_create_ticket>Consentire la creazione di un ticket</allow_create_ticket>
+<allow_create_ticket2>Consentire la creazione di un ticket con conferma</allow_create_ticket2>
 <allow_execute_scripts>Consentire l'esecuzione di script</allow_execute_scripts>
 <allow_incoming_connections>Allow incoming connections</allow_incoming_connections>
 <allow_snapshots>Consentire la gestione delle istantanee</allow_snapshots>
@@ -181,9 +183,7 @@ Lo scopo di questo servizio è di mettere in cache le informazioni dei siti web 
 <APP_DNSDIST>Firewall DNS</APP_DNSDIST>
 <APP_DNSDIST9>Firewall DNS 1.9x</APP_DNSDIST9>
 <APP_DNSDIST_EXPLAIN>This service allows you to transform your Artica server as a DNS proxy with caching, load-balancing, DNS over TLS, DNS over HTTPs capabilities.</APP_DNSDIST_EXPLAIN>
-<APP_DNSDIST_EXPLAIN2>Questo servizio DNS consente di offrire un router DNS eccezionale.[br]
-Consente inoltre di fornire un sistema di bilanciamento DNS.[br]
-Grazie alle regole del firewall DNS, potrete stabilire regole avanzate in base all'origine e alla destinazione delle richieste DNS delle vostre postazioni di lavoro.</APP_DNSDIST_EXPLAIN2>
+<APP_DNSDIST_EXPLAIN2>Questo servizio DNS consente di offrire un router DNS ad alte prestazioni.[br]Permette inoltre di fornire un sistema di bilanciamento DNS.[br]Grazie alle regole del firewall DNS, è possibile definire criteri avanzati in base allâ%80%99origine e alla destinazione delle query DNS delle postazioni.</APP_DNSDIST_EXPLAIN2>
 <APP_DNSDIST_SQUID>Equilibratore DNS per proxy</APP_DNSDIST_SQUID>
 <APP_DNSFILTER_CLOUD>DNS Filter Cloud</APP_DNSFILTER_CLOUD>
 <APP_DNSFILTER_CLOUD_EXPLAIN>DNS Filter Cloud is able to use categories services and ArticaTech Cloud categories services.[br]
@@ -320,6 +320,7 @@ DYnamic Routing daemon use OSPF aka Open Shortest Path First which manages routi
 <APP_PHP_REVERSE>PHP For Reverse-Proxy</APP_PHP_REVERSE>
 <APP_PHP_REVERSE_ABOUT>Il motore PHP per il Reverse-Proxy è un servizio dedicato che garantisce l'esecuzione di script PHP in un ambiente web.[br]
 Artica garantisce la massima sicurezza nella configurazione del motore PHP, al fine di evitare falle nella sicurezza.</APP_PHP_REVERSE_ABOUT>
+<APP_POGOCACHE>PogoCache</APP_POGOCACHE>
 <APP_PPTP_CLIENT>Point-to-Point Tunneling Protocol (PPTP) Client</APP_PPTP_CLIENT>
 <APP_PPTP_CLIENT_EXPLAIN>Client for the proprietary Microsoft Point-to-Point Tunneling Protocol, PPTP.[br]
 Allows connection to a PPTP based VPN as used by employers and some cable and ADSL service providers</APP_PPTP_CLIENT_EXPLAIN>
@@ -358,6 +359,7 @@ Utilizza agenti leggeri per monitorare in tempo reale lo stato di salute dei ser
 %C3%88 possibile configurare il proprio server relay in modo da poter prendere il controllo di un computer Windows, MacOS Android o Linux.[br]
 Pu%C3² essere un server online su Internet o in una rete LAN.</APP_RUSTDESK_EXPLAIN>
 <app_safesearch_explains>SafeSearch è una funzione offerta dai motori di ricerca come Google, Bing, ecc. che filtra i contenuti inappropriati dai risultati di ricerca.[br]SafeSearch utilizza algoritmi e tecnologie di riconoscimento delle immagini per limitare la visualizzazione di materiale sessualmente esplicito, contenuti violenti e discorsi di odio nei risultati di ricerca.</app_safesearch_explains>
+<APP_SAMBA_INSTANCES_EXPLAIN>Questa sezione consente di creare istanze del server di file per indirizzo di rete (per IP).[br]Ogni istanza ha il proprio comportamento di condivisione dei file.</APP_SAMBA_INSTANCES_EXPLAIN>
 <APP_SAMHAIN>Host Based Intrusion Detection</APP_SAMHAIN>
 <APP_SAMHAIN_EXPLAIN>The host-based intrusion detection system (HIDS) provides file integrity checking and log file monitoring/analysis, as well as rootkit detection, port monitoring, detection of rogue SUID executables, and hidden processes.</APP_SAMHAIN_EXPLAIN>
 <APP_SAMHAIN_SHORT>HIDS</APP_SAMHAIN_SHORT>
@@ -450,6 +452,7 @@ Con questo modulo è possibile creare regole avanzate di filtraggio della posta.
 <ask_install_web_console>Installazione della console web</ask_install_web_console>
 <ask_license>Ask for a License</ask_license>
 <asnOrganization>Organizzazione ASN</asnOrganization>
+<assign>Assegnare</assign>
 <AsWebSecurity>Responsabile della sicurezza per i servizi web</AsWebSecurity>
 <atomoccorp_explain>Atomi Rules è un potente insieme di regole del Web Application Firewall (WAF) che contiene migliaia di controlli di sicurezza progettati per proteggere le applicazioni web, le API e i server.[br]
 Permette di difendere la vostra architettura web da furti di credenziali, iniezione di codice, attacchi brute force, SQLi, XSS, CSRF, malware, ransomware, DoS e altre tecniche.</atomoccorp_explain>
@@ -499,6 +502,7 @@ Il parametro connessioni definisce il numero massimo di connessioni keepalive in
 <backend_status_in_the_pool>Stato del backend nel pool</backend_status_in_the_pool>
 <backuping>Backup</backuping>
 <backup_artica>Backup Artica</backup_artica>
+<backup_before_build>Backup della configurazione prima della compilazione</backup_before_build>
 <backup_ldap_explain>Backup and compress LDAP data into an LDIF file in order to restore or migrate data stored in your LDAP server.</backup_ldap_explain>
 <backup_messages>Salvataggio dei messaggi</backup_messages>
 <backup_messages_explain>Memorizza i messaggi nella tabella PostGreSQL per la ricerca, il download e il reinvio.</backup_messages_explain>
@@ -523,6 +527,8 @@ Se si perde la password, il sistema è perso per sempre.[br]
 Questa opzione consente di avviare una console per cambiare la password di root.[br]</bootrescuewithoutpassword_explain>
 <boot_manager>Manager di start-up</boot_manager>
 <boot_manager_explain>Il boot manager gestisce il menu di sistema all'avvio del server.</boot_manager_explain>
+<BotChecker>Botnets checking</BotChecker>
+<BotChecker_explain>Se abilitato, il servizio di reverse-proxy rileva i bot (Bing/MSN, Google, ChatGPT, Yahoo, ecc.) che si connettono al tuo sito web.[br]Questo motore di rilevamento consente di raccogliere statistiche sulla frequenza delle visite dei bot e di creare regole specifiche quando eseguono la scansione delle pagine.</BotChecker_explain>
 <bridge>Bridge</bridge>
 <bridge_network>Rete a ponte</bridge_network>
 <broken>Rotto</broken>
@@ -534,6 +540,7 @@ Questa opzione consente di avviare una console per cambiare la password di root.
 <BTMMPWarn>Ci sono %s tentativi di accesso falliti su questo server. Fare clic per visualizzare gli eventi.</BTMMPWarn>
 <build2>Costruire</build2>
 <building_schedule>Building the report</building_schedule>
+<busy>Occupato</busy>
 <bypass_proxy2>e desideri eliminare questa regola predefinita e forzare i browser a usare il proxy anche verso server interni, aggiungi una nuova regola con [b]0.0.0.0[/b] come sorgente.</bypass_proxy2>
 <bypass_proxy_internal>Ignora il proxy per le richieste web verso le reti interne quali [b]10.0.0.0/8, 172.16.0.0/12 e 192.168.0.0/16[/b]</bypass_proxy_internal>
 <bypass_webfilter_explain>Indica al proxy di non richiedere il motore di filtraggio per [b]%s[/b].</bypass_webfilter_explain>
@@ -799,8 +806,9 @@ Nega le richieste effettuate direttamente all'indirizzo IP o a domini sconosciut
 <default_service>Default service</default_service>
 <default_template>Modello predefinito</default_template>
 <defined_in_the_interface_option>Defined in the network interface parameters</defined_in_the_interface_option>
-<delayed_startup>Delayed startup</delayed_startup>
+<delayed_startup>Avvio ritardato</delayed_startup>
 <delayed_startup_network>Network configuration is executed in last position during server booting</delayed_startup_network>
+<delayed_startup_service_explain>Questa opzione si applica solo durante lâ%80%99avvio del server.[br]In alcuni casi, il servizio dovrebbe avviarsi solo quando lâ%80%99ambiente è completamente operativo; in caso contrario, potrebbe impiegare più tempo e rallentare lâ%80%99avvio complessivo.[br]Con questa opzione, il servizio si avvia solo dopo che il server è attivo da X secondi, consentendo di completare correttamente lâ%80%99inizializzazione.</delayed_startup_service_explain>
 <deleted_at>Deleted at</deleted_at>
 <delete_all_backups_ask>Rimuovere tutti i set di backup?</delete_all_backups_ask>
 <deny_uploads>Vietare il caricamento di</deny_uploads>
@@ -889,6 +897,7 @@ Se si verifica un'interruzione del collegamento Internet, il monitor riavvia il 
 In questo caso è normale.</dnscache_watchdog_explain>
 <dnsdist_dynblock>I &quot;blocchi dinamici&quot; sono regole di breve durata, inserite automaticamente in base a soglie configurabili e all'analisi del traffico ricevuto di recente, e rimosse automaticamente dopo un periodo di tempo configurabile.</dnsdist_dynblock>
 <dnsdist_fwxplain>Aggiungere l'indirizzo IP di origine alla regola del firewall %ruleid e all'oggetto %groupid.</dnsdist_fwxplain>
+<dnsdist_rules_explain>Le regole del firewall DNS si comportano come un firewall di rete.[br]Le regole includono oggetti che definiscono origini, destinazioni e tipi di query.[br]Quando câ%80%99è corrispondenza, vengono applicate le azioni di risposta DNS configurate.</dnsdist_rules_explain>
 <dnsdist_server_not_enabled>Per utilizzare questo oggetto, è necessario abilitare la modalità server del servizio di filtraggio o utilizzare un server di filtraggio remoto.[br]
 Vedere https://wiki.articatech.com/en/filtering-service/server-mode</dnsdist_server_not_enabled>
 <dnsdist_theshields_not_enabled>Per utilizzare questo oggetto, è necessario installare la funzione e controllare che la licenza di The Shields sia attivata.
@@ -1042,6 +1051,8 @@ http://monsite.com[br]
 https://monsite.com[br]
 https://1.2.3.4[monsite.net][br]</enforce_fetch_uri_explain>
 <enforce_https>Forzare gli HTTPs</enforce_https>
+<enforce_user_dns_ttl>Imponi TTL minimo (visibile al client)</enforce_user_dns_ttl>
+<enforce_user_dns_ttl_explain>Garantisce che ogni risposta DNS inviata ai client abbia un TTL di almeno [b]3600 secondi[/b], indipendentemente dal TTL a monte o da quanto è memorizzato nella cache.[br]Quando abilitato, il servizio DNS riscrive al volo i TTL bassi (sia risposte live sia hit di cache) cos%C3%AC i client manterranno i risultati per almeno unâ%80%99ora.[br][b]Note:[/b][br]Questo modifica solo il [i]TTL presentato ai client[/i]; non prolunga la conservazione nella cache interna a meno che la policy di cache lo consenta.[br]Se lâ%80%99upstream usa TTL molto brevi per cambi/rotazioni rapidi, il clamping pu%C3² ritardare la visibilità di tali cambiamenti lato client.</enforce_user_dns_ttl_explain>
 <ensure_redirects>Assicurare i reindirizzamenti</ensure_redirects>
 <entrypoint>Punto di ingresso</entrypoint>
 <error_443_without_certificate>Error, there is no sense to use the 443 in transparent mode without a certificate. Please, select a certificate</error_443_without_certificate>
@@ -1261,6 +1272,9 @@ Do you want to proceed ?</generate_support_tool_ask>
 <geoipdest>Destination IP Country</geoipdest>
 <geoipdest_text>Matches Country resolved IP location</geoipdest_text>
 <geoipsrc>Client IP Country</geoipsrc>
+<GEOIP_API>Servizio di geolocalizzazione via API</GEOIP_API>
+<GEOIP_API_EXPLAIN>Questa opzione consente di ottenere i dettagli di geolocalizzazione di un indirizzo specifico in formato JSON effettuando una richiesta web a %s/geo/query/1.2.3.4</GEOIP_API_EXPLAIN>
+<GEOIP_API_NO_FEATURE>La funzione â%80%9CGeoIPUpdateâ%80%9D non è installata.[br]%C3%88 necessaria per installare i database di geolocalizzazione richiesti da questa funzione.</GEOIP_API_NO_FEATURE>
 <geoip_location>Posizione GeoIP</geoip_location>
 <get_private_key>Get your Private Key</get_private_key>
 <get_token>Get your license token</get_token>
@@ -1344,6 +1358,7 @@ Puoi vedere nella lista delle risposte HTTP che se viene invocato un server time
 <hits>Hits</hits>
 <HOMEDIR_REQUIRED> The home folder is required.</HOMEDIR_REQUIRED>
 <HomeProduct>Home Product</HomeProduct>
+<homes>Directory personali</homes>
 <HoneyPotPorts_explain>Gli indirizzi IP nella whitelist bypassano completamente il sistema, il che significa che solo gli indirizzi sconosciuti vengono analizzati dal motore di rilevamento.[br] La funzionalità delle porte Honeypot è progettata per rilevare accessi o scansioni non autorizzate:[br] Se un indirizzo IP sconosciuto tenta di connettersi a una qualsiasi delle porte elencate in questa sezione, verrà automaticamente bloccato.[br] Ad esempio, se il demone monitora le porte 443, 80, 21 e 22 (SSH), e un indirizzo non identificato tenta di accedere alla porta 22 senza una ragione valida, verrà bloccato su tutte le porte monitorate â%80%94 comprese 443, 80, 21 e 22.</HoneyPotPorts_explain>
 <host bridge>Host bridge</host bridge>
 <HostbasedAuthentication>Autenticazione basata su host</HostbasedAuthentication>
@@ -1631,6 +1646,7 @@ Copy/paste the Private Key to this field and click on Next button.</link_this_se
 <load_balancer>Distribuzione del carico</load_balancer>
 <load_balance_dns_action>Bilanciare le richieste DNS a</load_balance_dns_action>
 <load_balance_dns_action_explain>Consente di inoltrare le richieste di risoluzione DNS a uno o più server DNS utilizzando il metodo del bilanciamento del carico.</load_balance_dns_action_explain>
+<load_databases_manually>Caricare manualmente le basi dati</load_databases_manually>
 <localvolumes>Volumi locali</localvolumes>
 <LOCAL_CACHE_DNS_INTERFACE>Questo servizio DNS è progettato per supportare solo le query DNS locali da questo server Artica.[br]
 Tuttavia, è possibile modificare il suo comportamento in modo che possa servire anche le query dai propri endpoint.[br]
@@ -1876,7 +1892,7 @@ Artica verifica sia la disponibilità del proprio sistema di instradamento delle
 <ngix_rwfl_break>Stop rules processing</ngix_rwfl_break>
 <ngix_rwfl_last>Start at the new calculated location</ngix_rwfl_last>
 <ngix_rwfl_permanent>Permanent redirection</ngix_rwfl_permanent>
-<ngix_rwfl_redirect>Temporary redirection</ngix_rwfl_redirect>
+<ngix_rwfl_redirect>Reindirizzamento temporaneo</ngix_rwfl_redirect>
 <NgxDavExtModule>Per usufruire della funzionalità WebDav, è necessario aggiornare il Reverse-Proxy almeno alla versione 1.21.4.3 compilata il 02 gennaio 2024.</NgxDavExtModule>
 <ngx_http_sub_module>Sostituzioni di testo al volo</ngx_http_sub_module>
 <nic_config_deny>The configuration of this network interface is not possible due to its hardware nature</nic_config_deny>
@@ -1893,6 +1909,7 @@ Artica verifica sia la disponibilità del proprio sistema di instradamento delle
 <notice>Notice</notice>
 <notices>Notices</notices>
 <notifications_explain>Il servizio di notifica di Artica consente di ricevere via e-mail messaggi critici o di avviso a uno o più destinatari.[br]Le regole consentono di creare filtri per inviare messaggi a destinatari specifici.</notifications_explain>
+<notify_acloud>Notificare al cloud ArticaTech</notify_acloud>
 <notify_categories>Notificare le categorie</notify_categories>
 <notif_netchange>La configurazione di rete è stata modificata, è necessario applicare le impostazioni di rete.</notif_netchange>
 <not_connected>Not connected</not_connected>
@@ -1917,6 +1934,7 @@ Se non è in grado di effettuare una richiesta web a questi siti, verrà emessa 
 <no_defined_optimization>Nessuna ottimizzazione definita</no_defined_optimization>
 <no_destination_as_been_defined>No destination as been defined</no_destination_as_been_defined>
 <no_domain_valid>Nessun dominio idoneo è stato trovato.[br]Verificare l'elenco dei domini e riprovare.</no_domain_valid>
+<no_fs_instances>Questa directory non è associata a unâ%80%99istanza del server file.[br]Non sarà disponibile in rete.</no_fs_instances>
 <no_http_even_lb>L'utilizzo della modalità HTTP è sconsigliato poiché questo protocollo non è più mantenuto.[br]
 Anche se si utilizza un reverse proxy o un bilanciatore di carico, si consiglia di utilizzare HTTPS.</no_http_even_lb>
 <no_internet_connection>It seems there no internet connection with your browser</no_internet_connection>
@@ -2120,6 +2138,9 @@ If enabled, the gateway will reject the connection without displaying the error 
 </RDPRejectErrors_explain>
 <realtime_requests_explain>Questa sezione consente di visualizzare l'accesso in tempo reale a Internet attraverso il servizio proxy.</realtime_requests_explain>
 <rebooting>Riavvio</rebooting>
+<rebuild_all_websites_and_restart>Ricostruisci tutti i siti e riavvia</rebuild_all_websites_and_restart>
+<rebuild_all_websites_and_restart_explain>Pulisce le configurazioni, ricostruisce i parametri di tutti i siti e riavvia il servizio di reverse-proxy.[br]
+[b]Si verificherà una breve interruzione del servizio (pochi secondi) al termine del processo.[/b]</rebuild_all_websites_and_restart_explain>
 <rebuild_all_websites_explain>Questa operazione ricostruisce la configurazione di tutti i tuoi siti web attivi in un'unica operazione.[br]
 Attenzione, questa operazione è ad alta intensità di risorse per la macchina.</rebuild_all_websites_explain>
 <recategorize_category_ask>This operation will submit all websites to reanalyze.[br]Depends on the number of websites, it should take time.[br]Do you want to carry out this operation ?</recategorize_category_ask>
@@ -2276,7 +2297,9 @@ Consente ad Artica di recuperare un file rpz da una risorsa http/https e di salv
 <rules_objects>Rules objects</rules_objects>
 <runningfor>Eseguito per</runningfor>
 <run_migration_tool>Run the migration tool</run_migration_tool>
+<run_vitrification>Eseguire lâ%80%99operazione di vetrificazione</run_vitrification>
 <rustdesk_change_key>La modifica della chiave pubblica disconnetterà tutte le postazioni di lavoro e sarà necessario fornire la nuova chiave agli utenti per ristabilire le comunicazioni.</rustdesk_change_key>
+<SAMBA_BTRFS_SHARES>Questa sezione consente di visualizzare le cartelle condivise disponibili sulla rete.[br]Ogni cartella pu%C3² essere condivisa tra più istanze di server file.</SAMBA_BTRFS_SHARES>
 <sandbox_connector>SandBox Connector</sandbox_connector>
 <sandbox_server_address>SandBox server address</sandbox_server_address>
 <SASLAUTHD>Demone di autenticazione SASL</SASLAUTHD>
@@ -2347,11 +2370,14 @@ Si noti che il servizio DNS non genererà una risposta una volta che la richiest
 <ShareContext>Inviare il contesto con gli avvisi alla console</ShareContext>
 <ShareCustomScenarios>Invio di avvisi alla console da scenari personalizzati</ShareCustomScenarios>
 <ShareManualDecisions>Invio di decisioni manuali alla console</ShareManualDecisions>
+<shares_center>Centro condivisioni</shares_center>
 <ShareTaintedScenarios>Invio di avvisi alla console da scenari modificati</ShareTaintedScenarios>
 <shell>Interprete dei comandi</shell>
 <shield_migration>Eseguire la migrazione alla nuova generazione di Shields</shield_migration>
 <show>Show</show>
 <signal processing controller>Controller di elaborazione del segnale</signal processing controller>
+<signed_js_browser_challenge>Browser JavaScript Firmata</signed_js_browser_challenge>
+<signed_js_browser_challenge_explain>Applica un controllo leggero e invisibile per confermare che il client sia un vero browser web utilizzato da un essere umano.[br]Quando è abilitato, i nuovi visitatori eseguono brevemente un piccolo task JS (WebCrypto + sondaggio DOM). Se ha successo, il server emette un cookie firmato a breve scadenza e lâ%80%99utente continua senza captcha.[br]Gli script headless e i bot di base di solito falliscono o vengono limitati.[br][b]Note:[/b] è possibile escludere risorse statiche e endpoint di monitoraggio; nessun dato personale viene raccolto; funziona in modo trasparente per gli utenti legittimi.</signed_js_browser_challenge_explain>
 <simple_proxy_and_webfiltering>Metodo semplificato per ottenere un servizio proxy e filtraggio web</simple_proxy_and_webfiltering>
 <simple_proxy_and_webfiltering_explain>Si vuole semplificare l'interfaccia per produrre un proxy web potente e un filtraggio Internet che soddisfi le esigenze più dichiarate dei nostri clienti.</simple_proxy_and_webfiltering_explain>
 <simple_proxy_and_webfiltering_short>Proxy web, filtraggio Internet e Active Directory</simple_proxy_and_webfiltering_short>
@@ -2476,6 +2502,7 @@ Questa opzione è globale. Per ovviare a questa possibilità e correggere questa
 Anche se pu%C3² funzionare, pu%C3² compromettere l'interpretazione delle impostazioni.</ssl_on_80_port>
 <ssl_stapling_verify>Controlla la risposta OCSP ottenuta</ssl_stapling_verify>
 <ssl_stapling_verify_explain>Indica al reverse-proxy di controllare la risposta OCSP che viene allegata alla transazione SSL/TLS. [br]Questo controllo assicura che la risposta OCSP sia valida e affidabile, fornendo un ulteriore livello di sicurezza.</ssl_stapling_verify_explain>
+<standalone_server>Server autonomo</standalone_server>
 <started>Iniziato</started>
 <start_upgrade_procedure>Launch upgrade process</start_upgrade_procedure>
 <StatisticsRetentionPeriod>Periodo di conservazione delle statistiche</StatisticsRetentionPeriod>
@@ -2606,7 +2633,7 @@ Threats Shield pu%C3² prevenire gli attacchi di [b]phishing[/b] bloccando i vos
 <traffic_inspection>Ispezione del traffico</traffic_inspection>
 <traffic_inspection_explain>L'ispezione del traffico è un processo di rete e monitoraggio che prevede l'analisi e il monitoraggio dei pacchetti di dati mentre viaggiano attraverso la rete.[br]Viene utilizzata per garantire la sicurezza, ottimizzare le prestazioni e applicare politiche esaminando il contenuto, l'origine e la destinazione del traffico di rete.</traffic_inspection_explain>
 <traffic_policing>Traffic policing</traffic_policing>
-<traffic_shaping>Traffic shaping</traffic_shaping>
+<traffic_shaping>Limitazione del traffico</traffic_shaping>
 <transaction_rate>Tasso di transazioni</transaction_rate>
 <transport_interface>Transport network interface</transport_interface>
 <trial_mode_reset_explain>Se si dispone già di una licenza Enterprise e si desidera applicarla prima della fine del periodo di prova, ripristinare la licenza per registrare la licenza Enterprise.</trial_mode_reset_explain>
@@ -2643,6 +2670,7 @@ In questo caso, il riavvio del servizio di cache DNS non cancellerà l'intero da
 <ufdb_localldap_3>Choose on the drop-down list the LDAP group that is located on the defined remote LDAP server</ufdb_localldap_3>
 <ufdb_native_client_explain>Il client nativo è un connettore proxy di memoria più leggero, destinato al filtraggio del Web.[br]
 Se è attivo, le funzioni avanzate come i criteri del computer, HotSpot, il blocco delle pagine in base a regole e categorie non saranno disponibili.</ufdb_native_client_explain>
+<unassign>Rimuovi assegnazione</unassign>
 <unblock>Unblock</unblock>
 <unblock_list_explain>In questa sezione sono elencati tutti i siti bloccati e rilasciati dagli amministratori e/o dagli utenti tramite il servizio web delle pagine di errore.</unblock_list_explain>
 <UNBLOCK_PARAGRAPH>Se ci si oppone a questa operazione di blocco, si pu%C3² comunque fare clic sul pulsante di sblocco.[br]
@@ -2736,6 +2764,7 @@ L'uso di questa funzione disabilita le altre caratteristiche di questa sezione.<
 <useraccountcontrol_script>The logon script will be run</useraccountcontrol_script>
 <UserAgentInLogs>Includere gli User-Agent HTTP negli eventi in tempo reale</UserAgentInLogs>
 <userprincipalname>Nome principale utente</userprincipalname>
+<user_events>Eventi utente</user_events>
 <use_backup_server>Use backup server</use_backup_server>
 <use_captcha>Utilizzare la verifica captcha</use_captcha>
 <use_custom_form>Utilizzo di un modulo personalizzato</use_custom_form>
@@ -2763,6 +2792,8 @@ Il filtro Artica PCAP è progettato per informare il firewall in tempo reale sol
 <use_proxy_settings>Use the defined proxy parameters</use_proxy_settings>
 <use_reput_service>Utilizzo di un servizio di reputazione</use_reput_service>
 <use_reverse>Utilizza il reverse proxy</use_reverse>
+<use_smtp_queue>Utilizzare la coda SMTP</use_smtp_queue>
+<use_smtp_queue_notifs_explain>Invia i messaggi in modo asincrono (differito).[br]Ci%C3² evita che il processo si blocchi durante lâ%80%99invio, consentendo di proseguire con le fasi successive.[br]Uno â%80%9Csweeperâ%80%9D in background svuota periodicamente la coda.</use_smtp_queue_notifs_explain>
 <use_socks5_proxy>Utilizzare Socks5 Proxy come backend</use_socks5_proxy>
 <use_tcp>Usa TCP</use_tcp>
 <use_the_wizard>Utilizzare la procedura guidata</use_the_wizard>
@@ -2787,8 +2818,11 @@ Questi dati saranno utilizzati per personalizzare l'interfaccia web, le pagine w
 It allows to ask browsers for a silent NTLM authentication.[br]
 The only difference with NTLM authentication is that the connection to an Active Directory server is not required.[br]Indeed, the proxy is a liar because it will accept any credentials sent by the clients. Whether they are connected to an Active Directory domain or not
 </virtual_ntlm_explain>
+<visible_on_the_network>Visibile in rete</visible_on_the_network>
 <visit_youtube>[b]Visita il nostro canale YouTube[/b][br]
 Visitate il nostro canale, dove potrete vedere molti video sull'Artica.[br] Vi consigliamo di iscrivervi per non perdere nessuno dei nostri video.</visit_youtube>
+<vitrification>Vetrificazione</vitrification>
+<vitrification_explain>La vetrificazione crea unâ%80%99istantanea statica del tuo sito web.[br]La modalità statica garantisce prestazioni ottimali riducendo drasticamente le risorse di runtime necessarie per generare le pagine (framework, database, ecc.).[br]Una volta abilitata, Articatech Cloud è autorizzato a eseguire il crawl del sito e creare una replica locale.[br]Quando la copia locale è disponibile sul server Artica, puoi passare dinamicamente tra modalità dinamica e statica in qualsiasi momento.</vitrification_explain>
 <voucher_not_enabled>La parte di autenticazione del biglietto non è attivata, gli identificatori aggiunti qui non avranno alcun effetto.</voucher_not_enabled>
 <vpn_address>Your VPN address</vpn_address>
 <vpn_add_routes>Add here networks in CDIR format or IP addresses (separated by a carriage return) that will be added in routing rules after establishing the VPN connection.
@@ -2800,6 +2834,7 @@ Visitate il nostro canale, dove potrete vedere molti video sull'Artica.[br] Vi c
 <wafwhite>Disattivare l'elaborazione del Web Application Firewall</wafwhite>
 <wafwhitepathoff>Il Web Application Firewall è inattivo per questo percorso.</wafwhitepathoff>
 <wafwhitepathon>Il Web Application Firewall è attivo</wafwhitepathon>
+<wait_package_cloud>In attesa del pacchetto dal cloud Articatechâ%80%A6</wait_package_cloud>
 <WAIT_REDIRECT_TEXT>Attendete, sarete reindirizzati al sito web richiesto</WAIT_REDIRECT_TEXT>
 <wanproxy_method_explain>%C3%88 necessario indicare il metodo del servizio, ossia se questo servizio agisce come compressore padre o come compressore figlio.</wanproxy_method_explain>
 <warning_deny_for_all_users2>Se si desidera bloccare i siti web per utenti o gruppi di utenti, utilizzare il servizio %s.</warning_deny_for_all_users2>
@@ -2843,6 +2878,7 @@ L'obiettivo è proteggere la rete aziendale.</web_browsing_protection_explain>
 <WEB_HTML_SERVICE>Static HTML site</WEB_HTML_SERVICE>
 <web_page_error_request_explain>Questa sezione elenca tutti i ticket creati dagli utenti attraverso la pagina degli errori.[br]
 Fare clic sulla casella di controllo Accetta per accettare la richiesta o eliminarla.</web_page_error_request_explain>
+<web_page_error_usrs_evnts>Questa sezione elenca gli eventi di blocco generati dalla pagina di errore quando lâ%80%99opzione di notifica è abilitata nelle regole della pagina di errore.</web_page_error_usrs_evnts>
 <web_rules>Regole del sito web</web_rules>
 <WELCOME_ARTICA_EVAL>Benvenuti sul vostro server Artica.[br]
 Il vostro server ha una [b]licenza Enterprise di 30 giorni[/b].[br]

@@ -24,7 +24,7 @@
 <first_settings>First Settings</first_settings>
 <first_settings_text>You have just installed artica, start here in order to create first settings...</first_settings_text>
 <install_applis>Artica applications</install_applis>
-<install_applis_text>Get your Artica system updated and install new Artica services on your system</install_applis_text>
+<install_applis_text>Atualize seu sistema Artica e instale novos serviços Artica neste host.</install_applis_text>
 <isp_account>Your ISP username</isp_account>
 <isp_address_mail>Your ISP mail address</isp_address_mail>
 <isp_password>Your ISP password</isp_password>
