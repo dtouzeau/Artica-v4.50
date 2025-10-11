@@ -19,70 +19,71 @@ CREDITS
 These products are installed/Managed by artica.
 Read all licenses term and use it according licenses 
 
-Core Products
+## Core Products
 ******************************************
-Postfix                     : http://www.postfix.org
-Dotclear                    : http://www.dotclear.org
-amavis                      : http://www.amavis.org
-dspam                       : http://dspam.nuclearelephant.com
-samba                       : http://www.samba.org
-GeoIP                       : http://www.maxmind.com
-MIT Kerberos                : http://web.mit.edu/kerberos/www
-Heimdal                     : http://www.pdc.kth.se/heimdal
-VAS                         : http://www.quest.com
-XML::NamespaceSupport       : http://www.megginson.com/SAX/
-Perl::LDAP                  : http://ldap.perl.org
-Config::IniFiles            : http://module-build.sourceforge.net/META-spec-v1.2.html
-mailsync                    : http://mailsync.sourceforge.net
-MySQL                       : http://www.mysql.com
-SMARTSIEVE SCRIPT MANAGER   : http://smartsieve.sourceforge.net
-RoundCube Webmail           : http://roundcube.net
-SMB Audit                   : http://smbdaudit.sourceforge.net
-phpsysinfo                  : http://phpsysinfo.sourceforge.net/
-Isoqlog                     : http://www.enderunix.org
-AtMail Open                 : http://atmail.org
-collectl                    : http://collectl.sourceforge.net
-Kaspersky Anti-spam         : http://www.kaspersky.com/kaspersky_anti-spam
-Kaspersky For SQUID         : http://www.kaspersky.com/support/squid 
-Kaspersky Anti-Virus        : http://www.kaspersky.com/anti-virus_linux_mail_server 
-Bogofilter                  : http://bogofilter.sourceforge.net
-SPFMilter                   : http://www.acme.com/software/spfmilter
-Milter-greylist             : http://hcpnet.free.fr/milter-greylist/#req
-spamassassin                : http://spamassassin.apache.org
-MIMEDefang                  : http://www.mimedefang.org
-Clam Antivirus              : http://www.clamav.net
-OpenLDAP                    : http://www.openldap.org
-SQLite library              : http://www.sqlite.org
-Cyrus-imap                  : http://cyrusimap.web.cmu.edu
-Fetchmail                   : http://sourceforge.net/projects/fetchmail
-DnsMasq                     : http://thekelleys.org.uk/dnsmasq/doc.html
-Mailman                     : http://www.gnu.org/software/mailman/index.html
-Yorel script                : http://stats.yorhel.nl
-QueueGraph                  : http://www.arschkrebs.de/postfix/queuegraph
-MailGraph                   : http://mailgraph.schweikert.ch
-AWSTats                     : http://awstats.sourceforge.net
-renattach                   : http://www.pc-tools.net/unix/renattach
-NTP                         : http://www.ntp.org
-pure-ftpd                   : http://www.pureftpd.org/project/pure-ftpd 				
-Squid                       : http://www.squid-cache.org
-DansGuardian                : http://dansguardian.org
-Bind                        : http://www.isc.org/index.pl?/sw/bind/index.php
-OBM                         : http://pro.obm.org/spip.php?article4
-sanesecurity                : http://www.sanesecurity.com
-gnarwl						: http://www.onyxbits.de/gnarwl/
-Web Interfaces API(s)
-*********************************************
-PHP                         : http://www.php.net
-Ajax yahoo                  : http://developer.yahoo.net/yui
-XHRConnection               : Thanh Nguyen, http://www.sutekidane.net
-Mootools                    : http://mad4milk.net
-dhtmlxCalendar              : http://www.dhtmlx.com/docs/products/dhtmlxCalendar/index.shtml
-JS TafelTree                : http://tafel.developpez.com/site/lang/en/doc.php
-Script Aculous              : http://script.aculo.us/
-TinyMCE                     : http://tinymce.moxiecode.com/
-class.tcpip.inc             : Ashar Voultoiz" <hashar@altern.org>
-Bs_IniHandler class         : http://www.blueshoes.org/en/framework/util/ini_handler/
-jpgraph                     : Aditus Consulting, http://www.aditus.nu/jpgraph
-sieve-php					: https://sourceforge.net/project/showfiles.php?group_id=35727
-=======
+* Postfix                     : http://www.postfix.org
+* Dotclear                    : http://www.dotclear.org
+* amavis                      : http://www.amavis.org
+* dspam                       : http://dspam.nuclearelephant.com
+* samba                       : http://www.samba.org
+* GeoIP                       : http://www.maxmind.com
+* MIT Kerberos                : http://web.mit.edu/kerberos/www
+* Heimdal                     : http://www.pdc.kth.se/heimdal
+* VAS                         : http://www.quest.com
+* XML::NamespaceSupport       : http://www.megginson.com/SAX/
+* Perl::LDAP                  : http://ldap.perl.org
+* Config::IniFiles            : http://module-build.sourceforge.net/META-spec-v1.2.html
+* mailsync                    : http://mailsync.sourceforge.net
+* MySQL                       : http://www.mysql.com
+* SMARTSIEVE SCRIPT MANAGER   : http://smartsieve.sourceforge.net
+* RoundCube Webmail           : http://roundcube.net
+* SMB Audit                   : http://smbdaudit.sourceforge.net
+* phpsysinfo                  : http://phpsysinfo.sourceforge.net/
+* Isoqlog                     : http://www.enderunix.org
+* AtMail Open                 : http://atmail.org
+* collectl                    : http://collectl.sourceforge.net
+* Kaspersky Anti-spam         : http://www.kaspersky.com/kaspersky_anti-spam
+* Kaspersky For SQUID         : http://www.kaspersky.com/support/squid 
+* Kaspersky Anti-Virus        : http://www.kaspersky.com/anti-virus_linux_mail_server 
+* Bogofilter                  : http://bogofilter.sourceforge.net
+* SPFMilter                   : http://www.acme.com/software/spfmilter
+* Milter-greylist             : http://hcpnet.free.fr/milter-greylist/#req
+* spamassassin                : http://spamassassin.apache.org
+* MIMEDefang                  : http://www.mimedefang.org
+* Clam Antivirus              : http://www.clamav.net
+* OpenLDAP                    : http://www.openldap.org
+* SQLite library              : http://www.sqlite.org
+* Cyrus-imap                  : http://cyrusimap.web.cmu.edu
+* Fetchmail                   : http://sourceforge.net/projects/fetchmail
+* DnsMasq                     : http://thekelleys.org.uk/dnsmasq/doc.html
+* Mailman                     : http://www.gnu.org/software/mailman/index.html
+* Yorel script                : http://stats.yorhel.nl
+* QueueGraph                  : http://www.arschkrebs.de/postfix/queuegraph
+* MailGraph                   : http://mailgraph.schweikert.ch
+* AWSTats                     : http://awstats.sourceforge.net
+* renattach                   : http://www.pc-tools.net/unix/renattach
+* NTP                         : http://www.ntp.org
+* pure-ftpd                   : http://www.pureftpd.org/project/pure-ftpd 			
+* Squid                       : http://www.squid-cache.org
+* DansGuardian                : http://dansguardian.org
+* Bind                        : http://www.isc.org/index.pl?/sw/bind/index.php
+* OBM                         : http://pro.obm.org/spip.php?article4
+* sanesecurity                : http://www.sanesecurity.com
+* gnarwl						: http://www.onyxbits.de/gnarwl/
+
+## Web Interfaces API(s)
+
+* PHP                         : http://www.php.net
+* Ajax yahoo                  : http://developer.yahoo.net/yui
+* XHRConnection               : Thanh Nguyen, http://www.sutekidane.net
+* Mootools                    : http://mad4milk.net
+* dhtmlxCalendar              : http://www.dhtmlx.com/docs/products/dhtmlxCalendar/index.shtml
+* JS TafelTree                : http://tafel.developpez.com/site/lang/en/doc.php
+* Script Aculous              : http://script.aculo.us/
+* TinyMCE                     : http://tinymce.moxiecode.com/
+* class.tcpip.inc             : Ashar Voultoiz" <hashar@altern.org>
+* Bs_IniHandler class         : http://www.blueshoes.org/en/framework/util/ini_handler/
+* jpgraph                     : Aditus Consulting, http://www.aditus.nu/jpgraph
+* sieve-php					: https://sourceforge.net/project/showfiles.php?group_id=35727
+
 
