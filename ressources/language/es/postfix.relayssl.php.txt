@@ -1,0 +1,44 @@
+<apply>Aplicar</apply>
+<apply_text>Submit form and make your settings in production mode</apply_text>
+<authentication>Autenticaci%C3%B3n</authentication>
+<authentication_text>Indique aqu%C3%AD el nombre de usuario SMTP y la
+contrase%C3%B1a utilizados por postfix para permitir el env%C3%ADo de correo a través de su servidor remoto
+[br]Tienes 2 formas de ayudar a postfix a autenticarse en el servidor de destino:[ul]
+[li]autenticaci%C3%B3n dependiente del remitente: Si se activa, cada usuario debe establecer su propio nombre de usuario y contrase%C3%B1a[/li]
+[li]Autenticaci%C3%B3n %C3%BAnica: Si la autenticaci%C3%B3n dependiente del remitente est%C3¡ deshabilitada, s%C3%B3lo se utilizar%C3¡ un nombre de usuario y una contrase%C3%B1a[/li].
+[/ul]</authentication_text>
+<enable_stunnel>Enable sTunnel feature</enable_stunnel>
+<enable_stunnel_text>By enabling this feature you will turn on the sTunnel service and postfix will use sTunnel in order to be connected to the target relay host</enable_stunnel_text>
+<err_sasl_saveldap>Error saving SASL authentication in LDAP database</err_sasl_saveldap>
+<err_stunnel_inst>You must install stunnel4 before save settings</err_stunnel_inst>
+<err_stunnel_saveldap>Error saving stunnel4 settings in LDAP server, please investigate (forum)</err_stunnel_saveldap>
+<missing_in_form>Some fields are empty in the form, please fill all required fields</missing_in_form>
+<ok_sasl_saveldap>Success saving SASL authentication in LDAP database</ok_sasl_saveldap>
+<scan_form>Analyze your form</scan_form>
+<sender_authentication_maps>Per-sender authentication table</sender_authentication_maps>
+<sender_authentication_maps_text>The email is not the local email address of the user but the real eMail that postfix send to the remote server.[br]
+Use the "rewriting sent address" address (if you use it) in this form</sender_authentication_maps_text>
+<sender_email>Sender eMail address</sender_email>
+<single_auth>Single authentication</single_auth>
+<smtps_relayhost>SMTPS Authenticated relay host</smtps_relayhost>
+<smtps_relayhost_text>Esta secci%C3%B3n le ayuda a habilitar un t%C3%BAnel SSL
+para permitir que Postfix env%C3%ADe todo el correo saliente a un servidor SMTPS con sistema de autenticaci%C3%B3n.[br]
+El t%C3%BAnel SSL es gestionado por la aplicaci%C3%B3n de c%C3%B3digo abierto &quot;stunnel&quot;[br].
+Postfix se encargar%C3¡ de enviar el correo con nombre de usuario/contrase%C3%B1a.</smtps_relayhost_text>
+<smtp_sender_dependent_authentication_tooltip>Click on it to fill the table of per-sender authentication</smtp_sender_dependent_authentication_tooltip>
+<step_sasl>Saving postfix username and password</step_sasl>
+<step_sasl_enable>Habilitar las funciones SASL de Postfix</step_sasl_enable>
+<step_sasl_enabled>Enable Postfix SASL features done..</step_sasl_enabled>
+<step_save_postfix>Aplicar la configuraci%C3%B3n de Postfix</step_save_postfix>
+<step_save_stunnel>Apply stunnel4 settings to the server</step_save_stunnel>
+<step_stunnel>Saving parameters for sTunnel4</step_stunnel>
+<step_stunnel_ok>Success storing settings in LDAP database</step_stunnel_ok>
+<stunnel4_is_disabled>The feature is marked has disabled skip operation number:</stunnel4_is_disabled>
+<stunnelport>Local SSL port</stunnelport>
+<stunnelport_text>Define here the local port that stunnel will be listen.
+[br]Postfix will use this local port in order to connect to your remote SSL server</stunnelport_text>
+<stunnel_not_installed>[H5r]Stunnel4 is not installed ![/H5r][b12]
+You must install stunnel4 before save settings.[br]Stunnel is the main service that help create an SSL tunnel to your target server[/b12]
+</stunnel_not_installed>
+<yport>SMTPS Listen port</yport>
+<yserver>Your relay address</yserver>

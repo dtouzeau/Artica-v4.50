@@ -1,0 +1,11 @@
+<changeClock>To Change the clock, set the time the time exactly as shown below</changeClock>
+<change_clock_tooltip>If you want to change the system clock[br]Click on this Link..</change_clock_tooltip>
+<clocks>Clocks</clocks>
+<clocks_text>O seu computador tem dois rel%C3%B3gios; um com bateria que est%C3¡ sempre a funcionar como &quot;hardware&quot;, &quot;BIOS&quot;, ou &quot;CMOS&quot;,
+e outro que é mantido pelo sistema operativo actualmente em funcionamento no seu computador como o ``sistema'' rel%C3%B3gio [br].
+O rel%C3%B3gio de hardware é geralmente utilizado apenas para acertar o rel%C3%B3gio do sistema quando o seu sistema operativo arranca,
+e depois, a partir desse ponto até reiniciar ou desligar o seu sistema, o rel%C3%B3gio do sistema é o utilizado para manter o registo das horas.</clocks_text>
+<convert_clock_tooltip>Set the hardware clock from the system clock</convert_clock_tooltip>
+<hardware_clock>Hardware clock</hardware_clock>
+<system_clock>Rel%C3%B3gio do sistema</system_clock>
+<wrong_date>The date given didn't match the requested format</wrong_date>

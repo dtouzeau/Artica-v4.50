@@ -1,0 +1,4 @@
+<sender_user_explain>Dieser Bereich dient dazu, Ihre urspr%C3%BCngliche Adresse in eine neue umzuwandeln, wenn Nachrichten %C3%BCber das Internet verschickt werden[br].
+Hier k%C3%B6nnen Sie einen entfernten Mailserver angeben, der f%C3%BCr die %C3%9Cbertragung Ihrer Nachrichten %C3%BCber das Internet zust%C3%A4ndig ist.
+Sie k%C3%B6nnen die Authentifizierungseinstellungen angeben, wenn der entfernte Server einen Benutzernamen und ein Passwort ben%C3%B6tigt, um die Nachrichten zu %C3%BCbertragen.</sender_user_explain>
+<smtp_internet_relay_option>SMTP relay parameters</smtp_internet_relay_option>

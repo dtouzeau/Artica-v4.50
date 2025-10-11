@@ -1,0 +1,2 @@
+<hourly>St%C3%BCndlich</hourly>
+<statistics>Statistik</statistics>

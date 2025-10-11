@@ -1,0 +1,66 @@
+<active_tls>Aplicar la configuraci%C3%B3n...</active_tls>
+<CertificateMaxDays>Expira en</CertificateMaxDays>
+<certificate_infos>SSL Certificate informations</certificate_infos>
+<client_certificate_fingerprints>Client-certificate fingerprints</client_certificate_fingerprints>
+<client_certificate_fingerprints_text>Lista de huellas digitales de certificados de clientes SMTP remotos para los que el servidor SMTP de Postfix
+SMTP permitir%C3¡ el acceso con la funci%C3%B3n [b]permit_tls_clientcerts[/b] (ver Security restrictions classes artica feature).[br]
+El algoritmo de digesti%C3%B3n de huellas digitales es configurable a través del par%C3¡metro [b]smtpd_tls_fingerprint_digest[/b] (codificado como md5 antes de la versi%C3%B3n 2.5 de Postfix).[br]
+Las tablas de b%C3%BAsqueda de Postfix est%C3¡n en forma de pares (clave, valor)[br].
+Dado que s%C3%B3lo necesitamos la clave, el valor puede ser elegido libremente, por ejemplo,[blk]
+[li]D7:04:2F:A7:0B:8C:A5:21:FA:31:77:E1:41:8A:EE:80 lutzpc.at.hom[/li]
+[li]5B:57:FE:31:CA:69:3D:FB:9E:99:22:9D:2B:8B:89:73 *.myjob.com[/li]
+[li]42:4A:62:71:DF:FC:3D:47:FA:27:77:D0:BB:46:8B:05 *[/li]
+[/blk]</client_certificate_fingerprints_text>
+<download_certificates>Descarga de certificados</download_certificates>
+<download_windows_certificate>Download Outlook certificate</download_windows_certificate>
+<enable_tls_postfix>Enable TLS in postfix...</enable_tls_postfix>
+<encrypt_explain>announce STARTTLS support to SMTP clients, and require that clients use TLS encryption.[br]
+According to RFC 2487 this MUST NOT be applied in case of a publicly-referenced SMTP server.[br]
+Instead, this option should be used only on dedicated servers.</encrypt_explain>
+<fingerprint>Fingerprint</fingerprint>
+<generate_certificate>Generar un nuevo certificado</generate_certificate>
+<generate_cert_ok>Generating certificate order OK, testing it</generate_cert_ok>
+<host>Host</host>
+<may_explain>Announce STARTTLS support to SMTP clients, but do not require that clients use TLS encryption</may_explain>
+<none_explain>No se utilizar%C3¡ TLS</none_explain>
+<restarting_postfix>Aplicar la configuraci%C3%B3n a postfix y reiniciarlo OK</restarting_postfix>
+<save_cert_ok>Saving certificate into disk OK</save_cert_ok>
+<smtpd_tls_ask_ccert>Pedir a un cliente SMTP remoto un certificado de cliente</smtpd_tls_ask_ccert>
+<smtpd_tls_ask_ccert_text>Esta informaci%C3%B3n es necesaria para la retransmisi%C3%B3n de correo basada en certificados con, por ejemplo, la funci%C3%B3n &quot;permit tls client certs&quot;[br].
+Algunos clientes como Netscape se quejan si no hay ning%C3%BAn certificado disponible (para la lista de CAs en $smtpd_tls_CAfile) o
+ofrecer%C3¡n m%C3%BAltiples certificados de cliente para elegir.[br]
+Esto puede ser molesto, por lo que esta opci%C3%B3n est%C3¡ &quot;desactivada&quot; por defecto.</smtpd_tls_ask_ccert_text>
+<smtpd_tls_auth_only>Mandatory TLS communications</smtpd_tls_auth_only>
+<smtpd_tls_auth_only_text>When TLS encryption is optional in the Postfix SMTP server,
+do not announce or accept SASL authentication over unencrypted connections</smtpd_tls_auth_only_text>
+<smtpd_tls_received_header>Incluir informaci%C3%B3n sobre el protocolo</smtpd_tls_received_header>
+<smtpd_tls_received_header_text>Solicita que el servidor SMTP Postfix produzca [br]
+[b]Recibido: cabeceras de mensaje[/b] que incluyen informaci%C3%B3n sobre el protocolo y el cifrado utilizado, as%C3%AD como el
+nombre com%C3%BAn del cliente y el nombre com%C3%BAn del emisor del certificado del cliente[br].
+Esto est%C3¡ deshabilitado por defecto, ya que la informaci%C3%B3n puede ser modificada en tr%C3¡nsito por otros servidores de correo.[br]
+S%C3%B3lo se puede confiar en la informaci%C3%B3n registrada por el destino final.</smtpd_tls_received_header_text>
+<smtpd_tls_req_ccert>Certificado de cliente obligatorio</smtpd_tls_req_ccert>
+<smtpd_tls_req_ccert_text>Con el cifrado TLS obligatorio, se requiere un certificado de cliente SMTP remoto de confianza para permitir que se realicen las conexiones TLS[br].
+Cuando el cifrado TLS es opcional, esta configuraci%C3%B3n se ignora y se escribe una advertencia en el registro de correo.</smtpd_tls_req_ccert_text>
+<smtp_tls_mandatory_protocols>Mandatory protocols</smtp_tls_mandatory_protocols>
+<smtp_tls_mandatory_protocols_text>Lista de protocolos SSL/TLS que el cliente SMTP de Postfix utilizar%C3¡ con cifrado TLS obligatorio.[br]
+los valores est%C3¡n separados por espacios en blanco, comas o dos puntos.[br]
+En el atributo &quot;protocols&quot; de la tabla de pol%C3%ADticas (ver smtp tls policy maps) el %C3%BAnico separador v%C3¡lido son los dos puntos.[br]
+[b]Un valor vac%C3%ADo significa que se permiten todos los protocolos.[/b][br]
+Los nombres de protocolo v%C3¡lidos, son [b]&quot;SSLv2&quot;, &quot;SSLv3&quot; y &quot;TLSv1&quot;[/b].
+Con Postfix hasta la versi%C3%B3n 2.5, la sintaxis del par%C3¡metro se expande para soportar exclusiones de protocolo.[br]
+Uno puede ahora excluir expl%C3%ADcitamente SSLv2 poniendo [b]&quot;!SSLv2&quot;[/b].[br]
+Para excluir tanto SSLv2 como SSLv3, establezca [b]!SSLv2, !SSLv3&quot;[/b].[br]
+Todav%C3%ADa se admite la enumeraci%C3%B3n de los protocolos a incluir, en lugar de los protocolos a excluir; utilice la forma que le resulte m%C3¡s intuitiva.[br]
+Dado que la versi%C3%B3n 2 de SSL tiene debilidades de protocolo conocidas y ahora est%C3¡ obsoleta, la configuraci%C3%B3n por defecto excluye &quot;SSLv2&quot;[br].
+Esto significa que, por defecto, la versi%C3%B3n 2 de SSL no se utilizar%C3¡ en el nivel de seguridad &quot;encrypt&quot; y superior.[br]
+Consulte la documentaci%C3%B3n del par%C3¡metro smtp_tls_policy_maps y TLS_README para obtener m%C3¡s informaci%C3%B3n sobre los niveles de seguridad.[br]</smtp_tls_mandatory_protocols_text>
+<test_cert_failed>Failed testing certificate</test_cert_failed>
+<test_cert_ok>Testing certificate OK</test_cert_ok>
+<test_TLS>Test Postfix TLS..</test_TLS>
+<tls_encrypt>Mandatory TLS encryption</tls_encrypt>
+<tls_label>Nivel de seguridad SMTP TLS</tls_label>
+<tls_may>Opportunistic TLS</tls_may>
+<tls_settings>Generate & advanced settings</tls_settings>
+<you_can_close>You can close this windows now all operations has been executed</you_can_close>
+<_explain>TLS will not be used</_explain>

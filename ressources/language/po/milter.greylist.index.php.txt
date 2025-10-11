@@ -1,0 +1,67 @@
+<about>milter-greylist &eacute; um milter stand-alone escrito em C que implementa o m&eacute;todo de filtragem greylist, como proposto por Evan Harris. [br]
+A lista Grey(cinzenta) funciona assumindo que, ao contrario do legitmo MTA, os motores de spam n&atilde;o v&atilde;o tentar reenviar o seu lixo eletr&ocirc;nico num erro tempor&aacute;rio. [br]
+O filtro ir&aacute; sempre rejeitar correio temporariamente numa primeira tentativa, ent&atilde;o aceit&aacute;-la depois que tenha decorrido algum tempo.</about>
+<acl>Lista de acesso</acl>
+<acl_text>A principal utilizaç%C3£o desta funcionalidade é a criaç%C3£o de uma lista branca de milter-greylist [br].[br] Também oferece uma funcionalidade %C3%BAtil de lista negra [br].
+As listas de acesso (ACL) s%C3£o utilizadas para o efeito.[br] ACL permitem ao administrador especificar condiç%C3µes complexas no IP do remetente, endereço DNS do remetente,
+endereço electr%C3%B3nico do remetente, e endereço electr%C3%B3nico do destinat%C3¡rio [br].
+Se o apoio ao DNSRBL foi incorporado, é mesmo poss%C3%ADvel utilizar o DNSRBL no ACL.</acl_text>
+<addr>Endereço de IP</addr>
+<addr_text>Esta cl%C3¡usula é utilizada para especificar um bloco de rede de endereços IP de origem [br].
+A sintaxe é um endereço IP seguido por uma barra e uma m%C3¡scara de rede CIDR [br].
+Aqui est%C3¡ um exemplo:
+[ul]
+[li]127.0.0.0.0/8[/li]
+[li]192.168.3.0/24[/li]
+[li]::1[/li]
+[/ul]
+Se a m%C3¡scara de rede for ommitted, /32 é assumido para um endereço IPv4 e /128 é assumido para um endereço IPv6[br].
+Deve pelo menos fazer uma lista branca do localhost (127.0.0.1/8), e se tiver alguns clientes utilizadores ligados à m%C3¡quina,
+deve fazer uma lista branca dos endereços de onde se ligam se n%C3£o quiser que recebam mensagens de erro ao enviar correio electr%C3%B3nico.</addr_text>
+<add_acl>Novo ACL</add_acl>
+<add_dnsrbl>Add new DNSRBL Class</add_dnsrbl>
+<autowhite>auto-whitelisting</autowhite>
+<Autowhitelistedtuples>Auto-whitelisted tuples</Autowhitelistedtuples>
+<autowhite_text>How long does auto-whitelisting last (set it to 0 to disable auto-whitelisting).</autowhite_text>
+<back_to_default>Back to default DNSRBL Lists[br]This will delete all your settings !</back_to_default>
+<blacklist>Blacklist</blacklist>
+<body>Corpo</body>
+<body_text>String or regular expression searched in message body
+Example of content filtering for fighting image SPAM
+src[:blank:]*=(3D)?[:blank:]*["']?[:blank:]*cid:
+</body_text>
+<class_name>Class name</class_name>
+<config>Ficheiro de configuraç%C3£o</config>
+<delay>Atraso</delay>
+<dnsrbl>DNS Relay black list</dnsrbl>
+<dnsrbl_answer>Service answer</dnsrbl_answer>
+<dnsrbl_service>DNSRBL Service</dnsrbl_service>
+<dnsrbl_text>This is used to select a DNSRBL[br]
+DNS  Reverse  Black  List can be used to toggle an ACL.[br]
+They must be defined and named before they can be used. Here is an example which uses a bigger greylisting delay for hosts caught in the SORBS dynamic pool DNRSBL (this
+will include DSL and cable customers pools, which are well known to be massively infected by spamwares)[br]</dnsrbl_text>
+<domain_text> This clause selects source machines based on their DNS name, performing a suffix search</domain_text>
+<edit_acl>Edit ACL</edit_acl>
+<edit_dnsrbl>Edit DNSRBL Rule</edit_dnsrbl>
+<enable_milter>Enable Milter-greylist</enable_milter>
+<enable_milter_text>This option will allow hook Postfix with milter-greylist feature</enable_milter_text>
+<greylist>Tempo de lista cinzenta</greylist>
+<greylistedtuples>greylisted tuples</greylistedtuples>
+<greylist_text>How long a client has to wait before we accept[br]the messages it retries to send.[br]Here, x hour(s).</greylist_text>
+<header>SMTP Header</header>
+<header_text>String or regular expression searched in message headers</header_text>
+<infos>Informaç%C3µes</infos>
+<mailfrom_text>This is used to select sender e-mail addresses. You should not use that feature, because sender e-mail addresses can be trivially forged.</mailfrom_text>
+<method>Método</method>
+<MILTERGREYLIST_STATUSDUMP>Current block/white status</MILTERGREYLIST_STATUSDUMP>
+<MILTERGREYLIST_STATUSDUMP_TEXT>Display the list of servers that are greylisted or whitelisted</MILTERGREYLIST_STATUSDUMP_TEXT>
+<new_class_name>Or add a new class</new_class_name>
+<rcpt>Recipient</rcpt>
+<rcpt_text>This is used to select recipient addresses</rcpt_text>
+<timeout>Tempo limite da base de dados</timeout>
+<timeout_text>How long (days) will the greylist database retain tuples</timeout_text>
+<urlcheck>Url in body</urlcheck>
+<urlcheck_text> milter-greylist is able to query external sources of information through various URL[br]
+Example:http://www.example.net/mgl-config?rcpt=%r</urlcheck_text>
+<whitelist>Lista branca</whitelist>
+<_text>Por favor, seleccione um valor da lista</_text>

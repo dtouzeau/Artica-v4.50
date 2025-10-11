@@ -1,0 +1,552 @@
+<?php
+if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}if(function_exists("posix_getuid")){if(posix_getuid()<>0){die("Cannot be used in web server mode\n\n");}}
+include_once(dirname(__FILE__) . '/ressources/class.users.menus.inc');
+include_once(dirname(__FILE__) . '/ressources/class.user.inc');
+include_once(dirname(__FILE__) . '/ressources/class.ini.inc');
+include_once(dirname(__FILE__) . '/ressources/class.mysql.inc');
+include_once(dirname(__FILE__) . '/ressources/class.templates.inc');
+include_once(dirname(__FILE__) . '/framework/class.unix.inc'); 
+include_once(dirname(__FILE__).   "/framework/frame.class.inc");
+include_once(dirname(__FILE__) . '/ressources/class.system.network.inc');
+include_once(dirname(__FILE__) . '/ressources/class.ldap.inc');
+include_once(dirname(__FILE__) . '/ressources/class.computers.inc');
+include_once(dirname(__FILE__) . '/ressources/class.ocs.inc');
+include_once(dirname(__FILE__) . '/ressources/class.ccurl.inc');
+
+if(is_array($argv)){if(preg_match("#--verbose#",implode(" ",$argv))){$GLOBALS["VERBOSE"]=true;}}
+if(is_array($argv)){if(preg_match("#--rebuild#",implode(" ",$argv))){$GLOBALS["REBUILD"]=true;}}
+if(is_array($argv)){if(preg_match("#--force#",implode(" ",$argv))){$GLOBALS["FORCE"]=true;}}
+if($GLOBALS["VERBOSE"]){echo "Debug mode TRUE for {$argv[1]}\n";}
+if($GLOBALS["VERBOSE"]){ini_set('display_errors', 1);	ini_set('html_errors',0);ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);}
+
+if($argv[1]=='--mysql'){mysqlCheck();exit();}
+if($argv[1]=='--mysqllist'){mysql_table_list();exit();}
+if($argv[1]=='--certificate-self'){CreateSelfSignedCertificate();}
+if($argv[1]=='--certificate'){CreateCertificate();}
+if($argv[1]=='--final-cert'){CreateFinalCertificate();exit;}
+if($argv[1]=='--injection'){AutomaticInjection();exit;}
+if($argv[1]=='--builddbinc'){builddbinc();exit;}
+
+
+function build_certificate($hostname){
+	$unix=new unix();
+	if($GLOBALS["REBUILD"]){
+		if(is_file("{$GLOBALS["SSLKEY_PATH"]}/$hostname.crt")){
+			@unlink("{$GLOBALS["SSLKEY_PATH"]}/$hostname.crt");
+		}
+	}
+	
+	$sock=new sockets();
+	$sock->SET_INFO("ApacheCertificatesLocations",$GLOBALS["SSLKEY_PATH"]);
+	
+	$unix->vhosts_BuildCertificate($hostname);
+	
+}
+
+function MysqlCheck(){
+$db_file = "/usr/share/ocsinventory-reports/ocsreports/files/ocsbase.sql";
+if(!is_file($db_file)){
+	echo "Starting......: ".date("H:i:s")." OCS web Engine unable to stat $db_file\n";
+	return;
+}
+
+$q=new mysql();
+if(!$q->DATABASE_EXISTS("ocsweb")){
+	echo "Starting......: ".date("H:i:s")." OCS web Engine creating ocsweb\n";
+	$q->CREATE_DATABASE("ocsweb");
+	if(!$q->DATABASE_EXISTS("ocsweb")){
+		echo "Starting......: ".date("H:i:s")." OCS web Engine unable to create ocsweb mysql database\n";
+		return;
+	}
+}
+
+
+
+if(CheckTables()){
+	$sock=new sockets();
+	$users=new usersMenus();
+	$q=new mysql();
+	$ocswebservername=$sock->GET_INFO("ocswebservername");
+	$OCSWebPort=$sock->GET_INFO("OCSWebPort");	
+	if($OCSWebPort==null){$OCSWebPort=9080;}
+	if($OCSWebPortSSL==null){$OCSWebPortSSL=$OCSWebPort+50;}	
+	if($ocswebservername==null){$ocswebservername=$users->hostname;}
+	$sql="UPDATE config SET IVALUE=1 WHERE NAME='DOWNLOAD'";
+	$q->QUERY_SQL($sql,"ocsweb");
+	$sql="UPDATE config SET IVALUE=1 WHERE NAME='REGISTRY'";
+	$q->QUERY_SQL($sql,"ocsweb");
+	$sql="UPDATE config SET IVALUE='http://$ocswebservername:$OCSWebPort' WHERE NAME='LOCAL_SERVER'";
+	$q->QUERY_SQL($sql,"ocsweb");	
+	return;
+}
+
+
+
+
+if($dbf_handle = @fopen($db_file, "r")) {
+	$sql_query = fread($dbf_handle, filesize($db_file));
+	fclose($dbf_handle);
+	
+}
+
+
+
+$array_commands=explode(";", "$sql_query");
+while (list ($num, $sql) = each ($array_commands) ){
+	if(trim($sql)==null){continue;}
+	
+	$q->QUERY_SQL($sql,"ocsweb");
+	if(!$q->ok){
+	echo "Starting......: ".date("H:i:s")." OCS web Engine $q->mysql_error $sql\n";	
+	}
+}
+
+}
+
+function mysql_table_list(){
+	$q=new mysql();
+	$bd=@mysqli_connect("$q->mysql_server",$q->mysql_admin,$q->mysql_password,null,$q->mysql_port);
+	
+		if(!$bd){
+			$errnum=mysqli_error();
+	    	$des=mysqli_error();
+	    	echo "$errnum) $des\n";
+	    	return;
+		}	
+	$ok=@mysqli_select_db($bd,"ocsweb");
+  	$mysql_result = mysqli_query($bd,"SHOW TABLES;");
+  	if(!$mysql_result){
+  					$errnum=mysqli_error();
+	    	$des=mysqli_error();
+	    	echo "$errnum) $des\n";
+	    	return;
+  	}
+ 	while ($ligne = mysqli_fetch_row($mysql_result)){
+ 			$table_name=$ligne[0];
+ 			echo "\$f[]=\"$table_name\";\n";
+     	}
+}
+
+function CheckTables(){
+$f[]="accesslog";
+$f[]="accountinfo";
+$f[]="bios";
+$f[]="blacklist_macaddresses";
+$f[]="blacklist_serials";
+$f[]="config";
+$f[]="conntrack";
+$f[]="controllers";
+$f[]="deleted_equiv";
+$f[]="deploy";
+$f[]="devices";
+$f[]="devicetype";
+$f[]="dico_ignored";
+$f[]="dico_soft";
+$f[]="download_affect_rules";
+$f[]="download_available";
+$f[]="download_enable";
+$f[]="download_history";
+$f[]="download_servers";
+$f[]="drives";
+$f[]="engine_mutex";
+$f[]="engine_persistent";
+$f[]="files";
+$f[]="groups";
+$f[]="groups_cache";
+$f[]="hardware";
+$f[]="hardware_osname_cache";
+$f[]="inputs";
+$f[]="itmgmt_comments";
+$f[]="javainfo";
+$f[]="locks";
+$f[]="memories";
+$f[]="modems";
+$f[]="monitors";
+$f[]="netmap";
+$f[]="network_devices";
+$f[]="networks";
+$f[]="operators";
+$f[]="ports";
+$f[]="printers";
+$f[]="prolog_conntrack";
+$f[]="regconfig";
+$f[]="registry";
+$f[]="registry_name_cache";
+$f[]="registry_regvalue_cache";
+$f[]="slots";
+$f[]="softwares";
+$f[]="softwares_name_cache";
+$f[]="sounds";
+$f[]="storages";
+$f[]="subnet";
+$f[]="tags";
+$f[]="videos";
+$f[]="virtualmachines";
+$q=new mysql();
+while (list ($num, $table) = each ($f) ){
+		if(!$q->TABLE_EXISTS($table,"ocsweb")){
+			echo "Starting......: ".date("H:i:s")." OCS web Engine $table does not exists !!\n";	
+			return false;
+		}
+	}
+	echo "Starting......: ".date("H:i:s")." OCS web Engine ". count($f)." tables OK\n";	
+	return true;
+
+}
+
+
+function CreateOnpenSSLCOnf(){
+	$path="/etc/ocs/cert";
+	$conf="$path/openssl.conf";
+	@mkdir($path,666,true);
+	$sock=new sockets();
+	$ldap=new clladp();
+	
+	$CertificateMaxDays=$sock->GET_INFO('CertificateMaxDays');
+	if($CertificateMaxDays==null){$CertificateMaxDays=730;}
+	if($GLOBALS["VERBOSE"]){echo "-> CertificateMaxDays=$CertificateMaxDays\n";}
+	
+	if($GLOBALS["VERBOSE"]){echo "-> OPEN /etc/artica-postfix/ssl.certificate.conf\n";}
+	$ini=new Bs_IniHandler("/etc/artica-postfix/ssl.certificate.conf");
+	
+
+	
+	
+	$sock=new sockets();
+	$OCSCertInfos=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OCSCertInfos")));	
+	if(!isset($OCSCertInfos["OCSCertServerName"])){$OCSCertInfos["OCSCertServerName"]=null;}
+	if(!isset($OCSCertInfos["OCSCertDomainName"])){$OCSCertInfos["OCSCertDomainName"]=null;}
+	if(!isset($OCSCertInfos["OCSCertEmail"])){$OCSCertInfos["OCSCertEmail"]=null;}
+	
+	
+	
+	
+	if($OCSCertInfos["OCSCertServerName"]==null){
+		$users=new usersMenus();
+		$OCSCertInfos["OCSCertServerName"]=$users->hostname;
+		$hostname=$users->hostname;
+		if(strpos($hostname, '.')){
+			$hostnameTB=explode(".",$hostname);
+			$hostname=$hostnameTB[0];
+			unset($hostnameTB[0]);
+			$DomainNameTemp=@implode(".", $hostnameTB);
+			$OCSCertInfos["OCSCertServerName"]=$hostname;
+		}
+		
+	}else{
+		$hostname=$OCSCertInfos["OCSCertServerName"];
+		if(strpos($hostname, '.')){
+			$hostnameTB=explode(".",$hostname);
+			$hostname=$hostnameTB[0];
+			unset($hostnameTB[0]);
+			$DomainNameTemp=@implode(".", $hostnameTB);
+			$OCSCertInfos["OCSCertServerName"]=$hostname;
+		}		
+		
+	}
+
+	
+	if($OCSCertInfos["OCSCertDomainName"]==null){if($DomainNameTemp<>null){$OCSCertInfos["OCSCertDomainName"]=$DomainNameTemp;}}
+	
+	
+	if($GLOBALS["VERBOSE"]){echo "-> OCSCertServerName `{$OCSCertInfos["OCSCertServerName"]}`\n";}
+	if($GLOBALS["VERBOSE"]){echo "-> OCSCertDomainName `{$OCSCertInfos["OCSCertDomainName"]}`\n";}
+	
+	if($OCSCertInfos["OCSCertDomainName"]==null){
+		echo "Starting......: ".date("H:i:s")." OCS web Engine Warning domain name is null !!!, aborting\n";	
+		return;
+	}
+	
+	$hostname=$OCSCertInfos["OCSCertServerName"].".".$OCSCertInfos["OCSCertDomainName"];
+	$email=$OCSCertInfos["OCSCertEmail"];
+	if($email==null){$email="postmaster@{$OCSCertInfos["OCSCertDomainName"]}";}
+	unset($ini->_params["HOSTS_ADDONS"]);
+	$ini->_params["default_db"]["default_days"]=$CertificateMaxDays;
+	$ini->_params["server_policy"]["commonName"]=$hostname;
+	$ini->_params["user_policy"]["commonName"]=$hostname;
+	$ini->_params["default_ca"]["commonName"]=$hostname;
+	$ini->_params["default_ca"]["commonName_value"]=$hostname;
+	$ini->_params["policy_match"]["commonName"]=$hostname;
+	$ini->_params["policy_anything"]["commonName"]=$hostname;
+	$ini->_params["req"]["default_keyfile"]="$path/privkey.key";
+	$ini->_params["req"]["default_bits"]="1024";
+	$ini->_params["req"]["distinguished_name"]="default_ca";
+	$ini->_params["req"]["attributes"]="req_attributes";
+	$ini->_params["req"]["x509_extensions"]="v3_ca";
+	$ini->_params["default_db"]["dir"]="$path";
+	$ini->_params["default_db"]["certs"]="$path";
+	$ini->_params["default_db"]["new_certs_dir"]="$path";
+	$ini->_params["default_db"]["database"]="$path/ca.index";
+	$ini->_params["default_db"]["serial"]="$path/ca.serial";
+	$ini->_params["default_db"]["RANDFILE"]="$path/.rnd";
+	$ini->_params["default_db"]["certificate"]="$path/certificate.pem";
+	$ini->_params["default_db"]["private_key"]="$path/privkey.pem";
+	$ini->_params["default_db"]["name_opt"]="default_ca";
+	$ini->_params["default_db"]["cert_opt"]="default_ca";
+	$ini->_params["ca"]["default_ca"]["CA_default"];
+	$ini->_params["CA_default"]["dir"]=$path;
+	$ini->_params["CA_default"]["certs"]=		"$path/certs";		# Where the issued certs are kept
+	$ini->_params["CA_default"]["crl_dir"]=		"$path/crl";		# Where the issued crl are kept
+	$ini->_params["CA_default"]["database"]=	"$path/index.txt";	# database index file.
+	$ini->_params["CA_default"]["new_certs_dir"]= "$path/newcerts";		# default place for new certs.
+	$ini->_params["CA_default"]["certificate"]=	"$path/cacert.pem"; 	# The CA certificate
+	$ini->_params["CA_default"]["serial"]=		"$path/serial"; 		# The current serial number
+	$ini->_params["CA_default"]["crlnumber"]=	"$path/crlnumber";	# the current crl number
+	$ini->_params["CA_default"]["crl"]=			"$path/crl.pem"; 		# The current CRL
+	$ini->_params["CA_default"]["private_key"]=	"$path/cakey.pem";# The private key
+	$ini->_params["CA_default"]["RANDFILE"]=	"$path/.rand";	# private random number file
+	$ini->_params["CA_default"]["x509_extensions"]="usr_cert";		# The extentions to add to the cert
+	$ini->_params["CA_default"]["name_opt"]= 	"ca_default";		# Subject Name options
+	$ini->_params["CA_default"]["cert_opt"]= 	"ca_default";		# Certificate field options
+	$ini->_params["CA_default"]["default_days"]	= "$CertificateMaxDays";			# how long to certify for
+	$ini->_params["CA_default"]["default_crl_days"]= "30";			# how long before next CRL
+	$ini->_params["CA_default"]["default_md"]	= "sha1";		# which md to use.
+	$ini->_params["CA_default"]["policy"]		= "policy_match";	
+
+	
+	$ini->_params["req_attributes"]["challengePassword"]="A challenge password";
+	$ini->_params["req_attributes"]["challengePassword_min"]="4";
+	$ini->_params["req_attributes"]["challengePassword_max"]="20";
+	$ini->_params["req_attributes"]["unstructuredName"]="An optional company name";	
+	
+	$ini->_params["default_ca"]["commonName"]=$hostname;
+	$ini->_params["default_ca"]["emailAddress"]=$email;
+
+
+	
+	$ini->saveFile($conf);
+	echo "Starting......: ".date("H:i:s")." OCS web Engine certificate, writing $conf done\n";
+	
+}
+
+function CreateSelfSignedCertificate(){
+	$path="/etc/ocs/cert";
+	$conf="$path/openssl.conf";	
+	$unix=new unix();
+	$openssl=$unix->find_program("openssl");
+	$ldap=new clladp();
+	$sock=new sockets();
+	$CertificateMaxDays=$sock->GET_INFO('CertificateMaxDays');
+	if($CertificateMaxDays==null){$CertificateMaxDays=730;}
+	@mkdir($path,0666,true);
+	if($GLOBALS["VERBOSE"]){echo "-> CreateOnpenSSLCOnf()\n";}
+	CreateOnpenSSLCOnf();
+	
+/*
+ * 
+OLD 
+
+	$cmd="$openssl req -new -passout pass:$ldap->ldap_password -batch -config  $conf -out $path/server.csr";
+	echo $cmd."\n";
+	system($cmd);
+	$cmd="$openssl rsa -in /etc/ocs/cert/privkey.key -passin pass:$ldap->ldap_password -out $path/server.key";
+	echo $cmd."\n";
+	system($cmd);	
+	$cmd="$openssl openssl x509 -in $path/server.csr -out $path/server.crt -req -signkey $path/server.key -days $CertificateMaxDays";
+	echo $cmd."\n";
+	system($cmd);	
+	shell_exec("/bin/cp $path/server.crt $path/cacert.pem");
+	shell_exec("/bin/cp $path/server.crt $path/server.key");
+
+
+NEW
+
+$cmd="$openssl genrsa -des3 -passout pass:$ldap->ldap_password -out $path/server.key 1024";
+echo $cmd."\n";
+system($cmd);
+
+$cmd="$openssl rsa -passin pass:$ldap->ldap_password -in $path/server.key -out $path/server.key";
+echo $cmd."\n";
+system($cmd);
+
+$cmd="$openssl req -new -batch -config  $conf -key server.key -x509 -out server.crt -days $CertificateMaxDays";
+echo $cmd."\n";
+system($cmd);
+
+cd /usr/lib/ssl/misc
+CA.sh -newca
+Create a client key
+
+openssl genrsa -out client.key 1024
+Create a certificate request
+
+openssl req -new -key client.key -out client.csr
+Sign the certificate request
+
+openssl ca -in client.csr -cert server.crt -keyfile server.key -out client.crt -days 1825
+Create PKCS12 file for use in a webbrowser
+
+openssl pkcs12 -export -in client.crt -inkey client.key -out client.p12
+Add to /etc/apache/httpd.conf:
+
+SSLVerifyClient require
+SSLCACertificateFile /path/to/server.crt	-> cacert.pem
+SSLCertificateFile /path/to/server.crt
+SSLCertificateKeyFile /path/to/server.key
+*/	
+$cmd="$openssl genrsa -des3 -passout pass:$ldap->ldap_password -out $path/server.key 1024";
+echo $cmd."\n";
+system($cmd);
+
+$cmd="$openssl rsa -passin pass:$ldap->ldap_password -in $path/server.key -out $path/server.key";
+echo $cmd."\n";
+system($cmd);
+
+$cmd="$openssl req -new -batch -config  $conf -key $path/server.key -x509 -out $path/server.crt -days $CertificateMaxDays";
+echo $cmd."\n";
+system($cmd);
+shell_exec("/bin/cp $path/server.crt $path/cacert.pem");
+shell_exec("/bin/cp $path/server.crt /etc/artica-postfix/settings/Daemons/OCSServerDotCrt");
+	
+}
+
+
+
+
+function CreateCertificate(){
+	CreateOnpenSSLCOnf();
+	if(!is_file($conf)){
+		echo "Starting......: ".date("H:i:s")." OCS web Engine certificate, unable to stat $conf\n";
+		return;
+	}
+	$cmd=" openssl genrsa -out $path/server.key 1024";
+	echo $cmd."\n";
+	system($cmd);
+	$cmd="$openssl req -new -key $path/server.key -batch -config $conf -out $path/server.csr";
+	echo $cmd."\n";
+	system($cmd);
+}
+
+function CreateFinalCertificate(){
+	$sock=new sockets();
+	$certs=$sock->GET_INFO("OCSServerDotCrt");
+	echo "Starting......: ".date("H:i:s")." OCS web Engine OCSServerDotCrt = `$certs`\n";
+	if(strlen($certs)<50){
+		echo "Starting......: ".date("H:i:s")." OCS web Engine aborting...\n";
+		if(is_file("/etc/ocs/cert/cacert.pem")){return null;}
+	}
+	$curl=new ccurl("http://www.cacert.org/certs/root.crt");
+	$curl->GetFile("/etc/ocs/cert/cacert.pem");
+}
+
+function AutomaticInjection(){
+	$users=new usersMenus();
+	if(!$users->OCSI_INSTALLED){return ;}
+	$file="/etc/artica-postfix/cron.2/AutomaticInjection.pid";
+	$sock=new sockets();
+	$OCSImportToLdap=$sock->GET_INFO("OCSImportToLdap");
+	if($OCSImportToLdap==null){$OCSImportToLdap=60;}
+	if($OCSImportToLdap==0){return;}
+	if(!$GLOBALS["FORCE"]){
+		$filetime=file_time_min($file);
+	
+		if($GLOBALS["VERBOSE"]){echo "$file=$filetime against $OCSImportToLdap minutes\n";}
+		if(!$GLOBALS["VERBOSE"]){
+			if($filetime<$OCSImportToLdap){return;}
+		}
+	}
+	
+	writelogs("Starting OCS injection from OCS database",__FUNCTION__,__FILE__,__LINE__);
+	$ocs=new ocs();
+	$sql=$ocs->COMPUTER_SEARCH_QUERY(null,1);
+	if($GLOBALS["VERBOSE"]){echo $sql."\n";}
+	$q=NEW mysql();
+	$results=$q->QUERY_SQL($sql,"ocsweb");
+	while($ligne=mysqli_fetch_array($results,MYSQLI_ASSOC)){
+		if($ligne["IPADDRESS"]=="0.0.0.0"){continue;}
+		if($ligne["MACADDR"]=="00:00:00:00:00:00"){continue;}
+		if($already[$ligne["MACADDR"]]){continue;}
+		
+		$already[$ligne["MACADDR"]]=true;
+		$f=new computers();
+		$uid=$f->ComputerIDFromMAC($ligne["MACADDR"]);
+		if($GLOBALS["VERBOSE"]){echo "Check {$ligne["MACADDR"]} against $uid\n";}
+		if($uid==null){
+			writelogs("uid is null for {$ligne["MACADDR"]}, add it into LDAP",__FUNCTION__,__FILE__,__LINE__);
+			AutomaticInjectionAdd($ligne["MACADDR"]);
+			continue;
+		}
+		
+		$update=false;
+		$f=new computers($uid);
+		if($GLOBALS["VERBOSE"]){echo "Checking uid=$uid NAME=$f->ComputerRealName; IP=$f->ComputerIP; OS=$f->ComputerOS\n";}
+		$ComputerIP=trim($f->ComputerIP);
+		$ComputerOS=trim($f->ComputerOS);
+		$OSNAME=trim(utf8_encode($ligne["OSNAME"]));
+		$PROCESSORT=trim($ligne["PROCESSORT"]);
+		if($GLOBALS["VERBOSE"]){echo "OCS SOURCE {$ligne["MACADDR"]} IP={$ligne["IPSRC"]}; OS=$OSNAME CPU=$PROCESSORT\n";}
+		
+		if($ComputerIP<>$ligne["IPSRC"]){
+			$f->ComputerIP=$ligne["IPSRC"];
+			if($GLOBALS["VERBOSE"]){echo "IPSRC not match ($ComputerIP)\n";}
+			$update=true;
+		}
+		
+		
+		
+		if($PROCESSORT<>null){
+		if(trim($f->ComputerCPU)<>$ligne["PROCESSORT"]){
+			if($GLOBALS["VERBOSE"]){echo "PROCESSORT not match\n";}
+			$f->ComputerOS=$ligne["PROCESSORT"];
+			$update=true;
+			}		
+		}
+		if($update){
+			echo "update {$ligne["MACADDR"]}\n";
+			$f->Add();}
+		
+		
+	}
+	
+	@unlink($file);
+	@file_put_contents($file,getmypid());
+	writelogs("Finish OCS injection from OCS database",__FUNCTION__,__FILE__,__LINE__);
+	
+}
+
+function AutomaticInjectionAdd($MAC){
+	echo "add $MAC\n";
+	$cs=new ocs();
+	if($cs->INJECT_COMPUTER_TOLDAP($MAC)){
+		unset($GLOBALS["INJECT_COMPUTER_TOLDAP"]);
+		$f=new computers();
+		$uid=$f->ComputerIDFromMAC($MAC);
+		$f=new computers($uid);
+		$text[]="uid\t:$uid";
+		$text[]="Computer\t:$f->ComputerRealName";
+		$text[]="IP\t:$f->ComputerIP";
+		$text[]="MAC\t:$MAC";
+		squid_admin_mysql(2,"New computer $f->ComputerRealName added into Database",@implode("\n",$text),__FILE__,__LINE__);
+	}else{
+		$infos=@implode("\n",$GLOBALS["INJECT_COMPUTER_TOLDAP"])."\n\n".@implode("\n",$text);
+        squid_admin_mysql(1,"Failed to inject computer $MAC",$infos,__FILE__,__LINE__);
+	}
+	
+}
+
+function builddbinc(){
+	if(!is_dir("/usr/share/ocsinventory-reports/ocsreports")){
+		echo "Starting......: ".date("H:i:s")." OCS web Engine /usr/share/ocsinventory-reports/ocsreports no such directory\n";
+		return;
+	}
+	$q=new mysql();
+	$f[]="<?php";
+	$f[]="\$_SESSION[\"SERVEUR_SQL\"]=\"$q->mysql_server:$q->mysql_port\";";
+	$f[]="\$_SESSION[\"COMPTE_BASE\"]=\"$q->mysql_admin\";";
+	$f[]="\$_SESSION[\"PSWD_BASE\"]=\"$q->mysql_password\";";
+	$f[]="define(\"DB_NAME\", \"ocsweb\");";
+	$f[]="define(\"SERVER_READ\",\"$q->mysql_server:$q->mysql_port\");";
+	$f[]="define(\"SERVER_WRITE\",\"$q->mysql_server:$q->mysql_port\");";
+	$f[]="define(\"COMPTE_BASE\",\"$q->mysql_admin\");";
+	$f[]="define(\"PSWD_BASE\",\"$q->mysql_password\");";
+	$f[]="?>";
+	@file_put_contents("/usr/share/ocsinventory-reports/ocsreports/dbconfig.inc.php", @implode("\n", $f));
+	echo "Starting......: ".date("H:i:s")." OCS web Engine dbconfig.inc.php done\n"; 
+	if(!is_file("etc/ocs/cert/cacert.pem")){	
+		CreateSelfSignedCertificate();
+	}
+}
+
+
+
+?>

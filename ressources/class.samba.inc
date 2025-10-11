@@ -1,0 +1,1940 @@
+<?php
+include_once(dirname(__FILE__)."/class.ldap.inc");
+include_once(dirname(__FILE__)."/class.ini.inc");
+include_once(dirname(__FILE__)."/class.user.inc");
+include_once(dirname(__FILE__)."/class.mysql.inc");;
+include_once(dirname(__FILE__)."/class.samba.aliases.inc");
+
+
+
+class samba{
+	var $dn;
+	var $main_array=array();
+	var $global_conf;
+	var $main_folders;
+	var $main_shared_folders=array();
+	var $SambaUsbShare;
+	var $usb_array=array();
+	var $LOCAL_SID;
+	var $SambaEnableEditPosixExtension=0; // see http://wiki.samba.org/index.php/Ldapsam_Editposix
+	var $EnableSambaActiveDirectory=0;
+	var $config_activedirectory=array();
+	var $DisableWinbindd=0;
+	var $WINBINDD_INSTALLED=false;
+	var $CUPS_INSTALLED=false;
+	var $EnablePrintersSharing=0;
+	var $posix_getuid=-1;
+	var $TypeOfSamba=1;
+	var $ldap;
+	var $usersMenus;
+	var $SAMBA_VERSION=0;
+	var $samba_aliases=array();
+	var $SECOND_PART_CONF="";
+	var $WORKGROUP="";
+	var $EnableSambaVirtualsServers=0;
+	var $EnableSambaVirtualsServer=0;
+	var $EnableKerbAuth=0;
+	var $PHP5_BIN;
+	var $EnableSMB2=0;
+	var $client_ntlmv2_auth=0;
+	var $SambaSecurityLevel="user";
+	
+	
+	function __construct(){
+		$this->ldap=new clladp();
+		$this->usersMenus=new usersMenus();
+		$this->PHP5_BIN=$this->usersMenus->PHP_BIN_PATH;
+		$sock=new sockets();
+		$this->SAMBA_VERSION=$this->usersMenus->SAMBA_VERSION;
+		$this->EnableSambaVirtualsServers=$sock->GET_INFO("EnableSambaVirtualsServers");
+		$this->EnableSambaVirtualsServer=$this->EnableSambaVirtualsServers;
+		$this->TypeOfSamba=$sock->GET_INFO("TypeOfSamba");
+		$this->EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
+		$this->SambaEnableEditPosixExtension=$sock->GET_INFO("SambaEnableEditPosixExtension");
+		$this->EnableSMB2=$sock->GET_INFO("EnableSMB2");	
+		$this->client_ntlmv2_auth=$sock->GET_INFO("client_ntlmv2_auth");	
+		$this->SambaSecurityLevel=$sock->GET_INFO("SambaSecurityLevel");
+		if($this->SambaSecurityLevel==null){$this->SambaSecurityLevel="user";}
+		if(isset($GLOBALS["AS_ROOT"])){
+			if($GLOBALS["AS_ROOT"]){$this->posix_getuid=0;}else{$this->posix_getuid=100;}
+		}else{
+			$this->posix_getuid=posix_getuid();
+		}
+		if(!isset($GLOBALS["AS_ROOT"])){if($this->posix_getuid==0){$GLOBALS["AS_ROOT"]=true;}else{$GLOBALS["AS_ROOT"]=false;}}
+		
+		
+		if($GLOBALS["VERBOSE"]){
+			if(function_exists("debug_backtrace")){
+				$trace=debug_backtrace();
+				$called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";			
+			}
+			writelogs("init class samba() $called",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+		}		
+		
+		
+		if($GLOBALS["VERBOSE"]){writelogs("Verify LDAP branch...",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);}
+		$this->verifyBranch();
+		if($GLOBALS["VERBOSE"]){writelogs("Verify LDAP branch done",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+		
+		
+		$this->CheckAdmin();
+		$this->WinbinddChoose();
+		$this->LoadSettings();
+		$this->ParseFolders();
+	}
+	
+	private function WinbinddChoose(){
+		if($this->TypeOfSamba==3){$this->DisableWinbindd=0;return;}
+		
+		$sock=new sockets();
+		$this->EnableSambaActiveDirectory=$sock->GET_INFO("EnableSambaActiveDirectory");
+		if($this->EnableSambaActiveDirectory==1){$this->DisableWinbindd=0;return;}
+		$DisableWinbindd=$sock->GET_INFO("DisableWinbindd");
+		if(!is_numeric($DisableWinbindd)){
+			$this->DisableWinbindd=0;
+			$sock->SET_INFO("DisableWinbindd",0);
+		}		
+		$this->DisableWinbindd=$DisableWinbindd;
+		
+	}
+	
+	
+function verifyBranch(){
+	if($GLOBALS["VERBOSE"]){writelogs("verify cn=samba-config,cn=artica,...",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+	
+	$upd=array();
+	$this->dn="cn=samba-config,cn=artica,{$this->ldap->suffix}";
+	if(!$this->ldap->ExistsDN($this->dn)){
+		writelogs("Create $this->dn",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+		$upd["objectClass"][]='top';
+		$upd["objectClass"][]='SambaArticaClass';
+		$upd["cn"]="samba-config";
+		$upd["SambaSMBConf"][]=$this->BuildConfig();
+		$upd["SambaUsbShare"][]="#";
+		if($GLOBALS["VERBOSE"]){writelogs("ldap->ldap_add($this->dn,Array);",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+		if(!$this->ldap->ldap_add($this->dn,$upd)){
+			writelogs("Ldap error {$this->ldap->ldap_last_error}",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+		}
+	}
+	if($GLOBALS["VERBOSE"]){writelogs("ldap->ldap_add($this->dn,Array); done..",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+	unset($upd);
+	$dn="cn={$this->ldap->ldap_admin},{$this->ldap->suffix}";
+	if(!$this->ldap->ExistsDN($dn)){
+		$upd["objectClass"][]='organizationalRole';
+		$upd["cn"][]=$this->ldap->ldap_admin;
+		$this->ldap->ldap_add($dn,$upd);
+		
+	}
+
+	
+}
+
+
+function BuildDefaults(){
+	if($GLOBALS["VERBOSE"]){writelogs("Starting check defaults values...",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+	
+	$sock=new sockets();
+	if(!isset($this->main_array["global"]["acl group control"])){$this->main_array["global"]["acl group control"]=null;}
+	if(!isset($this->main_array["global"]["workgroup"])){$this->main_array["global"]["workgroup"]="MSHOME";}
+	if(!isset($this->main_array["global"]["server string"])){$this->main_array["global"]["server string"]="%h server";}
+	if(!isset($this->main_array["global"]["disable netbios"])){$this->main_array["global"]["disable netbios"]="no";}
+	if(!isset($this->main_array["global"]["domain logons"])){$this->main_array["global"]["domain logons"]="no";}
+	if(!isset($this->main_array["global"]["domain master"])){$this->main_array["global"]["domain master"]="no";}
+	if(!isset($this->main_array["global"]["preferred master"])){$this->main_array["global"]["preferred master"]="no";}
+	if(!isset($this->main_array["global"]["local master"])){$this->main_array["global"]["local master"]="yes";}
+	if(!isset($this->main_array["global"]["os level"])){$this->main_array["global"]["os level"]="40";}
+	if(!isset($this->main_array["global"]["netbios name"]))
+	if(!isset($this->main_array["global"]["dns proxy"])){$this->main_array["global"]["dns proxy"]="no";}
+	if(!isset($this->main_array["global"]["name resolve order"])){$this->main_array["global"]["name resolve order"]="host lmhosts wins bcast";}
+	
+	if(!isset($this->main_array["global"]["nt acl support"])){$this->main_array["global"]["nt acl support"]="yes";}
+	if(!isset($this->main_array["global"]["map acl inherit"])){$this->main_array["global"]["map acl inherit"]="yes";}
+	if(!isset($this->main_array["global"]["acl group control"])){$this->main_array["global"]["acl group control"]="yes";}
+	if(!isset($this->main_array["global"]["inherit permissions"])){$this->main_array["global"]["inherit permissions"]="no";}
+	if(!isset($this->main_array["global"]["inherit acls"])){$this->main_array["global"]["inherit acls"]="no";}
+	if(!isset($this->main_array["global"]["dns proxy"])){$this->main_array["global"]["dns proxy"]="no";}	
+	
+	
+	if($this->main_array["global"]["workgroup"]==null){$this->main_array["global"]["workgroup"]="MSHOME";}
+	if($this->main_array["global"]["server string"]==null){$this->main_array["global"]["server string"]="%h server";}
+	if($this->main_array["global"]["disable netbios"]==null){$this->main_array["global"]["disable netbios"]="no";}
+	if($this->main_array["global"]["domain logons"]==null){$this->main_array["global"]["domain logons"]="no";}
+	if($this->main_array["global"]["domain master"]==null){$this->main_array["global"]["domain master"]="no";}
+	if($this->main_array["global"]["preferred master"]==null){$this->main_array["global"]["preferred master"]="no";}
+	if($this->main_array["global"]["local master"]==null){$this->main_array["global"]["local master"]="yes";}
+	if($this->main_array["global"]["os level"]==null){$this->main_array["global"]["os level"]="40";}
+	if($this->main_array["global"]["dns proxy"]==null){$this->main_array["global"]["dns proxy"]="no";}
+	if($this->main_array["global"]["name resolve order"]==null){$this->main_array["global"]["name resolve order"]="host lmhosts wins bcast";}
+	
+	if($this->main_array["global"]["nt acl support"]==null){$this->main_array["global"]["nt acl support"]="yes";}
+	if($this->main_array["global"]["map acl inherit"]==null){$this->main_array["global"]["map acl inherit"]="yes";}
+	if($this->main_array["global"]["acl group control"]==null){$this->main_array["global"]["acl group control"]="yes";}
+	if($this->main_array["global"]["inherit permissions"]==null){$this->main_array["global"]["inherit permissions"]="no";}
+	if($this->main_array["global"]["inherit acls"]==null){$this->main_array["global"]["inherit acls"]="no";}
+	if($this->main_array["global"]["dns proxy"]==null){$this->main_array["global"]["dns proxy"]="no";}		
+	
+	
+	$EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
+	if(!is_numeric($EnableKerbAuth)){$EnableKerbAuth=0;}
+	if($EnableKerbAuth==1){
+		$array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
+		if(!isset($array["USE_AUTORID"])){$array["USE_AUTORID"]=1;}
+		if(!is_numeric($array["USE_AUTORID"])){$array["USE_AUTORID"]=1;}
+		$this->main_array["global"]["workgroup"]=$array["ADNETBIOSDOMAIN"];
+	}
+	
+	
+	
+	if($this->usersMenus->CUPS_INSTALLED){
+		$this->main_array["global"]["printing"]="cups";
+		$this->main_array["global"]["printcap name"]="cups";
+		$this->main_array["global"]["load printers"]="yes";
+		}
+		
+	$SambaNetBiosName=trim($sock->GET_INFO("SambaNetBiosName"));
+	if($SambaNetBiosName<>null){$this->main_array["global"]["netbios name"]=$SambaNetBiosName;}	
+	if($GLOBALS["VERBOSE"]){writelogs("Building default settings done...",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);}
+	
+}
+
+
+
+function SaveToLdap($nosaveToFile=false){
+	
+	$conf=$this->BuildConfig();
+	$group=new groups();
+	$group->EditSambaGroups();
+	$this->CreateGuestUser();
+	$ldap=new clladp();
+	$dn="uid=root,ou=users,dc=samba,dc=organizations,{$ldap->suffix}";
+	if(!$ldap->ExistsDN($dn)){$this->createRootID();}
+	$sock=new sockets();
+	writelogs("compiling first part ". strlen($conf)." second part ". strlen($this->SECOND_PART_CONF)." bytes",__CLASS__,__FUNCTION__,__FILE__);
+	$sock->SaveConfigFile($conf."\n".$this->SECOND_PART_CONF,"SambaSMBConf");
+	$sock->SET_INFO("SambaEnableEditPosixExtension",$this->SambaEnableEditPosixExtension);
+	$sock->SET_INFO("EnableSMB2", $this->EnableSMB2);
+	$sock->SET_INFO("client_ntlmv2_auth", $this->client_ntlmv2_auth);
+	
+	
+	
+	if(!$nosaveToFile){$sock->getFrameWork('cmd.php?samba-save-config=yes');}
+	
+}
+
+function SaveUsbInfos($uuid,$share_name,$array){
+	$q=new mysql();
+	$infos=base64_encode(serialize($array));
+	$sql="SELECT `uuid` FROM samba_usb_share WHERE `uuid`='$uuid'";
+	$ligne=@mysqli_fetch_array($q->QUERY_SQL($sql,'artica_backup'));
+	
+	$sql="UPDATE samba_usb_share SET `settings`='$infos', `share_name`='$share_name' WHERE `uuid`='$uuid'";
+	
+	if($ligne["uuid"]==null){
+		$sql="INSERT INTO samba_usb_share (`uuid`,`settings`,`share_name`) 
+		VALUES ('$uuid','$share_name','$infos')";
+	}
+	
+	$q=new mysql();
+	$q->QUERY_SQL($sql,"artica_backup");
+	if(!$q->ok){echo $q->mysql_error;return;}
+	
+	
+	
+}
+
+function LoadSettings(){
+		
+		$this->main_array["global"]=array();
+		$sock=new sockets();
+		$this->global_conf=$sock->GET_INFO("SambaSMBConf")."\n".$sock->GET_INFO("SambaSecondPartConf");
+		if(strlen($this->global_conf)<50){$this->global_conf=base64_decode($sock->getFrameWork("cmd.php?samba-original-conf=yes"));}
+		
+		$ini=new Bs_IniHandler();
+		$ini->loadString($this->global_conf);
+		$this->main_array=$ini->_params;
+		$this->BuildDefaults();
+		if($this->SambaUsbShare==null){$this->SambaUsbShare='#';}
+		$this->CleanAllDomains($this->main_array["global"]["workgroup"]);
+		$this->ParseUSB();
+		
+	}
+
+function ParseUSB(){
+	$tbl=explode("\n",$this->SambaUsbShare);
+    foreach ($tbl as $ligne) {
+		if(preg_match('#<uuid>(.+?)</uuid><name>(.+?)</name><umounttime>(.+?)</umounttime>#',$ligne,$re)){
+			if(preg_match('#<maxoff>(.+?)</maxoff>#',$ligne,$ra)){
+				$re[4]=$ra[1];
+			}else{
+				$re[4]=10;
+			}
+			
+			$this->usb_array[$re[1]]=array("name"=>$re[2],"time"=>$re[3],"maxoff"=>$re[4]);
+		}
+		
+	}
+}
+
+private function veto_files($path){
+	$md5=md5(trim($path));
+	$f=array();
+	$sql="SELECT `files` FROM samba_veto_files WHERE md5path='$md5'";
+	$q=new mysql();
+	$results = $q->QUERY_SQL($sql,"artica_backup");
+	while ($ligne = mysqli_fetch_assoc($results)) {
+		$pattern=trim($ligne["files"]);
+		if($pattern==null){continue;}
+		if(isset($alredy[$pattern])){continue;}
+		$f[]=$pattern;	
+			
+	}
+	if(count($f)>0){
+		return "/".@implode("/", $f)."/";
+	}
+	
+}
+	
+
+function ParseFolders(){
+	reset($this->main_array);
+    foreach ($this->main_array as $FOLDER=>$ligne){
+		if($FOLDER<>"global"){
+			if(is_array($ligne)){
+				$this->main_folders[$FOLDER]=$FOLDER;
+				if(!isset($this->main_array[$FOLDER]["path"])){$this->main_array[$FOLDER]["path"]=null;}
+				$this->main_shared_folders[$this->main_array[$FOLDER]["path"]]=$FOLDER;
+			}
+		}
+	}
+	reset($this->main_array);
+}
+
+function UnShareFolder($fullpath_no_utf8encode=null){
+	if($fullpath_no_utf8encode==null){return;}
+	$requested_path=utf8_encode($fullpath_no_utf8encode);
+    foreach ($this->main_array as $key=>$array){
+		if($key==null){continue;}
+		if($array["path"]==$requested_path){
+			$key_to_delete=$key;
+			writelogs("directory {$array["path"]}/$key match $requested_path",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
+			break;
+		}
+	}
+	
+	reset($this->main_array);
+	if($key_to_delete==null){return false;}
+	unset($this->main_array[$key_to_delete]);
+	$this->SaveToLdap();
+	return true;
+}
+function GetShareName($fullpath_no_utf8encode=null){
+	if($fullpath_no_utf8encode==null){return;}
+	$requested_path=utf8_encode($fullpath_no_utf8encode);
+    foreach ($this->main_array as $key=>$array){
+		if($key==null){continue;}
+		if($array["path"]==$requested_path){
+			reset($this->main_array);
+			return $key;
+			
+		}
+	}
+}
+
+function RemoveShareFromFolder($path){
+	$ShareName=$this->GetShareName($path);
+	if(strtolower($ShareName)=="global"){return;}
+	if($ShareName<>null){
+		unset($this->main_array[$ShareName]);
+		$this->SaveToLdap();
+	}
+}
+
+
+function CheckAdmin(){
+	
+	
+	writelogs("suffix: {$this->ldap->suffix}",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+	$dn="cn=administrator,ou=users,dc=samba,dc=organizations,{$this->ldap->suffix}";
+	if(!$this->ldap->ExistsDN("$dn")){
+		$this->CreateAdministrator("administrator",$ldap->ldap_password);
+	}
+	
+}
+
+
+function GetAdminUidNumber($admin_name){
+	
+	$dn="cn=$admin_name,ou=users,dc=samba,dc=organizations,{$this->ldap->suffix}";
+	$sr =@ldap_read($this->ldap->ldap_connection,$dn,'objectClass=*');
+		if ($sr) {
+			$hash=ldap_get_entries($this->ldap->ldap_connection,$sr);	
+			return $hash[0][strtolower("uidNumber")][0];	
+			
+		}
+	}
+	
+function GetAdminPassword($admin_name){
+	
+	$dn="cn=$admin_name,ou=users,dc=samba,dc=organizations,{$this->ldap->suffix}";
+	$sr =@ldap_read($this->ldap->ldap_connection,$dn,'objectClass=*');
+		if ($sr) {
+			$hash=ldap_get_entries($this->ldap->ldap_connection,$sr);	
+			return $hash[0][strtolower("userPassword")][0];	
+		}
+	}
+
+	
+function EditAdministrator($admin_name,$password){
+	
+	$dn="cn=$admin_name,ou=users,dc=samba,dc=organizations,{$this->ldap->suffix}";
+	
+	if(!$this->ldap->ExistsDN("$dn")){
+		$this->CreateAdministrator($admin_name,$password);
+		return true;
+	}
+	
+	$sr =@ldap_read($this->ldap->ldap_connection,$dn,'objectClass=*');
+		if ($sr) {
+			$hash=ldap_get_entries($this->ldap->ldap_connection,$sr);
+		}	
+	
+	$old_password=$hash[0][strtolower("userPassword")][0];
+	$uidNumber=$hash[0][strtolower("uidNumber")][0];
+	$sock=new sockets();
+	$datas=trim(base64_decode($sock->getFrameWork("cmd.php?smbpass=".base64_encode($password))));
+	if(preg_match('#(.+?):(.+)#',$datas,$re)){
+		$sambaLMPassword=$re[1];
+		$sambaNTPassword=$re[2];
+	}
+	if($password==null){$password=$old_password;}
+		
+			
+		
+	
+	$group=new groups();
+	
+	$sambaPrimaryGroupSID=$group->samba_group_sid_from_gid('512');
+	if($sambaPrimaryGroupSID==null){echo "{warning} SID FOR 512 doesn't found...\n";}
+	$sambaSID=$this->ldap->LOCAL_SID().'-'. (2 * $uidNumber * 1000);	
+	writelogs("sambaPrimaryGroupSID = $sambaPrimaryGroupSID",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	writelogs("sambaSID = $sambaSID",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	
+$upd=array();
+	$upd["sambaLMPassword"][0]=		$sambaLMPassword;
+	$upd["sambaNTPassword"][0]=		$sambaNTPassword;
+	$upd["sambaPrimaryGroupSID"][0]=$sambaPrimaryGroupSID;
+	$upd["userPassword"][0]		   =$password;
+	$upd["sambaSID"][0]=			$sambaSID;
+	$upd["gidNumber"][0]='512';
+	
+	$group=new groups(544);
+	$group->AddUsertoThisGroup("administrator");
+	writelogs("Editing groups...",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	$group->EditSambaGroups();
+
+	
+	
+	if(!$this->ldap->Ldap_modify($dn,$upd)){
+		writelogs("Unable to edit administrator:$admin_name settings!!!...",__CLASS__.'/'.__FUNCTION__,__FILE__);
+		echo $this->ldap->ldap_last_error;
+		exit;
+	}
+	$tpl=new templates();
+	writelogs("Success edit administrator:$admin_name settings!!!...",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	
+	$user=new user();
+	$rootpassword=$user->GetRootPassword();	
+	$sock->getfile("SetNetUsePrivs:$rootpassword;SeAddUsersPrivilege;$admin_name;grant");
+	$sock->getfile("SetNetUsePrivs:$rootpassword;SeBackupPrivilege;$admin_name;grant");
+	$sock->getfile("SetNetUsePrivs:$rootpassword;SeDiskOperatorPrivilege;$admin_name;grant");
+	$sock->getfile("SetNetUsePrivs:$rootpassword;SeMachineAccountPrivilege;$admin_name;grant");
+	$sock->getfile("SetNetUsePrivs:$rootpassword;SePrintOperatorPrivilege;$admin_name;grant");
+	$sock->getfile("SetNetUsePrivs:$rootpassword;SeRemoteShutdownPrivilege;$admin_name;grant");
+	$sock->getfile("SetNetUsePrivs:$rootpassword;SeRestorePrivilege;$admin_name;grant");
+	$sock->getfile("SetNetUsePrivs:$rootpassword;SeTakeOwnershipPrivilege;$admin_name;grant");
+	
+	
+}
+
+function CreateGuestUser(){
+	$suffix=$this->ldap->suffix;
+	$upd=array();
+	$dn="cn=nobody,ou=users,dc=samba,dc=organizations,$suffix";
+	if($this->ldap->ExistsDN($dn)){
+		$this->ldap->ldap_delete($dn);
+	}
+					
+	$dn="uid=nobody,ou=users,dc=samba,dc=organizations,$suffix";
+	if(!$this->ldap->ExistsDN("$dn")){
+		$u_ser=new user();
+		$group=new groups(null);
+		$upd["objectClass"][]='account';
+		$upd["objectClass"][]='posixAccount';
+		$upd["objectClass"][]='sambaSAMAccount';
+		$uidNumber=$u_ser->uidNumberCheck(1);		
+		$upd["uidNumber"][0]=$uidNumber;
+		//$sambaPrimaryGroupSID=$group->samba_group_sid_from_gid('514');
+		$sambaSID=$this->ldap->LOCAL_SID().'-'. (2 * $uidNumber * 1000);	
+		$upd["sambaPrimaryGroupSID"][0]="S-1-5-2";
+		$upd["sambaAcctFlags"][0]='[DU         ]';
+		$upd["sambaSID"][0]=$sambaSID;
+		$upd["loginshell"][0]='/bin/sh';
+		$upd["uid"][0]='nobody';	
+		$upd["homedirectory"][0]="/nonexistent";
+		$upd["gidnumber"][0]="1997";
+		$upd["displayname"][0]="nobody";
+		$upd["uid"][0]="nobody";
+		$upd["cn"][0]="nobody";		
+		if(!$this->ldap->ldap_add($dn,$upd)){
+			echo $this->ldap->ldap_last_error ."(line ".__LINE__.":".__CLASS__.'/'.__FUNCTION__.',' .__FILE__;
+		}
+		
+	}
+
+}
+
+
+
+
+
+function CreateAdministrator($admin_name,$password){
+	if(!$this->usersMenus->SAMBA_INSTALLED){return null;}
+    $EnableOpenLDAP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenLDAP"));
+    if($EnableOpenLDAP==0){return null;}
+	$ldap=new clladp();
+	$this->ldap=$ldap;
+	$dn="dc=samba,dc=organizations,$ldap->suffix";
+	 		
+	 		if(!$ldap->ExistsDN($dn)){
+	 			$u["objectClass"][]="top";
+	 			$u["objectClass"][]="organization";
+	 			$u["objectClass"][]="dcObject";
+	 			$u["o"][]="samba";
+	 			$u["dc"][]="samba";
+	 			writelogs("Creating DN $dn",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	 			if(!$ldap->ldap_add($dn,$u)){return null;}
+	 			unset($u);
+	 		}	
+	 		
+	 		
+	$dn="ou=users,dc=samba,dc=organizations,{$ldap->suffix}";
+	writelogs("Creating DN $dn",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	if(!$ldap->ExistsDN($dn)){
+		$gp=new groups();
+		$gp->SambaGroupsBuild();
+	}	 		
+	
+	
+	$dn="cn=$admin_name,ou=users,dc=samba,dc=organizations,{$this->ldap->suffix}";
+	$create=false;
+    if(!$this->ldap->ExistsDN("$dn")){
+				$u_ser=new user();
+				$create=true;
+				$upd=array();
+                $sambaLMPassword="";
+				writelogs("Create administrator account",__CLASS__.'/'.__FUNCTION__,__FILE__);
+				$upd["objectClass"][]='top';
+				$upd["objectClass"][]='inetOrgPerson';
+				$upd["objectClass"][]='sambaSAMAccount';
+				$upd["objectClass"][]='posixAccount';
+				$uidNumber=$u_ser->uidNumberCheck(1);
+				$upd["uidNumber"][0]=$uidNumber;
+				if($admin_name=="root"){$upd["homeDirectory"][]='/root';}else{$upd["homeDirectory"][]="/home/$admin_name";}
+				$upd["cn"][]=$admin_name;
+				$upd["sn"][]=$admin_name;
+				$upd["uid"][]=$admin_name;
+				}
+				$sock=new sockets();
+				$datas=trim(base64_decode($sock->getFrameWork("cmd.php?smbpass=".base64_encode($password))));			
+				if(preg_match('#(.+?):(.+)#',$datas,$re)){
+					$sambaLMPassword=$re[1];
+					$sambaNTPassword=$re[2];
+					}
+				writelogs("sambaLMPassword=$sambaLMPassword, sambaNTPassword=$sambaNTPassword",__CLASS__.'/'.__FUNCTION__,__FILE__);				
+				
+				
+				$group=new groups();
+				$sambaPrimaryGroupSID=$group->samba_group_sid_from_gid('512');
+				$sambaSID=$this->ldap->LOCAL_SID().'-'. (2 * $uidNumber * 1000);
+				
+				//Samba
+				$upd["sambaPwdLastSet"][0]=		time();
+				$upd["sambaLogonTime"][0]=		'0';
+				$upd["sambaLogoffTime"][0]=		'2147483647';
+				$upd["sambaKickoffTime"][0]=	'2147483647';
+				$upd["sambaPwdCanChange"][0]=	'1286597349';
+				$upd["sambaPwdMustChange"][0]=	'2147483647';
+				$upd["sambaPrimaryGroupSID"][0]=$sambaPrimaryGroupSID;
+				$upd["sambaLMPassword"][0]=		$sambaLMPassword;
+				$upd["sambaNTPassword"][0]=		$sambaNTPassword;
+				$upd["sambaAcctFlags"][0]=		'[UX         ]';
+				$upd["sambaSID"][0]=			$sambaSID;
+				
+				writelogs("upd[\"sambaLMPassword\"][]={$upd["sambaLMPassword"][0]}",__CLASS__.'/'.__FUNCTION__,__FILE__);
+			
+				
+				//posixAccount
+				$upd["gidNumber"][0]='512';
+				$upd["loginShell"][0]='/bin/sh';
+				$upd["userPassword"][]=$password;
+                if($create){
+					if(!$this->ldap->ldap_add($dn,$upd)){
+						echo $this->ldap->ldap_last_error;
+					}
+					
+				}else{
+						$group=new groups(544);
+						$group->AddUsertoThisGroup("administrator");
+						$group->EditSambaGroups();
+					
+					
+				}
+	
+	
+}
+function createRootID($requested_password=null){
+	if(isset($_REQUEST["AddTreeFolders"])){return;}
+	if(isset($_REQUEST["prop"])){return;}
+	$users=new usersMenus();
+	$group=new groups();
+	$ldap=new clladp();
+	$sock=new sockets();
+	if($requested_password==null){return false;}
+	$dn="ou=users,dc=samba,dc=organizations,{$ldap->suffix}";
+	if(!$ldap->ExistsDN($dn)){
+		$this->verifyBranch();
+		$gp=new groups();
+		$gp->SambaGroupsBuild();
+	}
+		
+	$sock->getFrameWork("services.php?nsswitch=yes");
+	$dn="uid=root,ou=users,dc=samba,dc=organizations,{$ldap->suffix}";
+	if($ldap->ExistsDN($dn)){
+		writelogs("remove: $dn",__FUNCTION__,__FILE__,__LINE__);
+		$ldap->ldap_delete($dn);
+	}
+	
+	
+	$sock=new sockets();
+	$datas=trim(base64_decode($sock->getFrameWork("cmd.php?smbpass=". base64_encode($requested_password))));			
+	if(preg_match('#(.+?):(.+)#',$datas,$re)){$sambaLMPassword=$re[1];$sambaNTPassword=$re[2];}	
+	$upd=array();
+	$sambaPrimaryGroupSID=$group->samba_group_sid_from_gid('512');
+	$sambaSID=$this->ldap->LOCAL_SID().'-1000';
+				$upd["objectClass"][]='top';
+				$upd["objectClass"][]='inetOrgPerson';
+				$upd["objectClass"][]='sambaSAMAccount';
+				$upd["objectClass"][]='posixAccount';
+				$upd["uidNumber"][0]=0;
+				$upd["gidNumber"][0]=0;	
+				$upd["cn"][0]="root";
+				$upd["uid"][0]="root";
+				$upd["sn"][0]="root";
+				$upd["loginShell"][0]='/bin/bash';
+				$upd["homeDirectory"][0]='/root';
+				$upd["sambaPwdLastSet"][0]=		time();
+				$upd["sambaLogonTime"][0]=		'0';
+				$upd["sambaLogoffTime"][0]=		'2147483647';
+				$upd["sambaKickoffTime"][0]=	'2147483647';
+				$upd["sambaPwdCanChange"][0]=	'1286597349';
+				$upd["sambaPwdMustChange"][0]=	'2147483647';
+				$upd["sambaPrimaryGroupSID"][0]=$sambaPrimaryGroupSID;
+				if($sambaLMPassword<>null){
+					$upd["sambaLMPassword"][0]=		$sambaLMPassword;
+					$upd["sambaNTPassword"][0]=		$sambaNTPassword;
+				}
+				$upd["sambaAcctFlags"][0]=		'[UX         ]';
+				$upd["sambaSID"][0]=			$sambaSID;	
+				$upd["userPassword"][0]=$requested_password;			
+				
+	if(!$ldap->ldap_add($dn,$upd)){echo $ldap->ldap_last_error.":".__FUNCTION__.",\n".__FILE__."\n";return;}
+	
+	
+	writelogs("Update: $dn with password \"****\"",__FUNCTION__,__FILE__,__LINE__);
+	$upd["userPassword"][0]=$requested_password;	
+	$ldap=new clladp();
+	if(!$ldap->Ldap_modify($dn, $upd)){
+		writelogs("Failed to modify $dn password",__FUNCTION__,__FILE__,__LINE__);
+		echo "Failed to modify $dn password\n". $ldap->ldap_last_error."\nIn ".basename(__FILE__)."\nFunction: ".__FUNCTION__."\nLine:".__LINE__;
+		return false;
+		
+	}
+	
+	
+	$sock=new sockets();
+	$sock->getFrameWork("services.php?changeRootPasswd=yes&pass=".urlencode(base64_encode($requested_password)));
+	
+	
+}
+
+function ChangeSID($sid){
+	$usffix=$this->ldap->suffix;
+	$dn="sambaDomainName={$this->main_array["global"]["workgroup"]},$usffix";
+	if(!$this->ldap->ExistsDN($dn)){
+		echo "Unable to stat $dn\n";
+	}
+	$upd=array();
+	$upd["sambaSID"][0]=$sid;
+	$this->ldap->Ldap_modify($dn,$upd);
+	$sock=new sockets();
+	
+	
+	
+	$dn="cn=nobody,ou=users,dc=samba,dc=organizations,$usffix";
+	if($this->ldap->ExistsDN($dn)){
+		$this->ldap->ldap_delete($dn);
+		$this->CreateGuestUser();
+	}
+	
+	$sock->getFrameWork("cmd.php?samba-change-sid=$sid");
+	
+}
+
+	public function GetNetWorks($DOMAIN){
+		$q=new mysql();
+		$sql="SELECT * FROM samba_remote_announce WHERE hostname='master-samba-artica' ORDER BY ID DESC";
+		$results=$q->QUERY_SQL($sql,"artica_backup");
+		$n=array();
+		if(!$q->ok){echo "$q->mysql_error\n";}
+		while($ligne=mysqli_fetch_array($results,MYSQLI_ASSOC)){
+			if($ligne["domain"]<>null){$n[]="{$ligne["ipaddr"]}/$DOMAIN";}else{$n[]=$ligne["ipaddr"];}
+		}
+		if(count($n)>0){return "\tremote announce = ". @implode(" ",$n)."\n";}
+		
+		$nets=$this->ldap->load_mynetworks();
+		if(!is_array($nets)){return;}
+
+        foreach ($nets as $index=>$ipmask){
+			if(preg_match("#^([0-9]+)\.([0-9]+)\.([0-9]+)#",$ipmask,$re)){
+				if(($re[1]==127) && ($re[2]==0) && ($re[3]==0)){continue;}
+				if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Samba adding net {$re[1]}.{$re[2]}.{$re[3]}.255/$DOMAIN\n";}
+				$n[]="{$re[1]}.{$re[2]}.{$re[3]}.255/$DOMAIN";
+			}
+			
+			
+		}
+		if(is_array($n)){return "\tremote announce = ". @implode(" ",$n)."\n";}
+		
+	}
+	
+private function SAMBA_VERSION_UNIX(){
+	if(!class_exists("unix")){include_once("/usr/share/artica-postfix/framework/class.unix.inc");}
+	$unix=new unix();
+	$winbind=$unix->find_program("winbindd");
+	exec("$winbind -V 2>&1",$results);
+	if(preg_match("#Version\s+([0-9\.]+)#i", @implode("", $results),$re)){return $re[1];}
+}
+
+private function WINBINDD_PARAMS(){
+	if($this->posix_getuid==0){$unix=new unix();}
+	$sock=new sockets();
+	$users=new usersMenus();
+	if(!$this->WINBINDD_INSTALLED){
+		if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." WINBINDD NOT INSTALLED\n";}
+		return "\n#WINBINDD NOT INSTALLED\n";
+	}
+	
+	$version=$this->SAMBA_VERSION;
+	$upTo36=0;
+	if(preg_match("#^([0-9]+)\.([0-9]+)#", $version,$re)){
+		$major=intval($re[1]);
+		$minor=intval($re[2]);
+		if($major>=3){if($minor>=6){$upTo36=1;$upTo357=1;}}
+	}	
+	
+	if($this->EnableSambaActiveDirectory==1){$this->DisableWinbindd=0;}
+	
+	$SambaWinbindRpcOnly=$sock->GET_INFO("SambaWinbindRpcOnly");
+	if(!is_numeric($SambaWinbindRpcOnly)){$SambaWinbindRpcOnly=0;}
+	if($SambaWinbindRpcOnly==1){$SambaWinbindRpcOnly="Yes";}else{$SambaWinbindRpcOnly="No";}
+	
+	$SambaAllowTrustedDomains=$sock->GET_INFO("SambaAllowTrustedDomains");
+	if(!is_numeric($SambaAllowTrustedDomains)){$SambaAllowTrustedDomains=1;}
+	if($SambaAllowTrustedDomains==1){$SambaAllowTrustedDomains="Yes";}else{$SambaAllowTrustedDomains="No";}
+	
+	$SambaWinbindUseDefaultDomain=$sock->GET_INFO("SambaWinbindUseDefaultDomain");
+	if(!is_numeric($SambaWinbindUseDefaultDomain)){$SambaWinbindUseDefaultDomain=0;}
+	if($SambaWinbindUseDefaultDomain==1){$SambaWinbindUseDefaultDomain="Yes";}else{$SambaWinbindUseDefaultDomain="No";}	
+	
+	if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Enable Active Directory...: $this->EnableSambaActiveDirectory\n";}
+	if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." WINBINDD disabled.........: $this->DisableWinbindd\n";}
+	if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Type of Samba.............: $this->TypeOfSamba\n";}
+	if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Kerberos enabled..........: $this->EnableKerbAuth\n";}
+	if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Up to 3.6.x...............: $upTo36\n";}
+	if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Winbindd RPC Only.........: $SambaWinbindRpcOnly\n";}
+	if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Allow Trusted domains.....: $SambaAllowTrustedDomains\n";}
+	if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Remove domain & separator.: $SambaWinbindUseDefaultDomain\n";}
+	
+
+	
+	
+	if($this->EnableKerbAuth==1){
+		include_once(dirname(__FILE__)."/class.samba.kerb.inc");
+		
+		$smbkerb=new samba_kerb();
+		if($GLOBALS["AS_ROOT"]){
+			system("/usr/sbin/artica-phpfpm-service -nsswitch");
+		}
+		return $smbkerb->buildPart();
+	}	
+	
+	
+	
+	$this->WinbinddChoose();
+	
+	if($this->DisableWinbindd==1){
+		if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." WINBINDD is disabled\n";}
+		return "\n#WINBINDD DISABLED\n";
+		$sock->getFrameWork("cmd.php?winbindd-stop=yes");
+		
+	}
+	
+	if($this->EnableKerbAuth==1){$this->EnableSambaActiveDirectory=0;}
+	if($this->EnableKerbAuth==1){$this->DisableWinbindd=0;}
+	
+	
+	
+	$conf[]="#WINBINDD *******************************************************";
+	
+	
+	
+	
+	if($this->EnableSambaActiveDirectory==1){
+		if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Samba join domain {$this->config_activedirectory["ADDOMAIN"]}\n";}
+		if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Samba master server {$this->config_activedirectory["ADSERVER"]}.{$this->config_activedirectory["ADDOMAIN"]}\n";}	
+		$sock=new sockets();
+		$WORKGROUP=strtoupper($this->config_activedirectory["WORKGROUP"]);
+		$SambaUseBackendAD=$sock->GET_INFO("SambaUseBackendAD");
+		$SambaWinBindCacheTime=$sock->GET_INFO("SambaWinBindCacheTime");
+
+		
+		if(!is_numeric($SambaUseBackendAD)){$SambaUseBackendAD=0;}
+		if(!is_numeric($SambaWinBindCacheTime)){$SambaWinBindCacheTime=1800;}
+		
+		
+		$conf[]="\tsecurity = ADS";
+		$conf[]="\trealm = ". strtoupper($this->config_activedirectory["ADDOMAIN"])."\n";
+		
+		
+		if($upTo36==0){
+			if($SambaUseBackendAD==0){
+				if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Samba use RID has backend\n";}
+				$conf[]="\tidmap config $WORKGROUP:backend	= rid";
+				$conf[]="\tidmap config $WORKGROUP:base_rid	= 0";
+				$conf[]="\tidmap config $WORKGROUP:read only= Yes";
+				$conf[]="\tidmap config $WORKGROUP:range	= 100000 - 199999";		
+				
+			}else{
+				if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Samba use default backend\n";}
+				$conf[]="\tidmap uid = 100000-20000000";
+				$conf[]="\tidmap gid = 100000-20000000";
+				
+			}
+		}
+		
+		if($upTo36==1){
+			if($this->posix_getuid==0){
+				$hostname=$unix->hostname_simple();
+			}else{
+				$hostname=$users->hostname;
+			}
+			if(strpos($hostname, ".")>0){$THOST=explode(".", $hostname);$hostname=$THOST[0];}
+			$hostname=strtoupper($hostname);
+			
+			$SambaClientUseSPNEGO=$sock->GET_INFO("SambaClientUseSPNEGO");
+			if(!is_numeric($SambaClientUseSPNEGO)){$SambaClientUseSPNEGO=1;}
+			if($SambaClientUseSPNEGO==1){$SambaClientUseSPNEGO="Yes";}else{$SambaClientUseSPNEGO="No";}
+			
+			$SambaClientUseSPNEGOPR=$sock->GET_INFO("SambaClientUseSPNEGOPR");
+			if(!is_numeric($SambaClientUseSPNEGOPR)){$SambaClientUseSPNEGOPR=1;}
+			if($SambaClientUseSPNEGOPR==1){$SambaClientUseSPNEGOPR="Yes";}else{$SambaClientUseSPNEGOPR="No";}	
+
+			$SambaSendSPNEGOPR=$sock->GET_INFO("SambaSendSPNEGOPR");
+			if(!is_numeric($SambaSendSPNEGOPR)){$SambaSendSPNEGOPR=1;}
+			if($SambaSendSPNEGOPR==1){$SambaSendSPNEGOPR="Yes";}else{$SambaSendSPNEGOPR="No";}			
+			
+			$conf[]="\tidmap config BUILTIN:backend		= tdb";
+			$conf[]="\tidmap config BUILTIN:base_rid	= 800";
+			$conf[]="\tidmap config BUILTIN:range		= 800-5000";			
+			$conf[]="\tidmap config * : backend	 = tdb";
+			$conf[]="\tidmap config * : range	 =  70000 - 99999";
+			$conf[]="\tidmap config * : base_rid = 0";
+			$conf[]="\tidmap config $hostname : backend = tdb";
+			$conf[]="\tidmap config $hostname : range = 5001 - 20000";
+			$conf[]="\tidmap config $WORKGROUP : range = 20000 - 20000000";
+			$conf[]="\tidmap config $WORKGROUP : default = yes";
+			$conf[]="\tidmap config $WORKGROUP : backend = tbd";  				
+			$conf[]="\tclient use spnego	= $SambaClientUseSPNEGO";
+        	$conf[]="\tclient use spnego principal	= $SambaClientUseSPNEGOPR";
+        	$conf[]="\tsend spnego principal = $SambaSendSPNEGOPR";
+			if($this->client_ntlmv2_auth==1){$conf[]="\tclient ntlmv2 auth = Yes";$conf[]="\tclient lanman auth = No";}
+			if($this->client_ntlmv2_auth==0){$conf[]="\tclient ntlmv2 auth = No";$conf[]="\tclient lanman auth = Yes";}        	
+		}
+		
+		
+		$conf[]="\tencrypt passwords = Yes";
+		$conf[]="#client_ntlmv2_auth:$this->client_ntlmv2_auth";
+
+		$conf[]="\twinbind normalize names = Yes";
+		$conf[]="\twinbind separator = /";				
+		$conf[]="\twinbind use default domain = $SambaWinbindUseDefaultDomain";
+		$conf[]="\twinbind enum users = Yes";
+		$conf[]="\twinbind enum groups = Yes";	
+		$conf[]="\twinbind nested groups = Yes";
+		$conf[]="\twinbind rpc only	= $SambaWinbindRpcOnly";	
+		
+		
+		//$conf[]="\twinbind nss info = rfc2307"; 
+		$conf[]="\twinbind reconnect delay = 30";  
+		$conf[]="\twinbind offline logon = true";
+  		$conf[]="\twinbind cache time = $SambaWinBindCacheTime";
+   		$conf[]="\twinbind refresh tickets = true";
+   		$conf[]="\tkerberos method = system keytab";
+		
+		$conf[]="\tserver signing = auto";
+		$conf[]="\tclient signing = auto";	
+		$conf[]="\tlm announce = No";
+		$conf[]="\tntlm auth = No";
+		$conf[]="\tlanman auth = No";
+		$conf[]="\tpreferred master = No";
+		$conf[]="";
+		return @implode("\n",$conf);	
+	}
+	
+	
+	$conf[]="\tallow trusted domains = $SambaAllowTrustedDomains";
+	$conf[]="\twinbind use default domain = $SambaWinbindUseDefaultDomain";
+	$conf[]="\twinbind enum users = Yes";
+	$conf[]="\twinbind enum groups = Yes";
+	//$conf[]="\tpassword server=*";
+	$conf[]="\tencrypt passwords = Yes";
+	$conf[]="\twinbind separator = /";			
+	$conf[]="\twinbind uid = 10000-20000";
+	$conf[]="\twinbind gid = 10000-20000";
+	$conf[]="\twinbind enum users = Yes";
+	$conf[]="\twinbind enum groups = Yes";
+	$conf[]="\twinbind rpc only	= $SambaWinbindRpcOnly";
+	$conf[]="\tsecurity = $this->SambaSecurityLevel";
+	$conf[]="";
+	return @implode("\n",$conf);
+	
+}
+
+function CUPS(){
+	if($this->posix_getuid==0){if(!is_file("/etc/printcap")){shell_exec("/bin/touch /etc/printcap");}}
+	if(!$this->CUPS_INSTALLED){return "\n\tprinting = bsd\n";}
+	if($this->EnablePrintersSharing==0){return "\n\tprinting = bsd\n";}
+	$conf[]="\n";
+	$conf[]="\tprinters = yes\n";
+	$conf[]="\tprinting = cups\n";
+	$conf[]="\tprintcap name = cups\n";
+	$conf[]="\n";
+	return @implode("\n",$conf);
+	
+}
+
+private function netbios_aliases(){
+	
+	$sql="SELECT hostname,ou,workgroup FROM samba_hosts ORDER BY hostname";
+	$q=new mysql();
+	$results=$q->QUERY_SQL($sql,"artica_backup");
+	if(!$q->ok){
+		if(preg_match("#doesn.*?t exist#", $q->mysql_error)){return;}
+		writelogs("$q->mysql_error",__FUNCTION__,__FILE__,__LINE__);
+		return;
+		}
+	while($ligne=mysqli_fetch_array($results,MYSQLI_ASSOC)){
+		if($ligne["hostname"]=="master"){continue;}
+		if(strlen($ligne["hostname"])>19){$ligne["hostname"]=substr($ligne["hostname"], 0,19);}
+		$this->samba_aliases[]=$ligne["hostname"];
+		
+	}
+	if($GLOBALS["AS_ROOT"]){echo "Starting......: ".date("H:i:s")." Samba ".count($this->samba_aliases)." virtual servers\n";}
+	if(count($this->samba_aliases)==0){return null;}
+	return @implode(" ", $this->samba_aliases);
+	
+}
+
+
+
+
+function BuildConfig(){
+			if($GLOBALS["VERBOSE"]){writelogs("Sarting build configuration...",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+			$sock=new sockets();
+			$WinbinddInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WinbinddInstalled"));
+			if($WinbinddInstalled==1){$this->WINBINDD_INSTALLED=true;}else{$this->WINBINDD_INSTALLED=false;}
+			$this->CUPS_INSTALLED=$this->usersMenus->CUPS_INSTALLED;
+			$this->BuildDefaults();
+			$this->DisableWinbindd=$sock->GET_INFO('DisableWinbindd');
+			
+			$SambaNetBiosName=trim($sock->GET_INFO("SambaNetBiosName"));
+			$SambaActAsWins=$sock->GET_INFO("SambaActAsWins");
+			$SambaWinsServer=$sock->GET_INFO("SambaWinsServer");
+			$SambaUsDNS=$sock->GET_INFO("SambaUsDNS");	
+			$SambaRoamingEnabled=$sock->GET_INFO('SambaRoamingEnabled');
+			
+			if(!is_numeric($SambaRoamingEnabled)){$SambaRoamingEnabled=0;}		
+			if(!preg_match('#([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)#',$SambaWinsServer)){$SambaWinsServer="0.0.0.0";}
+			if(!is_numeric($SambaUsDNS)){$SambaUsDNS=0;}
+			if(!is_numeric($SambaActAsWins)){$SambaActAsWins=0;}
+			if($SambaActAsWins==1){$SambaWinsServer="0.0.0.0";}
+									
+			$this->EnableSambaActiveDirectory=$sock->GET_INFO("EnableSambaActiveDirectory");
+			$this->config_activedirectory=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SambaAdInfos")));
+			if($SambaNetBiosName<>null){$this->main_array["global"]["netbios name"]=$SambaNetBiosName;}
+			if($this->main_array["global"]["netbios name"]==null){
+				$users=new usersMenus();
+				$hostname=$users->hostname;
+				if(preg_match("#^(.+?)\.#", $hostname,$re)){$hostname=$re[1];}
+				$this->main_array["global"]["netbios name"]=$hostname;
+				$sock->SET_INFO("SambaNetBiosName", $hostname);
+			}
+			$netbiosname=$this->main_array["global"]["netbios name"];
+			if($SambaRoamingEnabled==1){$this->main_array["global"]["domain logons"]="yes";}
+			
+
+			if($GLOBALS["VERBOSE"]){writelogs("[$netbiosname]: Checking aliases...",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);}
+			$netbios_aliases=$this->netbios_aliases();
+			
+			writelogs("log level=".$this->main_array["global"]["log level"],__CLASS__.'/'.__FUNCTION__,__FILE__);
+			
+			
+			if($this->main_array["global"]["log file"]==null){$this->main_array["global"]["log file"]="/var/log/samba/log.%m";}
+			if($this->main_array["global"]["log level"]==null){$this->main_array["global"]["log level"]=0;}
+			
+			
+			
+			if(preg_match('#^(.+?)\.#',$this->main_array["global"]["netbios name"],$re)){
+				$this->main_array["global"]["netbios name"]=$re[1];
+			}
+			$this->main_array["global"]["netbios name"]=strtolower($this->main_array["global"]["netbios name"]);
+			if(strlen($this->main_array["global"]["netbios name"]>19)){$this->main_array["global"]["netbios name"]=substr($this->main_array["global"]["netbios name"],0,19);}
+			
+			$conf[]="[global]";
+			
+			if($this->EnableSambaVirtualsServers==1){
+				if($netbios_aliases<>null){
+					$this->main_array["global"]["disable netbios"]="no";
+					if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." [$netbiosname]: Virtual servers is enabled\n";} 
+					$conf[]="\tnetbios aliases =  {$this->main_array["global"]["netbios name"]} ". strtoupper($netbios_aliases)."";
+					$conf[]="\tsmb ports = 139";
+					$conf[]="\tinclude = /etc/samba/virtual/smb.conf.%L";
+					if($this->posix_getuid==0){@mkdir("/etc/samba/virtual",644,true);}
+                    foreach ($this->samba_aliases as $Asnull=>$sambaAlias){
+						if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." [$netbiosname]: Virtual server [$sambaAlias]\n";}
+						$smbalias=new samba_aliases($sambaAlias);
+						$smbalias->ASROOT=$GLOBALS["AS_ROOT"];
+						$smbalias->build();
+					}
+				}
+			}				
+			
+			
+			$WORKGROUP=strtoupper($this->main_array["global"]["workgroup"]);
+			if($this->EnableSambaActiveDirectory==1){
+				$WORKGROUP=strtoupper($this->config_activedirectory["WORKGROUP"]);
+			}
+			
+			if($this->EnableKerbAuth==1){
+				$arrayKerberos=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
+				$WORKGROUP=$arrayKerberos["ADNETBIOSDOMAIN"];
+			}
+			
+			$SambaMapUntrustedDomain=$sock->GET_INFO("SambaMapUntrustedDomain");
+			if(!is_numeric($SambaMapUntrustedDomain)){$SambaMapUntrustedDomain=1;}
+			
+
+			
+			$this->WORKGROUP=$WORKGROUP;
+			$conf[]="\tworkgroup = $WORKGROUP";
+			$conf[]="\tnetbios name = {$this->main_array["global"]["netbios name"]}";
+			$conf[]="\tserver string = {$this->main_array["global"]["server string"]}";
+			$conf[]="\tdisable netbios ={$this->main_array["global"]["disable netbios"]}";
+			
+
+			
+			$mySamba=new samba_aliases("master");
+			if($mySamba->upTo357==0){
+				if($mySamba->main_array["global"]["strict_allocate"]==1){$conf[]="\tstrict allocate = Yes";}else{$conf[]="\tstrict allocate = No";}
+			}
+			if($mySamba->main_array["global"]["strict_locking"]==1){$conf[]="\tstrict locking = Auto";}else{$conf[]="\tstrict locking = No";}
+			if($mySamba->main_array["global"]["sync_always"]==1){$conf[]="\tsync always = Yes";}else{$conf[]="\tsync always = No";}
+			if($mySamba->main_array["global"]["getwd_cache"]==1){$conf[]="\tgetwd cache = Yes";}else{$conf[]="\tgetwd cache = No";}
+			if($mySamba->main_array["global"]["smb2_protocol"]==1){$conf[]="\tmax protocol = SMB2";}else{$conf[]="\tmax protocol = NT1";}			
+			
+			
+			
+			$this->main_array["global"]["name resolve order"]=str_replace("dns","",$this->main_array["global"]["name resolve order"]);
+			if($GLOBALS["VERBOSE"]){writelogs("[$netbiosname]: name resolve order ={$this->main_array["global"]["name resolve order"]}",__CLASS__,__FUNCTION__,__FILE__);}
+			
+			$conf[]="\tname resolve order ={$this->main_array["global"]["name resolve order"]}";
+			if($SambaUsDNS==1){$conf[]="\tdns proxy = Yes";}else{$conf[]="\tdns proxy = No";}
+			if($SambaActAsWins==1){
+				$conf[]="\twins support = Yes";
+				$conf[]="\twins hook = $this->PHP5_BIN /usr/share/artica-postfix/exec.samba.wins.php";
+			}else{
+				$conf[]="\twins support = No";
+			
+			}
+			if($SambaWinsServer<>"0.0.0.0"){$conf[]="\twins server = $SambaWinsServer";$conf[]="\twins proxy = Yes";}			
+			$conf[]="\tmin protocol = NT1";
+			
+			if($GLOBALS["AS_ROOT"]){
+				$SECOND_PART=$this->SECOND_PART();
+				$conf[]=$SECOND_PART;
+				if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." [$netbiosname]: ". strlen($SECOND_PART)." bytes for second part\n";} 
+			}else{
+				$this->SECOND_PART();
+			}
+			if(isset($mySamba->main_array["global"]["workgroup"])){
+				$this->CleanAllDomains($mySamba->main_array["global"]["workgroup"]);
+			}	
+			reset($this->main_array);
+			return @implode("\n", $conf);
+	
+}
+
+private function SECOND_PART(){
+			$version=$this->SAMBA_VERSION;
+			$upTo36=0;
+			if(preg_match("#^([0-9]+)\.([0-9]+)#", $version,$re)){
+				$major=intval($re[1]);
+				$minor=intval($re[2]);
+				if($major>=3){if($minor>=6){$upTo36=1;$upTo357=1;}}
+			}	
+	
+			$sock=new sockets();
+			$admin_users=null;
+			$this->EnablePrintersSharing=$sock->GET_INFO("EnablePrintersSharing");
+			if($this->EnablePrintersSharing==null){$this->EnablePrintersSharing=0;$sock->SET_INFO("EnablePrintersSharing",0);}
+			if(!is_numeric($this->client_ntlmv2_auth)){$this->client_ntlmv2_auth=1;}
+			$DisableSambaFileSharing=$sock->GET_INFO("DisableSambaFileSharing");
+			$SambaRoamingEnabled=$sock->GET_INFO('SambaRoamingEnabled');
+			$SambaEnableRemoteAnnounce=$sock->GET_INFO("SambaEnableRemoteAnnounce");
+			$SambaDefaultFolderSettings=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SambaDefaultFolderSettings")));
+			$EnableSambaHomeService=$sock->GET_INFO("EnableSambaHomeService");
+	
+			if(isset($SambaDefaultFolderSettings["ADMINSFOLDERS"])){
+				if(count($SambaDefaultFolderSettings["ADMINSFOLDERS"])>0){
+                    foreach ($SambaDefaultFolderSettings["ADMINSFOLDERS"] as $uid=>$ligne){
+                    $uid=trim($uid);$spacepos=strpos($uid, " ");
+                    if($spacepos>0){if(preg_match("#^@(.*)#", $uid,$re)){$uid="@\"{$re[1]}\"";}else{$uid="\"{$re[1]}\"";}}$ADMINSFOLDERS[]=$uid;}}
+				$admin_users=trim(@implode(" ", $ADMINSFOLDERS));
+			}
+			
+			$netbiosname=$this->main_array["global"]["netbios name"];
+			
+			if(!is_numeric($DisableSambaFileSharing)){$DisableSambaFileSharing=0;}
+			if(!is_numeric($SambaRoamingEnabled)){$SambaRoamingEnabled=0;}
+			if(!is_numeric($SambaEnableRemoteAnnounce)){$SambaEnableRemoteAnnounce=0;}
+			if(!is_numeric($EnableSambaHomeService)){$EnableSambaHomeService=1;}
+			
+				
+			if($GLOBALS["VERBOSE"]){writelogs("[$netbiosname]: DisableSambaFileSharing.: $DisableSambaFileSharing",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);}
+			if($GLOBALS["VERBOSE"]){writelogs("[$netbiosname]: SambaRoamingEnabled.....: $SambaRoamingEnabled",__CLASS__.'/'.__FUNCTION__,__FILE__);}
+			
+			
+			if($DisableSambaFileSharing==1){$this->EnablePrintersSharing=0;}
+
+			if($SambaRoamingEnabled==1){
+				$this->main_array["global"]["domain logons"]="yes";
+				
+			}
+			
+			if($SambaEnableRemoteAnnounce==1){
+				$conf[]=$this->GetNetWorks($this->main_array["global"]["workgroup"]);
+			}
+			
+			
+			if($DisableSambaFileSharing==1){
+				if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." [$netbiosname]: Samba limit to lo, file sharing is disabled\n";} 
+				$conf[]="#Samba only used for AD connection, no shares";
+				$conf[]="\tinterfaces = lo";
+				$conf[]="\tbind interfaces only = yes";
+			}
+			
+
+			
+			
+			
+			if($this->main_array["global"]["log level"]<1){$this->main_array["global"]["log level"]=1;}
+
+			$conf[]="\tsyslog = 3";
+			$conf[]="\tlog level = {$this->main_array["global"]["log level"]}";
+			$conf[]="\tlog file = {$this->main_array["global"]["log file"]}";
+			$conf[]="\tdebug timestamp = yes";
+			$conf[]="";
+			$conf[]="#\tEnable symbolics links -----------------------------------";
+			$conf[]="\tfollow symlinks = yes";
+			$conf[]="\twide links = yes";
+			$conf[]="\tunix extensions = no";
+			$conf[]="";
+			$conf[]="\tusershare allow guests = no";
+			$conf[]="\tusershare max shares = 100";
+			$conf[]="\tusershare owner only = true";
+			$conf[]="\tusershare path=/var/lib/samba/usershares/data";
+			
+			$conf[]="\n#Guest access";
+			$conf[]="\tguest account = nobody";
+			$conf[]="\tmap to guest = Bad Password";
+			$conf[]="\ttemplate homedir = /home/%U";
+	  		$conf[]="\ttemplate shell = /bin/bash";
+	  		
+	  		
+	  		if($upTo36==0){$conf[]="\tenable privileges = yes";}
+			
+			
+			
+			if($this->EnableSambaActiveDirectory<>1){
+				$conf[]="\tdomain master = {$this->main_array["global"]["domain master"]}";
+				$conf[]="\tlocal master = {$this->main_array["global"]["local master"]}";
+				$conf[]="\tpreferred master = {$this->main_array["global"]["preferred master"]}";
+				$conf[]="\tdomain logons = {$this->main_array["global"]["domain logons"]}";
+			}else{
+				$conf[]="#Disable local master see:http://www.thedailyadmin.com/2009/08/disabling-samba-master-browser.html";
+				$conf[]="\tlocal master = No";
+				$conf[]="\tdomain master = No";
+			}
+			
+			$conf[]="\tos level = {$this->main_array["global"]["os level"]}";
+			$conf[]="\tldap passwd sync = no";
+			$conf[]="";
+			
+			if($GLOBALS["VERBOSE"]){writelogs("WINBINDD_PARAMS()",__CLASS__,__FUNCTION__,__FILE__);}
+			$conf[]=$this->WINBINDD_PARAMS();
+			$conf[]=$this->CUPS();
+			
+			
+			if($GLOBALS["VERBOSE"]){writelogs("VISTA/Windows7 compatibility",__CLASS__,__FUNCTION__,__FILE__);}
+			$conf[]="#\tVISTA/Windows7 compatibility";
+			
+
+
+        	
+			if($GLOBALS["VERBOSE"]){writelogs("ACLs settings",__CLASS__,__FUNCTION__,__FILE__);}
+        	$conf[]="#\tACLs settings";
+        	$conf[]="\tnt acl support={$this->main_array["global"]["nt acl support"]}";
+        	$conf[]="\tmap acl inherit={$this->main_array["global"]["map acl inherit"]}";
+        	
+        	$conf[]="\tinherit permissions={$this->main_array["global"]["inherit permissions"]}";
+        	$conf[]="\tinherit acls={$this->main_array["global"]["inherit acls"]}";      	
+        	$conf[]="\tacl map full control=yes";
+        	$conf[]="\tdos filemode=yes";
+        	$conf[]="\tforce unknown acl user = no";
+			$conf[]="";			
+			if($GLOBALS["VERBOSE"]){writelogs("LDAP_SETTINGS()",__CLASS__,__FUNCTION__,__FILE__);}
+			$conf[]=$this->LDAP_SETTINGS();
+			
+			
+
+			if($SambaRoamingEnabled==1){
+				$conf[]="\tlogon path = \\\\{$this->main_array["global"]["netbios name"]}\profile\%U";
+				$conf[]="\tlogon drive = P:";
+				$conf[]="\tlogon home = \\\\{$this->main_array["global"]["netbios name"]}\%U";
+			}else{
+				$conf[]="\tlogon path =";
+				$conf[]="\tlogon home =";
+				$conf[]="\tlogon drive =";
+			}
+			
+
+
+			$conf[]="\tcase sensitive = No";
+			$conf[]="\tdefault case = lower";
+			$conf[]="\tpreserve case = yes";
+			$conf[]="\tshort preserve case = yes";
+			$conf[]="\twins support = Yes";
+			$conf[]="\ttime server = yes";
+			$conf[]="\tmsdfs root = no";
+			$conf[]="\thost msdfs = no";
+			
+			$conf[]="";
+			$conf[]="# Shared Folders lists -----------------------------------";
+			unset($this->main_array["global"]);
+			
+			if(is_array($this->usb_array)){
+                foreach ($this->usb_array as $uuid=>$array){
+				$this->main_array[$array["name"]]["path"]="/opt/artica/usb_mount/$uuid";
+				$this->main_array[$array["name"]]["create mask"]="0660";
+				$this->main_array[$array["name"]]["directory mask"]="0770";
+				$this->main_array[$array["name"]]["force user"]="root";
+				$this->main_array[$array["name"]]["force group"]="root";
+				}
+			}
+			
+			
+			unset($this->main_array["netlogon"]);
+			unset($this->main_array["profile"]);
+			unset($this->main_array["profiles"]);
+			unset($this->main_array["profiles.V2"]);
+			unset($this->main_array["homes"]);
+			unset($this->main_array["printers"]);
+			unset($this->main_array["print$"]);
+			
+			$GREYHOLE=$this->LOAD_GREYHOLE();
+			$RECYCLES=$this->LOAD_RECYCLES_BIN();
+
+            foreach ($this->main_array as $FOLDER => $ligne){
+					if(is_array($ligne)){
+						if($FOLDER==null){
+							if($ligne["path"]==null){continue;}
+							$FOLDER=basename($ligne["path"]);
+						}
+						if($this->posix_getuid==0){echo "[$netbiosname]: Starting......: ".date("H:i:s")." Samba shared folder \"$FOLDER\"\n";} 					
+						$conf[]="\n[$FOLDER]";
+						if($GLOBALS["VERBOSE"]){writelogs("Folder............: $FOLDER",__CLASS__,__FUNCTION__,__FILE__);}
+						$vfs_modules=array();
+						$vfs=array();
+						if(isset($ligne["vfs object"])){
+							$vfs_modules=explode(" ",$ligne["vfs object"]);
+						}
+                        foreach ($vfs_modules as $none=>$vfs_modules_line){
+						$vfs_modules_line=trim($vfs_modules_line);if($vfs_modules_line==null){continue;}$vfs[$vfs_modules_line]=true;}
+						unset($vfs["greyhole"]);
+						unset($vfs["recycle:repository"]);
+						unset($vfs["recycle:keeptree"]);
+						unset($ligne["dfree command"]);
+						if(isset($GREYHOLE[$FOLDER])){
+							if(is_numeric($GREYHOLE[$FOLDER])){
+								if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." [$netbiosname]: Samba greyhole on folder $FOLDER\n";} 
+								$vfs["greyhole"]=true;
+								$ligne["dfree command"]="/usr/bin/greyhole-dfree";
+							}
+						}
+						
+						unset($ligne["recycle:keeptree"]);	
+						unset($ligne["recycle:versions"]);		
+						unset($ligne["recycle:touch"]);	
+						unset($ligne["recycle:exclude"]);		
+						unset($ligne["recycle:exclude_dir"]);		
+						unset($ligne["recycle:maxsize"]);	
+						unset($ligne["recycle:noversions"]);
+						if(isset($RECYCLES[$FOLDER])){						
+							if($RECYCLES[$FOLDER]){
+								if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." [$netbiosname]: Samba recycle bin enabled on folder $FOLDER\n";} 
+								$ligne["recycle:repository"]=".RecycleBin$/%U";
+								$ligne["recycle:keeptree"]="yes";	
+								$ligne["recycle:versions"]="yes";
+								$ligne["recycle:touch"]="no";
+								$ligne["recycle:exclude"]="*.tmp|*.temp|*.obj|~\$*";	
+								$ligne["recycle:exclude_dir"]="/tmp|/temp|/cache";		
+								$ligne["recycle:maxsize"]="1073741824";
+								$ligne["recycle:noversions"]="*.mdb";	
+								$vfs["recycle:repository"]=true;	
+								$vfs["recycle:keeptree"]=true;					
+							}
+						}
+						if(is_array($vfs)){
+                            foreach ($vfs as $a=>$b){$newvfs[]=$a;}
+							$ligne["vfs object"]=@implode(" ",$newvfs);
+						}
+						if(isset($ligne["public"])){
+							$ligne["guest ok"]=$ligne["public"];
+							$ligne["guest only"]=$ligne["public"];
+							if($ligne["public"]=="yes"){
+								@chown($ligne["path"],"nobody");
+							}else{
+								@chown($ligne["path"],"root");
+							}
+						}else{
+							@chown($ligne["path"],"root");
+							
+							
+						}
+						if(isset($ligne["browsable"])){$ligne["browseable"]=$ligne["browsable"];}
+						if(!isset($ligne["browseable"])){$ligne["browseable"]="Yes";$ligne["browsable"]="Yes";}
+                        foreach ($ligne as $KEY=>$VALS){
+    						if($KEY=="finduser"){continue;}
+							if($KEY=="SaveUseridPrivileges"){continue;}
+							if($KEY=="write_list"){continue;}
+							if($KEY=="read_list"){continue;}
+							if($KEY=="valid_users"){continue;}
+							if($KEY=="admin users"){continue;}
+							if($KEY=="veto files"){continue;}
+							if($this->KEY_NOT_DIR_COMPATIBLE($KEY)){
+								writelogs("Folder............: $KEY No compatible, aborting",__CLASS__,__FUNCTION__,__FILE__);
+								continue;
+							}
+							if($VALS==null){continue;}
+							writelogs("Folder............: $FOLDER $KEY = $VALS",__CLASS__,__FUNCTION__,__FILE__);
+							$conf[]="\t$KEY = $VALS";
+						
+						}
+						$veto_files=$this->veto_files($ligne["path"]);
+						if($veto_files<>null){
+							$conf[]="\tveto files = $veto_files";
+						}
+						if($admin_users<>null){$conf[]="\tadmin users = $admin_users";}
+						
+						
+				}
+			}
+			
+			
+
+				
+			if(!isset($this->main_array["global"])){
+				$this->LoadSettings();
+			}
+			
+			$domain_logon=$this->main_array["global"]["domain logons"];
+			if($SambaRoamingEnabled==1){
+				$conf[]="[netlogon]";
+				$conf[]="\tpath = /home/netlogon/";
+				$conf[]="\twritable = No";
+				$conf[]="\tbrowseable = No";
+				$conf[]="\twrite list = root";				
+				$domain_logon="yes";
+			}
+			
+			
+		if($GLOBALS["VERBOSE"]){writelogs("[$netbiosname]: Domain logon......: $domain_logon",__CLASS__,__FUNCTION__,__FILE__);}
+		if(strtolower($domain_logon)=='yes'){
+			if($SambaRoamingEnabled==1){
+				$profile_path=$sock->GET_INFO('SambaProfilePath');
+				if(trim($profile_path)==null){$profile_path="/home/export/profile";}
+				if($GLOBALS["AS_ROOT"]){if(!is_dir($profile_path)){@mkdir($profile_path,644,true);shell_exec("/bin/chmod 700 $profile_path >/dev/null 2>&1");}}
+											
+				$conf[]="[profiles]";
+				$conf[]="\t#see USERENV.LOG in c:\windows\debug\UserMod on Windows XP for troubleshooting";
+				$conf[]="\tpath = $profile_path";
+				$conf[]="\toplocks = false";
+				$conf[]="\tlevel2 oplocks = false";
+				$conf[]="\tcsc policy = disable";
+				$conf[]="\tbrowseable = No";
+				$conf[]="\twriteable = Yes";
+				$conf[]="\tread only = No";
+				$conf[]="\tprofile acls = yes";
+				$conf[]="\tcreate mask = 0700";
+				$conf[]="\tdirectory mask = 0700";
+				$conf[]="\tcomment = Roaming user profile storage";
+				$conf[]="\thide files=/Desktop.ini/Thumbs.db/lost+found";
+				if($GLOBALS["AS_ROOT"]){$unix=new unix();$mkdir=$unix->find_program("mkdir");$chown=$unix->find_program("chown");}else{$mkdir="mkdir";$chown="chown";}
+				$conf[]="\troot preexec = $mkdir -p -m 770 $profile_path/\"%U\" && $mkdir -p -m 770 $profile_path/\"%U\".V2";
+				$conf[]="\troot postexec = $chown -R \"%U\" $profile_path/\"%U\"/";
+				$conf[]="";
+				$conf[]="[profiles.V2]";
+		        $conf[]="\tcopy = profiles";
+		        $conf[]="\tbrowseable = no";
+		        $conf[]="\tcsc policy = disable";	        		
+		        $conf[]="";
+				$conf[]="[profile]";
+		        $conf[]="\tcopy = profiles";
+		        $conf[]="\tbrowseable = no";	        		
+				}
+			}	
+				
+			if($EnableSambaHomeService==1){
+				$conf[]="[homes]";
+				$conf[]="\tcomment = Personnal Folder";
+				$conf[]="\tbrowseable = No";
+				$conf[]="\twriteable = Yes\n";
+			} 
+			
+			
+			if($this->usersMenus->CUPS_INSTALLED){
+				if($this->EnablePrintersSharing==1){
+				$conf[]="\n[printers]";
+				$conf[]="\tcomment = Printers";
+				$conf[]="\tbrowseable = yes";
+				$conf[]="\tpath = /var/spool/samba";
+				$conf[]="\tprintable = yes";
+				$conf[]="\tpublic = yes";
+				$conf[]="\tguest ok = yes";
+				$conf[]="\twritable = no";
+ 				$conf[]="\tcreate mode = 0700\n";
+				$conf[]="[print$]";
+  				$conf[]="\tcomment = Printers drivers";
+  				$conf[]="\tpath = /etc/samba/printer_drivers";
+  				$conf[]="\tbrowseable = yes";
+  				$conf[]="\tguest ok = no";
+  				$conf[]="\tread only = yes";
+  				$conf[]="\twrite list = root,administrator,@Administrators,@lpadmin";	
+				}		
+			}
+			$this->SECOND_PART_CONF=@implode("\n", $conf);
+			
+			
+			writelogs("compiling second part ". strlen($this->SECOND_PART_CONF)." bytes",__CLASS__,__FUNCTION__,__FILE__);
+			$sock->SaveConfigFile($this->SECOND_PART_CONF, "SambaSecondPartConf");
+			if($this->EnableSambaVirtualsServer==1){
+				if($GLOBALS["VERBOSE"]){writelogs("[$netbiosname]: Virtual servers: ".count($this->samba_aliases)." server(s)",__CLASS__,__FUNCTION__,__FILE__);}
+			
+				if(count($this->samba_aliases)>0){
+					if($GLOBALS["AS_ROOT"]){
+						$unix=new unix();
+						$hostname_text=$unix->hostname_g();
+						if(strpos($hostname_text, '.')>0){$tz=explode(".",$hostname_text);$hostname_text=$tz[0];}
+						
+						$finale="[global]\n\tworkgroup =$this->WORKGROUP\n\tnetbios name = $netbiosname\n$this->SECOND_PART_CONF";
+						echo "Starting......: ".date("H:i:s")." [$netbiosname]: Samba also known has $hostname_text\n";
+						echo "Starting......: ".date("H:i:s")." [$netbiosname]: Samba processing /etc/samba/virtual/smb.conf.0.0.0.0\n";
+						echo "Starting......: ".date("H:i:s")." [$netbiosname]: Samba processing /etc/samba/virtual/smb.conf.". strtolower($hostname_text)."\n";
+						
+						echo "Starting......: ".date("H:i:s")." [$netbiosname]: Samba processing /etc/samba/virtual/smb.conf.$netbiosname\n";
+						@file_put_contents("/etc/samba/virtual/smb.conf.0.0.0.0",$finale);
+						@file_put_contents("/etc/samba/virtual/smb.conf.$netbiosname", $finale);
+						@file_put_contents("/etc/samba/virtual/smb.conf.$hostname_text", $finale);
+						@file_put_contents("/etc/samba/virtual/smb.conf.". strtoupper($hostname_text), $finale);
+					}
+					return;
+				}
+		}
+		
+		return $this->SECOND_PART_CONF;
+	
+}
+
+public function LOAD_RECYCLES_BIN():array{
+    $EnableMySQL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMySQL"));
+    if($EnableMySQL==0){
+        return array();
+    }
+	$sql="SELECT sharename FROM samba_recycle_bin";
+	$q=new mysql();
+	$f=array();
+	$results=$q->QUERY_SQL($sql,"artica_backup");
+    if(!$q->ok){
+        return $f;
+    }
+	while($ligne=mysqli_fetch_array($results,MYSQLI_ASSOC)){
+		$f[$ligne["sharename"]]=true;
+	}	
+	
+	return $f;
+}
+
+private function KEY_NOT_DIR_COMPATIBLE($key){
+		if(preg_match("#idmap alloc#", $key)){return true;}
+		$array["syslog"]=true;// 3
+		$array["log level"]=true;// 1
+		$array["log file"]=true;// /var/log/samba/log.%m
+		$array["debug timestamp"]=true;// yes
+		$array["usershare allow guests"]=true;// no
+		$array["usershare max shares"]=true;// 100
+		$array["usershare owner only"]=true;// true
+		$array["usershare path"]=true;// /var/lib/samba/usershares/data
+		$array["guest account"]=true;// nobody
+		$array["map to guest"]=true;// Bad Password
+		$array["template homedir"]=true;// /home/%U
+		$array["template shell"]=true;// /bin/false
+		$array["enable privileges"]=true;// yes
+		$array["domain master"]=true;// yes
+		$array["local master"]=true;// yes
+		$array["preferred master"]=true;// yes
+		$array["domain logons"]=true;// yes
+		$array["os level"]=true;// 34
+		$array["ldap passwd sync"]=true;// no
+		$array["winbind use default domain"]=true;// yes
+		$array["winbind enum users"]=true;// yes
+		$array["winbind enum groups"]=true;// yes
+		$array["password server"]=true;// *
+		$array["encrypt passwords"]=true;// true
+		$array["winbind separator"]=true;// /
+		$array["winbind uid"]=true;// 10000-20000
+		$array["winbind gid"]=true;// 10000-20000
+		$array["security"]=true;// user
+		$array["printing"]=true;// bsd
+		$array["client lanman auth"]=true;// yes
+		$array["client ntlmv2 auth"]=true;// yes
+		$array["ldap delete dn"]=true;// yes
+		$array["passdb backend"]=true;
+		$array["add machine script"]=true;
+		$array["ldap admin dn"]=true;
+		$array["ldap suffix"]=true;
+		$array["ldap group suffix"]=true;
+		$array["ldap user suffix"]=true;
+		$array["ldap machine suffix"]=true;
+		$array["ldap ssl"]=true;// off
+		$array["ldapsam:trusted"]=true;// yes
+		$array["ldapsam:editposix"]=true;// yes
+		$array["ldap idmap suffix"]=true;
+		$array["idmap backend"]=true;
+		$array["idmap uid"]=true;
+		$array["idmap gid"]=true;
+		$array["idmap alloc backend"]=true;
+		$array["idmap alloc config:ldap_base_dn"]=true;
+		$array["idmap alloc config:ldap_user_dn"]=true;
+		$array["idmap alloc config:ldap_url"]=true;
+		$array["idmap alloc config:range"]=true;
+		$array["socket options"]=true;
+		$array["wins support"]=true;
+		$array["time server"]=true;
+		$array["msdfs root"]=true;
+		$array["host msdfs"]=true;
+		if(isset($array[$key])){return true;}
+		return false;	
+	
+}
+
+
+private function LOAD_GREYHOLE(){
+	$sock=new sockets();
+	
+	if(!$this->usersMenus->GREYHOLE_INSTALLED){return array();}
+	$EnableGreyhole=$sock->GET_INFO('EnableGreyhole');
+	if(!is_numeric($EnableGreyhole)){$EnableGreyhole=1;}
+	if($EnableGreyhole<>1){return array();}
+	$sql="SELECT * FROM `greyhole_dirs` WHERE num_copies > 0";
+	$q=new mysql();
+	$results=$q->QUERY_SQL($sql,"artica_backup");
+	while($ligne=mysqli_fetch_array($results,MYSQLI_ASSOC)){
+		$f[$ligne["shared_dir"]]=$ligne["num_copies"];
+	}
+	
+	return $f;
+	
+}
+
+private function LDAP_SETTINGS(){
+	
+	
+	$sock=new sockets();
+	$EnableSambaRemoteLDAP=$sock->GET_INFO("EnableSambaRemoteLDAP");
+	$EnableSambaActiveDirectory=$sock->GET_INFO("EnableSambaActiveDirectory");
+	if(!is_numeric($EnableSambaActiveDirectory)){$EnableSambaActiveDirectory=0;}
+	if(!is_numeric($EnableSambaRemoteLDAP)){$EnableSambaRemoteLDAP=0;}
+	
+	if($EnableSambaActiveDirectory==1){
+		$DisableSambaLocalLDAP=$sock->GET_INFO("DisableSambaLocalLDAP");
+		if(!is_numeric($DisableSambaLocalLDAP)){$DisableSambaLocalLDAP=0;}
+		if($DisableSambaLocalLDAP==1){return;}
+		
+	}
+	
+	$version=$this->SAMBA_VERSION;
+	$upTo36=0;
+	if(preg_match("#^([0-9]+)\.([0-9]+)#", $version,$re)){
+		$major=intval($re[1]);
+		$minor=intval($re[2]);
+		if($major>=3){if($minor>=6){$upTo36=1;$upTo357=1;}}
+		if($major==3 && $minor==6){$upTo36=1;}
+	}else{
+		if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." WARNING, SAMBA_VERSION unable to preg_match !!!\n";} 
+		
+	}	
+
+	
+	
+	$ldap_admin_dn="cn={$this->ldap->ldap_admin},{$this->ldap->suffix}";
+	$suffix= $this->ldap->suffix;
+	$ldap_group_suffix="dc=organizations";
+	$ldap_user_suffix="dc=organizations";
+	$ldap_machine_suffix="ou=Computer,dc=samba,dc=organizations";
+	$idmap_ldap_base_dn="ou=idmap,dc=samba,dc=organizations,{$this->ldap->suffix}";
+	$ldap_host=$this->ldap->ldap_host;
+	if($ldap_host=="localhost"){$ldap_host="127.0.0.1";}
+	$usessl="off";
+	$ldap_uri="ldap://{$this->ldap->ldap_host}:{$this->ldap->ldap_port}";
+	
+	if($this->EnableKerbAuth==1){
+		$conf[]="#LDAP disabled, EnableKerbAuth is enabled,connection to AD first";
+		if($upTo36==0){$conf[]="\tidmap backend = ad\n";}
+		return @implode("\n",$conf);
+		
+	}
+	
+	if($EnableSambaActiveDirectory==1){
+		$conf[]="#Connection to AD first";
+		$conf[]="\tpassdb backend = tdbsam";
+		if($upTo36==0){$conf[]="\tidmap backend = ad\n";}
+		
+
+		
+		}
+	
+	
+	if($EnableSambaRemoteLDAP==1){
+				$SambaRemoteLDAPInfos=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SambaRemoteLDAPInfos")));
+				$ldap_admin_dn=$SambaRemoteLDAPInfos["user_dn"];
+				$suffix= $SambaRemoteLDAPInfos["suffix"];
+				$ldap_group_suffix=$SambaRemoteLDAPInfos["ldap_group_suffix"];
+				$ldap_user_suffix=$SambaRemoteLDAPInfos["ldap_user_suffix"];
+				$ldap_machine_suffix=$SambaRemoteLDAPInfos["ldap_machine_suffix"];
+				$idmap_ldap_base_dn="ou=idmap,$suffix";
+				$ldap_host=$SambaRemoteLDAPInfos["server_host"];
+				if($ldap_host=="localhost"){$ldap_host="127.0.0.1";}
+				$usessl="no";
+				if($SambaRemoteLDAPInfos["ssl"]==1){$usessl="yes";}
+				$ldap_uri="ldap://{$SambaRemoteLDAPInfos["server_host"]}:{$SambaRemoteLDAPInfos["server_port"]}";
+				}
+	
+				//if($ldap_host=="127.0.0.1"){$ldap_admin_dn=null;}
+				$conf[]="";	
+				$conf[]="# LDAP settings As 3.6 (Major:$major and minor $minor) or above = $upTo36 EnableSambaActiveDirectory:$EnableSambaActiveDirectory";
+				$conf[]="\tldap delete dn = no";
+				if($EnableSambaActiveDirectory==0){$conf[]="\tpassdb backend = ldapsam:$ldap_uri";}
+				$conf[]="#scripts -----------------------------------";
+				$conf[]="\tadd machine script = /usr/share/artica-postfix/bin/artica-install --samba-add-computer \"%u\"";				
+				$conf[]="\tldap admin dn = $ldap_admin_dn";
+				$conf[]="\tldap suffix = $suffix";
+				$conf[]="\tldap group suffix = $ldap_group_suffix";
+				$conf[]="\tldap user suffix =  $ldap_user_suffix";			
+				$conf[]="\tldap machine suffix = $ldap_machine_suffix";
+				$conf[]="\tldap delete dn = yes";
+				$conf[]="\tldap ssl  = $usessl";	
+				if($this->SambaEnableEditPosixExtension==1){
+					$conf[]="\n\n#Samba and the Editposix/Trusted Ldapsam extension";
+					$conf[]="\tldapsam:trusted=yes";
+	  				$conf[]="\tldapsam:editposix=yes";
+				}				
+				$group=new groups(null);
+				$group->BuildOrdinarySambaGroups();
+				
+				$conf[]="\tldap idmap suffix = $idmap_ldap_base_dn";
+				
+				
+		if($EnableSambaActiveDirectory==0){				
+				$conf[]="\tencrypt passwords = true";
+				if($this->posix_getuid==0){echo "Starting......: ".date("H:i:s")." Samba ID IMAP:$this->DisableWinbindd\n";} 
+				if($this->DisableWinbindd==0){
+				if($upTo36==1){	
+					$conf[]="\tidmap config * : backend = ldap:$ldap_uri";
+       				$conf[]="\tidmap config * : range = 1000-1999999";
+				}else{
+				    $conf[]="\tidmap backend = ldap:$ldap_uri";       						 
+	                $conf[]="\tidmap uid = 1000-1999999";
+	                $conf[]="\tidmap gid = 1000-1999999";
+				}
+	 				$conf[]="\tidmap config {$this->main_array["global"]["workgroup"]}:backend = ldap";
+		  			$conf[]="\tidmap config {$this->main_array["global"]["workgroup"]}:readonly = no";
+		    		$conf[]="\tidmap config {$this->main_array["global"]["workgroup"]}:default = yes";
+		    		$conf[]="\tidmap config {$this->main_array["global"]["workgroup"]}:ldap_base_dn = $idmap_ldap_base_dn";
+		    		$conf[]="\tidmap config {$this->main_array["global"]["workgroup"]}:ldap_user_dn = $ldap_admin_dn";
+		    		$conf[]="\tidmap config {$this->main_array["global"]["workgroup"]}:ldap_url = $ldap_uri";
+		    		$conf[]="\tidmap config {$this->main_array["global"]["workgroup"]}:range = 1000-1999999";
+		    		
+					//$conf[]="\tidmap alloc backend = ldap";
+		    		//$conf[]="\tidmap alloc config:ldap_base_dn = $idmap_ldap_base_dn";
+		    		//$conf[]="\tidmap alloc config:ldap_user_dn = $ldap_admin_dn";
+		    		//$conf[]="\tidmap alloc config:ldap_url = $ldap_uri";
+		    		//$conf[]="\tidmap alloc config:range = 1000-1999999";
+				}
+				
+		}	
+						
+	$conf[]="";
+	return @implode("\n",$conf);
+}
+
+function CleanAllDomains($CurrentDomain){
+	if($CurrentDomain==null){return null;}
+	
+	//WriteLogs("sambaDomainName Current domain \"$CurrentDomain\" against ".strtolower($CurrentDomain) . " and " .strtolower($this->main_array["global"]["netbios name"]) ,__CLASS__.'/'.__FUNCTION__,__FILE__);
+
+	
+	$upper=strtoupper($CurrentDomain);
+	$baddn="sambaDomainName=$upper,dc=samba,dc=organizations,{$this->ldap->suffix}";
+	
+	WriteLogs("Check $baddn",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	
+	if($this->ldap->ExistsDN($baddn)){
+		WriteLogs("Delete $baddn",__CLASS__.'/'.__FUNCTION__,__FILE__);
+		$this->ldap->ldap_delete($baddn,true);
+	}
+	$group=new groups();
+	
+	
+	if(!$group->SAMBA_ENABLED){
+		WriteLogs("Samba is not installed/enabled" ,__CLASS__.'/'.__FUNCTION__,__FILE__);
+		return true;
+	}
+	
+	$group=new groups();
+	$group->BuildOrdinarySambaGroups();
+	if(strlen($CurrentDomain)==0){return null;}
+	
+	
+	$hostname=$this->usersMenus->hostname;
+	if(preg_match("#^(.+?)\.#",$hostname,$re)){$hostname=strtolower($re[1]);}	
+	$query="(ObjectClass=sambaDomain)";
+	$filter=array("dn","sambaDomainName");
+	$h=$this->ldap->Ldap_search($this->ldap->suffix,$query,$filter);
+	if(!is_array($h)){
+		$this->CreateDomainName($CurrentDomain);
+		return null;}
+
+	for($i=0;$i<$h["count"];$i++){
+		$domain=$h[$i][strtolower("sambaDomainName")][0];
+		$domain=strtolower($domain);
+		//WriteLogs("sambaDomainName found \"$domain\" against ".strtolower($CurrentDomain),__CLASS__.'/'.__FUNCTION__,__FILE__);
+		if($domain==strtolower($CurrentDomain)){
+			continue;
+		}
+		if($domain==strtolower($this->main_array["global"]["netbios name"])){
+			continue;
+		}
+		
+		WriteLogs("sambaDomainName delete {$h[$i]["dn"]}",__CLASS__.'/'.__FUNCTION__,__FILE__);
+		$this->ldap->ldap_delete($h[$i]["dn"],false);
+		
+	}
+	
+	$this->CreateDomainName($CurrentDomain);
+	
+
+	
+}
+
+function CreateDomainName($CurrentDomain){
+	$group=new groups();
+	if(!$group->SAMBA_ENABLED){WriteLogs("Samba is not installed/enabled" ,__CLASS__.'/'.__FUNCTION__,__FILE__);return true;}
+	$upd=array();
+	$CurrentDomain=strtoupper($CurrentDomain);
+	
+	
+	$SID=$this->ldap->LOCAL_SID();
+	$dn="sambaDomainName=$CurrentDomain,{$this->ldap->suffix}";
+	if(!$this->ldap->ExistsDN($dn)){
+		$upd["objectClass"][]="sambaDomain";
+		$upd["sambaDomainName"][]="$CurrentDomain";
+		$upd["sambaSID"][]="$SID";
+		$upd["sambaAlgorithmicRidBase"][]="1000";
+		$upd["sambaNextUserRid"][]="1000";
+		$upd["sambaMinPwdLength"][]="5";
+		$upd["sambaPwdHistoryLength"][]="0";
+		$upd["sambaLogonToChgPwd"][]="0";
+		$upd["sambaMaxPwdAge"][]="-1";
+		$upd["sambaMinPwdAge"][]="0";
+		$upd["sambaLockoutDuration"][]="30";
+		$upd["sambaLockoutObservationWindow"][]="30";
+		$upd["sambaLockoutThreshold"][]="0";
+		$upd["sambaForceLogoff"][]="-1";
+		$upd["sambaRefuseMachinePwdChange"][]="0";
+		if(!$this->ldap->ldap_add($dn,$upd)){
+			writelogs("CreateDomainName($CurrentDomain)\n$SID\n{$this->ldap->ldap_last_error}",__CLASS__.'/'.__FUNCTION__,__FILE__);
+			return false;
+		}
+		else{
+			$tpl=new templates();
+			writelogs("sambaDomainName:Creating $CurrentDomain $SID success",__CLASS__.'/'.__FUNCTION__,__FILE__);
+			return true;
+		}
+		
+	}
+}
+
+
+function hash_privileges($folder){
+	$h=array();
+	$ta=explode(',',$this->main_array[$folder]["valid users"]);
+	if(is_array($ta)){
+		foreach ($ta as $VALS){
+			if(trim($VALS)<>null){
+				$h[$VALS]["valid users"]='yes';
+			}
+		}
+	}
+	
+$ta=explode(',',$this->main_array[$folder]["write list"]);
+	if(is_array($ta)){
+        
+		foreach ($ta as $VALS){
+			if(trim($VALS)<>null){
+				$h[$VALS]["write list"]='yes';
+			}
+		}
+	}
+
+$ta=explode(',',$this->main_array[$folder]["read list"]);
+	if(is_array($ta)){
+		foreach ($ta as $VALS){
+			if(trim($VALS)<>null){
+				$h[$VALS]["read list"]='yes';
+			}
+		}
+	}	
+	
+	return $h;
+}
+
+function GetUsrsRights($userid){
+	
+	include_once(dirname(__FILE__).'/class.user.inc');
+	
+	$folders=$this->main_shared_folders;
+	    foreach ($folders as $num=>$folder_name){
+		if($folder_name=="print$"){continue;}
+		if($folder_name=="printers"){continue;}
+		if($folder_name=="netlogon"){continue;}
+		if($folder_name=="homes"){continue;}
+		if($folder_name=="profile"){continue;}
+		if($folder_name=="profiles"){continue;}
+		$res[$folder_name]=$num;
+		}
+		
+	if(!is_array($res)){return array();}
+	
+	$user=new user($userid);
+	$user_group=$user->GetGroups($userid);
+	$folderallowed[$user->homeDirectory]=true;
+	while (list ($foldername, $path) = each ($res) ){
+		$hash=$this->hash_privileges($foldername);
+		if(!is_array($hash)){
+			$folderallowed[$path]=true;
+			continue;
+		}
+		while (list ($userGroup, $rights) = each ($hash) ){	
+			if(substr($userGroup,0,1)=='@'){
+				if(is_numeric($user_group[substr($userGroup,1,strlen($userGroup))])){
+					$folderallowed[$path]=true;
+					continue;
+				}
+		}
+			
+			if($userGroup==$userid){
+				$folderallowed[$path]=true;
+				continue;
+			}
+			
+		}
+		
+	}
+	
+	if(!is_array($folderallowed)){return array();}else{	return $folderallowed;}
+	
+}
+	
+	
+	
+}
+
+function CheckSambaRights(){
+	$user=new usersMenus();
+	if($user->AsArticaAdministrator){return true;}
+	if($user->AsSambaAdministrator){return true;}
+	if($user->AsOrgStorageAdministrator){return true;}
+	return false;
+}
+/*
+ * 
+ * A voir :inherit permissions
+ * A voir : hide unwriteable files
+ * a voir les chown et les acls.
+ * 
+ cat /var/cache/samba/browse.dat
+ Configuring the Windows XP Client:
+
+Notes : Only Windows XP-Professional Edition can join the Domain, it does not work for WindowsXP-Home Edition.
+
+STEPS:
+
+1) Make sure that the workstation belonged to the same workgroup as the server and have a fixed IP address and hostname assigned.
+
+2) Change the registry entry, run the command regedt32 and do the below
+a) RequireSignOrSeal Registry hack
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\netlogon\parameters
+"RequireSignOrSeal"=dword:00000000
+
+b) Use the Registry Editor and edit the
+HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System\CompatibleRUPSecurity to have the DWORD value of 1
+
+3) Use the Group Policy Editor (gpedit.msc) and enable "Computer Configuration\Administrative Templates\System\User Profiles\Do not check for user ownership of Roaming Profile Folders".
+
+4) Go to MyComputer right click Properties. Go to Change and click on Domain and enter the domain-name you want to join. When joining the domain for the First time enter userid as root and give the samba password. Make sure there is an entry for the root in the smbpasswd (samba password) file.
+
+5) Reboot and then the changes will be effective.
+http://wiki.samba.org/index.php/Samba4/Andrew_and_Jelmers_Fantasy_Page 
+*/
+?>

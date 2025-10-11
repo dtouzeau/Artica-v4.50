@@ -1,0 +1,103 @@
+<addtrustednet>Give your trusted network</addtrustednet>
+<add_header>Adicionar cabeçalho</add_header>
+<all>Todos</all>
+<amavisSpamModifiesSubj>Modify subject on detected SPAM</amavisSpamModifiesSubj>
+<auto_learn>Enable Bayes auto-learning</auto_learn>
+<block_with_required_score>Block the mail if SpamAssassin score is up to</block_with_required_score>
+<block_with_required_score_text>If Spamassassin result exceed the value, the mail will be refused by the server.[br]Set to 0 if you don't want to block mails</block_with_required_score_text>
+<config>Main config file</config>
+<From>From Header</From>
+<ham>When ham message detected</ham>
+<managed_by_mimedefang>Managed by MimeDefang</managed_by_mimedefang>
+<managed_by_mimedefang_not_enabled>Should be managed by MimeDefang</managed_by_mimedefang_not_enabled>
+<plugins>Plugins</plugins>
+<pyzor_text> Pyzor is a collaborative, networked system to detect and block spam using identifying digests of messages.[br]
+Pyzor initially started out to be merely a Python implementation of Razor.(see http://pyzor.sourceforge.net)</pyzor_text>
+<razor_text>ipul's Razor is a distributed, collaborative, spam detection and
+filtering network.[br]
+Through user contribution, Razor establishes a distributed and constantly updating catalogue of spam in propagation that
+is consulted by email clients to filter out known spam.[br]
+Detection is done with statistical and randomized signatures that efficiently spot mutating spam content.[br]
+User input is validated through reputation assignments based on consensus on report and revoke assertions which in turn is used for
+computing confidence values associated with individual signatures</razor_text>
+<report_safe>Encapsulate spam in an attachment</report_safe>
+<report_safe_text>if this option is enabled, if an incoming message is tagged as spam, instead of modifying the original message,
+SpamAssassin will create a new report message and attach the original message as a message/rfc822 MIME
+part (ensuring the original message is completely preserved, not easily opened, and easier to recover).
+If this option is disabled, incoming spam is only modified by adding some X-Spam- headers and no changes will be made to the body.[br]
+In addition, a header named X-Spam-Report will be added to spam.[br]
+</report_safe_text>
+<required_score>Score required for SpamAssassin to flag a message as spam</required_score>
+<required_score_text>
+Set the score required before a mail is considered spam.[br]
+n.nn can be an integer or a real number.[br]
+5.0 is the default setting, and is quite aggressive; it would be suitable for a single-user setup,
+but if you're an ISP installing SpamAssassin, you should probably set the default to be more conservative,
+like 8.0 or 10.0.[br]
+It is not recommended to automatically delete or discard messages marked as spam, as your users will complain,
+but if you choose to do so, only delete messages with an exceptionally high score such as 15.0 or higher.
+</required_score_text>
+<rewrite_header>Rewrite headers</rewrite_header>
+<rewrite_header_txt>
+By default, suspected spam messages will not have the Subject, From or To lines tagged to indicate spam.[br]
+By setting this option, the header will be tagged with value to indicate that a message is spam.[br]
+For the From or To headers, this will take the form of an RFC 2822 comment following the address in parantheses.[br]
+For the Subject header, this will be prepended to the original subject.[br]
+Note that you should only use the _REQD_ and _SCORE_ tags when rewriting the Subject header if report_safe is 0.[br]
+Otherwise, you may not be able to remove the SpamAssassin markup via the normal methods.[br]
+Parentheses are not permitted in value if rewriting the From or To headers. (They will be converted to square brackets.)
+</rewrite_header_txt>
+<salearnschedule>Junk Learning schedule</salearnschedule>
+<salearnschedule_text>Define the schedule of Mailboxes Junk Learning</salearnschedule_text>
+<sa_dsn_cutoff_level>Spam level beyond which a DSN is not sent</sa_dsn_cutoff_level>
+<sa_kill_level_deflt>Score that destroy the message (Real spam)</sa_kill_level_deflt>
+<sa_quarantine_cutoff_level>Spam level beyond the message is not quarantine but destroy</sa_quarantine_cutoff_level>
+<sa_tag2_level_deflt>Score to tag the "Subject:" with a "***SPAM***" marking</sa_tag2_level_deflt>
+<sa_tag3_level_deflt>Score to add "spam detected" in headers and send to quarantine</sa_tag3_level_deflt>
+<sa_tag_level_deflt>Add X-Spam*** info headers if at, or above that level</sa_tag_level_deflt>
+<spam>When spam detected</spam>
+<spamassassin_about>SpamAssassin is a mature, widely-deployed open source project that serves as a mail filter to identify Spam.[br]
+SpamAssassin uses a variety of mechanisms including header and text analysis, Bayesian filtering, DNS blocklists, and collaborative filtering databases.[br]
+SpamAssassin runs on a server, and filters spam before it reaches your mailbox</spamassassin_about>
+<title1>Basic Message Tagging Options</title1>
+<To>To Header</To>
+<trusted_networks>Trusted Networks</trusted_networks>
+<trusted_networks_text>Que redes ou anfitri%C3µes s%C3£o 'confi%C3¡veis' na sua configuraç%C3£o[br].
+A confiança neste caso significa que os anfitri%C3µes de retransmiss%C3£o nestas redes s%C3£o considerados como n%C3£o sendo potencialmente operados por spammers,
+retransmissores abertos, ou procuradores abertos.
+[br]
+Um hospedeiro de confiança poderia transmitir spam, mas n%C3£o o originar%C3¡, e n%C3£o falsificar%C3¡ dados de cabeçalho [br].
+As verificaç%C3µes da lista negra do DNS nunca consultar%C3£o os anfitri%C3µes nestas redes [br].
+MXes para o(s) seu(s) dom%C3%ADnio(s) e relés internos também devem ser especificados usando a configuraç%C3£o de redes internas [br].
+Quando existem hosts 'de confiança' que n%C3£o s%C3£o MX ou relés internos para o(s) seu(s) dom%C3%ADnio(s), estes s%C3%B3 devem ser especificados em redes de confiança[br].
+Se a /mask for especificada, é considerada uma 'netmask' estilo CIDR, especificada em bits [br].
+Se n%C3£o for especificado, mas menos de 4 octetos s%C3£o especificados com um trailing dot, isso é considerado uma m%C3¡scara para permitir
+todos os endereços nos restantes octetos [br].
+Se uma m%C3¡scara n%C3£o for especificada, e n%C3£o houver ponto de fuga, ent%C3£o apenas o %C3%BAnico endereço IP especificado é utilizado, como se a m%C3¡scara fosse /32.
+Se um endereço de rede ou anfitri%C3£o for prefaciado por um ! a rede ou anfitri%C3£o ser%C3¡ exclu%C3%ADda (ou inclu%C3%ADda) numa primeira lista de correspondência [br].
+Nota: 127/8 est%C3¡ sempre inclu%C3%ADdo no trust_networks, independentemente da sua configuraç%C3£o[/i][br].
+[blk]Exemplos:
+[li]192.168/16 (todos em 192.168.*.*)[/li]
+[li]212.17.35.15 (apenas aquele anfitri%C3£o)[/li]
+[li]!10.0.1.5 10.0.1/24 (tudo em 10.0.1.* mas n%C3£o 10.0.1.5)[/li]
+[/blk]</trusted_networks_text>
+<use_auto_whitelist>Enable automatic whitelist</use_auto_whitelist>
+<use_auto_whitelist_text>
+The auto-whitelist, aka automatic whitelist or AWL, tracks scores for your regular correspondents in a small on-disk database.[br]
+In 3.1, it is a plugin, loaded by default in the file v310.pre.[br]
+The AWL is actually a very simple system.[BR]
+In short, the AWL is a score averaging system.[BR]
+It keeps track of the historical average of a sender, and pushes any subsequent mail towards that average.[br]
+So if someone that never sent you mail before sends you a mail that scores 20, and then sends you a second mail that would score 2.0 without the AWL,
+the AWL will push the score up to 11 on the second mail.[br]
+This is auto blacklisting, based on their past history of spam.[br]
+If that same person sent you a mail that scored 0, and then later sent one that scored 7,
+the AWL would push the score down to 3.5.[br]
+This is auto-whitelisting based on past history of nonspam.[br]
+A "sender" is identified using both the address they sent with, and their IP address, so spam claiming to be From you with forged headers will fail to get through.[br]
+But the "auto whitelist" isn't really a whitelist per-se. [br]
+It does however have a "learning white/blacklist" type behavior as a result of its averaging.[br]
+Sometimes it may appear that the AWL is assigning scores the wrong way;
+</use_auto_whitelist_text>
+<use_bayes>Enable the Bayes system</use_bayes>
+<use_terse_report>Use terse version of the spam report</use_terse_report>

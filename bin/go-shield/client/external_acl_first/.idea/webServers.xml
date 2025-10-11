@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="055f8a5b-1b5b-4da5-b773-0178a68a9aad" name="Proxy1">
+        <fileTransfer rootFolder="/usr/share/artica-postfix/bin/go-shield/client/external_acl_first" accessType="SFTP" host="192.168.60.156" port="22" sshConfigId="7e114f00-77e5-4d33-b4f5-9fe750cba132" sshConfig="root@192.168.60.156:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

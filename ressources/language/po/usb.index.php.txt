@@ -1,0 +1,30 @@
+<about_usb>Esta secç%C3£o ajuda-o a brincar com dispositivos de armazenamento usb, pode ligar e desligar dispositivos com esta interface[br]
+Ao clicar num item pode delegar um dispositivo usb com o dispositivo usb de auto-backup[br]
+Isto significa que quando se liga o dispositivo ao computador, a artica monta-o automaticamente e executa a funç%C3£o de c%C3%B3pia de segurança [br].
+Se deixar este dispositivo permanentemente, a operaç%C3£o de backup ser%C3¡ realizada a cada 2 horas</about_usb>
+<automount>Auto-connect</automount>
+<automount_explain>Automatically connect this device when you plug it on the system</automount_explain>
+<automount_explain_text>Esta operaç%C3£o ligar%C3¡ automaticamente o dispositivo ao direct%C3%B3rio /automounts quando este estiver ligado ao sistema [br].
+a operaç%C3£o de ligaç%C3£o ser%C3¡ autom%C3¡tica quando o sistema quiser aceder a ela.</automount_explain_text>
+<auto_folder>Directory name point</auto_folder>
+<click_to_edit>Click to edit...</click_to_edit>
+<connected>Conectado</connected>
+<dismount_text>[b]Disconnect this key[/b][br]Destroy the pointer to this usb storage in order to physically remove it from the computer</dismount_text>
+<error_understand_fs>Unable to understand filesystem type</error_understand_fs>
+<file_system>File system</file_system>
+<formatdevice>Format this device</formatdevice>
+<format_warning>Are you sure to perform this operation,all datas will be erased...</format_warning>
+<local>local</local>
+<make_autobackup>Auto-backup device</make_autobackup>
+<manufacturer>manufacturer</manufacturer>
+<model>Modelo</model>
+<mounted_on>mounted on</mounted_on>
+<mount_text>[b]Connect this key[/b][br]create a pointer to this usb storage in order to access it</mount_text>
+<not_applicable>Not applicable</not_applicable>
+<plugged>plugged</plugged>
+<speed>Velocidade</speed>
+<system>Sistema</system>
+<umake_autobackup>Remove Auto-backup</umake_autobackup>
+<vendor>Vendor</vendor>
+<warnautoback>You choose that this device will be an auto-backup device.\nThis meens that when you plug this device on this computer,\nArtica will backup automatically mandatories datas on this device</warnautoback>
+<warnautobackremove>This device will be disconnected has an auto-backup device\nContinue?</warnautobackremove>

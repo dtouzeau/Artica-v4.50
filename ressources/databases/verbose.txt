@@ -1,0 +1,13 @@
+<body style='background-color: #283437'>
+<div style='width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  font-size: 30px;
+  color: #fff;
+  line-height: 50px;
+  text-align: center;
+  background: #373b3c;
+  display: inline-block;margin-top:50px;margin-left:50px'>
+<p style='font-size:23px;font-family:Arial,Tahoma,serif;text-align:center'>
+The verbose mode is disabled<br>To enable verbose, create a file:<br>
+<strong style='font-size:20px'><code>/usr/share/artica-postfix/ressources/VERBOSE</code></strong><br><br>Using SSH or Unix console:<br><code>touch /usr/share/artica-postfix/ressources/VERBOSE</code></p></div></body>

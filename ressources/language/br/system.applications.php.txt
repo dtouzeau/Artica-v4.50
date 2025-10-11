@@ -1,0 +1,36 @@
+<howto_install>Se você estiver usando [b]modo fonte[/b], execute em um console esta linha de comando[br].
+[b]/usr/share/artica-postfix/artica-install addons[/b]
+Esta operaç%C3£o permite que você selecione o produto suportado para instalar[br][br][br] [br] [br] [br] [br] [br] [br] [br] [br
+
+[H5]Artica Gerenciar postfix e addons[/H5]
+Se você usa pacotes [b]reposit%C3%B3rios para debian ou RedHat (dpkg ou rpm)[/b]:[br]:[br
+Você tem 5 m%C3%B3dulos que você pode baixar na sourceforge.
+
+[ul]
+[li][b]artica-postfix-smtp-relay[/b][br]
+Este pacote converte a artica para ser um relé SMTP utilizando o programa principal postfix, ferramenta anti-spam bogofilter e saslauthd
+[li][b]artica-postfix-security[/b][br]
+Este pacote converte o artica para um servidor de segurança SMTP completo usando Kaspersky Anti-spam e Kaspersky Anti-virus (licença com 30 dias para avali%C3¡-los).
+[li][b]artica-postfix-mailbox[/b][br]
+Este pacote converte o artica para ser um servidor IMAP/POP3 utilizando cyrus-imap
+[li][b]artica-postfix-webmail[/b][br]
+Este pacote adiciona um m%C3%B3dulo de webmail em artica usando RoundCube eMail e Mysql.
+[/ul].
+
+Existe uma ordem para instalar estes pacotes, por exemplo, se você quiser instalar um servidor de correio completo (caixa postal e webmail) você deve instalar nesta direç%C3£o : [br]
+artica-postfix-smtp-relay -&amp;amp;raquo; artica-postfix-security -&amp;amp;raquo; artica-postfix-mailbox -&amp;amp;raquo;artica-postfix-webmail[br]
+[br][br][br] [br] [br] [br] [br] [br] [br
+[blk][b]http://sourceforge.net[/b][/blk]
+
+[br][br][br] [br] [br] [br] [br] [br] [br
+[H5]Artica Manage Squid and addons[/H5]
+Esta seç%C3£o est%C3¡ atualmente em &amp;quot;fase beta&amp;quot;[br]
+se você quiser test%C3¡-lo, por favor me avise (david.touzeau@fr.kaspersky.com)
+[br][br][br] [br] [br] [br] [br] [br] [br
+Se você usa pacotes [b]reposit%C3%B3rios para debian ou RedHat(dpkg ou rpm) [/b]:[br]:[br
+Você tem 2 m%C3%B3dulos que você pode baixar na sourceforge.
+[ul]
+[li][b]artica-squid-proxy[/b][br]
+Este pacote converte o artica para ser um servidor proxy usando o Squid 3.x
+[li][b]artica-squid-security[/b][br]
+Este pacote adiciona m%C3%B3dulos de segurança para o Squid 3.x usando DansGuardian e Kaspersky Anti-Virus For Squid ICAP (licença com 30 dias para avali%C3¡-lo).</howto_install>

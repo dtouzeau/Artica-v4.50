@@ -1,0 +1,60 @@
+<available_components>Available components saved</available_components>
+<available_products_to_be_updated>Available products to add & update</available_products_to_be_updated>
+<components>Components</components>
+<http_engine>HTTP service</http_engine>
+<proxy_settings>Configuraç%C3µes de proxy</proxy_settings>
+<RetranslatorCronMinutes>Get Kaspersky Pattern databases each</RetranslatorCronMinutes>
+<RetranslatorEnabled>Enable get Kaspersky Pattern databases</RetranslatorEnabled>
+<RetranslatorHttpdEnabled>Enable HTTP service</RetranslatorHttpdEnabled>
+<RetranslatorHttpdPort>HTTP service listen port</RetranslatorHttpdPort>
+<RetranslatorProxyAddress>Specifies a proxy to be used for downloads</RetranslatorProxyAddress>
+<RetranslatorRegionSettings>Preferred servers list region</RetranslatorRegionSettings>
+<RetranslatorReportLevel>Defines how detailed the report entries should be</RetranslatorReportLevel>
+<RetranslatorReportLevel_text>Os n%C3%ADveis de detalhe s%C3£o:[br]
+[ul][br][br]
+[li][b]0[/b]- Reportar apenas erros fatais. Apenas os erros, que resultam em programa[br].
+terminaç%C3£o, ou falha em começar, s%C3£o relatados; por exemplo, se a[br]
+componente n%C3£o conseguiu carregar um ficheiro de licença. Os erros fatais têm o 'F'[br].
+marca no ficheiro de registo.[br][/li]
+[li][b]1[/b]- Comunicar todos os erros. Relata n%C3£o s%C3%B3 erros fatais, mas também qualquer erro,[br]
+que afecta o comportamento do programa, mas n%C3£o causa o componente a[br]
+terminar. Os erros n%C3£o fatais têm a marca 'E' no ficheiro de registo.[br][/li]
+[li][b]2[/b]- Relatar todos os erros e avisos. Relata também informaç%C3µes importantes,[br].
+que afecta a produtividade dos componentes, ou pode afectar a capacidade dos componentes[br]
+para trabalhar no futuro; por exemplo, se a licença estiver prestes a expirar [br].
+As advertências têm a marca 'W' no ficheiro de registo [br][/li].
+[li][b]3[/b]- Relatar tudo acima, incluindo as informaç%C3µes importantes sobre o[br].
+ciclo de vida dos componentes. Isto inclui informaç%C3£o sobre o arranque dos componentes[br].
+e encerramento, a data de expiraç%C3£o da licença, a data da %C3%BAltima actualizaç%C3£o e assim por diante[br].
+As mensagens informativas têm a marca 'I' no ficheiro de registo.[br][/li]
+[li][b]4[/b]- Relatar tudo acima, incluindo a informaç%C3£o sobre o actual[br].
+actividade componente. As mensagens da actividade têm a marca 'A' no ficheiro de registo [br].
+Note-se que a quantidade total de informaç%C3£o de actividade pode ser bastante grande.[br][/li]
+[li][b]9[/b]- Relatar tudo acima, incluindo a informaç%C3£o sobre a depuraç%C3£o. Por favor, utilizar[br].
+este n%C3%ADvel, se estiver a reportar bugs no produto. N%C3£o se esqueça de virar[br]
+a seguir a palavras. As mensagens de debug têm a marca 'D' no ficheiro de registo[/li].
+[/ul]</RetranslatorReportLevel_text>
+<RetranslatorUpdateServerUrl>Specific source</RetranslatorUpdateServerUrl>
+<RetranslatorUpdateServerUrl_text>
+Specifies a custom URL from where to download the updates.[br]
+[br]URL ca be:
+[ul]
+[li]http://location/ - to use HTTP protocol;[/li]
+[li]ftp://location/  - to use FTP protocol;[/li]
+[li]/local/path      - to use a local path.[/li]
+[/ul]
+</RetranslatorUpdateServerUrl_text>
+<RetranslatorUseProxy>Work only through the proxy</RetranslatorUseProxy>
+<RetranslatorUseUpdateServerUrl>Use a specific source</RetranslatorUseUpdateServerUrl>
+<RetranslatorUseUpdateServerUrlOnly>Use only this source</RetranslatorUseUpdateServerUrlOnly>
+<RetranslatorUseUpdateServerUrlOnly_text>If used, but the update fails, the updater continues by trying the servers in its default list.[br]
+If this setting is set to "yes" (the (value assumed if not otherwise specified),[br]
+keepup2date will not fall-back if is not usable, and stop trying other servers.
+</RetranslatorUseUpdateServerUrlOnly_text>
+<RetranslatorUseUpdateServerUrl_text>
+perform an update from the specified Url.[br] If that fails, then it uses the default list of servers
+</RetranslatorUseUpdateServerUrl_text>
+<retranslator_engine>Kaspersky Retranslator Engine</retranslator_engine>
+<sources_settings>Sources settings</sources_settings>
+<Update_sites_info>Update sites info</Update_sites_info>
+<Update_sites_info_title>Update sites info (URL and regions)</Update_sites_info_title>

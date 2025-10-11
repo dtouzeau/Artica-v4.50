@@ -1,0 +1,20 @@
+<about>O NTPD é projetado para sincronizar os rel%C3%B3gios dos computadores através de uma rede com uma base de tempo comum (geralmente UTC) via Protocolo NTP</about>
+<add_text_server>Clique na imagem abaixo para adicionar um novo Internet Time Server....</add_text_server>
+<add_title_server>Adicionar servidor de tempo</add_title_server>
+<close_windows>All operations are successfull, you can close this windows now</close_windows>
+<enable_ntpd>Enable NTPD service</enable_ntpd>
+<give_server_name>Dê o nome do Internet Time Server</give_server_name>
+<how_to_find_timeserver>[h5]Onde posso encontrar um servidor de tempo ?[/h5]
+Como padr%C3£o, os servidores lhe designar%C3£o servidores de hor%C3¡rio de todo o mundo,
+a qualidade do tempo n%C3£o ser%C3¡ a ideal[br].
+Você obtém um resultado um pouco melhor se você usar o [a http://www.pool.ntp.org/zone/@][u]zonas continentais[/u][/a]
+(Por exemplo [u][a http://www.pool.ntp.org/zone/europe]europe[/a][/u],
+[a http://www.pool.ntp.org/zone/north-america]norte-américa[/a], oceania ou asia.pool.ntp.org),
+e ainda melhor tempo se você usar a zona do pa%C3%ADs (como ch.pool.ntp.org na Su%C3%ADça) [br]
+- para todas essas zonas, você pode usar novamente os prefixos 0, 1 ou 2, como 0.ch.pool.ntp.org.[br]
+Observe, entretanto, que a zona de pa%C3%ADs pode n%C3£o existir para seu pa%C3%ADs, ou pode conter apenas um ou dois servidores de tempo. [br]
+Se você conhece timeservers que est%C3£o realmente perto de você (medidos pela distância da rede, com traceroute ou ping), o tempo provavelmente ser%C3¡ ainda melhor.</how_to_find_timeserver>
+<ntpdconf>NTPD Config file</ntpdconf>
+<ntpd_apply>Apply NTPD to server</ntpd_apply>
+<save_ntpd_ok>Saving NTPD settings....OK</save_ntpd_ok>
+<save_toserver_ok>Saving NTPD Settings to server....OK</save_toserver_ok>

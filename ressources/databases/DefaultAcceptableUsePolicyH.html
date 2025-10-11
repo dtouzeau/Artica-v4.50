@@ -1,0 +1,375 @@
+<style>
+    a:visited {
+        text-decoration:none;
+    }
+
+    .ChartContent{
+        background-color: rgb(255, 255, 255);
+        border-bottom-color: rgb(204, 204, 204);
+        border-bottom-style: solid;
+        border-bottom-width: 1.11667px;
+        border-image-outset: 0;
+        border-image-repeat: stretch;
+        border-image-slice: 100%;
+        border-image-source: none;
+        border-image-width: 1;
+        border-left-color: rgb(204, 204, 204);
+        border-left-style: solid;
+        border-left-width: 1.11667px;
+        border-right-color: rgb(204, 204, 204);
+        border-right-style: solid;
+        border-right-width: 1.11667px;
+        border-top-color: rgb(204, 204, 204);
+        border-top-style: solid;
+        border-top-width: 1.11667px;
+        color: rgb(34, 34, 34);
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        line-height: 20px;
+        padding-bottom: 5px;
+        padding-left: 5px;
+        padding-right: 5px;
+        padding-top: 5px;
+
+    }
+
+    .MsoBody{
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        background-color: #f3f3f4;
+        color: #222;
+        font-size:14px;
+    }
+    .h1, .h2, .h3, h1, h2, h3 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+        color: #222;
+    }
+
+    .Textintro{
+        margin-top:20px;
+        padding-left:0px;
+        font-size:18px;
+        margin-bottom:30px
+        color: #222;
+        font-weight: 300;
+        line-height: 1.5625;
+    }
+    .MsoNormal{
+        text-align:left;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    }
+
+    div .MsoButtonDiv{
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        align-items: center;
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        justify-content: center;
+        height: 100%;
+        background: #eee;
+    }
+
+
+    .effect1 {
+        color: #222;
+        text-decoration: none;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        font-size: 18px;
+        position: relative;
+        padding: 10px 50px 10px 20px;
+        -webkit-transition: all 0.3s;
+        -o-transition: all 0.3s;
+        transition: all 0.3s;
+        -webkit-transform: scale(2);
+        -ms-transform: scale(2);
+        transform: scale(2); /*change scale(3) to scale(1)*/
+    }
+
+    .effect1 .bg {
+        background: #222;
+        width: 30px;
+        height: 2px;
+        position: absolute;
+        right: 0;
+        top: 50%;
+        margin-top: -1px;
+        z-index: -1;
+        -webkit-transition: all 0.3s;
+        -o-transition: all 0.3s;
+        transition: all 0.3s;
+    }
+
+    .effect1:hover {
+        padding-right: 20px;
+        color: #fff;
+    }
+
+    .effect1:hover .bg {
+        height: 100%;
+        width: 100%;
+        -webkit-transform: translate(0, -50%);
+        -ms-transform: translate(0, -50%);
+        transform: translate(0, -50%);
+    }
+
+    .effect1 .bg:before, .effect1 .bg:after {
+        content: '';
+        height: 2px;
+        width: 10px;
+        background: #222;
+        position: absolute;
+        right: -2px;
+        -webkit-transition: all 0.3s;
+        -o-transition: all 0.3s;
+        transition: all 0.3s;
+    }
+
+    .effect1 .bg:before {
+        bottom: 3px;
+        -webkit-transform: rotate(45deg);
+        -ms-transform: rotate(45deg);
+        transform: rotate(45deg);
+    }
+    .effect1 .bg:after{
+        top: 3px;
+        -webkit-transform: rotate(-45deg);
+        -ms-transform: rotate(-45deg);
+        transform: rotate(-45deg);
+    }
+
+    .effect1:hover .bg:before,
+    .effect1:hover .bg:after{
+        right: 0;
+    }
+
+    .effect1:hover .bg:before{
+        bottom: 6px;
+    }
+
+    .effect1:hover .bg:after{
+        top: 6px;
+    }
+
+    a.effect1{
+        text-decoration:none;
+        color: #222;
+    }
+    a.effect1:visited{
+        text-decoration:none;
+        color: #222;
+    }
+    a.effect1:hover{
+        color: #FFFFFF;
+    }
+
+    .middle-box{
+        animation-duration: 1s;
+        animation-fill-mode: both;
+        animation-name: fadeInDown;
+        box-sizing: border-box;
+        line-height: 20px;
+        margin-bottom: 0px;
+        margin-left: 452px;
+        margin-right: 452px;
+        margin-top: 0px;
+        max-width: 700px;
+        padding-top: 40px;
+        z-index: 100;
+    }
+    .middle-box h1 {
+        font-size:53px;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        font-weight: 300;
+        line-height: 58px;
+        margin: 0 0 20px;
+    }
+
+    <!--
+    /* Font Definitions TOUZEAU */
+    @font-face
+    {font-family:Wingdings;
+        panose-1:5 0 0 0 0 0 0 0 0 0;}
+    @font-face
+    {font-family:Wingdings;
+        panose-1:5 0 0 0 0 0 0 0 0 0;}
+    /* Style Definitions */
+    p.MsoNormal, li.MsoNormal, div.MsoNormal
+    {margin:0cm;
+        margin-bottom:.0001pt;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+
+    p.MsoHeading7, li.MsoHeading7, div.MsoHeading7
+    {margin-top:12.0pt;
+        margin-right:0cm;
+        margin-bottom:3.0pt;
+        margin-left:136.8pt;
+        text-indent:-82.8pt;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    p.MsoHeading8, li.MsoHeading8, div.MsoHeading8
+    {margin-top:12.0pt;
+        margin-right:0cm;
+        margin-bottom:3.0pt;
+        margin-left:162.0pt;
+        text-indent:-97.2pt;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        font-style:italic;}
+    p.MsoHeading9, li.MsoHeading9, div.MsoHeading9
+    {margin-top:12.0pt;
+        margin-right:0cm;
+        margin-bottom:3.0pt;
+        margin-left:187.2pt;
+        text-indent:-111.6pt;
+        font-size:11.0pt;
+        font-family:"Arial","sans-serif";}
+    p.MsoNormalIndent, li.MsoNormalIndent, div.MsoNormalIndent
+    {mso-style-link:"Retrait normal Car";
+        margin-top:0cm;
+        margin-right:0cm;
+        margin-bottom:0cm;
+        margin-left:21.6pt;
+        margin-bottom:.0001pt;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    p.MsoFootnoteText, li.MsoFootnoteText, div.MsoFootnoteText
+    {margin:0cm;
+        margin-bottom:.0001pt;
+        font-size:10.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    p.MsoHeader, li.MsoHeader, div.MsoHeader
+    {margin:0cm;
+        margin-bottom:.0001pt;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    p.MsoFooter, li.MsoFooter, div.MsoFooter
+    {margin:0cm;
+        margin-bottom:.0001pt;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    span.MsoFootnoteReference
+    {vertical-align:super;}
+    p.MsoListNumber4, li.MsoListNumber4, div.MsoListNumber4
+    {margin-top:0cm;
+        margin-right:0cm;
+        margin-bottom:0cm;
+        margin-left:72.0pt;
+        margin-bottom:.0001pt;
+        text-indent:-18.0pt;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    p.MsoTitle, li.MsoTitle, div.MsoTitle
+    {margin-top:12.0pt;
+        margin-right:0cm;
+        margin-bottom:3.0pt;
+        margin-left:0cm;
+        font-size:18.0pt;
+        font-family:"Arial","sans-serif";
+        font-weight:bold;}
+    p.MsoBodyText, li.MsoBodyText, div.MsoBodyText
+    {margin-top:0cm;
+        margin-right:0cm;
+        margin-bottom:6.0pt;
+        margin-left:0cm;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    p.MsoBodyTextIndent, li.MsoBodyTextIndent, div.MsoBodyTextIndent
+    {margin-top:0cm;
+        margin-right:0cm;
+        margin-bottom:6.0pt;
+        margin-left:18.0pt;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    p.MsoBodyText2, li.MsoBodyText2, div.MsoBodyText2
+    {margin-top:0cm;
+        margin-right:0cm;
+        margin-bottom:6.0pt;
+        margin-left:0cm;
+        line-height:200%;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    p.MsoBodyText3, li.MsoBodyText3, div.MsoBodyText3
+    {margin-top:0cm;
+        margin-right:0cm;
+        margin-bottom:6.0pt;
+        margin-left:0cm;
+        font-size:8.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    span.MsoHyperlink
+    {color:blue;
+        text-decoration:underline;}
+    span.MsoHyperlinkFollowed
+    {color:purple;
+        text-decoration:underline;}
+    p.MsoPlainText, li.MsoPlainText, div.MsoPlainText
+    {mso-style-name:"Texte brut\,Code Text";
+        margin:0cm;
+        margin-bottom:.0001pt;
+        font-size:10.0pt;
+        font-family:"Courier New";}
+    p
+    {margin:0cm;
+        margin-bottom:.0001pt;
+        font-size:12.0pt;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;}
+    p.H2, li.H2, div.H2
+    {mso-style-name:H2;
+        margin:0cm;
+        margin-bottom:.0001pt;
+        font-size:16.0pt;
+        font-family:"Arial","sans-serif";
+        font-weight:bold;}
+    p.H3, li.H3, div.H3
+    {mso-style-name:H3;
+        margin-top:0cm;
+        margin-right:0cm;
+        margin-bottom:0cm;
+        margin-left:10.8pt;
+        margin-bottom:.0001pt;
+        font-size:14.0pt;
+        font-family:"Arial","sans-serif";
+        color:navy;
+        font-weight:bold;}
+    p.H4, li.H4, div.H4
+    {mso-style-name:H4;
+        margin-top:0cm;
+        margin-right:0cm;
+        margin-bottom:0cm;
+        margin-left:21.6pt;
+        margin-bottom:.0001pt;
+        font-size:12.0pt;
+        font-family:"Arial","sans-serif";
+        font-weight:bold;}
+    p.H5, li.H5, div.H5
+    {mso-style-name:H5;
+        margin-top:0cm;
+        margin-right:0cm;
+        margin-bottom:0cm;
+        margin-left:32.4pt;
+        margin-bottom:.0001pt;
+        font-size:12.0pt;
+        font-family:"Arial","sans-serif";
+        font-style:italic;}
+    span.RetraitnormalCar
+    {mso-style-name:"Retrait normal Car";
+        mso-style-link:"Retrait normal";}
+    span.CharChar
+    {mso-style-name:" Char Char";}
+    /* Page Definitions */
+    @page WordSection1
+    {size:612.0pt 792.0pt;
+        margin:72.0pt 90.0pt 72.0pt 90.0pt;}
+    div.WordSection1
+    {page:WordSection1;}
+    /* List Definitions */
+    ol
+    {margin-bottom:0cm;}
+    ul
+    {margin-bottom:0cm;}
+    -->
+</style>

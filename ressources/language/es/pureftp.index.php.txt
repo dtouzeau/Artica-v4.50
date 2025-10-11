@@ -1,0 +1,45 @@
+<AnonymousBandwidth>Ancho de banda an%C3%B3nimo</AnonymousBandwidth>
+<AnonymousBandwidth_text>Ancho de banda m%C3¡ximo para usuarios an%C3%B3nimos en KB/s</AnonymousBandwidth_text>
+<AnonymousCanCreateDirs>Anonymous Can Create Dirs</AnonymousCanCreateDirs>
+<AnonymousCanCreateDirs_text>%C2%BFPueden los usuarios an%C3%B3nimos crear nuevos directorios?</AnonymousCanCreateDirs_text>
+<AnonymousCantUpload>An%C3%B3nimo no puede cargar</AnonymousCantUpload>
+<AnonymousCantUpload_text>No permitir que los usuarios an%C3%B3nimos suban nuevos archivos (sin marcar = se permite la subida)</AnonymousCantUpload_text>
+<AntiWarez>Anti Warez</AntiWarez>
+<AntiWarez_text>No permitir la descarga de archivos propiedad de &quot;ftp&quot;, es decir, archivos que fueron subidos pero no validados por un administrador local.</AntiWarez_text>
+<AutoRename>Auto-rename</AutoRename>
+<AutoRename_text>Never overwrite files. When a file whoose name already exist is uploaded, it get automatically renamed to file.1, file.2, file.3, ...</AutoRename_text>
+<BrokenClientsCompatibility>Compatibility hacks for broken clients</BrokenClientsCompatibility>
+<BrokenClientsCompatibility_text>Los usuarios pueden tener problemas para conectarse a través de Internet Explorer[br].
+Esto se debe a que IE, entre otros, intenta conectarse de forma an%C3%B3nima y puede no dar a pure-ftpd la oportunidad adecuada de solicitar un nombre de usuario y una contrase%C3%B1a.
+[br]Se puede, cambiar de no a s%C3%AD.[br]
+Esto puede o no funcionar, parece depender de la versi%C3%B3n de IE que alguien esté usando.</BrokenClientsCompatibility_text>
+<DisplayDotFiles>Display Dot Files</DisplayDotFiles>
+<DisplayDotFiles_text>List dot-files even when the client doesn't send "-a".</DisplayDotFiles_text>
+<DontResolve>Don't Resolve</DontResolve>
+<DontResolve_text>No resuelve los nombres de host en los archivos de registro[br].
+Los registros son menos verboso, pero utiliza menos ancho de banda.
+[br]Establece esto como activado en servidores muy ocupados o si no tienes un DNS que funcione.</DontResolve_text>
+<enable_pureftpd>Enable FTP on this server</enable_pureftpd>
+<enable_pureftpd_text>If you uncheck this, the serivce will be turned off and there is no FTP service running</enable_pureftpd_text>
+<LimitRecursion>Limit Recursion</LimitRecursion>
+<LimitRecursion_text> 'ls' recursion limits. The [b]first argument[/b] is the maximum number of files to be displayed.[br]
+The [b]second one[/b] is the max subdirectories depth
+</LimitRecursion_text>
+<MaxClientsNumber>Max Clients Number</MaxClientsNumber>
+<MaxClientsNumber_text>Maximum number of simultaneous users</MaxClientsNumber_text>
+<MaxClientsPerIP>Max Clients Per IP</MaxClientsPerIP>
+<MaxClientsPerIP_text>Maximum number of sim clients with the same IP address</MaxClientsPerIP_text>
+<MaxDiskUsage>Uso m%C3¡ximo del disco %</MaxDiskUsage>
+<MaxDiskUsage_text>Esta opci%C3%B3n es %C3%BAtil con servidores donde se permite la carga an%C3%B3nima. [br]
+Como /var/ftp est%C3¡ en /var, ahorra algo de espacio y protege los archivos de registro.[br]
+Cuando la partici%C3%B3n est%C3¡ m%C3¡s de un X por ciento llena, no se permiten nuevas subidas.</MaxDiskUsage_text>
+<MaxIdleTime>Max Idle Time</MaxIdleTime>
+<MaxIdleTime_text>Maximum idle time in minutes (default = 15 minutes)</MaxIdleTime_text>
+<MaxLoad_text>If the system is more loaded than the following value,anonymous users aren't allowed to download.</MaxLoad_text>
+<Max_Load>Carga m%C3¡xima</Max_Load>
+<NoAnonymous>No Anonymous</NoAnonymous>
+<NoAnonymous_text>Disallow anonymous connections. Only allow authenticated users.</NoAnonymous_text>
+<ProhibitDotFilesRead>Prohibit Dot Files Read</ProhibitDotFilesRead>
+<ProhibitDotFilesRead_text>Prohibir la *lectura* de archivos que comienzan con un punto (.history, .ssh...)</ProhibitDotFilesRead_text>
+<ProhibitDotFilesWrite>Prohibit Dot Files Write</ProhibitDotFilesWrite>
+<ProhibitDotFilesWrite_text>Los usuarios no pueden borrar/escribir los archivos que comienzan con un punto ('.') aunque sean de su propiedad.</ProhibitDotFilesWrite_text>

@@ -1,0 +1,111 @@
+<about>Cette section va vous permettre d'activer/d&eacute;sactiver les services qui se greffent &agrave; Postfix. Vous verrez toutes les options des services que chaque module offre si vous l'activez.</about>
+<activated>Actif</activated>
+<addons_bundle>Modules Open Source</addons_bundle>
+<amavis_bundle>Paquet Amavisd-new</amavis_bundle>
+<AMAVIS_DEF>Amavisd-new est un &eacute;l&eacute;ment Opensource concernant la s&eacute;curit&eacute;.[br]
+Il s'interface entre Postfix et les filtres antivirus/antispam.[br]
+Il fournit des fonctions antispam gr&acirc;ce &agrave; [b]SpamAssassin[/b] et antivirus gr&acirc;ce &agrave; [b]ClamAV[/b].[br]
+Il est &eacute;crit en PERL et est capable de tenir une zone de quarantaine pour les faux positifs. MailZu fournit une interface utilisateur de gestion de la zone de quarantaine.</AMAVIS_DEF>
+<antispam_plugins>Plugins Anti-Spam</antispam_plugins>
+<antivirus_plugins>Plugins Antivirus</antivirus_plugins>
+<APP_ARTICA_FILTER>Filtre Artica</APP_ARTICA_FILTER>
+<APP_ARTICA_FILTER_DEF>Artica Filter vous permet d'ajouter des r&egrave;gles sp&eacute;cifiques aux r&eacute;glages suivants :
+[ul]
+[li]Ajout de la gestion de quarantaine d'utilisateur bas&eacute;e sur Kaspersky anti-spam/[/li]
+[li]</APP_ARTICA_FILTER_DEF>
+<APP_BOGOM_DEFS>bogom est un milter simple pour interfacer Bogofilter[br]
+Bogofilter est un filtre de courrier &eacute;lectronique qui classifie comme spam ou ham (non-spam) gr&acirc;ce &agrave; une analyse statistique de l'ent&ecirc;te du message et du contenu (corps).
+[br]Le programme est capable d'apprendre &agrave; partir des classifications et des corrections de l'utilisateur.</APP_BOGOM_DEFS>
+<APP_CLAMAV_MILTER_DEFS>Clamav-milter permet de connecter directement  postfix &agrave; Clam antivirus scanner afin de scanner les virus dans le courrier en utilisant libmilter API.</APP_CLAMAV_MILTER_DEFS>
+<APP_DKIM_FILTER_DEF>DKIM est un protocole d'authentification de l'exp&eacute;diteur d&eacute;velopp&eacute; afin de r&eacute;soudre le probl&egrave;me des messages forg&eacute;s.[br]
+Yahoo! a publi&eacute; la sp&eacute;cification DomainKeys et Cisco a publi&eacute; la sp&eacute;cification Internet Mail identifi&eacute;s.[br]
+Les deux m&eacute;thodes sont bas&eacute;es sur la signature cryptographique du message[br].
+Les deux efforts ont &eacute;t&eacute; fusionn&eacute;s, et la sp&eacute;cification combin&eacute;e est connue comme DomainKeys Identified Mail (DKIM).</APP_DKIM_FILTER_DEF>
+<APP_FDM_DEFS>FDM est un programme pour r&eacute;cup&eacute;rer le courriel et le livrer de diverses mani&egrave;res en fonction d'un jeu de r&egrave;gles fournis par l'utilisateur.[br] Le courrier peut &ecirc;tre r&eacute;cup&eacute;r&eacute;e &agrave; partir d'une entr&eacute;e standard, IMAP ou POP3, ou &agrave; partir de dossiers de couriers locaux et filtr&eacute; en fonction de sa correspondance avec une expression r&eacute;guli&egrave;re, sa
+taille ou son &acirc;ge, ou la sortie d'une commande shell. Il peut &ecirc;tre r&eacute;&eacute;crit par un processus externe, abandonn&eacute;, laiss&eacute; sur le serveur ou livr&eacute; dans des dossiers de courrier, des boites a lettres, dans un fichier ou un tube, ou toute combinaison.</APP_FDM_DEFS>
+<APP_FETCHMAIL_DEFS>
+Fetchmail is a one-stop solution to the remote mail retrieval problem for Unix machines,
+quite useful to anyone with an intermittent or dynamic-IP connection to a remote mailserver, SLIP or PPP dialup, o
+r leased line when SMTP isn't desired.[br]Fetchmail can collect mail using any variant of POP or IMAP and forwards to a the local SMTP (via TCP socket)
+or LMTP (via TCP or Unix socket) listener or into an MDA program, enabling all the normal forwarding/filtering/aliasing mechanisms
+that would apply to local mail or mail arriving via a full-time TCP/IP connection
+</APP_FETCHMAIL_DEFS>
+<APP_JCHECKMAIL_DEFS>j-chkmail is a mail filtering software using sendmail milter API.[br]
+j-chkmail is compatible with UNIX based mailservers running sendmail or postfix.[br]
+The goal of j-chkmail is to be able to filter as much messages as possible,
+as fast as possible and as well as possible.[br]
+Originally, it's intended to be use in large and heterogeneous communities such as university campus, but not only.[br]
+It's a complete and integrated solution including both behavioural filtering
+(connection rate control, detection of suspicious behaviour, greylisting , â€¦)
+and content filtering (statistical/bayesian content filtering,
+pattern matching, URL filtering and heuristic filtering). j-chkmail detects virus by looking for suspicious attached
+files (defined by their filename extensions or by some regular expression).[br]
+An external message scanner such as Clamd (from ClamAV) can also be called during message handling.
+</APP_JCHECKMAIL_DEFS>
+<APP_KAS3_DEF>Kaspersky Anti-Spam est une  solution anti-spam robuste et extensible fournie par Kaspersky Lab INC[br]
+Les principales caract&eacute;ristiques de ce produit sont sa vitesse et sa fiable consommation de m&eacute;moire.[br] &Eacute;crit en C, il est utilis&eacute; dans de tr&egrave;s grandes entreprises et fournir un excellent taux de d&eacute;tections</APP_KAS3_DEF>
+<APP_KAVMILTER_DEF>Kaspersky Antivirus Milter Edition est un antivirus pour courrier &eacute;lectronique robuste qui se lie &agrave; Postfix &agrave; la fa&ccedil;on libmilter.[br]
+Il s'agit d'une solution antivirus robuste et &eacute;volutive fournies par Kaspersky Lab Inc.[br] &Eacute;crit en C, il est utilis&eacute; dans de tr&egrave;s grandes entreprises et de fournir un excellent taux de d&eacute;tections</APP_KAVMILTER_DEF>
+<APP_MAILARCHIVER_DEFS>Open Mail Archiver est un plugin &eacute;crit par AlexeyPu  qui effectue des sauvegardes des messages &agrave; la vol&eacute;e.[br]Ce module est en charge de stocker les messages dans un r&eacute;pertoire temporaire.[br]Artica scrute ce r&eacute;pertoire afin de les transmettre au serveur Mysql afin de les rendre disponibles.</APP_MAILARCHIVER_DEFS>
+<APP_MAILFROMD_DEF>
+ Mailfromd is a general-purpose mail filtering daemon for Sendmail and Postfix.[br]
+ It is able to filter both incoming and outgoing messages using a filter program, written in mail filtering language (MFL).[br]
+ The daemon interfaces with the MTA using Milter protocol.[br]
+ The program name â€“ mailfromd â€“ stems from the fact that the original implementation was a simple
+ filter implementing the sender address verification technique.[br]
+ Since then the program has changed dramatically, and now it is actually a language translator and run-time evaluator
+ providing a set of built-in and library functions for filtering electronic mail.
+</APP_MAILFROMD_DEF>
+<APP_MAILSPY_DEFS>mailspy vous permet de surveiller les activités de votre serveur de messagerie.[br]
+La plupart des programmes d'analyse de courrier ne signalent que l'expéditeur et le destinataire d'un courrier et sa taille.[br]
+mailspy enregistre l'expéditeur, le destinataire, la ligne d'objet et les noms des pièces jointes.[br]
+mailspy peut maintenant être déployé pour archiver des copies de certains courriers (entrants et sortants).
+[L'accès à ces courriers est assuré par IMAP.[br]
+voir (http://www.ledge.co.za/software/mailspy/).</APP_MAILSPY_DEFS>
+<APP_P3SCAN_DEFS>Il s'agit d'un serveur proxy totalement transparent pour les clients de messagerie. br]
+Il peut être utilisé pour fournir un balayage du courrier électronique depuis Internet, vers tout réseau interne et est idéal pour aider à protéger votre
+Il est idéal pour aider à protéger votre réseau local &quot;autre système d'exploitation&quot;, en particulier lorsqu'il est utilisé en conjonction avec un pare-feu et d'autres serveurs proxy Internet[br].
+Il est conçu pour permettre l'analyse des messages électroniques entrants et sortants à la recherche de virus, de vers, de chevaux de Troie, de spam (c'est-à-dire de &quot;courrier électronique en vrac non sollicité&quot;),
+et les pièces jointes nuisibles.
+Puisque l'affichage du courrier HTML peut permettre à un &quot;Spammer&quot; de valider une adresse e-mail (via des bogues Web), il peut également fournir un dépouillement HTML.</APP_P3SCAN_DEFS>
+<APP_SPAMASS_MILTER_DEFS>spamass-milter allow to directly connect postfix to spamassassin anti-spam Open Source product.[br]
+SpamAssassin uses a wide variety of local and network tests to identify spam signatures.[br]
+This makes it harder for spammers to identify one aspect which they can craft their messages to work around.
+</APP_SPAMASS_MILTER_DEFS>
+<APP_SPFMILTER_DEFS>Spfmilter implements the Sender Policy Framework.[br]
+The Sender Policy Framework (SPF) is an open standard specifying a technical method to prevent sender address forgery.[br]
+More precisely, the current version of SPF â€” called SPFv1 or SPF Classic â€” protects the envelope sender address,
+which is used for the delivery of messages.</APP_SPFMILTER_DEFS>
+<ARTICA_POLICY_DEF>Artica-policy est un serveur de r&egrave;gles d'accrochage lorsque HELO/EHLO d&eacute;marre dans des sessions. Il fournira:
+[ul]
+[li]Des fonctionnalit&eacute;s de listes noires par utilisateurs/domaines[/li]
+[li]La v&eacute;rification DNS MX[/li]
+[/ul]</ARTICA_POLICY_DEF>
+<clamspam_bundle>Groupement milter</clamspam_bundle>
+<connections_plugins>Plugins de connexion</connections_plugins>
+<enabled>Activ&eacute;</enabled>
+<functionnalities>fonctionnalit&eacute;s</functionnalities>
+<kasper_bundle>Kaspersky Security Suite</kasper_bundle>
+<legend>L&eacute;gende</legend>
+<legend_disabled>L'application est install&eacute;e mais non activ&eacute;e</legend_disabled>
+<legend_ok>L'application est install&eacute;e et activ&eacute;e</legend_ok>
+<legend_uninstall>L'application n'est pas install&eacute;e</legend_uninstall>
+<mailboxes_plugins>Logiciels connexes de boite aux lettres</mailboxes_plugins>
+<MILTERGREYLIST_DEF>Milter-greylist use Postfix milter hooking technology. This product provide greylisting features and much more :
+[ul]
+[li]Blacklist/greylist/whitelist features by IP[/li]
+[li]Blacklist/greylist/whitelist features by hostname/domain name[/li]
+[li]Blacklist/greylist/whitelist features by Geo-localization[/li]
+[li]Blacklist/greylist/whitelist features by DNSRBL services.[/li]
+[/ul]
+It is the same features has SQLGrey,[b]You must to choose one of them.[/b]
+</MILTERGREYLIST_DEF>
+<MIMEDEFANG_DEF>MimeDefang est un logiciel bas&eacute; sur Le MTA de type SendMail. Il assure l'impl&eacute;mentation de services antispam, antivirus ou tout autre syst&egrave;me de filtrage personnel.[br]
+Utilisant le syst&egrave;me milter il assure alors en temps r&eacute;el l'analyse des messages et de leurs pi&egrave;ces jointes afin de pouvoir les bannir ou de les remplacer.[br]Ses fonctionnalit&eacute;s sont nombreuses et en compl&eacute;m&eacute;nt d'Artica MimeDefang se transforme votre serveur en une vrai application de gestion de messagerie.</MIMEDEFANG_DEF>
+<module_features>Fonctions</module_features>
+<module_name>Nom du plugin</module_name>
+<need_to_upgrade_postfix>[b]Votre version postfix  est trop ancienne pour ce plugin, vous devez passer &agrave; la derni&egrave;re version de Postfix pour l'utiliser ...[/ b] [br]</need_to_upgrade_postfix>
+<performances>performances</performances>
+<security>Sécurité</security>
+<SQLGREY_DEF>Sqlgrey est un script Perl qui s'ex&eacute;cute en tant que serveur de r&egrave;gles fournissant une m&eacute;thode de greylisting.[br]
+Ce sont les m&ecirc;mes fonctionnalit&eacute;s que milter-greylist,[b] Vous devez choisir l'une d'entre elles.[/b]</SQLGREY_DEF>

@@ -1,0 +1,2 @@
+<hourly>orario</hourly>
+<statistics>Statistiche</statistics>

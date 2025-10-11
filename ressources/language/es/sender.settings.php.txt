@@ -1,0 +1,4 @@
+<sender_user_explain>Esta %C3¡rea est%C3¡ dise%C3%B1ada para transformar su direcci%C3%B3n original en una nueva cuando los mensajes se env%C3%ADan a través de Internet[br].
+Puedes especificar aqu%C3%AD un servidor de correo remoto que se encargar%C3¡ de transferir tus mensajes a través de Internet[br].
+Puede especificar la configuraci%C3%B3n de autentificaci%C3%B3n si el servidor remoto necesita un nombre de usuario y una contrase%C3%B1a para transferir los mensajes.</sender_user_explain>
+<smtp_internet_relay_option>SMTP relay parameters</smtp_internet_relay_option>

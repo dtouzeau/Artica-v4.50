@@ -1,0 +1,33 @@
+<ASSP_INTERFACE>Abrir original interfaz</ASSP_INTERFACE>
+<ASSP_INTERFACE_TEXT>Abra la interfaz original ASSP</ASSP_INTERFACE_TEXT>
+<ASSP_NOT_INSTALLED>ASSP no est&aacute; instalado</ASSP_NOT_INSTALLED>
+<ASSP_NOT_INSTALLED_TEXT>Haga clic en este icono para instalar ASSP y jugar con esta funcion</ASSP_NOT_INSTALLED_TEXT>
+<DelayEmbargoTime>Embargo time</DelayEmbargoTime>
+<DelayEmbargoTime_text>Introduzca el n%C3%BAmero de minutos durante los cuales la entrega, relacionada con la nueva &quot;tripleta&quot; (direcci%C3%B3n IP del host remitente
+host + mail from + rcpt to), se rechaza con un fallo temporal.[br]
+El valor por defecto es de 5 minutos.</DelayEmbargoTime_text>
+<DelayExpiryTime>Expiry time</DelayExpiryTime>
+<DelayExpiryTime_text>Enter the number of days for which whitelisted 'tuplet' is considered valid. Default is 36 days.</DelayExpiryTime_text>
+<DelayGripvalue>Gripvalue</DelayGripvalue>
+<DelayGripvalue_text>Esto restringir%C3¡ el retardo/la lista de grips a las IPs con un valor de grips superior a este valor.[br]
+Por ejemplo 0.4.[br]
+Puede establecerlo m%C3¡s alto, a 0.5, si quiere retrasar s%C3%B3lo las IPs con una mayor probabilidad de enviar Spam.[br]
+La griplist local se construye durante rebuildspamdb y se sube a la base de datos global.[br]
+A cambio, se descarga la griplist global.[br]
+El Gripvalue se calcula a partir del &quot;spamminess&quot; , donde 0 significa que el bloque IP nunca env%C3%ADa spam y 1 que siempre env%C3%ADa spam.</DelayGripvalue_text>
+<DelaySSL>SSL Greylisting</DelaySSL>
+<DelaySSL_text>Enable Greylisting for SSL Connections.</DelaySSL_text>
+<DelayWaitTime>Tiempo de espera</DelayWaitTime>
+<DelayWaitTime_text>Enter the number of hours to wait for delivery attempts related with recognised 'triplet'; delivery is accepted
+immediately and the 'tuplet' (IP address of the sending host + sender's domain) is safelisted.[br]
+Default is 28 hours.</DelayWaitTime_text>
+<EnableDelaying_text>
+Greylisting involves sending a temporary 451 SMTP error code to the sending server when a message is received, 
+along with sending this error code ASSP creates a Triplet and stores this.[br]
+ On the second delivery attempt if the Embargo Time set by the ASSP admin for the Triplet has been surpassed the message 
+ will be accepted and a Tuplet will be created and not delayed again for an Expiry Time set by the ASSP admin.</EnableDelaying_text>
+<MessageScoringLowerLimit>Tag messages whose score exceeds</MessageScoringLowerLimit>
+<MessageScoringLowerLimitTag>Tag text</MessageScoringLowerLimitTag>
+<MessageScoringUpperLimit>Block messages whose score exceeds</MessageScoringUpperLimit>
+<messages_scoring>Messages scoring</messages_scoring>
+<messages_scoring_text>Define scores that will be block messages</messages_scoring_text>

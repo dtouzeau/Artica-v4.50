@@ -1,0 +1,1024 @@
+<?php
+if(!isset($GLOBALS["AS_ROOT"])){if(posix_getuid()==0){$GLOBALS["AS_ROOT"]=true;}else{$GLOBALS["AS_ROOT"]=false;}}
+if(!isset($GLOBALS["NORESOLVCOMP"])){$GLOBALS["NORESOLVCOMP"]=false;}
+if(!isset($GLOBALS["NODHCP"])){$GLOBALS["NODHCP"]=false;}
+include_once(dirname(__FILE__).'/class.templates.inc');
+include_once(dirname(__FILE__).'/class.ldap.inc');
+include_once(dirname(__FILE__).'/class.groups.inc');
+include_once(dirname(__FILE__).'/class.user.inc');
+include_once(dirname(__FILE__).'/class.crypt.php');
+include_once(dirname(__FILE__).'/class.dhcpd.inc');
+include_once(dirname(__FILE__).'/class.ocs.inc');
+include_once(dirname(__FILE__) . '/class.pdns.inc');
+include_once(dirname(__FILE__) . '/class.tcpip.inc');
+include_once(dirname(__FILE__).'/class.hosts.inc');
+
+class computers{
+	var $uid;
+	var $IsExists=false;
+	var $dn;
+	var $local_sid;
+	var $samba_installed=false;
+	var $objectClass_array=array();
+	var $homeDirectory;
+	var $gecos;
+	var $shadowMax;
+	var $shadowLastChange;
+	var $loginShell;
+	var $description;
+	var $sambaAcctFlags="[W          ]";
+	var $sambaLogonTime=0;
+	var $sambaLogoffTime=2147483647;
+	var $sambaKickoffTime=2147483647;
+	var $sambaPwdCanChange=0;
+	var $gidNumber=515;
+	var $sambaPwdMustChange=2147483647;
+	var $sambaPrimaryGroupSID;
+	var $uidNumber;
+	var $sambaSID;
+	var $ComputerIP;
+	var $ComputerOpenPorts;
+	var $ComputerOS;
+	var $ComputerUpTime;
+	var $ComputerMachineType;
+	var $ComputerRunning;
+	var $ComputerMacAddress;
+	var $ComputerHopCount;
+	var $ldap_error;
+	var $DnsType;
+	var $DnsZoneName;
+	var $DNSCname=array();
+	var $ComputerCPU;
+	var $DnsMXLength;
+	var $ComputerCryptedInfos;
+	var $ou;
+	var $DisplayName;
+	var $EnableBackupAccount;
+	var $ComputerRealName;
+	var $dhcpHWAddress;
+	var $dhcpStatements;
+	var $dhcpfixed=0;
+	var $KasperkyAVScanningDatas=null;
+	var $VolatileIPAddress=1;
+	var $ComputerScanSchedule;
+	var $userPassword;
+	var $sambaLMPassword;
+	var $sambaNTPassword;
+	
+function __construct($uid=null){
+        if(!is_null($uid)) {
+            $uid = str_replace('$$', '$', $uid);
+        }
+		$users=new usersMenus();
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		$this->samba_installed=$users->SAMBA_INSTALLED;
+		$this->local_sid=$ldap->LOCAL_SID();
+		
+		
+		
+		if($uid<>null){
+			$this->uid=$uid;
+			$this->LoadDatas();
+			$this->DisplayName=strtoupper($uid);
+			$this->DisplayName=substr($this->DisplayName,0,strlen($this->DisplayName)-1);	
+			$this->ChangeDisplayName();
+			}
+			
+			
+
+	}
+	
+function ChangeDisplayName(){
+	if($GLOBALS["NORESOLVCOMP"]){return;}
+	if($this->ComputerIP<>null){
+		if(!preg_match("#^[0-9]+\.[0-9]+\.[0-9]+#", $this->ComputerIP)){return;}
+		
+		if($GLOBALS["VERBOSE"]){writelogs( "@gethostbyaddr($this->ComputerIP)",__CLASS__.'/'.__FUNCTION__,__FILE__);}
+		$tmp=@gethostbyaddr($this->ComputerIP);
+		if($tmp<>null){
+			if($tmp<>$this->ComputerIP){$this->DisplayName=$tmp;}
+		}
+	}
+	
+}
+	
+	
+private function LoadDatas(){
+	$ldap=new clladp();
+	if($ldap->ldap_host=="127.0.0.1"){
+		if(!$this->VerifyConnect()){return false;}
+	}
+		
+		if($this->uid==null){
+			writelogs("Resquest an uid null, aborting",__CLASS__.'/'.__FUNCTION__,__FILE__);return "";}
+		
+		$sr =@ldap_search($ldap->ldap_connection,$ldap->suffix,"(uid=$this->uid)");
+		if(!$sr){
+			writelogs("Unable to find : $this->uid",__CLASS__.'/'.__FUNCTION__,__FILE__);
+			return "";
+		}
+		$entry_id = ldap_first_entry($ldap->ldap_connection,$sr);
+		if(!$entry_id){
+			writelogs( 'INFOS: bad value $entry_id: (' . $entry_id . ')  find: (uid=' . $this->uid . ') -> aborting function search engine doesn`t found the pattern',__CLASS__.'/'.__FUNCTION__,__FILE__);
+			return "";
+		}
+		$attrs = ldap_get_attributes($ldap->ldap_connection, $entry_id);
+		$this->dn=$ldap->_Get_dn_userid($this->uid);
+		$this->IsExists=true;
+		//writelogs("DN $this->uid: {$this->dn}",__CLASS__.'/'.__FUNCTION__,__FILE__);
+		for($i=0;$i<$attrs["objectClass"]["count"];$i++){
+			$this->objectClass_array[$attrs["objectClass"][$i]]=$attrs["objectClass"][$i];
+			
+		}
+		
+		
+		$this->cn=$attrs["cn"][0];
+		$this->homeDirectory=$attrs["homeDirectory"][0];
+		$this->gecos=$attrs["gecos"][0];
+		$this->shadowMax=$attrs["shadowMax"][0];
+		$this->shadowLastChange=$attrs["shadowLastChange"][0];
+		$this->loginShell=$attrs["loginShell"][0];
+		$this->description=$attrs["description"][0];
+		
+		$this->sambaAcctFlags=$attrs["sambaAcctFlags"][0];
+		$this->sambaLogonTime=$attrs["sambaLogonTime"][0];
+		$this->sambaLogoffTime=$attrs["sambaLogoffTime"][0];
+		$this->sambaKickoffTime=$attrs["sambaKickoffTime"][0];
+		$this->sambaPwdCanChange=$attrs["sambaPwdCanChange"][0];
+		$this->gidNumber=$attrs["gidNumber"][0];
+		$this->sambaPwdMustChange=$attrs["sambaPwdMustChange"][0];
+		$this->uidNumber=$attrs["uidNumber"][0];
+		$this->sambaSID=$attrs["sambaSID"][0];
+		$this->ComputerIP=trim($attrs["ComputerIP"][0]);
+		
+		if($this->ComputerIP==null){
+			if(preg_match("#^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+#", $this->uid)){$this->ComputerIP=str_replace("$", "", $this->uid);}
+		}
+		
+		if($GLOBALS["VERBOSE"]){
+			writelogs( "ComputerIP: $this->ComputerIP ($this->ComputerMacAddress)",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+			writelogs( "UID: $this->uid ($this->ComputerIP)",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+		}
+		
+		$this->ComputerOpenPorts=$attrs["ComputerOpenPorts"][0];								
+		$this->ComputerOS=$attrs["ComputerOS"][0];			
+		$this->ComputerUpTime=$attrs["ComputerUpTime"][0];			
+		$this->ComputerMachineType=$attrs["ComputerMachineType"][0];					
+		$this->ComputerRunning=$attrs["ComputerRunning"][0];
+		$this->ComputerMacAddress=$attrs["ComputerMacAddress"][0];
+		$this->ComputerHopCount=$attrs["ComputerHopCount"][0];
+		$this->ComputerCPU=$attrs["ComputerCPU"][0];
+		if(isset($attrs['DnsMXLength'][0])){$this->DnsMXLength=$attrs["DnsMXLength"][0];}
+		if(isset($attrs['ComputerCryptedInfos'][0])){$this->ComputerCryptedInfos=$attrs["ComputerCryptedInfos"][0];}
+		if(isset($attrs['KasperkyAVScanningDatas'][0])){$this->KasperkyAVScanningDatas=$attrs["KasperkyAVScanningDatas"][0];}
+		if(isset($attrs['VolatileIPAddress'][0])){$this->VolatileIPAddress=$attrs['VolatileIPAddress'][0];}
+		if(isset($attrs['ComputerScanSchedule'][0])){$this->ComputerScanSchedule=$attrs['ComputerScanSchedule'][0];}
+		if($this->VolatileIPAddress==null){$this->VolatileIPAddress=1;}
+		
+		
+		if(isset($attrs['userPassword'][0])){$this->userPassword=$attrs['userPassword'][0];}
+		if(isset($attrs['sambaLMPassword'][0])){$this->sambaLMPassword=$attrs['sambaLMPassword'][0];;}
+		if(isset($attrs['sambaNTPassword'][0])){$this->sambaNTPassword=$attrs['sambaNTPassword'][0];;}
+		
+		
+		$dhcp=new dhcpd_hosts($this->uid);
+		$this->dhcpHWAddress=$dhcp->dhcpHWAddress;
+		$this->dhcpStatements=$dhcp->dhcpStatements;
+	
+		
+		
+		if(($this->dhcpHWAddress<>null) && ($this->dhcpStatements<>null)){
+		if(preg_match("#fixed-address#",$this->dhcpStatements)){$this->dhcpfixed=1;}}
+		if(substr($this->uid,strlen($this->uid)-1,1)=='$'){$this->ComputerRealName=substr($this->uid,0,strlen($this->uid)-1);}
+		else{$this->ComputerRealName=$this->uid;}		
+		
+		
+		if($this->VolatileIPAddress==1){
+			if($this->ComputerIP==null){
+				$ip=gethostbyname($this->ComputerRealName);
+				if($GLOBALS["VERBOSE"]){writelogs("gethostbyname($this->ComputerRealName)=$ip",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+				if($ip<>null){
+					if(preg_match("#[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+#",$ip)){
+						if($GLOBALS["AS_ROOT"]){
+							$unix=new unix();
+							$ping="FALSE";
+							if($unix->PingHost($this->ComputerRealName)){$ping="TRUE";}
+						}else{
+							$sock=new sockets();
+							$ping=$sock->getFrameWork("network.php?ping=$ip");
+						}
+						if($ping=="TRUE"){
+							writelogs("Ping is OK",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+							writelogs( "$this->ComputerRealName resolved to $ip",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+							$this->ComputerIP=$ip;
+						}
+					}else{
+						if($GLOBALS["VERBOSE"]){writelogs("$ip no match [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+						
+					}
+				}
+			
+			}
+		}		
+		
+		
+		$this->DecryptCryptedInfos();
+		if(isset($attrs['EnableBackupAccount'][0])){$this->EnableBackupAccount=$attrs["EnableBackupAccount"][0];}
+		$this->ou="Computer";
+		
+		
+		if($this->ComputerIP==null){
+			writelogs( "->fixed_gethostbyname($this->ComputerRealName)",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+			$this->ComputerIP=$this->fixed_gethostbyname($this->ComputerRealName);
+		}		
+		
+		//DNS
+		$this->DnsType=$attrs["DnsType"][0];
+		$this->DnsZoneName=$attrs["DnsZoneName"][0];
+		if(isset($attrs['DnsCname']["count"])){
+			for($i=0;$i<$attrs["DnsCname"]["count"];$i++){
+				
+				$this->DNSCname[$attrs["DnsCname"]["$i"]]=$attrs["DnsCname"]["$i"];
+			}
+		}
+		
+		if($GLOBALS["VERBOSE"]){writelogs( "->OcsPasserelle()",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+		$this->OcsPasserelle();
+		
+		writelogs("ComputerIP (final): $this->ComputerIP ($this->ComputerMacAddress) uid:$this->uid",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+		}
+		
+private function SambaLoadpasswd(){
+		$sock=new sockets();
+		$datas=trim(base64_decode($sock->getFrameWork("cmd.php?smbpass=".base64_encode($this->userPassword))));
+			
+		
+		if(preg_match('#([0-9A-Z]+):([0-9A-Z]+)#',$datas,$re)){
+			$this->sambaLMPassword=$re[1];
+			$this->sambaNTPassword=$re[2];
+			writelogs("$this->userPassword= $datas=sambaLMPassword:$this->sambaLMPassword sambaNTPassword:$this->sambaNTPassword",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+		}
+	}
+
+public function ComputerChangePassword($password){
+		    $upd=array();
+			$this->userPassword=$password;
+			$this->SambaLoadpasswd();
+			$upd["sambaLMPassword"][0]=$this->sambaLMPassword;
+			$upd["sambaNTPassword"][0]=$this->sambaNTPassword;
+			$upd["userPassword"][0]=$this->userPassword;
+			$upd["sambaPwdLastSet"][0]=time();
+			$upd["sambaPwdMustChange"][0]=2147483647;
+			$upd["sambaBadPasswordCount"][0]=0;
+			$upd["sambaBadPasswordTime"][0]=0;
+			$upd["sambaLogonHours"][0]=-1;		
+			$ldap=new clladp();
+			if($ldap->ldap_host=="127.0.0.1"){
+				if(!$this->VerifyConnect()){return false;}
+			}
+			$res=$ldap->Ldap_modify($this->dn,$upd);
+			$this->ldap_error=$ldap->ldap_last_error;
+			$this->artica_meta();
+			return $res;
+	
+}
+
+function OcsEdit(){
+	if($this->ComputerMacAddress=="UnKnown"){return "";}
+	if($this->ComputerMacAddress==null){return "";}
+	$ipClass=new IP();
+	if(!$ipClass->IsvalidMAC($this->ComputerMacAddress)){return "";}
+	$ocs=new ocs($this->ComputerMacAddress);
+	$ocs->ComputerName=$this->ComputerRealName;
+	$ocs->ComputerIP=$this->ComputerIP;
+	$ocs->EditComputer();
+
+}
+		
+		
+function OcsPasserelle(){
+	if($this->ComputerMacAddress=="UnKnown"){return "";}
+	if($this->ComputerMacAddress==null){return "";}
+	$ocs=new ocs($this->ComputerMacAddress);
+	if($ocs->HARDWARE_ID==0){return "";}
+	if($GLOBALS["VERBOSE"]){writelogs("OcsPasserelle: HARDWARE_ID=$ocs->HARDWARE_ID",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
+	$ocs->LoadParams();
+	$COmputerName=$this->uid;
+	$COmputerName=str_replace('$','',$COmputerName);
+	
+	$update=false;
+	if($this->VolatileIPAddress==0){
+		if($ocs->ComputerIP<>null){
+			if($ocs->ComputerIP<>$this->ComputerIP){
+				writelogs("OcsPasserelle: Change $this->ComputerIP to OCS IP: $ocs->ComputerIP",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+				$this->ComputerIP=$ocs->ComputerIP;
+				$update=true;
+			}
+		}
+	}
+
+	if($ocs->ComputerName<>null){
+	if($COmputerName<>$ocs->ComputerName){
+		if(preg_match("#[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+#", $ocs->ComputerName)){
+			if(!preg_match("#[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+#", $this->uid)){
+				$ocs->ComputerName=$this->ComputerRealName;
+				$ocs->EditComputer();
+			}
+		}else{
+			$this->ComputerRealName=$ocs->ComputerName;}
+		}
+	}
+	
+	if($update){$this->Edit();}
+	
+	
+}
+		
+		
+function Edit($source_script=null){
+	if(isset($GLOBALS["COMPUTEREDITED"][$this->uid])){
+		if($GLOBALS["VERBOSE"]){echo "Edit(): $this->uid -> ALREADY EDITED [".__LINE__."]\n";}
+		return true;
+	}
+	if($this->ComputerIP=="0.0.0.0"){
+		if($GLOBALS["VERBOSE"]){echo "Edit(): $this->ComputerIP -> NO IP DEFINED [".__LINE__."]\n";}
+		return;}
+	$upd["uid"][0]=$this->uid;
+	$uidNumber=$this->uidNumber;
+	$uidNumber_c=2 *$uidNumber+1000;
+	$users=new usersMenus();
+	$group=new groups();
+	$ldap=new clladp();
+	if($ldap->ldap_host=="127.0.0.1"){
+		if(!$this->VerifyConnect()){
+			$this->ldap_error="Verify connect return failed\n";
+			if($GLOBALS["VERBOSE"]){echo "Edit(): Verify connect return failed -> FALSE [".__LINE__."]\n";}
+			return false;
+		}
+	}
+	$this->VerifyDefault($source_script);
+	if($this->dhcpfixed==1){$this->VolatileIPAddress=0;}
+	if($this->DnsMXLength==null){$this->DnsMXLength=10;}
+	$trace=debug_backtrace();
+	$called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";			
+	writelogs("ComputerIP: $this->ComputerIP $called ",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
+	$upd=array();
+	$this->ComputerIP=str_replace("$",'',$this->ComputerIP);
+	$upd["ComputerIP"][0]=$this->ComputerIP;
+	$upd["ComputerMacAddress"][0]=$this->ComputerMacAddress;
+	$upd["DnsZoneName"][0]=$this->DnsZoneName;
+	$upd["DnsType"][0]=$this->DnsType;
+	$upd["ComputerCPU"][0]=$this->ComputerCPU;	
+	$upd["DnsMXLength"][0]=$this->DnsMXLength;
+	$upd["sambaPrimaryGroupSID"][0]=$group->samba_group_sid_from_gid('515');
+	$upd["sambaSID"][0]=$ldap->LOCAL_SID() .'-' . $uidNumber_c;	
+	$upd["VolatileIPAddress"][0]=$this->VolatileIPAddress;
+	
+	$res=true;
+	if($GLOBALS["VERBOSE"]){echo "Edit(): RES -> $res [".__LINE__."]\n";}
+	$GLOBALS["COMPUTEREDITED"][$this->uid]=true;
+	
+	if(!$ldap->Ldap_modify($this->dn,$upd)){
+		$this->ldap_error="Modify DN $this->dn ERROR $ldap->ldap_last_error\n";
+		writelogs("1) Modify DN $this->dn ERROR",__CLASS__.'/'.__FUNCTION__,__FILE__);
+		writelogs("VolatileIPAddress=$this->VolatileIPAddress",__CLASS__.'/'.__FUNCTION__,__FILE__);
+		if($GLOBALS["VERBOSE"]){echo "Edit(): Ldap_modify($this->dn,...) -> FALSE [".__LINE__."]\n";}
+		$res=false;
+		
+	}
+	unset($upd);	
+	
+	
+	
+	$this->ComputerOS=replace_accents($this->ComputerOS);
+	if(preg_match("#Microsoft.+?Windows.+?7#i",$this->ComputerOS)){$this->ComputerOS="Windows 7";}
+
+	if($this->ComputerOpenPorts<>null){		$upd["ComputerOpenPorts"][0]=$this->ComputerOpenPorts;}
+	if($this->ComputerOS<>null){			$upd["ComputerOS"][0]=utf8_encode($this->ComputerOS);}
+	if($this->ComputerUpTime<>null){		$upd["ComputerUpTime"][0]=$this->ComputerUpTime;}
+	if($this->ComputerMachineType<>null){	$upd["ComputerMachineType"][0]=$this->ComputerMachineType;}
+	if($this->ComputerRunning<>null){		$upd["ComputerRunning"][0]=$this->ComputerRunning;}
+	if($this->ComputerMacAddress<>null){	$upd["ComputerMacAddress"][0]=$this->ComputerMacAddress;}
+	if($this->ComputerHopCount<>null){		$upd["ComputerHopCount"][0]=$this->ComputerHopCount;}
+	
+
+	if($this->VolatileIPAddress==0){
+		$dns=new pdns($this->DnsZoneName);
+		$dns->EditIPName(strtolower($this->uid),$this->ComputerIP,$this->DnsType,$this->ComputerMacAddress);
+	}
+	
+	$this->ocsedit();
+	$this->EXPLODE_LDAP_ARRAY($upd);
+	$this->SaveDHCPMode();
+	if($GLOBALS["VERBOSE"]){echo "Edit(): RES -> $res [".__LINE__."]\n";}
+	return $res;
+	
+	}
+	
+	
+private function EXPLODE_LDAP_ARRAY($array){
+	$ldap=new clladp();
+	if($ldap->ldap_host=="127.0.0.1"){
+		if(!$this->VerifyConnect()){return false;}
+	}
+	$upd=array();
+    foreach ($array as $num=>$arr){
+        foreach ($array as $val){
+			$GLOBALS["INJECT_COMPUTER_TOLDAP"][]="$num: $val";
+			unset($upd);
+			$upd[trim($num)][0]=trim($val);
+			if(!$ldap->Ldap_modify($this->dn,$upd)){
+				$GLOBALS["INJECT_COMPUTER_TOLDAP"][]="$num = $val (error)";
+				writelogs("modify $num = $val ERROR",__CLASS__.'/Edit/EXPLODE_LDAP_ARRAY',__FILE__,__LINE__);
+				$newarr[$num]=$val;
+				if(!$ldap->Ldap_add_mod($this->dn,$newarr)){
+						$GLOBALS["INJECT_COMPUTER_TOLDAP"][]="$num = $val (error)";
+						writelogs("Ldap_add_mod $num = $val ERROR",__CLASS__.'/Edit/EXPLODE_LDAP_ARRAY',__FILE__,__LINE__);
+					
+				}
+			}
+			
+			unset($upd);
+			//writelogs("\$upd[\"$num\"][$i]=$val",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	}}
+	
+}
+	
+function SaveDHCPMode(){
+
+		
+		
+		
+}
+
+function VerifyConnect(){
+	if(isset($GLOBALS["VerifyConnect"])){return $GLOBALS["VerifyConnect"];}
+	if(!$GLOBALS["AS_ROOT"]){return true;}
+	if(!class_exists("unix")){include_once("/usr/share/artica-postfix/framework/class.unix.inc");}
+	$unix=new unix();
+	if(!$unix->is_socket("/var/run/slapd/slapd.sock")){$GLOBALS["VerifyConnect"]=false;return false;}
+	$GLOBALS["VerifyConnect"]=true;
+	return true;
+}
+	
+	
+function VerifyDefault($source_script=null){
+	$u=array();
+	$ip=new IP();
+	if($this->DnsType==null){$this->DnsType="A";}
+	if($this->DnsZoneName==null){$this->DnsZoneName="localhost";}
+	if($this->ComputerIP==null){
+		$hostname=$this->uid;
+		$hostname=str_replace("$", "", $hostname);
+		if(!$ip->isIPAddress($hostname)){
+			$resolved=@gethostbyname($hostname);
+			if($ip->isIPAddress($hostname)){
+				writelogs("gethostbyname($this->uid)=$resolved",__CLASS__.'/'.__FUNCTION__,__FILE__);
+				$this->ComputerIP=$resolved;
+			}
+		}else{
+			$this->ComputerIP=$hostname;
+			$this->ComputerRealName=gethostbyaddr($hostname);
+		}
+	}
+	
+	if($this->ComputerIP==null){$this->ComputerIP='0.0.0.0';}
+	if($this->ComputerMacAddress==null){$this->ComputerMacAddress='Unknown';}
+	if($this->ComputerOS==null){$this->ComputerOS="Unknown";}
+	if($this->ComputerCPU==null){$this->ComputerCPU="Unknown";}
+	if(strpos($this->uid,'$')==0){$this->uid=$this->uid.'$';}
+	$ldap=new clladp();
+	if($ldap->ldap_host=="127.0.0.1"){if(!$this->VerifyConnect()){return false;}}
+	
+	
+	
+		
+		$dn="dc=organizations,$ldap->suffix";
+		if(!$ldap->ExistsDN($dn)){
+			$u=array();
+			$u["dc"][]="organizations";
+			$u["o"][]="organizations";
+			$u["objectclass"][]="top";
+			$u["objectclass"][]="organization";
+			$u["objectclass"][]="dcObject";
+			if(!$ldap->ldap_add($dn,$u)){
+				echo "*** ldap_add($dn) ***\n";
+				echo @implode("\n", $GLOBALS["LDAP_EVENTS"]);
+				echo "\nby$source_script\nFailed\n$ldap->ldap_last_error\nLine: ".__LINE__." of ". __FILE__."\n";return "";}
+			unset($u);
+		}
+
+		$dn="dc=samba,dc=organizations,$ldap->suffix";
+		if(!$ldap->ExistsDN($dn)){
+	 			$u["objectClass"][]="top";
+	 			$u["objectClass"][]="organization";
+	 			$u["objectClass"][]="dcObject";
+	 			$u["o"][]="samba";
+	 			$u["dc"][]="samba";
+	 			if(!$ldap->ldap_add($dn,$u)){
+	 				echo "by$source_script\nFailed\n$ldap->ldap_last_error\nLine: ".__LINE__." of ". __FILE__."\n";
+	 				return "";}
+	 			unset($u);
+	 		}
+
+		$dn="ou=Computer,dc=samba,dc=organizations,$ldap->suffix";
+	 	if(!$ldap->ExistsDN($dn)){
+	 			$u["objectClass"][]="top";
+	 			$u["objectClass"][]="organizationalUnit";
+	 			$u["ou"][]="Computer";
+	 			if(!$ldap->ldap_add($dn,$u)){
+	 				echo "by$source_script\nFailed\n$ldap->ldap_last_error\nLine: ".__LINE__." of ". __FILE__."\n";
+	 				return "";}
+	 			unset($u);
+	 			}
+	 		
+	}
+	
+	
+	
+	
+
+
+function DecryptCryptedInfos(){
+	if($this->ComputerCryptedInfos==null){return "";}
+	$sock=new sockets();
+	$cryptPass=$sock->GET_INFO("OrigninalCryptPassword");
+	$crypt=new SimpleCrypt($cryptPass);
+	$this->ComputerCryptedInfos=$crypt->decrypt($this->ComputerCryptedInfos);
+	
+	
+}
+
+function fixed_gethostbyname ($host) {
+    $ip = @gethostbyname(trim($host));
+    if(preg_match("#[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+#",$ip)){
+    	if ($ip != $host) { return $ip; } else return "";
+    }
+}
+
+function SaveCryptedInfos(){
+	$sock=new sockets();
+	$ldap=new clladp();
+	if($ldap->ldap_host=="127.0.0.1"){
+		if(!$this->VerifyConnect()){return false;}
+	}
+	
+	if($this->dn==null){
+		$this->dn="cn=$this->uid,ou=Computer,dc=samba,dc=organizations,$ldap->suffix";
+		if(!$ldap->ExistsDN($this->dn)){$this->Add();}
+	}
+	
+	$cryptPass=$sock->GET_INFO("OrigninalCryptPassword");
+	if($cryptPass==null){
+		$cryptPass=$ldap->ldap_password;
+		$sock->SET_INFO("OrigninalCryptPassword",$cryptPass);
+		}
+		
+	$array=array();
+	$crypt=new SimpleCrypt($cryptPass);
+	$array["ComputerCryptedInfos"][0]=$crypt->encrypt($this->ComputerCryptedInfos);
+	
+	if(!$ldap->Ldap_modify($this->dn,$array)){
+				echo "\n".__FUNCTION__."\n".__FILE__."\nLine:".__LINE__."\n".$ldap->ldap_last_error;
+				return false;
+			}
+		
+	$sock=new sockets();
+	return true;
+	
+}
+
+
+function ComputerIDFromMAC($mac):string{
+        $pattern="(&(objectclass=posixAccount)(ComputerMacAddress=$mac))";
+        $attr=array();
+        $ldap=new clladp();
+        if($ldap->ldap_host=="127.0.0.1"){
+            if(!$this->VerifyConnect()){return "";}
+        }
+        if(is_null($ldap->ldap_connection)){
+            return "";
+        }
+        $sr =@ldap_search($ldap->ldap_connection,$ldap->suffix,$pattern,$attr);
+        if(!$sr){return "";}
+        if(is_null($ldap->ldap_connection)){
+            return "";
+        }
+        $hash=ldap_get_entries($ldap->ldap_connection,$sr);
+        if(!isset($hash[0]["uid"][0])){return "";}
+        if($hash[0]["uid"][0]<>null){return $hash[0]["uid"][0];}
+
+        $mac=str_replace(':',"-",$mac);
+        $pattern="(&(objectclass=posixAccount)(ComputerMacAddress=$mac))";
+        $attr=array();
+        $ldap=new clladp();
+        $sr =@ldap_search($ldap->ldap_connection,$ldap->suffix,$pattern,$attr);
+        if(!$sr){return "";}
+        $hash=ldap_get_entries($ldap->ldap_connection,$sr);
+        if($hash[0]["uid"][0]<>null){return trim($hash[0]["uid"][0]);}
+
+        $mac=str_replace('-',":",$mac);
+        $pattern="(&(objectclass=posixAccount)(ComputerMacAddress=$mac))";
+        $sr =@ldap_search($ldap->ldap_connection,$ldap->suffix,$pattern,$attr);
+        if(!$sr){return "";}
+        $hash=ldap_get_entries($ldap->ldap_connection,$sr);
+        if($hash[0]["uid"][0]<>null){return trim($hash[0]["uid"][0]);}
+        return "";
+	}
+
+	function update_uid($uid){
+		$upd["uid"][0]=$uid;
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		if($ldap->Ldap_modify($this->dn, $upd)){$this->uid=$uid;}
+		
+	}
+	
+	function update_ipaddr($ipaddr){
+		$upd["ComputerIP"][0]=$ipaddr;
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		writelogs("Update ComputerIP = $ipaddr for $this->dn",__CLASS__.'/'.__FUNCTION__,__FILE__);
+		
+		$r=ldap_modify($ldap->ldap_connection,$ldap->dn_escape($this->dn),$upd);
+		
+		if($r){
+			if($this->ComputerMacAddress<>null){
+				$ocs=new ocs($this->ComputerMacAddress);
+				$ocs->ComputerName=$this->ComputerRealName;
+				$ocs->ComputerIP=$ipaddr;
+				$ocs->ComputerOS=$this->ComputerOS;
+				$ocs->EditComputer();
+				return true;
+			}
+		}else{
+			writelogs("Update ComputerIP FAILED ".$ldap->ExplodeError(),__CLASS__.'/'.__FUNCTION__,__FILE__);
+			$this->ldap_error=$ldap->ldap_last_error;
+			return false;
+		}
+		
+	}
+	
+	function UpdateComputerUpTime($data){
+		$upd["ComputerUpTime"][0]=$data;
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		if(!$ldap->Ldap_modify($this->dn, $upd)){return;}
+		
+	}
+
+	
+	function update_OS($OS){
+		if(preg_match("#Microsoft.+?Windows.+?7#i",$OS)){$OS="Windows 7";}
+		$upd["ComputerOS"][0]=$OS;
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		if($ldap->Ldap_modify($this->dn, $upd)){
+			if($this->ComputerMacAddress<>null){
+				$ocs=new ocs($this->ComputerMacAddress);
+				$ocs->ComputerName=$this->ComputerRealName;
+				$ocs->ComputerIP=$this->ComputerIP;
+				$ocs->ComputerOS=$this->ComputerOS;
+				$ocs->EditComputer();
+			}
+			$this->ComputerIP=$this->ComputerIP;
+			$this->SaveDHCPMode();
+		}		
+		
+	}
+
+function Edit_ScanSchedule($cron){
+	writelogs("Set Antivirus scanner AT \"$cron\" for computer in $this->dn",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	$ldap=new clladp();
+	if($ldap->ldap_host=="127.0.0.1"){
+		if(!$this->VerifyConnect()){return false;}
+	}
+	if($cron==null){
+		$upd["ComputerScanSchedule"]=$this->ComputerScanSchedule;
+		if($ldap->Ldap_del_mod($this->dn,$upd)){$this->artica_meta();}
+	}else{
+		$upd["ComputerScanSchedule"][0]=$cron;
+		if($ldap->Ldap_modify($this->dn,$upd)){$this->artica_meta();}
+	}
+	
+	
+}
+
+
+function ComputerAddAlias($alias){
+	$ldap=new clladp();
+	if($ldap->ldap_host=="127.0.0.1"){
+		if(!$this->VerifyConnect()){return false;}
+	}
+	writelogs("adding computer aliase $alias in $this->dn",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	$upd["DnsCname"]=$alias;
+	if($ldap->Ldap_add_mod($this->dn,$upd)){$this->artica_meta();}
+	}
+function ComputerDelAlias($alias){
+	$ldap=new clladp();
+	if($ldap->ldap_host=="127.0.0.1"){
+		if(!$this->VerifyConnect()){return false;}
+	}
+	writelogs("delete computer aliase $alias in $this->dn",__CLASS__.'/'.__FUNCTION__,__FILE__);
+	$upd["DnsCname"]=$alias;
+	$ldap->Ldap_del_mod($this->dn,$upd);
+	$this->artica_meta();	
+}
+
+private function uidPatternFromComputer($uid){
+	$uid=str_replace("%24", "", $uid);
+	$uid=str_replace(" ", "", $uid);
+	$uid=str_replace("\r ", "", $uid);
+	$uid=str_replace("\n ", "", $uid);
+	$uid=str_replace('\\', "", $uid);
+	$uid=str_replace('/', "", $uid);
+
+	$uid=str_replace('#', "", $uid);
+	$uid=str_replace('"', "", $uid);
+	$uid=str_replace('"', "", $uid);
+	$uid=str_replace('&', "", $uid);
+	$uid=str_replace('(', "", $uid);
+	$uid=str_replace(')', "", $uid);
+	$uid=str_replace('@', "", $uid);
+	$uid=str_replace('[', "", $uid);
+	$uid=str_replace(']', "", $uid);
+	$uid=str_replace('{', "", $uid);
+	$uid=str_replace('}', "", $uid);
+	$uid=str_replace('à', "", $uid);
+	$uid=str_replace('é', "", $uid);
+	$uid=str_replace('^', "", $uid);
+	$uid=str_replace('²', "", $uid);
+	$uid=str_replace('=', "", $uid);
+	$uid=str_replace(";", "", $uid);
+	$uid=str_replace(",", "", $uid);
+	$uid=str_replace("!", "", $uid);
+	$uid=str_replace("§", "", $uid);
+	$uid=str_replace("€", "", $uid);
+	$uid=str_replace("£", "", $uid);
+	$uid=str_replace("*", "", $uid);
+	$uid=str_replace("%", "", $uid);
+	$uid=str_replace("ù", "", $uid);
+	$uid=str_replace("°", "", $uid);
+	$uid=str_replace("|", "", $uid);
+	$uid=str_replace("+", "", $uid);
+	$uid=trim(strtolower($uid));
+	return $uid;
+	
+}
+	
+function Add(){
+	$ip=new IP();
+	$this->ComputerIP=str_replace("$",'',$this->ComputerIP);
+	$this->ComputerIP=$this->uidPatternFromComputer($this->ComputerIP);
+	$this->ComputerMacAddress=trim(strtolower($this->ComputerMacAddress));
+	$this->ComputerMacAddress=str_replace("-", ":", $this->ComputerMacAddress);
+	
+	if(!$ip->isIPAddress($this->ComputerIP)){$this->ComputerIP=null;}
+	if($ip->isIPAddress($this->uid)){$this->uid="Unknown-".ip2long($this->uid);}
+	$this->uid=str_replace(" ","",$this->uid);
+	if(!$ip->IsvalidMAC($this->ComputerMacAddress)){$this->ComputerMacAddress=null;}
+	
+	if($this->ComputerMacAddress<>null){
+		$uid_mac=$this->ComputerIDFromMAC($this->ComputerMacAddress);
+		if(trim($uid_mac)<>null){
+			$uid_mac=str_replace("$", "", $uid_mac);
+			writelogs("$this->ComputerMacAddress= $uid_mac, change to this uid",__CLASS__.'/'.__FUNCTION__,__FILE__);
+			$this->uid="$uid_mac$";
+		}
+	}
+	if($this->uid=="$"){
+		$this->ldap_error="UID === '$' !!!??\n";
+		$this->UpdateOCSDB();
+		return;
+	}
+	$this->VerifyDefault();
+	$ldap=new clladp();
+	if($ldap->ldap_host=="127.0.0.1"){
+		if(!$this->VerifyConnect()){
+			$this->ldap_error="Verify Connect return failed\n";
+			return false;
+		}
+	}
+	
+	
+	$this->dn="cn=$this->uid,ou=Computer,dc=samba,dc=organizations,$ldap->suffix";
+	if($ldap->ExistsDN($this->dn)){
+		$GLOBALS["INJECT_COMPUTER_TOLDAP"][]="LDAP::$this->dn exists -> Edit()";
+		$res=$this->Edit();
+		if(!$res){
+			if($GLOBALS["VERBOSE"]){echo "this->edit() RETURN FALSE [".__LINE__."]\n";}
+		}
+		return $res;
+	}
+		$group=new  groups(null);
+		$this->uid=$this->uidPatternFromComputer($this->uid);
+		$upd=array();
+		$user=new user(null);
+		$upd["objectClass"][]="top";
+		$upd["objectClass"][]="ArticaComputerInfos";
+		$upd["objectClass"][]="posixAccount";
+		$upd["objectClass"][]="sambaSamAccount";
+		$upd["objectClass"][]="shadowAccount";
+		$upd["cn"][]=$this->uid;
+		$upd["uid"][]=$this->uid;
+		$upd["homeDirectory"][]="$this->uid/tmp";
+		$upd["gecos"][]="Computer";
+		$upd["shadowMax"][]="20000";
+		$upd["shadowLastChange"][]="-1";
+		$upd["loginShell"][]="/bin/false";
+		$upd["description"][]="Computer";
+		$upd["sambaAcctFlags"][]="[W          ]";
+		$upd["sambaLogonTime"][]="0";
+		$upd["sambaLogoffTime"][]="2147483647";
+		$upd["sambaKickoffTime"][]="2147483647";
+		$upd["sambaPwdCanChange"][]="0";
+		$upd["gidNumber"][]="515";
+		$upd["sambaPwdMustChange"][]="2147483647";
+		$upd["sambaPrimaryGroupSID"][]=$group->samba_group_sid_from_gid('515');
+		$upd["uidNumber"][]=$user->uidNumberCheck(1);
+		$upd["sambaSID"][]=$ldap->LOCAL_SID() .'-' . $user->SambaGetSid();
+		
+		if($this->ComputerIP==null){$this->ComputerIP='0.0.0.0';}
+		
+		$fIP=explode(".",$this->ComputerIP);
+        foreach ($fIP as $index=>$val){$fIP[$index]=intval($val);}
+		$this->ComputerIP=@implode(".", $fIP);
+		
+		if($this->ComputerMachineType==null){$this->ComputerMachineType='UnKnown';}
+		if($this->ComputerRunning==null){$this->ComputerRunning='UnKnown';}
+		if($this->ComputerOS==null){$this->ComputerOS='UnKnown';}
+		if($this->ComputerRealName==null){$this->ComputerRealName=str_replace("$","",$this->uid);}
+		$this->ComputerRealName=$this->uidPatternFromComputer($this->ComputerRealName);
+		$upd["ComputerIP"][]=$this->ComputerIP;
+		$upd["ComputerOpenPorts"][]="UnKnown";
+		$upd["ComputerOS"][]=$this->ComputerOS;
+		$upd["ComputerUpTime"][]="UnKnown";
+		$upd["ComputerMachineType"][]=$this->ComputerMachineType;
+		$upd["ComputerRunning"][]=$this->ComputerRunning;
+		$upd["ComputerMacAddress"][]=$this->ComputerMacAddress;
+		$upd["ComputerHopCount"][]="UnKnown";	
+		if($this->ComputerCPU<>null){$upd["ComputerCPU"]=$this->ComputerCPU;}
+		if($this->VolatileIPAddress<>null){$upd["VolatileIPAddress"]=$this->VolatileIPAddress;}
+		if($this->DnsZoneName<>null){$upd["DnsZoneName"][]=$this->DnsZoneName;}
+		if($this->DnsType<>null){$upd["DnsType"][]=$this->DnsType;}
+		
+		writelogs("Adding New computer $this->dn",__CLASS__.'/'.__FUNCTION__,__FILE__);
+		$res=$ldap->ldap_add($this->dn,$upd);
+		if(!$res){
+			writelogs("adding computer $this->dn failed",__CLASS__.'/'.__FUNCTION__,__FILE__);
+				
+		}else{
+			$this->SaveDHCPMode();
+			$this->UpdateOCSDB();
+			
+		}
+		
+		$this->ldap_error=$ldap->ldap_last_error;
+		return $res;
+		}
+		
+	private function artica_meta(){
+		$sock=new sockets();
+		$ArticaMetaEnabled=$sock->GET_INFO("ArticaMetaEnabled");
+		if($ArticaMetaEnabled==1){
+			$uid_am=str_replace("$","",$this->uid);
+			$sock->getFrameWork("cmd.php?artica-meta-computer=$uid_am");
+		}
+	}
+
+	private function UpdateOCSDB(){
+		if($this->ComputerMacAddress==null){return;}
+		$ocs=new ocs($this->ComputerMacAddress);
+		$ocs->ComputerMacAddress=$this->ComputerMacAddress;
+		$ocs->ComputerIP=$this->ComputerIP;
+		$ocs->ComputerOS=$this->ComputerOS;
+		$ocs->ComputerName=$this->ComputerRealName;
+		if($this->DnsZoneName<>null){
+			$this->ComputerRealName=str_replace(".$this->DnsZoneName", "", $this->ComputerRealName);
+			$this->ComputerRealName=$this->ComputerRealName.".$this->DnsZoneName";
+			$ocs->ComputerName=$this->ComputerRealName;
+		}
+		$ocs->EditComputer();
+	}
+	
+		
+function UpdateComputerSID(){
+		$group=new  groups(null);
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		$user=new user(null);
+		$upd=array();
+		$this->dn="cn=$this->uid,ou=Computer,dc=samba,dc=organizations,$ldap->suffix";
+		$upd["sambaPrimaryGroupSID"][]=$group->samba_group_sid_from_gid('515');
+		$upd["uidNumber"][]=$user->uidNumberCheck(1);
+		$upd["sambaSID"][]=$ldap->LOCAL_SID() .'-' . $user->SambaGetSid();
+		echo "$this->uid: ".$ldap->LOCAL_SID() .'-' . $user->SambaGetSid()."\n";
+		if(!$ldap->Ldap_modify($this->dn,$upd)){
+			echo "\nFunction: ".__FUNCTION__."\n".dirname(__FILE__)."\nLine:".__LINE__."\n".$ldap->ldap_last_error."\n";
+			return false;
+		}
+		$this->artica_meta();
+		return true;		
+	
+}
+	function RemoveHost(){
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		$ldap->ldap_delete($this->dn);
+		$hash=$this->Groups_list();
+		if(is_array($hash)){
+            foreach ($hash as $num=>$val){
+				$group=new groups($num);
+				writelogs("Delete computer from $val",__CLASS__.'/'.__FUNCTION__,__FILE__);
+				$group->DeleteUserFromThisGroup($this->uid);
+			}
+		}
+
+		
+		
+		
+	}
+
+		
+	function DeleteComputer(){
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		$ldap->ldap_delete($this->dn);
+		$hash=$this->Groups_list();
+		if(is_array($hash)){
+            foreach ($hash as $num=>$val){
+			$group=new groups($num);
+			writelogs("Delete computer from $val",__CLASS__.'/'.__FUNCTION__,__FILE__);
+			$group->DeleteUserFromThisGroup($this->uid);
+		}}
+		
+
+		}
+
+
+	
+function Groups_list(){
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		$attrs=array('gidNumber','displayName','cn');
+		$sr =@ldap_search($ldap->ldap_connection,$ldap->suffix,"(&(objectClass=posixGroup)(memberUid=$this->uid))",$attrs);	
+			if($sr){
+				$result = ldap_get_entries($ldap->ldap_connection, $sr);
+				if(!is_array($result)){return array();}
+				for($i=0;$i<$result["count"];$i++){
+					if($result[$i]["displayname"][0]==null){$result[$i]["displayname"][0]=$result[$i]["cn"][0];}
+					$res[$result[$i]["gidnumber"][0]]=$result[$i]["displayname"][0];
+				}
+					return $res;
+			}	
+}
+
+
+		
+	function UpdateComputerOpenPorts($data){
+		$ldap=new clladp();
+		if($ldap->ldap_host=="127.0.0.1"){
+			if(!$this->VerifyConnect()){return false;}
+		}
+		$upd["ComputerOpenPorts"][]=$data;
+		if(!$ldap->Ldap_modify($this->dn,$upd)){
+			echo "\nFunction: ".__FUNCTION__."\n".dirname(__FILE__)."\nLine:".__LINE__."\n".$ldap->ldap_last_error;
+			return false;	
+		}
+	}
+
+
+		
+		
+}
+
+class Wol{
+ 
+ 	public function wake($mac){
+ 		$sock=new sockets();
+ 		$mac=base64_encode($mac);
+ 		return nl2br(base64_decode($sock->getFrameWork("cmd.php?wake-on-lan=$mac"))); 
+ 		
+ 	}
+ } 
+
+?>

@@ -1,0 +1,2786 @@
+<?php
+if (!file_exists('/etc/artica-postfix/settings/Daemons/NewLicServer')) {
+    @touch("/etc/artica-postfix/settings/Daemons/NewLicServer");
+}
+//SP94 // SP96++ // SP 99 ++
+$GLOBALS["isRegistered"]=@file_get_contents('/etc/artica-postfix/settings/Daemons/NewLicServer');
+// SP1 2020 06 02
+$GLOBALS["YESCGROUP"]=true;
+define("LkdPTEQ", base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2EvLkdPTEQ="));
+define("Suvgh",base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL1dpemFyZFNhdmVkU2V0dGluZ3M="));
+define("isoHF",base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9GUk9NX0lTTw=="));
+define("htpPat",base64_decode("aHR0cDovL2FydGljYXRlY2gubmV0L3BhdHRlcm5zLnBocD94a2V5"));
+define("syslogSuff",base64_decode("QVJUSUNBX0xJQ0VOU0U="));
+$GLOBALS["SCRIPT_SUFFIX"]="--script=".basename(__FILE__);
+include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+$GLOBALS["CLASS_SOCKETS"]=new sockets();
+$GLOBALS["CLASS_SOCKETS"]->heads_exec_root($argv);
+
+ if (function_exists("posix_getuid")) {
+    if (posix_getuid()<>0) {
+        die("Cannot be used in web server mode\n\n");
+    }
+}
+$GLOBALS["BYCRON"]=false;
+$GLOBALS["FORCE"]=false;
+$GLOBALS["STAMP"]=false;
+$GLOBALS["EMAIL"]=false;
+$GLOBALS["MIGRATION"] = false;
+$GLOBALS["FROM_WIZARD"] = false;
+$GLOBALS["REMOTE_OUTPUT"]=false;
+
+CheckRsyslogd();
+
+if (preg_match("#--email#", implode(" ", $argv))) {
+    $GLOBALS["EMAIL"]=true;
+}
+if (preg_match("#--force#", implode(" ", $argv))) {
+    $GLOBALS["FORCE"]=true;
+}
+if (preg_match("#--verbose#", implode(" ", $argv))) {
+    $GLOBALS["VERBOSE"]=true;
+    $GLOBALS["VERBOSE"]=true;
+    ini_set('html_errors', 0);
+    ini_set('display_errors', 1);
+    ini_set('error_reporting', E_ALL);
+}
+//$GLOBALS["VERBOSE"]=true;$GLOBALS["VERBOSE"]=true;$GLOBALS["debug"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);
+
+include_once(dirname(__FILE__).'/ressources/class.templates.inc');
+include_once(dirname(__FILE__).'/ressources/class.ldap.inc');
+include_once(dirname(__FILE__).'/ressources/class.ini.inc');
+include_once(dirname(__FILE__).'/ressources/class.mysql.inc');
+include_once(dirname(__FILE__).'/ressources/class.ccurl.inc');
+include_once(dirname(__FILE__).'/ressources/class.identity.inc');
+include_once(dirname(__FILE__).'/framework/class.unix.inc');
+include_once(dirname(__FILE__).'/framework/frame.class.inc');
+include_once(dirname(__FILE__).'/ressources/class.os.system.inc');
+include_once(dirname(__FILE__).'/ressources/class.squidguard.inc');
+$GLOBALS["MYPID"]=getmypid();
+
+
+
+$unix=new unix();
+if (is_file(isoHF)) {
+    if ($unix->file_time_min(isoHF)<1) {
+        echo "Time less than 1mn\n";
+        exit();
+    }
+}
+
+$unix=new unix();
+$uptime=$unix->ServerRunSince();
+echo "Server running since ".$uptime." minutes...\n";
+if (!$GLOBALS["FORCE"]) {
+    if ($uptime < 5) {
+        echo "Server run since " . $uptime . " minutes ( need 5mn, restart later)\n";
+        build_progress_influx("Server run since " . $uptime . " minutes ( need 5mn, restart later)", 110);
+        build_progress("Server run since " . $uptime . " minutes ( need 5mn, restart later)", 110);
+        exit();
+    }
+}
+
+if (preg_match("#--remote-output#", implode(" ", $argv))) {
+    $GLOBALS["REMOTE_OUTPUT"]=true;
+}
+if (preg_match("#--force#", implode(" ", $argv))) {
+    $GLOBALS["FORCE"]=true;
+}
+if (preg_match("#--bycron#", implode(" ", $argv))) {
+    $GLOBALS["BYCRON"]=true;
+}
+if (preg_match("#--set-stamp#", implode(" ", $argv))) {
+    $GLOBALS["STAMP"]=true;
+}
+if (preg_match("#--migration#", implode(" ", $argv))) {
+    $GLOBALS["MIGRATION"] = true;
+}
+if (preg_match("#--from-wizard#", implode(" ", $argv))) {
+    $GLOBALS["FROM_WIZARD"] = true;
+}
+if(isset($argv[1])) {
+    if ($argv[1] == "--register") {register();exit();}
+    if ($argv[1] == "--uuid") {uuid_check();exit();}
+    if ($argv[1] == "--register-lic") {register_lic();exit();}
+    if ($argv[1] == "--squid-repo") {others_update();exit();}
+    if ($argv[1] == "--whatsnew") {others_update();exit();}
+    if ($argv[1] == "--updates") {others_update();exit();}
+    if ($argv[1] == "--force-updates") {$GLOBALS["FORCE"] = true;others_update();exit();}
+    if ($argv[1] == "--install-key") {install_key($argv[2]);exit();}
+    if ($argv[1] == "--ping-cloud") {ping_server();exit();}
+    if ($argv[1] == "--get-key") {get_key($argv[2], $argv[3]);exit();}
+    if ($argv[1] == "--register-demo") {register_demo();exit();}
+    if ($argv[1] == "--register-kaspersky") {exit();}
+    if ($argv[1] == "--uuid") {$unix = new unix();echo $unix->GetUniqueID() . "\n";exit();}
+    if ($argv[1] == "--reset-uuid") {reset_uuid();}
+    if ($argv[1] == "--patterns") {patterns();exit();}
+    if ($argv[1] == "--remove-grace-period") {remove_grace_period();exit();}
+    if ($argv[1] == "--drop-categorize") {drop_categorize();exit();}
+    if (!ifMustBeExecuted()) {
+        events("ifMustBeExecuted() -> FALSE, DIE()", __FUNCTION__, __FILE__, __LINE__);
+        exit();
+    }
+
+    if ($argv[1] == "--sitesinfos") {exit();}
+    if ($argv[1] == "--groupby") {exit();}
+    if ($argv[1] == "--export") {exit();}
+    if ($argv[1] == "--export-deleted") {exit();}
+    if ($argv[1] == "--export-weighted") {exit();}
+    if ($argv[1] == "--export-not-categorized") {exit();}
+
+}
+
+
+
+
+$t=time();
+$sock=new sockets();
+$users=new usersMenus();
+
+$EnableSquidRemoteMySQL=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidRemoteMySQL");
+if (!is_numeric($EnableSquidRemoteMySQL)) {
+    $EnableSquidRemoteMySQL=0;
+}
+if ($EnableSquidRemoteMySQL==1) {
+    exit();
+}
+
+
+$system_is_overloaded=system_is_overloaded();
+if ($system_is_overloaded) {
+    $unix=new unix();
+    exit();
+}
+
+
+$WebCommunityUpdatePool=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("WebCommunityUpdatePool");
+if (!is_numeric($WebCommunityUpdatePool)) {
+    $WebCommunityUpdatePool=120;
+    $sock->SET_INFO("WebCommunityUpdatePool", 120);
+}
+
+
+$pidfile="/etc/artica-postfix/pids/".basename(__FILE__).".".__FUNCTION__.".pid";
+$cachetime="/etc/artica-postfix/pids/exec.web-community-filter.php.MAIN.time";
+$unix=new unix();
+$myFile=basename(__FILE__);
+$pid=@file_get_contents($pidfile);
+if ($unix->process_exists($pid, $myFile)) {
+    events("Already executed PID:$pid, die()", __FUNCTION__, __FILE__, __LINE__);
+    exit();
+}
+
+$filetime=file_time_min($cachetime);
+
+
+@mkdir(dirname($cachetime), 0755, true);
+@unlink($cachetime);
+@file_put_contents($cachetime, time());
+@file_put_contents($pidfile, $GLOBALS["MYPID"]);
+
+register_lic();
+
+
+function reset_license()
+{
+    $unix=new unix();
+    $nohup=$unix->find_program("nohup");
+    $php5=$unix->LOCATE_PHP5_BIN();
+    $sock=new sockets();
+    @unlink("/etc/artica-postfix/settings/Daemons/LicenseInfos");
+    @unlink("/etc/artica-postfix/settings/Daemons/WizardSavedSettingsSend");
+    @unlink("/etc/artica-postfix/settings/Daemons/WizardSavedSettings");
+    @file_put_contents("/etc/artica-postfix/settings/Daemons/NewLicServer", 0);
+    $WORKDIR        = base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2E=");
+    $WORKFILE       = base64_decode('LmxpYw==');
+    $WORKPATH       = "$WORKDIR/$WORKFILE";
+    @unlink($WORKPATH);
+    $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+    @unlink($TVF_WORKPATH);
+    $sock->SET_INFO("NewLicServer", 0);
+    $LicenseInfos["license_status"] = "Community Edition - limited";
+    $LicenseInfos["license_number"] = null;
+    $LicenseInfos["UNLOCKLIC"] = null;
+    $LicenseInfos["TIME"] = time();
+    $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+    $unix->ToSyslog("License info: License was reseted, back to community mode",false,"ARTICA_LICENSE");
+    shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.status.php --process1 >/dev/null 2>&1 &");
+    shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.web-community-filter.php --ping-cloud >/dev/null 2>&1 &");
+    shell_exec("$nohup /usr/share/artica-postfix/bin/license -disables >/dev/null 2>&1 &");
+}
+function reset_uuid_progress($text,$prc){
+    $unix=new unix();
+    $unix->framework_progress($prc,$text,"reset-uuid.progress");
+}
+
+function reset_uuid():bool{
+    $unix=new unix();
+    if(is_file("/etc/artica-postfix/settings/Daemons/SYSTEMID_CREATED")){
+        @unlink("/etc/artica-postfix/settings/Daemons/SYSTEMID_CREATED");
+    }
+    $SYSTEMID=$unix->GetUniqueID();
+    echo "System ID: $SYSTEMID [".__LINE__."]\n";
+    reset_uuid_progress("{change_uuid} {from} $SYSTEMID",20);
+    $unix->CREATE_NEW_UUID();
+    reset_uuid_progress("{restarting_service}",50);
+    $SYSTEMID=$unix->GetUniqueID();
+    reset_uuid_progress("{register} $SYSTEMID",70);
+    $php=$unix->LOCATE_PHP5_BIN();
+    $nohup=$unix->find_program("nohup");
+    shell_exec("$php ".__FILE__." --register-lic");
+    reset_uuid_progress("{register} $SYSTEMID",80);
+    shell_exec("$nohup $php ".__FILE__." --register-lic >/dev/null 2>&1 &");
+    reset_uuid_progress("{success} $SYSTEMID",100);
+    return true;
+
+
+}
+
+function whatsnew():bool{
+    $NoInternetAccess=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NoInternetAccess"));
+    if($NoInternetAccess==1){return true;}
+    $unix=new unix();
+    if(system_is_overloaded(__FILE__)){return false;}
+    $filetmp=$unix->FILE_TEMP();
+    $VERSION=trim(@file_get_contents("/usr/share/artica-postfix/VERSION"));
+    $uri="http://articatech.net/v10-whatsnew/$VERSION.txt";
+    if (is_file(PROGRESS_DIR."/$VERSION.txt")) {
+        return true;
+    }
+
+    $curl=new ccurl($uri);
+    if (!$curl->GetFile($filetmp)) {
+        @unlink($filetmp);
+        return false;
+    }
+
+    @copy($filetmp, PROGRESS_DIR."/$VERSION.txt");
+    @unlink($filetmp);
+    return true;
+}
+
+function register_demo():bool{
+    build_progress("{license_migration_title}: {collecting_data}", 10);
+    build_progress_wizard("{license_migration_title}: {collecting_data}", 10);
+    $unix = new unix();
+    $uuid = $unix->GetUniqueID();
+    if ($uuid == null) {
+        if ($GLOBALS["VERBOSE"]) {
+            echo "No system ID !\n";
+        }
+        build_progress("No system ID !", 110);
+        return false;
+    }
+
+    build_progress_wizard("{license_migration_title}: {connecting_to_server}", 10);
+    build_progress("{license_migration_title}: {connecting_to_server}", 50);
+    @chmod("/usr/share/artica-postfix/bin/demo-request",0755);
+    exec("/usr/share/artica-postfix/bin/demo-request -uuid=$uuid 2>&1", $output);
+
+    $response = json_decode(getLastLines($output[0]));
+
+    if ($response->status) {
+        $curl = new ccurl("https://licensing.artica.center/api/get/key", false, null);
+        $curl->parms["X-API-KEY"] = $response->token;
+        $curl->parms["uuid"] = $uuid;
+
+        $curl->NoLocalProxy();
+        if(!$curl->get()){
+            $unix->ToSyslog("L." .__LINE__." HTTP Engine error $curl->error",false,syslogSuff);
+            build_progress("{license_migration_title}: {connecting_to_server} {failed}", 110);
+
+        }
+        if ($GLOBALS["VERBOSE"]) {
+            echo $curl->data;
+        }
+        $responseKey = json_decode(getLastLines($curl->orginal_data));
+        if($responseKey->status) {
+
+            $sidentity=new sidentity();
+            $sock=new sockets();
+            $LicenseInfos=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseInfos")));
+            $WizardSavedSettings=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardSavedSettings")));
+            $WizardSavedSettings=$sidentity->RepairSidentity($WizardSavedSettings);
+
+            if (isset($responseKey->message)) {
+                $sock->SaveConfigFile(json_decode(json_encode($responseKey->message), true), "TokenRequest");
+                $tokenRequest = unserialize(base64_decode($responseKey->message));
+                foreach ($tokenRequest as $key => $value) {
+                    $_POST[$key] = $value;
+                }
+            }
+
+
+
+            foreach ($_POST as $num=>$ligne) {
+                $ligne=url_decode_special_tool($ligne);
+                $LicenseInfos[$num]=$ligne;
+                $WizardSavedSettings[$num]=$ligne;
+                $sidentity->SET($num, $ligne);
+            }
+
+            if (isset($responseKey->message)) {
+                unset($LicenseInfos['tokenRequest']);
+                unset($WizardSavedSettings['tokenRequest']);
+            }
+            $sock->SET_INFO("LicenseEvalPosted", 1);
+            $sock->SET_INFO("LicenseWasRequested", 1);
+            $sock->SET_INFO("IsWizardExecuted", 1);
+            $sock->SET_INFO("NewLicServer", 1);
+            $sock->SaveConfigFile(base64_encode(serialize($WizardSavedSettings)), "WizardSavedSettings");
+            $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+            $GLOBALS['isRegistered']=1;
+            build_progress_wizard("{license_migration_title}: {connecting_to_server}", 11);
+            register(true,true);
+            build_progress_wizard("{license_migration_title}: {connecting_to_server}", 12);
+
+
+
+        } else {
+            build_progress_wizard("{license_migration_title}: {connecting_to_server} {failed}", 12);
+            build_progress($responseKey->message, 110);
+            echo $responseKey->message;
+            return false;
+        }
+    } else {
+        build_progress_wizard("{license_migration_title}: $response->message", 12);
+        build_progress($response->message, 110);
+        echo $response->message;
+        return false;
+    }
+
+    return false;
+}
+
+
+
+function get_key($username,$password){
+    $unix = new unix();
+    if(empty($username) || empty($password)){
+        echo "Empty username or password";
+        return false;
+    }
+    $uuid = $unix->GetUniqueID();
+    if ($uuid == null) {
+        if ($GLOBALS["VERBOSE"]) {
+            echo "No system ID !\n";
+        }
+        return false;
+    }
+    $curl = new ccurl("https://licensing.artica.center/api/get/key/by/user", false, null);
+    $curl->parms["username"] = $username;
+    $curl->parms["password"] = $password;
+    $curl->parms["uuid"] = $uuid;
+
+    $curl->NoLocalProxy();
+    if(!$curl->get()){
+        $unix->ToSyslog("L." .__LINE__." HTTP Engine error $curl->error",false,syslogSuff);
+        build_progress("{license_migration_title}: {connecting_to_server} {failed}", 110);
+
+    }
+    if ($GLOBALS["VERBOSE"]) {
+        echo $curl->data;
+    }
+    $response = json_decode(getLastLines($curl->orginal_data));
+    if ($response->status) {
+        $curl = new ccurl("https://licensing.artica.center/api/get/key", false, null);
+        $curl->parms["X-API-KEY"] = $response->token;
+        $curl->parms["uuid"] = $uuid;
+
+        $curl->NoLocalProxy();
+        if(!$curl->get()){
+            $unix->ToSyslog("L." .__LINE__." HTTP Engine error $curl->error",false,syslogSuff);
+            build_progress("{license_migration_title}: {connecting_to_server} {failed}", 110);
+
+        }
+        if ($GLOBALS["VERBOSE"]) {
+            echo $curl->data;
+        }
+        $responseKey = json_decode(getLastLines($curl->orginal_data));
+        if($responseKey->status) {
+
+            $sidentity=new sidentity();
+            $sock=new sockets();
+            $LicenseInfos=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseInfos")));
+            $WizardSavedSettings=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardSavedSettings")));
+            $WizardSavedSettings=$sidentity->RepairSidentity($WizardSavedSettings);
+
+            if (isset($responseKey->message)) {
+                $sock->SaveConfigFile(json_decode(json_encode($responseKey->message), true), "TokenRequest");
+                $tokenRequest = unserialize(base64_decode($responseKey->message));
+                foreach ($tokenRequest as $key => $value) {
+                    $_POST[$key] = $value;
+                }
+            }
+
+
+
+            foreach ($_POST as $num=>$ligne) {
+                $ligne=url_decode_special_tool($ligne);
+                $LicenseInfos[$num]=$ligne;
+                $WizardSavedSettings[$num]=$ligne;
+                $sidentity->SET($num, $ligne);
+            }
+
+            if (isset($responseKey->message)) {
+                unset($LicenseInfos['tokenRequest']);
+                unset($WizardSavedSettings['tokenRequest']);
+            }
+
+            $sock->SET_INFO("LicenseWasRequested", 1);
+            $sock->SET_INFO("NewLicServer", 1);
+            $sock->SaveConfigFile(base64_encode(serialize($WizardSavedSettings)), "WizardSavedSettings");
+            $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+            $GLOBALS['isRegistered']=1;
+            register(true);
+
+
+
+
+        } else {
+            echo $responseKey->message;
+            return false;
+        }
+    }
+    else {
+        echo $response->message;
+        return false;
+    }
+    return false;
+}
+function install_key($filename)
+{
+    if (strpos($filename, 'ack_') === 0) {
+        install_ack($filename);
+    }
+    if ($GLOBALS['isRegistered']==1) {
+        echo "NEW LIC";
+        $WORKDIR = base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2E=");
+        $WORKFILE = base64_decode('LmxpYw==');
+
+        $licexpir = base64_decode("e2xpY2Vuc2VfZXhwaXJlZH0=");
+        $LicenseInfos = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos")));
+
+        $WORKPATH = "$WORKDIR/$WORKFILE";
+        $unix = new unix();
+        $uuid = $unix->GetUniqueID();
+        $php = $unix->LOCATE_PHP5_BIN();
+        include_once dirname(__FILE__) . '/ressources/class.encrypt.v2.inc';
+        @mkdir($WORKDIR, 0755, true);
+        $keypath = "/usr/share/artica-postfix/ressources/conf/upload/$filename";
+        echo "Key File: $keypath\n";
+        if (!is_file($keypath)) {
+            echo "Key File: $keypath no such file\n";
+            build_progress_key("$filename no such file...", 110);
+            return;
+        }
+
+        echo "UUID: $uuid\n";
+        $cryptClass = new CI_Encryption();
+        $cryptClass->initialize(
+            array(
+                'driver'=>'openssl',
+                'cipher' => 'aes-128',
+                'mode' => 'cbc',
+                'key' => $uuid,
+            )
+        );
+        $KEY_CONTENT = @file_get_contents($keypath);
+        $decrypted = $cryptClass->decrypt($KEY_CONTENT);
+        $array = unserialize(base64_decode($decrypted));
+        if (!is_array($array)) {
+            echo "Corrupted key file not an array\n";
+            build_progress_key("$filename ", 110);
+            return;
+        }
+
+        $finaltime = intval($array["expire"]);
+        if ($finaltime == 0) {
+            echo "Corrupted key file finaltime == 0\n";
+            build_progress_key("$filename ", 110);
+            return;
+        }
+        $LicenseInfos["FINAL_TIME"] = $finaltime;
+        if (isset($array["company"])) {
+            $LicenseInfos["COMPANY"] = $array["register"];
+        }
+        if (isset($array["email"])) {
+            $LicenseInfos["mail"] = $array["register"];
+        }
+        if (isset($array["employees"])) {
+            $LicenseInfos["employees"] = $array["employees"];
+        }
+        if (isset($array["license"])) {
+            $LicenseInfos["UNLOCKLIC"] = $array["license"];
+        }
+
+        if ($finaltime < time()) {
+            build_progress_key("$licexpir {failed2}", 110);
+            $LicenseInfos["license_status"] = $licexpir;
+            $LicenseInfos["license_number"] = null;
+            $LicenseInfos["UNLOCKLIC"] = null;
+            $LicenseInfos["TIME"] = time();
+            $LicenseInfos["uuid"]=$unix->GetUniqueID();
+            $LicenseInfos["UUID"]=$unix->GetUniqueID();
+            @unlink($WORKPATH);
+            $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+            @unlink($TVF_WORKPATH);
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+            @file_put_contents("/etc/artica-postfix/settings/Daemons/CurrentLIC", 0);
+            @file_put_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos", base64_encode(serialize($LicenseInfos)));
+            return;
+        }
+        $LicenseInfos["TIME"] = time();
+        $LicenseInfos["license_status"] = "{license_active}";
+        echo "**********************************************\n";
+        echo "*\n";
+        echo "*\n";
+        echo "*              Congratulations\n";
+        echo "*        Your License is  - Active -\n";
+        echo "*\n";
+        echo "*\n";
+        echo "**********************************************\n";
+        @file_put_contents($WORKPATH, "TRUE");
+        @file_put_contents($WORKDIR . "/.KEY", $KEY_CONTENT);
+        @file_put_contents($GLOBALS["TVF_WORKPATH"], "VFJVRQ==");
+        @file_put_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos", base64_encode(serialize($LicenseInfos)));
+        @file_put_contents("/etc/artica-postfix/settings/Daemons/CurrentLIC", 1);
+        @unlink($keypath);
+        build_progress_key("$filename {success}", 100);
+        sleep(3);
+        system("$php /usr/share/artica-postfix/exec.status.php --process1");
+    }
+}
+function install_ack($filename){
+    $WORKDIR = base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2E=");
+    $WORKFILE = base64_decode('LmxpYw==');
+
+    $licexpir = base64_decode("e2xpY2Vuc2VfZXhwaXJlZH0=");
+    $LicenseInfos = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos")));
+    $WizardSavedSettings = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/WizardSavedSettings")));
+    $WORKPATH = "$WORKDIR/$WORKFILE";
+    $unix = new unix();
+    $uuid = $unix->GetUniqueID();
+    $olduuid=$uuid;
+    $php = $unix->LOCATE_PHP5_BIN();
+    include_once dirname(__FILE__) . '/ressources/class.encrypt.v2.inc';
+    @mkdir($WORKDIR, 0755, true);
+    $keypath = "/usr/share/artica-postfix/ressources/conf/upload/$filename";
+
+
+    echo "UUID: $uuid\n";
+    $cryptClass = new CI_Encryption();
+    $cryptClass->initialize(
+        array(
+            'driver'=>'openssl',
+            'cipher' => 'aes-128',
+            'mode' => 'cbc',
+            'key' => "m)@kFm;==yK3c[R$",
+        )
+    );
+    $KEY_CONTENT = @file_get_contents($keypath);
+    $decrypted = $cryptClass->decrypt($KEY_CONTENT);
+    $array = unserialize(base64_decode($decrypted));
+    if (!is_array($array)) {
+        echo "Corrupted key file not an array ".__LINE__."\n";
+        build_progress_key("$filename ", 110);
+        return;
+    }
+
+    $finaltime = intval($array["expire"]);
+    if ($finaltime == 0) {
+        echo "Corrupted key file finaltime == 0\n";
+        build_progress_key("$filename ", 110);
+        return;
+    }
+    $LicenseInfos["FINAL_TIME"] = $finaltime;
+    if (isset($array["company"])) {
+        $LicenseInfos["COMPANY"] = $array["register"];
+    }
+    if (isset($array["seller"])) {
+        $LicenseInfos["REQUEST_BY"] = $array["seller"];
+        $WizardSavedSettings["REQUEST_BY"]= $array["seller"];
+        $WizardSavedSettings["REQUEST_BY"]= $array["request_by"];
+
+    }
+    if (isset($array["employees"])) {
+        $LicenseInfos["employees"] = $array["employees"];
+    }
+    if (isset($array["license"])) {
+        $LicenseInfos["UNLOCKLIC"] = $array["license"];
+    }
+    if (isset($array["id"])) {
+        $LicenseInfos["LIC_ID"] = $array["id"];
+    }
+    if (isset($array["token"])) {
+        $LicenseInfos["X-API-KEY"] = $array["token"];
+        $WizardSavedSettings["key"]= $array["token"];
+
+    }
+
+
+
+
+    $LicenseInfos["assigned_to_company"] = $array["company_id"];
+    $LicenseInfos["requested_by_user"] = $array["seller_uid"];
+    $LicenseInfos["requested_by_company"] = $array["seller_cid"];
+
+    $WizardSavedSettings["assigned_to_company"] = $array["company_id"];
+    $WizardSavedSettings["requested_by_user"] = $array["seller_uid"];
+    $WizardSavedSettings["requested_by_company"] = $array["seller_cid"];
+    $WizardSavedSettings["X-API-KEY"]= $array["X-API-KEY"];
+    $WizardSavedSettings["key"]= $array["X-API-KEY"];
+    $WizardSavedSettings["company_name"]= $array["company_name"];
+    $LicenseInfos["CONFIRMUUID"] =true;
+//    if($uuid!=$array["uuid"]){
+//        $unix->CREATE_NEW_UUID(true,$array["uuid"]);
+//        sleep(3);
+//        $uuid = $unix->GetUniqueID();
+//
+//    }
+    foreach ($array as $key=>$val){
+        $LicenseInfos[$key] = $val;
+    }
+    //$LicenseInfos["CONFIRMUUID"] = true;
+    if ($finaltime < time()) {
+        build_progress_key("$licexpir {failed2}", 110);
+        $LicenseInfos["license_status"] = $licexpir;
+        $LicenseInfos["license_number"] = null;
+        $LicenseInfos["UNLOCKLIC"] = null;
+        $LicenseInfos["TIME"] = time();
+        $LicenseInfos["uuid"]=$unix->GetUniqueID();
+        $LicenseInfos["UUID"]=$unix->GetUniqueID();
+        unset($LicenseInfos["LIC_ID"]);
+        unset($LicenseInfos["X-API-KEY"]);
+        unset($LicenseInfos["license"]);
+        unset($LicenseInfos["FINAL_TIME"]);
+        unset($LicenseInfos["expire"]);
+        @unlink($WORKPATH);
+        $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+        @unlink($TVF_WORKPATH);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+        @file_put_contents("/etc/artica-postfix/settings/Daemons/CurrentLIC", 0);
+        @file_put_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos", base64_encode(serialize($LicenseInfos)));
+        return;
+    }
+//    @file_put_contents($WORKDIR . "/.KEY", $KEY_CONTENT);
+    @chmod("/usr/share/artica-postfix/bin/check-ack",0755);
+    exec("/usr/share/artica-postfix/bin/check-ack -set 2>&1", $output);
+
+    $response = json_decode($output[0],TRUE);
+
+    if(!$response[0]["success"]){
+        build_progress_key("$filename - {$response[0]["message"]} - {failed2}", 110);
+        $LicenseInfos["license_status"] = $licexpir;
+        $LicenseInfos["license_number"] = null;
+        $LicenseInfos["UNLOCKLIC"] = null;
+        $LicenseInfos["TIME"] = time();
+        $LicenseInfos["uuid"]=$unix->GetUniqueID();
+        $LicenseInfos["UUID"]=$unix->GetUniqueID();
+        unset($LicenseInfos["LIC_ID"]);
+        unset($LicenseInfos["X-API-KEY"]);
+        unset($LicenseInfos["license"]);
+        unset($LicenseInfos["FINAL_TIME"]);
+        unset($LicenseInfos["expire"]);
+        @unlink($WORKPATH);
+        $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+        @unlink($TVF_WORKPATH);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+        @file_put_contents("/etc/artica-postfix/settings/Daemons/CurrentLIC", 0);
+        @file_put_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos", base64_encode(serialize($LicenseInfos)));
+        return;
+    }
+
+    $LicenseInfos["TIME"] = time();
+    $LicenseInfos["license_status"] = "{license_active}";
+    $LicenseInfos["license_number"] = $array["license"];
+    $LicenseInfos["uuid"]=$unix->GetUniqueID();
+    $LicenseInfos["UUID"]=$unix->GetUniqueID();
+    echo "\nPRINT\n";
+    print_r($WizardSavedSettings);
+    echo "\nPRINT\n";
+    echo "**********************************************\n";
+    echo "*\n";
+    echo "*\n";
+    echo "*              Congratulations\n";
+    echo "*        Your License is  - Active -\n";
+    echo "*\n";
+    echo "*\n";
+//    echo "*        {$response[0]["message"]}\n";
+    echo "**********************************************\n";
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 1);
+
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO('Migration', 1);
+    @file_put_contents($WORKPATH, "TRUE");
+//    @file_put_contents($WORKDIR . "/.KEY", $KEY_CONTENT);
+    @file_put_contents($GLOBALS["TVF_WORKPATH"], "VFJVRQ==");
+    @file_put_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos", base64_encode(serialize($LicenseInfos)));
+    @file_put_contents("/etc/artica-postfix/settings/Daemons/WizardSavedSettings", base64_encode(serialize($WizardSavedSettings)));
+    @file_put_contents("/etc/artica-postfix/settings/Daemons/CurrentLIC", 1);
+    @unlink($keypath);
+    build_progress_key("{license_active} {refresh}", 100);
+    $unix->ToSyslog("License info: {license_active} Code:".__LINE__,false,syslogSuff);
+    system("$php /usr/share/artica-postfix/exec.status.php --process1");
+    build_progress_key("{license_active} {success}", 100);
+    return true;
+}
+function build_progress_key($text, $pourc)
+{
+    $array["POURC"]=$pourc;
+    $array["TEXT"]=$text;
+    echo "{$pourc}% $text\n";
+    @file_put_contents("/usr/share/artica-postfix/ressources/logs/artica.keyfile.progress", serialize($array));
+    @chmod("/usr/share/artica-postfix/ressources/logs/artica.keyfile.progress", 0755);
+}
+
+
+
+function build_progress_influx($text, $pourc)
+{
+    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/influxdb.refresh.progress";
+    echo "{$pourc}% $text\n";
+    $cachefile=$GLOBALS["CACHEFILE"];
+    $array["POURC"]=$pourc;
+    $array["TEXT"]=$text;
+    @file_put_contents($cachefile, serialize($array));
+    @chmod($cachefile, 0755);
+}
+
+
+function others_update(){
+    $unix=new unix();
+    $pidfile="/etc/artica-postfix/pids/".basename(__FILE__).".".__FUNCTION__.".pid";
+    $cachetime="/etc/artica-postfix/pids/".basename(__FILE__).".".__FUNCTION__.".time";
+    $pid=@file_get_contents($pidfile);
+    if ($unix->process_exists($pid)) {
+        build_progress_influx("Already executed", 110);
+        events("Already executed PID:$pid, die()", __FUNCTION__, __FILE__, __LINE__);
+        return;
+    }
+
+    if (!$GLOBALS["FORCE"]) {
+        $TimeCache=$unix->file_time_min($cachetime);
+        if ($TimeCache<30) {
+            build_progress_influx("Need at least 30Mn ( current {$TimeCache}mn ) ", 110);
+            return;
+        }
+    }
+    $TimeFile=$unix->file_time_min("/etc/artica-postfix/settings/Daemons/v4softsRepo");
+    if ($GLOBALS["VERBOSE"]) {
+        $TimeFile=10000;
+    }
+    $php=$unix->LOCATE_PHP5_BIN();
+
+    if (!$GLOBALS["FORCE"]) {
+        if ($TimeFile<480) {
+            ping_server(true);
+            whatsnew();
+            return;
+        }
+    }
+
+
+    build_progress_influx("{check_repository} (BigData Engine)", 20);
+    whatsnew();
+    ping_server();
+    build_progress_influx("{check_repository} {success}", 95);
+    shell_exec("$php /usr/share/artica-postfix/exec.status.php --process1");
+    build_progress_influx("{check_repository} {done}", 100);
+}
+
+
+
+function getLastLines($string, $n = 1):string{
+    $lines = explode("\n", $string);
+    $lines = array_slice($lines, -$n);
+    return implode("\n", $lines);
+}
+
+
+
+function register($force=false,$demo=false):bool{
+    if (is_file(LkdPTEQ)) {
+        if ($GLOBALS["CLASS_SOCKETS"]->IsGoldKey(trim(@file_get_contents(LkdPTEQ)))) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseINGP", 0);
+            build_progress("{license_active}: {gold_license}", 100);
+            return true;
+        }
+    }
+
+    if ($GLOBALS['isRegistered']==1) {
+
+
+        if ($force) {
+            $GLOBALS["FORCE"]=true;
+        }
+        echo "START REGISTER";
+        build_progress("{license_migration_title}: {collecting_data}", 10);
+
+        if ($GLOBALS["VERBOSE"]) {
+            echo __FUNCTION__ . "() in line " . __LINE__ . "\n";
+        }
+
+        $unix = new unix();
+        $sock = new sockets();
+        @chmod("/usr/share/artica-postfix/bin/check-ack",0755);
+        exec("/usr/share/artica-postfix/bin/check-ack -check 2>&1", $output);
+        $response = json_decode($output[0],TRUE);
+        $gotime=intval($response[0]["time"]);
+        $gotoken=intval($response[0]["token"]);
+        $timediff= $gotime - time();
+        $timediff=round($timediff / (60 * 60 * 24));
+        if($gotoken==1 && $timediff<=0){
+            reset_license();
+            echo "Resetting License due overdue registration (days left $timediff)";
+            build_progress("Resetting License due overdue registration (days left $timediff)", 110);
+            return false;
+
+        }
+
+        $EnableKerbAuth = intval($sock->GET_INFO("EnableKerbAuth"));
+
+        if ($GLOBALS["VERBOSE"]) {
+            echo "Loading WizardSavedSettings " . __FUNCTION__ . "() in line " . __LINE__ . "\n";
+        }
+        $WizardSavedSettings = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/WizardSavedSettings")));
+
+        if ($GLOBALS['MIGRATION']) {
+            $WizardSavedSettings = json_decode(json_encode(unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TokenRequest")))), true);
+        }
+
+
+        $Migration = intval($sock->GET_INFO("Migration"));
+
+        if (!$GLOBALS['MIGRATION']) {
+            if (count($WizardSavedSettings) < 2) {
+                if ($GLOBALS["VERBOSE"]) {
+                    echo "WizardSavedSettings array is less than 2" . __FUNCTION__ . "() in line " . __LINE__ . "\n";
+                }
+                return false;
+            }
+
+            if (!isset($WizardSavedSettings["key"])) {
+                $WizardSavedSettings["key"] = null;
+            }
+            if ($WizardSavedSettings["key"] == null) {
+                echo "FATAL here";
+                return false;
+            }
+        }
+
+        if ($force) {
+            $Migration = 0;
+        }
+        if ($GLOBALS['FROM_WIZARD']) {
+            $Migration = 0;
+        }
+        if ($Migration == 1) {
+            echo "1";
+            if (!$GLOBALS["FORCE"]) {
+                echo "2";
+                if ($GLOBALS["VERBOSE"]) {
+                    echo "Migration == 1, aborting.. (use --force)" . __FUNCTION__ . "() in line " . __LINE__ . "\n";
+                }
+                return false;
+            }
+        }
+
+        $uuid = $unix->GetUniqueID();
+        if ($uuid == null) {
+            if ($GLOBALS["VERBOSE"]) {
+                echo "No system ID !\n";
+            }
+            return false;
+        }
+        $WizardSavedSettings["ACTIVE_DIRECTORY"] = $EnableKerbAuth;
+
+        if ($EnableKerbAuth == 1) {
+            include_once dirname(__FILE__) . "/ressources/class.external.ad.inc";
+            $ldap = new external_ad_search();
+            $NET_RPC_INFOS = $ldap->NET_RPC_INFOS();
+            foreach ($NET_RPC_INFOS as $a=>$b) {
+                $WizardSavedSettings[$a] = $b;
+            }
+        }
+        $LicenseInfos = null;
+        if (file_exists("/etc/artica-postfix/settings/Daemons/LicenseInfos")) {
+            $LicenseInfos = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos")));
+        }
+
+
+        if(isset($LicenseInfos["CONFIRMUUID"])){
+            $curl = new ccurl("https://licensing.artica.center/api/set/key", false, null);
+            $curl->parms["X-API-KEY"] = $LicenseInfos["X-API-KEY"];
+            $curl->parms["UUID"] = $uuid;
+            $curl->parms["CID"] = $LicenseInfos["company_id"];
+            $curl->parms["seller_cid"] = $LicenseInfos["seller_cid"];
+            $curl->parms["seller_uid"] = $LicenseInfos["seller_uid"];
+            $curl->NoLocalProxy();
+            if(!$curl->get()){
+                $unix->ToSyslog("License info: Request engine failed with error: [$curl->error] Err.".__LINE__,false,syslogSuff);
+                build_progress("Request engine failed with error [$curl->error]", 110);
+                return false;
+            }
+            $response = json_decode(getLastLines($curl->orginal_data));
+            if (!$response->status) {
+                build_progress($response->message, 110);
+                return false;
+            }
+            if ($response->status) {
+                $LicenseInfos["X-API-KEY"]=$response->message;
+                $WizardSavedSettings["key"]=$response->message;
+                $WizardSavedSettings["X-API-KEY"]=$response->message;
+                unset($LicenseInfos["CONFIRMUUID"]);
+            }
+        }
+
+
+
+        $WizardSavedSettings["UUID"] = $uuid;
+        $WizardSavedSettings["CPUS_NUMBER"] = $unix->CPU_NUMBER();
+        $WizardSavedSettings["LINUX_DISTRI"] = $unix->LINUX_DISTRIBUTION();
+        $WizardSavedSettings["ARTICAVERSION"] = @file_get_contents("/usr/share/artica-postfix/VERSION");
+        $WizardSavedSettings["STATS_APPLIANCE"] = 0;
+
+        if (is_file("/etc/artica-postfix/STATS_APPLIANCE")) {
+            $WizardSavedSettings["APPLIANCE"] = "Artica Stats Appliance";
+            $WizardSavedSettings["STATS_APPLIANCE"] = 1;
+        }
+        if (is_file("/etc/artica-postfix/WEBSECURITY_APPLIANCE")) {
+            $WizardSavedSettings["WEBSECURITY_APPLIANCE"] = 1;
+        }
+
+
+        $squid = $unix->find_program("squid");
+        if (is_file($squid)) {
+            $WizardSavedSettings["PROXY INSTALLED"] = "YES";
+        }
+        if (is_file(isoHF)) {
+            $WizardSavedSettings["FROM ISO"] = "YES";
+        }
+        if (is_file("/etc/artica-postfix/SQUID_APPLIANCE")) {
+            $WizardSavedSettings["APPLIANCE"] = "Artica Proxy";
+            $WizardSavedSettings["PROXY APPLIANCE"] = "YES";
+        }
+        if (is_file("/etc/artica-postfix/SAMBA_APPLIANCE")) {
+            $WizardSavedSettings["APPLIANCE"] = "Artica NAS";
+            $WizardSavedSettings["N.A.S APPLIANCE"] = "YES";
+        }
+
+        if (is_file("/etc/artica-postfix/artica-iso-first-reboot")) {
+            $zDate = filemtime("/etc/artica-postfix/artica-iso-first-reboot");
+            $WizardSavedSettings["INSTALL_DATE"] = date("Y-m-d H:i:s", $zDate);
+        } else {
+            $zDate = filemtime("/etc/artica-postfix/.");
+            $WizardSavedSettings["INSTALL_DATE"] = date("Y-m-d H:i:s", $zDate);
+        }
+        $WizardSavedSettings["REGISTER"] = 1;
+        if (is_file("/etc/artica-postfix/dmidecode.cache.url")) {
+            $final_array = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/dmidecode.cache.url")));
+            foreach ($final_array as $a=>$b) {
+                $WizardSavedSettings[$a] = $b;
+            }
+        }
+        @file_put_contents("/etc/artica-postfix/settings/Daemons/WizardSavedSettings", base64_encode(serialize($WizardSavedSettings)));
+
+        if (file_exists("/etc/artica-postfix/settings/Daemons/LicenseInfos")) {
+            $MergedArray = $LicenseInfos;
+
+            foreach ($MergedArray as $num=>$val) {
+                $val = trim($val);
+                if ($val == null) {
+                    continue;
+                }
+                if (isset($WizardSavedSettings[$num])) {
+                    continue;
+                }
+                $WizardSavedSettings[$num] = $val;
+            }
+        }
+
+        $hostname = $unix->hostname_g();
+        $tt = explode(".", $hostname);
+        $netbiosname = $tt[0];
+        unset($tt[0]);
+        $domain = @implode(".", $tt);
+
+        $WizardSavedSettings["netbiosname"] = $netbiosname;
+        $WizardSavedSettings["domain"] = $domain;
+        $WizardSavedSettings["CPUS_NUMBER"] = $unix->CPU_NUMBER();
+        $WizardSavedSettings["MEMORY"] = $unix->TOTAL_MEMORY_MB();
+
+
+        build_progress("{license_migration_title}: {connecting_to_server}", 50);
+        if ($GLOBALS["VERBOSE"]) {
+
+            echo "Send order to api/server/register " . __FUNCTION__ . "() in line " . __LINE__ . "\n";
+        }
+        if ($demo){
+            $curl = new ccurl("https://licensing.artica.center/api/register/demo/server", false, null);
+        } else{
+            $curl = new ccurl("https://licensing.artica.center/api/register/server", false, null);
+        }
+        $WizardSavedSettings["SP"]=$unix->ArticaVersionSP();
+        $curl->parms["X-API-KEY"] = $WizardSavedSettings["X-API-KEY"];
+        $curl->parms["REGISTER"] = base64_encode(serialize($WizardSavedSettings));
+        if ($GLOBALS["VERBOSE"]) {
+            $curl->parms["VERBOSE"] = true;
+        }
+        $curl->NoLocalProxy();
+        if(!$curl->get()){
+            $unix->ToSyslog("L." .__LINE__." HTTP Engine error $curl->error",false,syslogSuff);
+            build_progress("{license_migration_title}: {connecting_to_server} {failed}", 110);
+            echo $curl->error."\n";
+            return false;
+        }
+        if ($GLOBALS["VERBOSE"]) {
+            echo $curl->data;
+        }
+
+
+
+        $response = json_decode(getLastLines($curl->orginal_data));
+        if(!property_exists($response,"status")){
+            echo "No response from the server.\n";
+        }
+
+        if ($response->status) {
+            $sock->SET_INFO("WizardSavedSettingsSend", 1);
+            $sock->SET_INFO("NewLicServer", 1);
+            $sock->SET_INFO('Migration', 1);
+            if ($GLOBALS['MIGRATION'] || $GLOBALS['FROM_WIZARD'] || $force) {
+                build_progress("{license_migration_title}: $response->message", 60);
+                register_lic();
+            } else {
+                build_progress("{license_migration_title}: $response->message", 100);
+            }
+        } else {
+            build_progress("{license_migration_title}: $response->message", 110);
+        }
+    } else {
+        if ($force) {
+            $GLOBALS["FORCE"]=true;
+        }
+        echo "START REGISTER IN COMMUNITY";
+        build_progress("{license_migration_title}: {collecting_data}", 10);
+        if ($GLOBALS["VERBOSE"]) {
+            echo __FUNCTION__ . "() in line " . __LINE__ . "\n";
+        }
+        $unix = new unix();
+        $sock = new sockets();
+        $EnableKerbAuth = intval($sock->GET_INFO("EnableKerbAuth"));
+
+        if ($GLOBALS["VERBOSE"]) {
+            echo "Loading WizardSavedSettings " . __FUNCTION__ . "() in line " . __LINE__ . "\n";
+        }
+        $WizardSavedSettings = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/WizardSavedSettings")));
+
+        if ($GLOBALS['MIGRATION']) {
+            $WizardSavedSettings = json_decode(json_encode(unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TokenRequest")))), true);
+        }
+
+
+        $Migration = intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/Migration"));
+
+
+
+        if ($force) {
+            $Migration = 0;
+        }
+        if ($GLOBALS['FROM_WIZARD']) {
+            $Migration = 0;
+        }
+        if ($Migration == 1) {
+            echo "1";
+            if (!$GLOBALS["FORCE"]) {
+                echo "2";
+                if ($GLOBALS["VERBOSE"]) {
+                    echo "Migration == 1, aborting.. (use --force)" . __FUNCTION__ . "() in line " . __LINE__ . "\n";
+                }
+                return false;
+            }
+        }
+
+        $uuid = $unix->GetUniqueID();
+        if ($uuid == null) {
+            if ($GLOBALS["VERBOSE"]) {
+                echo "No system ID !\n";
+            }
+            return false;
+        }
+        $WizardSavedSettings["ACTIVE_DIRECTORY"] = $EnableKerbAuth;
+
+        if ($EnableKerbAuth == 1) {
+            include_once dirname(__FILE__) . "/ressources/class.external.ad.inc";
+            $ldap = new external_ad_search();
+            $NET_RPC_INFOS = $ldap->NET_RPC_INFOS();
+            foreach ($NET_RPC_INFOS as $a=>$b) {
+                $WizardSavedSettings[$a] = $b;
+            }
+        }
+        $LicenseInfos = null;
+        if (file_exists("/etc/artica-postfix/settings/Daemons/LicenseInfos")) {
+            $LicenseInfos = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos")));
+        }
+        $WizardSavedSettings["UUID"] = $uuid;
+        $WizardSavedSettings["CPUS_NUMBER"] = $unix->CPU_NUMBER();
+        $WizardSavedSettings["LINUX_DISTRI"] = $unix->LINUX_DISTRIBUTION();
+        $WizardSavedSettings["ARTICAVERSION"] = @file_get_contents("/usr/share/artica-postfix/VERSION");
+        $WizardSavedSettings["STATS_APPLIANCE"] = 0;
+
+        if (is_file("/etc/artica-postfix/STATS_APPLIANCE")) {
+            $WizardSavedSettings["APPLIANCE"] = "Artica Stats Appliance";
+            $WizardSavedSettings["STATS_APPLIANCE"] = 1;
+        }
+        if (is_file("/etc/artica-postfix/WEBSECURITY_APPLIANCE")) {
+            $WizardSavedSettings["WEBSECURITY_APPLIANCE"] = 1;
+        }
+
+
+        $squid = $unix->find_program("squid");
+        if (is_file($squid)) {
+            $WizardSavedSettings["PROXY INSTALLED"] = "YES";
+        }
+        if (is_file(isoHF)) {
+            $WizardSavedSettings["FROM ISO"] = "YES";
+        }
+        if (is_file("/etc/artica-postfix/SQUID_APPLIANCE")) {
+            $WizardSavedSettings["APPLIANCE"] = "Artica Proxy";
+            $WizardSavedSettings["PROXY APPLIANCE"] = "YES";
+        }
+        if (is_file("/etc/artica-postfix/SAMBA_APPLIANCE")) {
+            $WizardSavedSettings["APPLIANCE"] = "Artica NAS";
+            $WizardSavedSettings["N.A.S APPLIANCE"] = "YES";
+        }
+
+        if (is_file("/etc/artica-postfix/artica-iso-first-reboot")) {
+            $zDate = filemtime("/etc/artica-postfix/artica-iso-first-reboot");
+            $WizardSavedSettings["INSTALL_DATE"] = date("Y-m-d H:i:s", $zDate);
+        } else {
+            $zDate = filemtime("/etc/artica-postfix/.");
+            $WizardSavedSettings["INSTALL_DATE"] = date("Y-m-d H:i:s", $zDate);
+        }
+        $WizardSavedSettings["REGISTER"] = 1;
+        if (is_file("/etc/artica-postfix/dmidecode.cache.url")) {
+            $final_array = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/dmidecode.cache.url")));
+            foreach ($final_array as $a=>$b) {
+                $WizardSavedSettings[$a] = $b;
+            }
+        }
+        @file_put_contents("/etc/artica-postfix/settings/Daemons/WizardSavedSettings", base64_encode(serialize($WizardSavedSettings)));
+
+        if (file_exists("/etc/artica-postfix/settings/Daemons/LicenseInfos")) {
+            $MergedArray = $LicenseInfos;
+
+            foreach ($MergedArray as $num=>$val) {
+                $val = trim($val);
+                if ($val == null) {
+                    continue;
+                }
+                if (isset($WizardSavedSettings[$num])) {
+                    continue;
+                }
+                $WizardSavedSettings[$num] = $val;
+            }
+        }
+
+        $hostname = $unix->hostname_g();
+        $tt = explode(".", $hostname);
+        $netbiosname = $tt[0];
+        unset($tt[0]);
+        $domain = @implode(".", $tt);
+
+        $WizardSavedSettings["netbiosname"] = $netbiosname;
+        $WizardSavedSettings["domain"] = $domain;
+        $WizardSavedSettings["CPUS_NUMBER"] = $unix->CPU_NUMBER();
+        $WizardSavedSettings["MEMORY"] = $unix->TOTAL_MEMORY_MB();
+        if (!$GLOBALS['MIGRATION']) {
+            if (count($WizardSavedSettings) < 2) {
+                if ($GLOBALS["VERBOSE"]) {
+                    echo "WizardSavedSettings array is less than 2" . __FUNCTION__ . "() in line " . __LINE__ . "\n";
+                }
+                return false;
+            }
+
+            if (!isset($WizardSavedSettings["key"])) {
+                $WizardSavedSettings["key"] = "a00fb634db1c52fd72fc4aa077028de0";
+            }
+            if (!isset($WizardSavedSettings["assigned_to_company"])) {
+                $WizardSavedSettings["assigned_to_company"] = "756";
+            }
+            if (!isset($WizardSavedSettings["requested_by_company"])) {
+                $WizardSavedSettings["requested_by_company"] = "756";
+            }
+            if (!isset($WizardSavedSettings["requested_by_user"])) {
+                $WizardSavedSettings["requested_by_user"] = "824";
+            }
+        }
+        build_progress("{license_migration_title}: {connecting_to_server}", 50);
+        if ($GLOBALS["VERBOSE"]) {
+            echo "Send order to api/server/register/community " . __FUNCTION__ . "() in line " . __LINE__ . "\n";
+        }
+        $WizardSavedSettings["SP"]=$unix->ArticaVersionSP();
+        $curl = new ccurl("https://licensing.artica.center/api/register/community/server", false, null);
+        $curl->parms["X-API-KEY"] = "a00fb634db1c52fd72fc4aa077028de0";
+        $curl->parms["REGISTER"] = base64_encode(serialize($WizardSavedSettings));
+        if ($GLOBALS["VERBOSE"]) {
+            $curl->parms["VERBOSE"] = true;
+        }
+        $curl->NoLocalProxy();
+        $curl->get();
+        if ($GLOBALS["VERBOSE"]) {
+            echo $curl->data;
+        }
+        $response = json_decode(getLastLines($curl->orginal_data));
+        if ($response->status) {
+            $sock->SET_INFO("WizardSavedSettingsSend", 1);
+            $sock->SET_INFO("NewLicServer", 0);
+            $sock->SET_INFO('Migration', 1);
+            if ($GLOBALS['MIGRATION'] || $GLOBALS['FROM_WIZARD'] || $force) {
+                build_progress("{license_migration_title}: $response->message", 60);
+                //register_lic();
+            } else {
+                build_progress("{license_migration_title}: $response->message", 100);
+            }
+        } else {
+            build_progress("{license_migration_title}: $response->message", 110);
+        }
+    }
+    return true;}
+
+
+
+function uuid_check()
+{
+    $unix=new unix();
+    $uuid=$unix->GetUniqueID();
+    echo $uuid."\n";
+}
+
+function remove_grace_period()
+{
+    $time=strtotime("-7 day");
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseINGP", $time);
+    system("clear");
+    echo "Grace period, is removed\n";
+}
+
+function CheckLic($array1=array(), $array2=array(),$prc=0):bool{
+    if (is_file(LkdPTEQ)) {
+        if ($GLOBALS["CLASS_SOCKETS"]->IsGoldKey(trim(@file_get_contents(LkdPTEQ)))) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseINGP", 0);
+            build_progress("{license_active}: {gold_license}", 100);
+            return true;
+        }
+    }
+
+
+    if ($GLOBALS['isRegistered']==1) {
+        $WORKDIR        = base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2E=");
+        $WORKFILE       = base64_decode('LmxpYw==');
+        $function_ghost = base64_decode("Y2hlY2tsaWNlbnNlLmJpbg==");
+        $line_ghost     = base64_decode("MTA4NDM=");
+        $textGhost      = base64_decode("Q29ycG9yYXRlIExpY2Vuc2UgZXhwaXJlZCAtIHJldHVybiBiYWNrIHRvIENvbW11bml0eSBsaWNlbnNl");
+        $verifailed     = base64_decode("Q29ycG9yYXRlIExpY2Vuc2UgZXhwaXJlZCAtIHJldHVybiBiYWNrIHRvIENvbW11bml0eSBsaWNlbnNl");
+        $licexpir       = base64_decode("e2xpY2Vuc2VfZXhwaXJlZH0=");
+        $fname          = base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+        $einGP          = base64_decode("RW50ZXJpbmcgaW4gZ3JhY2UgcGVyaW9k");
+        $einGPR         = base64_decode("TGljZW5zZSBpcyBvaywgcmVtb3ZlIGdyYWNlIHBlcmlvZA==");
+        $einDSE         = base64_decode("TGljZW5zZSBkb24ndCBleGlzdCBvbiB0aGUgc2VydmVy");
+        $product        = null;
+        $WORKPATH       = "$WORKDIR/$WORKFILE";
+        $unix           = new unix();
+        $sock           = new sockets();
+        if($prc>0){
+            $prc=$prc+1;
+            build_progress("{license_active}: Contacting license server...P.".__LINE__, $prc);
+        }
+        $curl           = new ccurl("https://licensing.artica.center/api/check/license", false, null);
+        $php            = $unix->LOCATE_PHP5_BIN();
+        $squidbin       = $unix->LOCATE_SQUID_BIN();
+        $curl->parms["X-API-KEY"] = $array2["X-API-KEY"];
+
+        if($prc>0){
+            $prc=$prc+1;
+            build_progress("{license_active}: Prepare query...P.".__LINE__, $prc);
+        }
+
+        $curl->parms["REGISTER-LIC"] = base64_encode(serialize($array1));
+
+        if($prc>0){
+            $prc=$prc+1;
+            build_progress("{license_active}: Not using local proxy...".__LINE__, $prc);
+        }
+        $curl->NoLocalProxy();
+
+        if($prc>0){
+            $prc=$prc+1;
+            build_progress("{license_active}: {connecting}", $prc);
+        }else{
+            build_progress("{license_active}: {connecting}...", 90);
+        }
+
+
+        $curl->get();
+
+        if($prc>0){
+            $prc=$prc+1;
+            build_progress("{license_active}: Verify validation", $prc);
+        }else{
+            build_progress("{license_active}: Verify validation...", 91);
+        }
+
+        $response = json_decode(getLastLines($curl->orginal_data));
+
+        if( !empty( $response ) ) {
+            if (property_exists($response, "status")) {
+
+                if ($prc > 0) {
+                    $prc = $prc + 1;
+                    build_progress("{license_active}: Status property OK", $prc);
+                } else {
+                    build_progress("{license_active}: Status property OK..", 92);
+                }
+            }
+        }
+        if( !empty( $response ) ) {
+            if (!property_exists($response, "status")) {
+                build_progress("{license_server_error}: status is not a property...", 110);
+                events("property_exists(response,status) Failed $curl->orginal_data", __FUNCTION__, __FILE__, __LINE__);
+                echo "property_exists status => False..\n";
+                echo "$curl->orginal_data\n";
+                return false;
+            }
+        }
+        if( !empty( $response ) ) {
+            if (!$response->status) {
+//                if ($response->message=="to_many_request") {
+//                    echo "*****  Too Many Request per second, please wait ****\n";
+//                    build_progress("Too Many Request per second, please wait", 110);
+//                    return false;
+//                }
+                $unix->ToSyslog("License info: $einDSE (report $response->message)", false, syslogSuff);
+                echo "$einDSE\n";
+                @unlink($WORKPATH);
+                build_progress("{license_invalid}: Verify validation failed...", 110);
+                $array1["license_status"] = "{license_invalid}";
+                $array1["license_number"] = null;
+                $array1["UNLOCKLIC"] = null;
+                $array1["FINAL_TIME"] = null;
+                $array1["TIME"] = time();
+                squid_admin_mysql(0, $textGhost, null, $function_ghost, $line_ghost);
+                system("/usr/share/artica-postfix/bin/license -disables");
+                system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                @file_put_contents("/etc/artica-postfix/settings/Daemons/CurrentLIC", 0);
+                if (is_file($fname)) {
+                    @unlink($fname);
+                }
+                $sock->SaveConfigFile(base64_encode(serialize($array1)), "LicenseInfos");
+                if (is_file($squidbin)) {
+                    shell_exec("$php /usr/share/artica-postfix/exec.squid.php --build");
+                    shell_exec("/etc/init.d/squid restart {$GLOBALS["SCRIPT_SUFFIX"]}");
+                }
+
+                return false;
+            }
+        }
+        if( !empty( $response ) ) {
+            if ($response->status && $response->message == "1") {
+                $finaltime = $response->expire;
+                $PathLog = "/etc/artica-postfix/pids/log.lic.exire";
+                $TimeExec = $unix->file_time_min($PathLog);
+                if ($TimeExec > 480) {
+                    $unix->ToSyslog("Server Respond: Expire on: " . date("Y-m-d H:i:s", $finaltime), false, syslogSuff);
+                    if (is_file($PathLog)) {
+                        @unlink($PathLog);
+                    }
+                    @file_put_contents($PathLog, time());
+                }
+
+                if(property_exists($response,"product")){
+                    $product=$response->product;
+
+                }
+
+
+
+                if ($finaltime > 0) {
+                    if (time() > $finaltime) {
+                        events("Fatal: Expired on: " . date("Y-m-d H:i:s", $finaltime), __FUNCTION__, __FILE__, __LINE__);
+                        $LicenseINGP = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseINGP"));
+                        events("LicenseINGP === $LicenseINGP", __FUNCTION__, __FILE__, __LINE__);
+                        if ($LicenseINGP == 0) {
+                            squid_admin_mysql(0, $einGP, null, $function_ghost, $line_ghost);
+                            $gptime = strtotime("+7 day");
+                            $gptimeF = strtotime("+7 day", $finaltime);
+
+                            if ($gptime > $gptimeF) {
+                                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseINGP", $gptime);
+                                $array1["license_status"] = base64_decode("e2dyYWNlX3BlcmlvZH0=");
+                                $array1["ABOUT_PP"] = $product;
+                                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseInfos", base64_encode(serialize($array1)));
+                                $unix->ToSyslog("License info: " . base64_decode("e2dyYWNlX3BlcmlvZH0=") . " 7 days more.", false, syslogSuff);
+                                build_progress(base64_decode("e2dyYWNlX3BlcmlvZH0=") . " {refresh}", 99);
+                                build_progress("{license_active} {success}", 100);
+                                system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                                return true;
+                            }
+                        }
+
+                        if ($LicenseINGP > time()) {
+                            $array1["license_status"] = base64_decode("e2dyYWNlX3BlcmlvZH0=");
+                            $array1["ABOUT_PP"] = $product;
+                            $unix->ToSyslog("License info: " . base64_decode("e2dyYWNlX3BlcmlvZH0="));
+                            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseInfos", base64_encode(serialize($array1)));
+                            $unix->ToSyslog("License info: Success " . base64_decode("e2dyYWNlX3BlcmlvZH0=") . " expire in " . ($LicenseINGP - time()) . " seconds", false, syslogSuff);
+                            build_progress(base64_decode("e2dyYWNlX3BlcmlvZH0=") . " {refresh}", 99);
+                            build_progress("{license_active} {success}", 100);
+                            system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                            return true;
+                        }
+                        $unix->ToSyslog("FATAL: $licexpir");
+
+
+                        if (is_file($WORKPATH)) {
+                            @unlink($WORKPATH);
+                            @unlink($fname);
+                            build_progress($verifailed, 110);
+                            $array1["license_status"] = $licexpir;
+                            $array1["ABOUT_PP"] = $product;
+                            $array1["license_number"] = null;
+                            $array1["UNLOCKLIC"] = null;
+                            $array1["TIME"] = time();
+                            if ($finaltime > 0) {
+                                $LicenseInfos["FINAL_TIME"] = $finaltime;
+                            }
+                            $unix->ToSyslog("License info: $textGhost Err." . __LINE__, false, syslogSuff);
+                            squid_admin_mysql(0, $textGhost, null, $function_ghost, $line_ghost);
+                            system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                            @file_put_contents("/etc/artica-postfix/settings/Daemons/CurrentLIC", 0);
+                            system("/usr/share/artica-postfix/bin/license -disables");
+                            $sock->SaveConfigFile(base64_encode(serialize($array1)), "LicenseInfos");
+                            if (is_file($squidbin)) {
+                                shell_exec("$php /usr/share/artica-postfix/exec.squid.php --build");
+                                shell_exec("/etc/init.d/squid restart {$GLOBALS["SCRIPT_SUFFIX"]}");
+                            }
+                        }
+                        return false;
+                    } else {
+                        $LicenseINGP = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseINGP"));
+
+                        if ($LicenseINGP > 0) {
+                            squid_admin_mysql(0, $einGPR, null, $function_ghost, $line_ghost);
+                            $unix->ToSyslog("License info: " . $einGPR);
+                            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseINGP", 0);
+                        }
+
+                        $array1["license_status"] = "{license_active}";
+                        $array1["license_number"] = $response->license;
+                        $array1["TIME"] = time();
+                        $array1["FINAL_TIME"] = $finaltime;
+                        $array1["ABOUT_PP"] = $product;
+                        $array1["slr"]=$response->slr;
+                        $sock->SaveConfigFile(base64_encode(serialize($array1)), "LicenseInfos");
+                        build_progress("{license_active} {success}", 100);
+                        system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                        return true;
+                    }
+                }
+            }
+        }
+        if( !empty( $response ) ) {
+            if ($response->status && $response->message == "5") {
+                echo "$einDSE\n";
+                @unlink($WORKPATH);
+                build_progress("{license_invalid}: $einDSE, {creating_a_trial_license}...", 80);
+                $array1["license_status"] = "{license_invalid}";
+                $array1["license_number"] = null;
+                $array1["UNLOCKLIC"] = null;
+                $array1["FINAL_TIME"] = null;
+                $array1["ABOUT_PP"] = $product;
+                $array1["TIME"] = time();
+                if (is_file($fname)) {
+                    @unlink($fname);
+                }
+                $unix->ToSyslog("License info: $einDSE Err." . __LINE__, false, syslogSuff);
+                squid_admin_mysql(0, $textGhost, null, $function_ghost, $line_ghost);
+                system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                system("/usr/share/artica-postfix/bin/license -disables");
+                @file_put_contents("/etc/artica-postfix/settings/Daemons/CurrentLIC", 0);
+                $sock->SaveConfigFile(base64_encode(serialize($array1)), "LicenseInfos");
+                if (is_file("/etc/init.d/squid")) {
+                    shell_exec("$php /usr/share/artica-postfix/exec.squid.php --build");
+                    shell_exec("/etc/init.d/squid restart {$GLOBALS["SCRIPT_SUFFIX"]}");
+                }
+                if (!isset($GLOBALS["register_lic_revent_loop"])) {
+                    $GLOBALS["register_lic_revent_loop"] = true;
+                    return register_lic(true);
+                }
+                return false;
+            }
+        }
+
+        if( !empty( $response ) ) {
+            if ($response->status && $response->message == "2") {
+                echo "$einDSE\n";
+                @unlink($WORKPATH);
+                build_progress("{license_invalid}: Verify validation failed...", 110);
+                $array1["license_status"] = "{license_invalid}";
+                $array1["license_number"] = null;
+                $array1["UNLOCKLIC"] = null;
+                $array1["FINAL_TIME"] = null;
+                $array1["ABOUT_PP"] = $product;
+                $array1["TIME"] = time();
+                if (is_file($fname)) {
+                    @unlink($fname);
+                }
+                $unix->ToSyslog("License info: $einDSE Err." . __LINE__, false, syslogSuff);
+                squid_admin_mysql(0, $textGhost, null, $function_ghost, $line_ghost);
+                system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                @file_put_contents("/etc/artica-postfix/settings/Daemons/CurrentLIC", 0);
+                system("/usr/share/artica-postfix/bin/license -disables");
+                $sock->SaveConfigFile(base64_encode(serialize($array1)), "LicenseInfos");
+                if (is_file($squidbin)) {
+                    shell_exec("$php /usr/share/artica-postfix/exec.squid.php --build");
+                    shell_exec("/etc/init.d/squid restart {$GLOBALS["SCRIPT_SUFFIX"]}");
+                }
+
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
+
+function build_progress($text, $pourc){
+    $echotext=$text;
+    echo "Starting......: ".date("H:i:s")." {$pourc}% $echotext\n";
+
+    $cachefile=PROGRESS_DIR."/artica.license.progress";
+    $array["POURC"]=$pourc;
+    $array["TEXT"]=$text;
+    @file_put_contents($cachefile, serialize($array));
+    @chmod($cachefile, 0755);
+}
+function build_progress_wizard($text, $pourc):bool{
+    $unix=new unix();
+    $unix->framework_progress($pourc,$text,"wizard.progress");
+    return true;
+}
+function check_key_file()
+{
+    if (is_file(LkdPTEQ)) {
+        if ($GLOBALS["CLASS_SOCKETS"]->IsGoldKey(trim(@file_get_contents(LkdPTEQ)))) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseINGP", 0);
+            return true;
+        }
+    }
+
+
+    include_once(dirname(__FILE__).'/ressources/class.encrypt.inc');
+    $unix=new unix();
+    $WORKDIR=base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2E=");
+    $KEYFILE=$WORKDIR."/.KEY";
+    $uuid=$unix->GetUniqueID();
+    if (!is_file($KEYFILE)) {
+        return false;
+    }
+    echo "UUID: $uuid\n";
+
+    $function_ghost=base64_decode("Y2hlY2tsaWNlbnNlLmJpbg==");
+    $textGhost=base64_decode("Q29ycG9yYXRlIExpY2Vuc2UgZXhwaXJlZCAtIHJldHVybiBiYWNrIHRvIENvbW11bml0eSBsaWNlbnNl");
+    $line_ghost=base64_decode("MTA4NDM=");
+    $squidbin=$unix->LOCATE_SQUID_BIN();
+    $php=$unix->LOCATE_PHP5_BIN();
+    $licexpir=base64_decode("e2xpY2Vuc2VfZXhwaXJlZH0=");
+    $licActi=base64_decode("e2xpY2Vuc2VfYWN0aXZlfQ==");
+    $einGP=base64_decode("RW50ZXJpbmcgaW4gZ3JhY2UgcGVyaW9k");
+    $einGPR=base64_decode("TGljZW5zZSBpcyBvaywgcmVtb3ZlIGdyYWNlIHBlcmlvZA==");
+    $LicenseInfos=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseInfos")));
+
+
+
+    $cryptClass=new McryptCipher($uuid);
+    $KEY_CONTENT=@file_get_contents($KEYFILE);
+    $decrypted=$cryptClass->decrypt($KEY_CONTENT);
+    $array=unserialize(base64_decode($decrypted));
+
+
+    if (!is_array($array)) {
+        @unlink($KEYFILE);
+        return false;
+    }
+
+
+    $finaltime=intval($array["finaltime"]);
+    if ($finaltime==0) {
+        return true;
+    }
+    $LicenseInfos["TIME"]=time();
+
+    echo "$licexpir ".date("Y-m-d H:i:s")."\n";
+    $LicenseINGP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseINGP"));
+    if ($finaltime<time()) {
+        if ($LicenseINGP==0) {
+            squid_admin_mysql(0, $einGP, null, $function_ghost, $line_ghost);
+            $gptime = strtotime("+7 day");
+            $gptimeF= strtotime("+7 day", $finaltime);
+
+            if ($gptime>$gptimeF) {
+                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseINGP", $gptime);
+                $LicenseInfos["license_status"] = base64_decode("e2dyYWNlX3BlcmlvZH0=");
+                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseInfos", base64_encode(serialize($LicenseInfos)));
+                $unix->ToSyslog("License info: " . base64_decode("e2dyYWNlX3BlcmlvZH0=") . " 7 days more.");
+                return true;
+            }
+        }
+
+        if ($LicenseINGP>time()) {
+            $LicenseInfos["license_status"]=base64_decode("e2dyYWNlX3BlcmlvZH0=");
+            $unix->ToSyslog("License info: ".base64_decode("e2dyYWNlX3BlcmlvZH0="));
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseInfos", base64_encode(serialize($LicenseInfos)));
+            $unix->ToSyslog("License info: ".base64_decode("e2dyYWNlX3BlcmlvZH0=")." expire in " .($LicenseINGP-time())." seconds");
+            return true;
+        }
+        $unix->ToSyslog("FATAL: $licexpir");
+        $LicenseInfos["license_status"]=$licexpir;
+        $LicenseInfos["license_number"]=null;
+        $LicenseInfos["UNLOCKLIC"]=null;
+        @unlink($KEYFILE);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseInfos", base64_encode(serialize($LicenseInfos)));
+        squid_admin_mysql(0, $textGhost, null, $function_ghost, $line_ghost);
+        system("$php /usr/share/artica-postfix/exec.status.php --process1");
+        if (is_file($squidbin)) {
+            shell_exec("$php /usr/share/artica-postfix/exec.squid.php --build");
+            shell_exec("$php /usr/share/artica-postfix/exec.kerbauth.php --disconnect");
+            shell_exec("/etc/init.d/squid restart {$GLOBALS["SCRIPT_SUFFIX"]}");
+        }
+
+        return false;
+    }
+
+    if ($LicenseINGP>0) {
+        squid_admin_mysql(0, $einGPR, null, $function_ghost, $line_ghost);
+        $unix->ToSyslog("License info: ".$einGPR);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseINGP", 0);
+    }
+    $LicenseInfos["license_status"]=$licActi;
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseInfos", base64_encode(serialize($LicenseInfos)));
+    return true;
+}
+
+function xlog_return_data($data){
+    $unix       = new unix();
+    $data       = trim(strip_tags($data));
+    $data       = preg_replace('/\<br(\s*)?\/?\>/i', "\n", $data);
+    $data       = preg_replace(array("/<p[^>]*>/iU","/<\/p[^>]*>/iU"),array("","\n"),$data);
+    $data       = str_replace("\r","",$data);
+    $data       = str_replace("\x09","",$data);
+    $data       = str_replace("<h1>","",$data);
+    $data       = str_replace("</h1>","",$data);
+
+    $tt         = explode("\n",$data);
+    foreach ($tt as $line) {
+        $line = trim($line);
+        if (trim($line) == null) {
+            continue;
+        }
+
+
+        if (preg_match("#^x-(content-type-options|xss-protection|frame-options)#", $line)) {
+            continue;
+        }
+        if (preg_match("#(font-weight|background-color|color|font|margin|font-family|display|border|padding|box-):#", $line)) {
+            continue;
+        }
+        if (preg_match("#^(h1|h2|h3|a|p|code)\s+\{#", $line)) {
+            continue;
+        }
+
+        if (preg_match("#\#([a-z]+).*?\{#", $line)) {
+            continue;
+        }
+        if($line=="}"){continue;}
+
+        if (preg_match("#^content-(length|type)#", $line)) {
+            continue;
+        }
+
+        $unix->ToSyslog("License info: [$line]" . __LINE__, false, syslogSuff);
+    }
+
+}
+
+function ping_server($noprgress=false){
+    $unix=new unix();
+    $sock=new sockets();
+    $php=$unix->LOCATE_PHP5_BIN();
+    $WORKDIR = base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2E=");
+    $WORKFILE = base64_decode('LmxpYw==');
+    $WORKPATH = "$WORKDIR/$WORKFILE";
+    $MsgFCCS  = base64_decode("RmFpbGVkIHRvIGNvbnRhY3QgY2xvdWQgc2VydmVy");
+
+
+    if ($GLOBALS['isRegistered']==1) {
+        $unix = new unix();
+        @chmod("/usr/share/artica-postfix/bin/check-ack",0755);
+        exec("/usr/share/artica-postfix/bin/check-ack -check 2>&1", $output);
+        $response = json_decode($output[0],TRUE);
+        $gotime=intval($response[0]["time"]);
+        $gotoken=intval($response[0]["token"]);
+        $timediff= $gotime - time();
+        $timediff=round($timediff / (60 * 60 * 24));
+        if($gotoken==1 && $timediff<=0){
+            reset_license();
+            echo "Resetting License due overdue registration (days left $timediff)";
+            build_progress("Resetting License due overdue registration (days left $timediff)", 110);
+            return false;
+
+        }
+
+        $LicenseInfos = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos")));
+        $hostname = $unix->hostname_g();
+        $tt = explode(".", $hostname);
+        $netbiosname = $tt[0];
+        unset($tt[0]);
+        $domain = @implode(".", $tt);
+        unset($LicenseInfos["administratorpass"]);
+        unset($LicenseInfos["SQL1"]);
+        unset($LicenseInfos["administrator"]);
+        unset($LicenseInfos["ArticaMetaPassword"]);
+        unset($LicenseInfos["ArticaMetaUsername"]);
+        $uuid = $unix->GetUniqueID();
+        $LicenseInfos["netbiosname"] = $netbiosname;
+        $LicenseInfos["domain"] = $domain;
+        $LicenseInfos["CPUS_NUMBER"] = $unix->CPU_NUMBER();
+        $LicenseInfos["MEMORY"] = $unix->TOTAL_MEMORY_MB();
+        $LicenseInfos["LINUX_DISTRI"] = $unix->LINUX_DISTRIBUTION();
+        $LicenseInfos["UUID"] = $uuid;
+        $LicenseInfos["ARTICAVERSION"] = @file_get_contents("/usr/share/artica-postfix/VERSION");
+        if(isset($LicenseInfos["CONFIRMUUID"])){
+            $curl = new ccurl("https://licensing.artica.center/api/set/key", false, null);
+            $curl->parms["X-API-KEY"] = $LicenseInfos["X-API-KEY"];
+            $curl->parms["UUID"] = $uuid;
+            $curl->parms["CID"] = $LicenseInfos["company_id"];
+            $curl->parms["seller_cid"] = $LicenseInfos["seller_cid"];
+            $curl->parms["seller_uid"] = $LicenseInfos["seller_uid"];
+            $curl->NoLocalProxy();
+            if(!$curl->get()){
+                $unix->ToSyslog("License info: Request engine failed with error: [$curl->error] Err.".__LINE__,false,syslogSuff);
+                if (!$noprgress) {build_progress("Request engine failed with error [$curl->error]", 110);}
+                return false;
+            }
+            $response = json_decode(getLastLines($curl->orginal_data));
+            if (!$response->status) {
+                build_progress($response->message, 110);
+                return false;
+            }
+            if ($response->status) {
+                $LicenseInfos["X-API-KEY"]=$response->message;
+                $WizardSavedSettings["key"]=$response->message;
+                $WizardSavedSettings["X-API-KEY"]=$response->message;
+                unset($LicenseInfos["CONFIRMUUID"]);
+                $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+                $sock->SaveConfigFile(base64_encode(serialize($WizardSavedSettings)), "WizardSavedSettings");
+            }
+        }
+
+
+        $LicenseInfos["SP"]=$unix->ArticaVersionSP();
+        echo "\nSP IS {$LicenseInfos["SP"]}\n";
+        echo "Checking license on the cloud server\n";
+        if (!$noprgress) {build_progress("Ping the cloud server...", 40);}
+        echo "[" . __LINE__ . "] Contacting api/ping/server\n";
+        if (!isset($LicenseInfos["X-API-KEY"])) {$LicenseInfos["X-API-KEY"]=null;}
+
+        $curl = new ccurl("https://licensing.artica.center/api/ping/server", false, null);
+        $curl->parms["X-API-KEY"] = $LicenseInfos["X-API-KEY"];
+        $curl->parms["PING-LIC"] = base64_encode(serialize($LicenseInfos));
+        $curl->NoLocalProxy();
+        if(!$curl->get()){
+            $unix->ToSyslog("License info: Request engine failed with error: [$curl->error] Err.".__LINE__,false,syslogSuff);
+            if (!$noprgress) {build_progress("Request engine failed with error [$curl->error]", 110);}
+            return false;
+        }
+        $response = json_decode(getLastLines($curl->orginal_data));
+
+        if(!property_exists($response,"status")){
+            if (!$noprgress) {build_progress("Ping the cloud server {failed} (see logs)", 110);}
+            $unix->ToSyslog("License info: Communication Error or corrupted protocol Err.".__LINE__,false,syslogSuff);
+            $tt=explode("\n",$curl->orginal_data);
+            foreach ($tt as $line){
+                $line=trim($line);
+                if($line==null){continue;}
+                if(preg_match("#502 Bad Gateway#",$line)) {
+                    $unix->ToSyslog("License info: License server error: unavailable with a 502 Bad Gateway" .
+                        __LINE__, false, syslogSuff);
+                    return false;
+                }
+            }
+            xlog_return_data($curl->orginal_data);
+            return false;
+        }
+
+        if (!$response->status) {
+            $unix->ToSyslog("License info: $MsgFCCS Err.".__LINE__,false,syslogSuff);
+            echo "**********************************\n";
+            echo "*\n";
+            echo "* $MsgFCCS..*\n";
+            if(property_exists($response,"message")){
+                if($response->message =="server_not_exist_force_register"){register(true);}
+                echo "Error is :".$response->message."\n";
+                return false;
+            }
+            echo "*\n";
+            echo "**********************************\n";
+            $Msg=base64_decode("SW52YWxpZCBhcGkga2V5");
+            if ($response->message=="$Msg") {
+                echo "***** $Msg ****\n";
+                @unlink($WORKPATH);
+                $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+                @unlink($TVF_WORKPATH);
+                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+                $LicenseInfos["license_status"] = "Community Edition - limited";
+                $LicenseInfos["license_number"] = null;
+                $LicenseInfos["UNLOCKLIC"] = null;
+                $LicenseInfos["TIME"] = time();
+                $LicenseInfos["FINAL_TIME"] = 0;
+                $sock=new sockets();
+                $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+                $unix->ToSyslog("License info: $Msg Err.".__LINE__,false,syslogSuff);
+                system("/usr/share/artica-postfix/bin/license -disables");
+                system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                build_progress("Community Edition - limited", 110);
+            }
+            if (isset($response->error)) {
+                if ($response->error =="Invalid API key ") {
+                    echo "***** $Msg  - REGISTRATION_DELETE_NOW ****\n";
+                    @unlink($WORKPATH);
+                    $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+                    @unlink($TVF_WORKPATH);
+                    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+                    $LicenseInfos["license_status"] = "Community Edition - limited";
+                    $LicenseInfos["license_number"] = null;
+                    $LicenseInfos["UNLOCKLIC"] = null;
+                    $LicenseInfos["TIME"] = time();
+                    $LicenseInfos["FINAL_TIME"] = 0;
+                    $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+                    $unix->ToSyslog("License info: $Msg Err.".__LINE__,false,syslogSuff);
+                    system("/usr/share/artica-postfix/bin/license -disables");
+                    system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                    build_progress("Community Edition - limited", 110);
+                }
+            }
+            $LicenseInfos["TIME"] = time();
+            $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+            //@unlink("/etc/artica-postfix/settings/Daemons/LicensePingInfos");
+            //@file_put_contents("/etc/artica-postfix/settings/Daemons/LicensePingInfos", $LicensePingInfos);
+        }
+    } else {
+        $unix = new unix();
+        $LicenseInfos = unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/LicenseInfos")));
+        $hostname = $unix->hostname_g();
+        $tt = explode(".", $hostname);
+        $netbiosname = $tt[0];
+        unset($tt[0]);
+        $domain = @implode(".", $tt);
+        unset($LicenseInfos["administratorpass"]);
+        unset($LicenseInfos["SQL1"]);
+        unset($LicenseInfos["administrator"]);
+        unset($LicenseInfos["ArticaMetaPassword"]);
+        unset($LicenseInfos["ArticaMetaUsername"]);
+        $uuid = $unix->GetUniqueID();
+        $LicenseInfos["netbiosname"] = $netbiosname;
+        $LicenseInfos["domain"] = $domain;
+        $LicenseInfos["CPUS_NUMBER"] = $unix->CPU_NUMBER();
+        $LicenseInfos["MEMORY"] = $unix->TOTAL_MEMORY_MB();
+        $LicenseInfos["LINUX_DISTRI"] = $unix->LINUX_DISTRIBUTION();
+        $LicenseInfos["UUID"] = $uuid;
+        $LicenseInfos["ARTICAVERSION"] = @file_get_contents("/usr/share/artica-postfix/VERSION");
+        //$LicensePingInfos = @file_get_contents("/etc/artica-postfix/settings/Daemons/LicensePingInfos");
+
+        echo "Checking license on the cloud server\n";
+        if (!$noprgress) {
+            build_progress("Ping the cloud server...", 40);
+        }
+        echo "[" . __LINE__ . "] Contacting api/ping/server\n";
+        if (!isset($LicenseInfos["X-API-KEY"])) {
+            $LicenseInfos["X-API-KEY"]=null;
+        }
+        $LicenseInfos["SP"]=$unix->ArticaVersionSP();
+        $curl = new ccurl("https://licensing.artica.center/api/ping/community/server", false, null);
+        $curl->parms["X-API-KEY"] = "a00fb634db1c52fd72fc4aa077028de0";
+        $curl->parms["PING-LIC"] = base64_encode(serialize($LicenseInfos));
+        $curl->NoLocalProxy();
+        if(!$curl->get()){
+            if (!$noprgress) {
+                build_progress("Ping the cloud server {failed} with error $curl->error", 110);
+                return false;
+            }
+
+        }
+        $response = json_decode(getLastLines($curl->orginal_data));
+        $MsgTitle = base64_decode("RmFpbGVkIHRvIGNvbnRhY3QgY2xvdWQgc2VydmVy");
+        $MsgBlck= base64_decode("YmxhY2tsaXN0ZWQ=");
+        if(!property_exists($response,"status")){
+            $unix->ToSyslog("License info: HTTP ENGINE Err.".__LINE__,false,syslogSuff);
+            echo "HTTP Engine error no property in communication code with $curl->orginal_data\n";
+            if (!$noprgress) {
+                build_progress("Ping the cloud server {failed}...", 110);
+                return false;
+            }
+        }
+
+        echo "Server answering with $response->message\n";
+
+        if (!$response->status) {
+            echo "**********************************\n";
+            echo "*\n";
+            echo "* $MsgTitle..\n";
+            echo "*\n";
+            echo "**********************************\n";
+            if($response->message =="$MsgBlck"){
+                $unix->ToSyslog("License info: $MsgTitle - $MsgBlck - Err.".__LINE__,false,syslogSuff);
+                echo "$MsgBlck - change uuid\n";
+                if(is_file("/etc/artica-postfix/settings/Daemons/SYSTEMID_CREATED")){@unlink("/etc/artica-postfix/settings/Daemons/SYSTEMID_CREATED");}
+                $unix->CREATE_NEW_UUID();
+                sleep(1);
+                register(true);
+            }
+            if($response->message =="server_not_exist_force_register"){
+                register(true);
+            }
+            $Msg=base64_decode("SW52YWxpZCBhcGkga2V5");
+            if ($response->message=="Invalid api key") {
+                echo "***** $Msg  - REGISTRATION_DELETE_NOW ****\n";
+                @unlink($WORKPATH);
+                $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+                @unlink($TVF_WORKPATH);
+                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+                $LicenseInfos["license_status"] = "Community Edition - limited";
+                $LicenseInfos["license_number"] = null;
+                $LicenseInfos["UNLOCKLIC"] = null;
+                $LicenseInfos["TIME"] = time();
+                $LicenseInfos["FINAL_TIME"] = 0;
+                $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+                $unix->ToSyslog("License info: $Msg Err.".__LINE__,false,syslogSuff);
+                system("/usr/share/artica-postfix/bin/license -disables");
+                system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                build_progress("Community Edition - limited", 110);
+            }
+
+
+            if (isset($response->error)) {
+                if ($response->error =="Invalid API key ") {
+                    echo "***** $Msg  - REGISTRATION_DELETE_NOW ****\n";
+                    @unlink($WORKPATH);
+                    $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+                    @unlink($TVF_WORKPATH);
+                    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+                    $LicenseInfos["license_status"] = "Community Edition - limited";
+                    $LicenseInfos["license_number"] = null;
+                    $LicenseInfos["UNLOCKLIC"] = null;
+                    $LicenseInfos["TIME"] = time();
+                    $LicenseInfos["FINAL_TIME"] = 0;
+                    $unix->ToSyslog("License info: $Msg Err.".__LINE__,false,syslogSuff);
+                    $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+                    system("/usr/share/artica-postfix/bin/license -disables");
+                    system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                    build_progress("Community Edition - limited", 110);
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+function register_lic_categories():bool{
+    include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
+    try {
+        $catz = new mysql_catz();
+    }catch (Exception $e){
+        echo $e->getMessage()."\n";
+        return false;
+    }
+    $catz->ufdbcat_dns_infos();
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("OFFICIALS_CATZ",$catz->CategoryNumbers);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("OFFICIALS_CATZT",$catz->CategoryTime);
+    return true;
+}
+
+function register_lic($force=false){
+    $unix                   = new unix();
+    $dataF                  = array();
+    $error124               = base64_decode("SW52YWxpZCBHb2xkIGxpY2Vuc2Uga2V5IQ==");
+    $APP_ARTICA_LIC_GOLD    = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_ARTICA_LIC_GOLD"));
+    if (!is_dir(dirname(LkdPTEQ))) {
+        @mkdir(dirname(LkdPTEQ), 0755, true);
+    }
+
+    if($GLOBALS["STAMP"]){
+        if(system_is_overloaded(__FILE__)){return false;}
+    }
+
+    patterns();
+    try {
+        register_lic_categories();
+    }catch (Exception $e){
+        echo $e->getMessage()."\n";
+    }
+    shell_exec("/usr/share/artica-postfix/bin/license");
+
+    if ($APP_ARTICA_LIC_GOLD<>null) {
+        @file_put_contents(LkdPTEQ, $APP_ARTICA_LIC_GOLD);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_ARTICA_LIC_GOLD", " ");
+        shell_exec("/usr/share/artica-postfix/bin/license");
+        if(!$GLOBALS["CLASS_SOCKETS"]->CORP_GOLD()){
+            build_progress("{failed}", 110);
+            die();
+        }
+
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("WizardSavedSettingsSend", 1);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 1);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO('Migration', 1);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HideCorporateFeatures", 0);
+
+        $LicenseInfos=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseInfos")));
+        $uuid = $unix->GetUniqueID();
+        $LicenseInfos["MIGRATION"] = 1;
+        $LicenseInfos["UUID"] = $uuid;
+        $LicenseInfos["uuid"] = $uuid;
+        $LicenseInfos["ARTICAVERSION"] = @file_get_contents("/usr/share/artica-postfix/VERSION");
+        $LicenseInfos["license_number"]=$APP_ARTICA_LIC_GOLD;
+        $LicenseInfos["TIME"]=strtotime('+50 year', time());
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseInfos", base64_encode(serialize($LicenseInfos)));
+        build_progress("{restarting} {APP_ARTICA_STATUS}", 90);
+        system("/etc/init.d/artica-status restart");
+        build_progress("$APP_ARTICA_LIC_GOLD {success}", 100);
+        die();
+    }
+
+    if($GLOBALS["CLASS_SOCKETS"]->CORP_GOLD()){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseINGP", 0);
+        build_progress("$APP_ARTICA_LIC_GOLD {success}", 100);
+        if($force){return true;}
+        die();
+    }
+
+    if(!isset($GLOBALS['isRegistered'])){echo "isRegistered is not set\n";}else{
+        echo "isRegistered = {$GLOBALS['isRegistered']}\n";
+    }
+
+    if ($GLOBALS['isRegistered']==1) {
+        echo "register_lic...\n";
+        ini_set('html_errors', 0);
+        ini_set('display_errors', 1);
+        ini_set('error_reporting', E_ALL);
+        $sock = new sockets();
+        $unix = new unix();
+        $ini = new Bs_IniHandler();
+        $function_ghost = base64_decode("Y2hlY2tsaWNlbnNlLmJpbg==");
+        $textGhost = base64_decode("Q29ycG9yYXRlIExpY2Vuc2UgZXhwaXJlZCAtIHJldHVybiBiYWNrIHRvIENvbW11bml0eSBsaWNlbnNl");
+        $licexpir = base64_decode("e2xpY2Vuc2VfZXhwaXJlZH0=");
+        $WORKDIR = base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2E=");
+        $WORKFILE = base64_decode('LmxpYw==');
+        $WORKPATH = "$WORKDIR/$WORKFILE";
+        $line_ghost = base64_decode("MTA4NDM=");
+        $datas = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaProxySettings");
+        $squidbin = $unix->LOCATE_SQUID_BIN();
+        $php = $unix->LOCATE_PHP5_BIN();
+        $ArticaProxyServerEnabled = null;
+
+        if ($GLOBALS["STAMP"]) {
+            @mkdir("/etc/artica-postfix/pids", 0755, true);
+            $filetime = "/etc/artica-postfix/pids/register-license";
+            $ztime = $unix->file_time_min($filetime);
+            if ($ztime < 120) {
+                echo "{$ztime}Mn, require 120Mn... die()\n";
+                if($force){return false;}
+                die();
+            }
+            @unlink($filetime);
+            @file_put_contents($filetime, time());
+        }
+        @chmod("/usr/share/artica-postfix/bin/check-ack",0755);
+        exec("/usr/share/artica-postfix/bin/check-ack -check 2>&1", $output);
+        $response = json_decode($output[0],TRUE);
+        $gotime=intval($response[0]["time"]);
+        $gotoken=intval($response[0]["token"]);
+        $timediff= $gotime - time();
+        $timediff=round($timediff / (60 * 60 * 24));
+        if($gotoken==1 && $timediff<=0){
+            reset_license();
+            echo "Resetting License due overdue registration (days left $timediff)";
+            build_progress("Resetting License due overdue registration (days left $timediff)", 110);
+            return false;
+
+        }
+        if (is_file($WORKDIR . "/.KEY")) {
+            echo "Checking KEY file\n";
+            if (check_key_file()) {
+                echo "Checking KEY OK\n";
+                ping_server();
+                build_progress("{done}", 100);
+                return true;
+            }
+            echo "Checking KEY FALSE\n";
+        }
+
+        if (trim($datas) != null) {
+            $ini->loadString($datas);
+            if(!isset($ini->_params["PROXY"]["ArticaProxyServerEnabled"])){$ini->_params["PROXY"]["ArticaProxyServerEnabled"]=0;}
+            $ArticaProxyServerEnabled = $ini->_params["PROXY"]["ArticaProxyServerEnabled"];
+            if ($ArticaProxyServerEnabled == 1) {$ArticaProxyServerEnabled = "yes";}
+        }
+
+        echo "Use a Proxy server: $ArticaProxyServerEnabled\n";
+
+
+        if ($GLOBALS["VERBOSE"]) {
+            echo __FUNCTION__ . "::" . __LINE__ . "\n";
+        }
+        $pidfile = "/etc/artica-postfix/pids/" . basename(__FILE__) . "." . __FUNCTION__ . ".pid";
+
+        $pid = @file_get_contents($pidfile);
+
+        if ($unix->process_exists($pid)) {
+            build_progress("License information: Already executed PID:$pid, die()", 100);
+            if($force){return false;}
+            die();
+        }
+
+        build_progress("Building informations...", 10);
+        $WizardSavedSettings = unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardSavedSettings")));
+
+        if ($GLOBALS["VERBOSE"]) {
+            echo __FUNCTION__ . "::" . __LINE__ . "\n";
+        }
+        $LicenseInfos = unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseInfos")));
+        $uuid = $unix->GetUniqueID();
+        $forceCheck=true;
+        if(isset($LicenseInfos["CONFIRMUUID"])){
+            $curl = new ccurl("https://licensing.artica.center/api/set/key", false, null);
+            $curl->parms["X-API-KEY"] = $LicenseInfos["X-API-KEY"];
+            $curl->parms["UUID"] = $uuid;
+            $curl->parms["CID"] = $LicenseInfos["company_id"];
+            $curl->parms["seller_cid"] = $LicenseInfos["seller_cid"];
+            $curl->parms["seller_uid"] = $LicenseInfos["seller_uid"];
+            $curl->NoLocalProxy();
+            if(!$curl->get()){
+                $unix->ToSyslog("License info: Request engine failed with error: [$curl->error] Err.".__LINE__,false,syslogSuff);
+                build_progress("Request engine failed with error [$curl->error]", 110);
+                return false;
+            }
+            $response = json_decode(getLastLines($curl->orginal_data));
+            if (!$response->status) {
+                build_progress($response->message, 110);
+                return false;
+            }
+            if ($response->status) {
+                $LicenseInfos["X-API-KEY"]=$response->message;
+                $WizardSavedSettings["key"]=$response->message;
+                $WizardSavedSettings["X-API-KEY"]=$response->message;
+                unset($LicenseInfos["CONFIRMUUID"]);
+                $forceCheck=false;
+            }
+        }
+
+        if (!isset($WizardSavedSettings["company_name"])) {
+            if (!isset($LicenseInfos["COMPANY"])) {
+                $LicenseInfos["COMPANY"] = null;
+            }
+        } else {
+            $LicenseInfos['COMPANY'] = $WizardSavedSettings["company_name"];
+        }
+        if (!isset($WizardSavedSettings["request_by"])) {
+            if (!isset($LicenseInfos["REQUEST_BY"])) {
+                $LicenseInfos["REQUEST_BY"] = null;
+            }
+        } else {
+            $LicenseInfos['REQUEST_BY'] = $WizardSavedSettings["request_by"];
+        }
+
+        if (!isset($WizardSavedSettings["REGISTER"])) {
+            $WizardSavedSettings["REGISTER"] = null;
+        }
+        $LicenseInfos["STATS_APPLIANCE"] = 0;
+
+        if (is_file("/etc/artica-postfix/artica-iso-first-reboot")) {
+            $zDate = filemtime("/etc/artica-postfix/artica-iso-first-reboot");
+            $LicenseInfos["INSTALL_DATE"] = date("Y-m-d H:i:s", $zDate);
+        } else {
+            $zDate = filemtime("/etc/artica-postfix/.");
+            $LicenseInfos["INSTALL_DATE"] = date("Y-m-d H:i:s", $zDate);
+        }
+
+        echo "Registered for {$LicenseInfos["COMPANY"]}\n";
+        build_progress("Check information {$LicenseInfos["COMPANY"]}", 20);
+
+        $MergedArray = $WizardSavedSettings;
+        foreach ($MergedArray as $num=>$val) {
+            $val = trim($val);
+            if ($val == null) {
+                continue;
+            }
+            if (isset($LicenseInfos[$num])) {
+                continue;
+            }
+            $LicenseInfos[$num] = $val;
+        }
+
+
+        $ARRAY = $unix->NETWORK_ALL_INTERFACES();
+        if (isset($LicenseInfos["NIC"])) {
+            $LicenseInfos["IPADDR"] = $ARRAY[$LicenseInfos["NIC"]]["IPADDR"];
+        } else {
+            $LicenseInfos["NIC"] = "eth0";
+            $LicenseInfos["IPADDR"]="0.0.0.0";
+            if(isset($ARRAY["eth0"]["IPADDR"])) {
+                $LicenseInfos["IPADDR"] = $ARRAY["eth0"]["IPADDR"];
+            }
+        }
+
+        $hostname = $unix->hostname_g();
+        $tt = explode(".", $hostname);
+        $netbiosname = $tt[0];
+        unset($tt[0]);
+        $domain = @implode(".", $tt);
+
+        $LicenseInfos["netbiosname"] = $netbiosname;
+        $LicenseInfos["domain"] = $domain;
+        $LicenseInfos["CPUS_NUMBER"] = $unix->CPU_NUMBER();
+        $LicenseInfos["MEMORY"] = $unix->TOTAL_MEMORY_MB();
+        $LicenseInfos["LINUX_DISTRI"] = $unix->LINUX_DISTRIBUTION();
+        $LicenseInfos["MIGRATION"] = $GLOBALS['MIGRATION'] ? 1 : 0;
+
+        if ($GLOBALS["VERBOSE"]) {
+            echo __FUNCTION__ . "::" . __LINE__ . "\n";
+        }
+
+
+        build_progress("Check information $uuid", 30);
+
+        echo " *************** \n\n UUID : $uuid \n\n ***************\n";
+        if ($uuid == null) {
+            build_progress("No system ID !", 110);
+            return false;
+        }
+
+        if (!is_numeric($WizardSavedSettings["REGISTER"])) {
+            echo "License information: server is not registered\n";
+        }
+        if (intval($WizardSavedSettings["REGISTER"]) == 0) {
+            echo "License information: server is not registered, please wait\n";
+            build_progress("License information: server is not registered, please wait", 60);
+            if(!isset($GLOBALS["LICENSE_NOT_REGSITERED_PREVENT_LOOP"])) {
+                $GLOBALS["LICENSE_NOT_REGSITERED_PREVENT_LOOP"]=true;
+                return register(true);
+            }
+        }
+
+        $LicenseInfos["UUID"] = $uuid;
+        $LicenseInfos["uuid"] = $uuid;
+        $LicenseInfos["ARTICAVERSION"] = @file_get_contents("/usr/share/artica-postfix/VERSION");
+        echo "License information: Artica v{$LicenseInfos["ARTICAVERSION"]}\n";
+
+        if ($GLOBALS["VERBOSE"]) {
+            echo __FUNCTION__ . "::" . __LINE__ . "\n";
+        }
+        if (!isset($LicenseInfos["license_number"])) {
+            $LicenseInfos["license_number"] = null;
+        }
+        if ($LicenseInfos["license_number"] == "--") {
+            $LicenseInfos["license_number"] = null;
+        }
+        if (strpos($LicenseInfos["license_number"], "(") > 0) {
+            $LicenseInfos["license_number"] = null;
+        }
+        @chmod("/usr/share/artica-postfix/bin/check-ack",0755);
+        exec("/usr/share/artica-postfix/bin/check-ack -check 2>&1", $output);
+
+        $response = json_decode($output[0],TRUE);
+        $gotoken=intval($response[0]["token"]);
+        if($gotoken==1){
+            $forceCheck=false;
+        }
+        echo "License number:{$LicenseInfos["license_number"]}\n";
+        if (!$GLOBALS['MIGRATION'] || $force) {
+            @mkdir($WORKDIR, 640, true);
+            if (isset($LicenseInfos["license_number"]) && $forceCheck) {
+                if (strlen($LicenseInfos["license_number"]) > 4) {
+                    @file_put_contents($WORKPATH, "TRUE");
+                    echo "License number: License is Active [OK] by the Unlock License\n";
+                    $LicenseInfos["license_status"] = "{license_active}";
+                    $LicenseInfos["TIME"] = time();
+                    $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+                    build_progress("{license_active}", 80);
+                    echo "CheckLic....\n";
+                    CheckLic($LicenseInfos, $WizardSavedSettings,80);
+                    build_progress("{done}", 100);
+                    return true;
+                } else {
+                    echo "license_number token not set..\n";
+                }
+            } else {
+                echo "license_number token not set..\n";
+            }
+        }
+        $unix = new unix();
+        echo "Checking license on the cloud server\n";
+        build_progress("Checking license on the cloud server...", 40);
+        echo "Contacting api/register/license\n";
+        $curl = new ccurl("https://licensing.artica.center/api/register/license", false, null);
+
+        unset($LicenseInfos["administratorpass"]);
+        unset($LicenseInfos["SQL1"]);
+        unset($LicenseInfos["administrator"]);
+        unset($LicenseInfos["ArticaMetaPassword"]);
+        unset($LicenseInfos["ArticaMetaUsername"]);
+
+        if ($GLOBALS["REMOTE_OUTPUT"]) {
+            echo "DUMP WEBSERVER RESPONSE....\n";
+            $curl->parms["VERBOSE"] = "yes";
+        }
+        if ($GLOBALS["VERBOSE"]) {
+            $curl->parms["VERBOSE"] = "yes";
+        }
+        if(isset($WizardSavedSettings["X-API-KEY"])) {
+            $curl->parms["X-API-KEY"] = $WizardSavedSettings["X-API-KEY"];
+        }
+        $curl->parms["REGISTER-LIC"] = base64_encode(serialize($LicenseInfos));
+        $curl->NoLocalProxy();
+        $curl->get();
+        $DataLen=strlen($curl->orginal_data);
+        echo "Data received: {$DataLen}Bytes\n";
+
+        if($DataLen==0){
+            echo "No data receive from remote cloud service.\n";
+            echo "Client returned HTTP Code $curl->CURLINFO_HTTP_CODE\n";
+            echo "Error returned [$curl->curl_error_num] $curl->error\n";
+            build_progress("Communication error from the Cloud server", 110);
+            return false;
+        }
+
+        if (preg_match("#A PHP Error was encountered#is", $curl->orginal_data)) {
+            $data=strip_tags($curl->orginal_data);
+            $data=str_replace("\n\n", "\n", $data);
+            $data=str_replace("\n\n", "\n", $data);
+            $dataTBl=explode("\n", $data);
+            foreach ($dataTBl as $line) {
+                $line=trim($line);
+                $line=str_replace("\r", "", $line);
+                if ($line==null) {
+                    continue;
+                }
+                $dataF[]=$line;
+            }
+            echo "**** Error on the server, please report this issue on your support team.****\n";
+            echo @implode("\n", $dataF)."\n";
+            echo "*****************************************************************************\n";
+            build_progress("{failed} ({see_report})", 110);
+            return false;
+        }
+        $response = @json_decode(getLastLines($curl->orginal_data));
+
+        if(!property_exists($response,"status")){
+            build_progress("Protocol decrypting error from the Cloud server", 110);
+            return false;
+
+        }
+        $response_message="";
+        if(property_exists($response,"message")){
+            $response_message=$response->message;
+        }
+        $product=null;
+        if(property_exists($response,"product")){
+            $product=$response->product;
+
+        }
+
+        echo "MY RESPONSE IS [$response_message]<br>\n";
+        events("api/register/license", __FUNCTION__, __FILE__, __LINE__);
+        echo "Send request... please wait...\n";
+        $Msg=base64_decode("SW52YWxpZCBhcGkga2V5");
+        $MsgFCCS=base64_decode("RmFpbGVkIHRvIGNvbnRhY3QgY2xvdWQgc2VydmVy");
+        if (!$response->status) {
+            $unix->ToSyslog("License info: $MsgFCCS Err.".__LINE__,false,syslogSuff);
+            $unix->ToSyslog("License info: $Msg Err.".__LINE__,false,syslogSuff);
+            echo "**********************************\n";
+            echo "*\n";
+            echo "* $MsgFCCS..*\n";
+            echo "*\n";
+            echo "**********************************\n";
+            build_progress($MsgFCCS, 110);
+            echo "HTTP Error returned: " . $curl->error . "\n";
+            echo "**********************************\n";
+            echo "*\n";
+            echo @implode("\n", $curl->errors);
+            echo "*\n";
+            echo "**********************************\n";
+//            if ($response->message=="to_many_request") {
+//                echo "***** $Msg - Too Many Request per second, please wait ****\n";
+//                build_progress("Too Many Request per second, please wait", 110);
+//                return false;
+//            }
+            if ($response->message=="Invalid api key") {
+                echo "***** $Msg - REGISTRATION_DELETE_NOW ****\n";
+                @unlink($WORKPATH);
+                $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+                @unlink($TVF_WORKPATH);
+                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+                $LicenseInfos["license_status"] = "Community Edition - limited";
+                $LicenseInfos["license_number"] = null;
+                $LicenseInfos["UNLOCKLIC"] = null;
+                $LicenseInfos["TIME"] = time();
+                $LicenseInfos["FINAL_TIME"] = 0;
+                $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+                $unix->ToSyslog("License info: $Msg Err.".__LINE__,false,syslogSuff);
+                system("/usr/share/artica-postfix/bin/license -disables");
+                system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                build_progress("Community Edition - limited", 110);
+            }
+            if (isset($response->error)) {
+                if ($response->error =="Invalid API key ") {
+                    echo "***** $Msg - REGISTRATION_DELETE_NOW ****\n";
+                    @unlink($WORKPATH);
+                    $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+                    @unlink($TVF_WORKPATH);
+                    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+                    $LicenseInfos["license_status"] = "Community Edition - limited";
+                    $LicenseInfos["license_number"] = null;
+                    $LicenseInfos["UNLOCKLIC"] = null;
+                    $LicenseInfos["TIME"] = time();
+                    $LicenseInfos["FINAL_TIME"] = 0;
+                    $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+                    $unix->ToSyslog("License info: $Msg Err.".__LINE__,false,syslogSuff);
+                    system("/usr/share/artica-postfix/bin/license -disables");
+                    system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                    build_progress("Community Edition - limited", 110);
+                }
+            }
+            $LicenseInfos["TIME"] = time();
+            $LicenseInfos["license_status"] = "{registration_failed} $curl->error";
+            $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+
+
+            if (!is_file("/etc/artica-postfix/REGISTRATION_FAILED_TIME")) {
+                @file_put_contents("/etc/artica-postfix/REGISTRATION_FAILED_TIME", time());
+                $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+                return true;
+            }
+
+
+            return false;
+        }
+        @file_put_contents("/etc/artica-postfix/REGISTRATION_FAILED_TIME", 0);
+        echo "OK the server as been contacted....\n";
+        build_progress("{checkiccloud1}", 50);
+        if ($GLOBALS["REMOTE_OUTPUT"]) {
+            echo "***** $curl->data ****\n";
+        }
+
+        $finaltime = 0;
+        if ($response->status && $response_message == "1") {
+            $finaltime = $response->expire;
+        }
+
+        echo "OK the server as been contacted....[" . __LINE__ . "]\n";
+
+        if ($finaltime > 0) {
+            echo "Final Time: $finaltime against " . time() . "....[" . __LINE__ . "]\n";
+            if (time() > $finaltime) {
+                $LicenseInfos["license_status"] = $licexpir;
+                $LicenseInfos["license_number"] = null;
+                $LicenseInfos["TIME"] = time();
+                $LicenseInfos["ABOUT_PP"] = $product;
+
+                if ($finaltime > 0) {
+                    $LicenseInfos["FINAL_TIME"] = $finaltime;
+                }
+                $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+
+                if (is_file($WORKPATH)) {
+                    @unlink($WORKPATH);
+                    build_progress($licexpir, 110);
+                    echo "license_status: $licexpir.... (Expired) [" . __LINE__ . "]\n";
+                    squid_admin_mysql(0, $textGhost, null, $function_ghost, $line_ghost);
+                    system("$php /usr/share/artica-postfix/exec.status.php --process1");
+                    if (is_file($squidbin)) {
+                        shell_exec("$php /usr/share/artica-postfix/exec.squid.global.access.php --build");
+                        shell_exec("$php /usr/share/artica-postfix/exec.kerbauth.php --disconnect");
+                        squid_admin_mysql(2, "{reloading_proxy_service} (" . __FUNCTION__ . ")", null, __FILE__, __LINE__);
+                        shell_exec("/usr/sbin/proxy-reload.sh");
+                    }
+                }
+
+                build_progress("$licexpir", 110);
+                return false;
+            }
+            $reste = distanceOfTimeInWords(time(), $finaltime);
+            echo "license_status: expire in $reste [" . __LINE__ . "]\n";
+        }
+
+        echo "OK Analyze answer from the cloud server....[" . __LINE__ . "]\n";
+
+        echo "Data Lenght: " . strlen($curl->data) . " bytes\n";
+        if (strlen($curl->data) == 0) {
+            build_progress("{error} O Size byte", 110);
+            return false;
+        }
+
+        if ($response->status && $response_message == "1") {
+            echo "**********************************************\n";
+            echo "*\n";
+            echo "*\n";
+            echo "*              Congratulations\n";
+            echo "*        Your License is  - Active -\n";
+            echo "*\n";
+            echo "*\n";
+            echo "**********************************************\n";
+            echo "OK License is Active....[" . __LINE__ . "]\n";
+            @file_put_contents($WORKPATH, "TRUE");
+            @file_put_contents($GLOBALS["TVF_WORKPATH"], "VFJVRQ==");
+            if ($finaltime > 0) {
+                $LicenseInfos["FINAL_TIME"] = $finaltime;
+            }
+            @file_put_contents(base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2EvLmRhY2s="),1);
+            $LicenseInfos["license_status"] = "{license_active}";
+            $LicenseInfos["license_number"] = $response->license;
+            $LicenseInfos["TIME"] = time();
+            $LicenseInfos["ABOUT_PP"] = $product;
+            $LicenseInfos["slr"]=$response->slr;
+            $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+            $sock->SET_INFO('NewLicServer', 1);
+            $sock->SET_INFO('Migration', 1);
+            @chmod("/usr/share/artica-postfix/bin/check-ack",0755);
+            exec("/usr/share/artica-postfix/bin/check-ack -delete 2>&1", $output);
+            build_progress("{license_active} {refresh}", 100);
+            $unix->ToSyslog("License info: {license_active} Code:".__LINE__,false,syslogSuff);
+            system("$php /usr/share/artica-postfix/exec.status.php --process1");
+            build_progress("{license_active} {success}", 100);
+            return true;
+        }
+
+        $Msg2=base64_decode("UkVHSVNUUkFUSU9OX0RFTEVURV9OT1c=");
+        if ($response->status && $response_message == "2") {
+            echo "***** $Msg2 ****\n";
+            @unlink($WORKPATH);
+            $TVF_WORKPATH=base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL0NPUlBfTElDRU5TRQ==");
+            @unlink($TVF_WORKPATH);
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NewLicServer", 0);
+            $LicenseInfos["license_status"] = "Community Edition - limited";
+            $LicenseInfos["license_number"] = null;
+            $LicenseInfos["UNLOCKLIC"] = null;
+            $LicenseInfos["TIME"] = time();
+            $LicenseInfos["ABOUT_PP"] = "Community";
+            if ($finaltime > 0) {
+                $LicenseInfos["FINAL_TIME"] = $finaltime;
+            }
+            $sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
+            $unix->ToSyslog("License info: $Msg2 Err.".__LINE__,false,syslogSuff);
+            system("/usr/share/artica-postfix/bin/license -disables");
+            system("$php /usr/share/artica-postfix/exec.status.php --process1");
+            build_progress("Community Edition - limited", 110);
+            return true;
+        }
+        if ($response->status && $response_message == "3") {
+            echo "License information: server is not registered, please wait\n";
+            if(!isset($GLOBALS["SERVER_NOT_REGISTERED_PREVENT_LOOP"])) {
+                $GLOBALS["SERVER_NOT_REGISTERED_PREVENT_LOOP"] = true;
+                return register(true);
+            }
+            die();
+        }
+
+        if ($curl->error != null) {
+            squid_admin_mysql(2, "License registration failed with error $curl->error", "GetLicense", "license");
+            echo "License registration failed with error $curl->error\n";
+        }
+
+        build_progress("Unknown registration?", 110);
+        echo "***** Registration_failed ****\n";
+        echo $curl->data . "\n";
+    }
+    return false;
+}
+
+
+
+
+
+
+
+function drop_categorize()
+{
+    $q=new mysql_squid_builder();
+    $q->QUERY_SQL("TRUNCATE TABLE categorize");
+}
+function uncompress($srcName, $dstName)
+{
+    $string = implode("", gzfile($srcName));
+    $fp = fopen($dstName, "w");
+    fwrite($fp, $string, strlen($string));
+    fclose($fp);
+}
+function GetCategory($www)
+{
+    $q=new mysql_squid_builder();
+    return $q->GET_CATEGORIES($www);
+}
+
+function events($text, $function, $file=null, $line=null){
+    $unix=new unix();
+    if($file==null){$file=basename(__FILE__);}
+    $unix->ToSyslog("License info: $text ($function/$line)",false,syslogSuff);
+    return $file;
+}
+function ifMustBeExecuted():bool
+{
+    $users=new usersMenus();
+    $update=true;
+    $EnableWebProxyStatsAppliance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWebProxyStatsAppliance"));
+    if ($EnableWebProxyStatsAppliance==1) {
+        return true;
+    }
+    $CategoriesRepositoryEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoriesRepositoryEnable");
+    if ($CategoriesRepositoryEnable==1) {
+        return true;
+    }
+    if (!$users->SQUID_INSTALLED) {
+        $update=false;
+    }
+    return $update;
+}
+function CheckRsyslogd(){
+    if(is_file("/etc/rsyslog.d/artica-license.conf")){return;}
+    $h[]="if  (\$programname =='".syslogSuff."') then {";
+    $h[]="\t-/var/log/license.log";
+    $h[]="\t& stop";
+    $h[]="}";
+    $h[]="";
+    @file_put_contents("/etc/rsyslog.d/artica-license.conf",@implode("\n", $h));
+    $unix=new unix();$unix->RESTART_SYSLOG(true);
+
+}
+function patterns():bool{
+    $unix=new unix();
+    $WizardSavedSettings = unserialize(base64_decode(@file_get_contents(Suvgh)));
+    if(!is_array($WizardSavedSettings)){$WizardSavedSettings=array();}
+    $uitxt=base64_decode("dXVpZA==");
+
+    if(!isset($WizardSavedSettings["INSTALL_DATE"])){
+        if(is_file(isoHF)){
+            $WizardSavedSettings["INSTALL_DATE"]=date("Y-m-d H:i:s",filemtime(isoHF));
+        }
+
+    }
+    if(!isset($WizardSavedSettings["INSTALL_DATE"])){
+        $WizardSavedSettings["INSTALL_DATE"]=date("Y-m-d H:i:s");
+    }
+    $INSTALL_TIME=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("INSTALL_TIME"));
+    $INSTALL_DATE=$WizardSavedSettings["INSTALL_DATE"];
+    $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
+    $EnablePostfix=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePostfix");
+    $EnableDNSDist=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSDist");
+    $EnablePDNS=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePDNS");
+    $EnableNginx=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNginx");
+    $EnableDHCPServer=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDHCPServer");
+    $EnableProxyPac=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableProxyPac"));
+    $EnableSSHProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSSHProxy"));
+    $FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
+    $EnableSyslogLogSink=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSyslogLogSink"));
+    if($INSTALL_TIME>0){
+        $INSTALL_DATE=date("Y-m-d H:i:s", $INSTALL_TIME);
+    }
+
+    if(!is_file("/etc/artica-postfix/INSTALL_TIME_LOCK")){
+        $INSTALL_TIME=intval(@file_get_contents("/etc/artica-postfix/INSTALL_TIME_LOCK"));
+        if($INSTALL_TIME>0) {
+            $INSTALL_DATE = date("Y-m-d H:i:s", $INSTALL_TIME);
+        }
+    }
+    $CURDATE=date("Y-m-d H:i:s");
+    $VER=$unix->ArticaVersionString();
+    $LICENSE=0;
+    $GOLD=0;
+    $EVAL=0;$GOLDV=0;
+    if($GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
+        $LicenseInfos=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseInfos")));
+        if ($GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()) {
+            if(isset($LicenseInfos[base64_decode("cmVxdWVzdGVkX2J5X2NvbXBhbnk=")])) {
+                if ($LicenseInfos[base64_decode("cmVxdWVzdGVkX2J5X2NvbXBhbnk=")] == 1807) {
+                    $EVAL = 1;
+                }
+            }
+        }
+
+        $LICENSE=1;
+    }
+    if ($GLOBALS["CLASS_SOCKETS"]->CORP_GOLD()) {
+        $GOLDV=trim(@file_get_contents(LkdPTEQ));
+        $GOLD=1;
+    }
+    if(!isset($WizardSavedSettings[base64_decode("cmVxdWVzdGVkX2J5X2NvbXBhbnk=")])){
+        $WizardSavedSettings[base64_decode("cmVxdWVzdGVkX2J5X2NvbXBhbnk=")]=null;
+    }
+    $f001 = base64_encode($unix->GetUniqueID());
+    $MAIN["IDATE"]=$INSTALL_DATE;
+    $MAIN["UDATE"]=$CURDATE;
+    $MAIN["GOLDV"]=$GOLDV;
+    $MAIN["GOLD"]=$GOLD;
+    $MAIN["VER"]=$VER;
+    $MAIN["LIC"]=$LICENSE;
+    $MAIN["UUID"]=$f001;
+    $MAIN["PRXY"]=$SQUIDEnable;
+    $MAIN["PSTFX"]=$EnablePostfix;
+    $MAIN["PDNS"]=$EnablePDNS;
+    $MAIN["DNSFW"]=$EnableDNSDist;
+    $MAIN["NGIX"]=$EnableNginx;
+    $MAIN["DHCPD"]=$EnableDHCPServer;
+    $MAIN["PPAC"]=$EnableProxyPac;
+    $MAIN["SSHP"]=$EnableSSHProxy;
+    $MAIN["SINK"]=$EnableSyslogLogSink;
+    $MAIN["EVAL"]=$EVAL;
+    $MAIN["FW"]=$FireHolEnable;
+    $MAINUU[base64_decode("cmVxdWVzdGVkX2J5X2NvbXBhbnk=")]=intval($WizardSavedSettings[base64_decode("cmVxdWVzdGVkX2J5X2NvbXBhbnk=")]);
+
+    if(!isset($WizardSavedSettings[base64_decode("dGltZXpvbmVz")])){
+        $WizardSavedSettings[base64_decode("dGltZXpvbmVz")]="Unknown";
+    }
+    if(!isset($WizardSavedSettings[base64_decode("b3JnYW5pemF0aW9u")])){
+        $WizardSavedSettings[base64_decode("b3JnYW5pemF0aW9u")]="Unknown";
+    }
+    if(!isset($WizardSavedSettings[base64_decode("TUFOVUZBQ1RVUkVS")])){
+        $WizardSavedSettings[base64_decode("TUFOVUZBQ1RVUkVS")]="Unknown";
+    }
+
+    $MAINUU[base64_decode("bXlob3N0bmFtZQ==")]=$unix->FULL_HOSTNAME();
+    $MAINUU[base64_decode("dGltZXpvbmVz")]=$WizardSavedSettings[base64_decode("dGltZXpvbmVz")];
+    $MAINUU[base64_decode("b3JnYW5pemF0aW9u")]=$WizardSavedSettings[base64_decode("b3JnYW5pemF0aW9u")];
+    $MAINUU[base64_decode("TUFOVUZBQ1RVUkVS")]=$WizardSavedSettings[base64_decode("TUFOVUZBQ1RVUkVS")];
+
+    $INFFORM[]="cmFpc29uX3NvY2lhbGU=";
+    $INFFORM[]="Tm9t";
+    $INFFORM[]="UHJlbm9t";
+    $INFFORM[]="VGVsZXBob25l";
+    $INFFORM[]="ZU1haWw=";
+    $INFFORM[]="YWxsb3dfY29udGFjdA==";
+    $XKEY=base64_decode("SU5GT1JN");
+    foreach ($INFFORM as $key){
+        $skey=base64_decode($key);
+        if(isset($WizardSavedSettings[$skey])){
+            $MAINUU[$XKEY][$skey]=$WizardSavedSettings[$skey];
+        }
+    }
+
+
+    $MAIN["NUU"]=base64_encode(serialize($MAINUU));
+    $EMAIN=base64_encode(serialize($MAIN));
+    $prefix=htpPat;
+    $curl=new ccurl("$prefix=$EMAIN&$uitxt=$f001");
+    $curl->NoHTTP_POST=true;
+    $curl->get();
+    return true;
+}

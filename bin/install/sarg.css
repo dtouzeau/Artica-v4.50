@@ -1,0 +1,86 @@
+@import url('http://fonts.googleapis.com/css?family=Questrial');
+
+html{background: url("/pattern.png") repeat scroll 0px 0px rgb(38, 56, 73); padding: 0px; margin: 0px; border: 0px solid black; width: 100%; cursor: default; -moz-user-select: inherit;}
+.body {font-family:'Questrial';color:#000000;background: url("/pattern.png") repeat scroll 0px 0px rgb(38, 56, 73); padding: 0px; margin: 0px; border: 0px solid black; width: 100%; cursor: default; -moz-user-select: inherit;}
+.info {font-family:'Questrial';font-size:9px;}
+.info a:link,a:visited {font-family:Verdana,Tahoma,Arial;color:#0000ff;font-size:9px;text-decoration:none;}
+.title {font-family:'Questrial';font-size:11px;background:none}
+.title2 {font-family:'Questrial';font-size:11px;color:darkblue;text-align:left;}
+.title3 {font-family:'Questrial';font-size:11px;color:darkblue;text-align:right;}
+.header {font-family:'Questrial';font-size:9px;color:darkblue;background-color:#dddddd;text-align:left;border-right:1px solid #666666;border-bottom:1px solid #666666;}
+.header2 {font-family:'Questrial';font-size:9px;color:darkblue;background-color:#dddddd;text-align:right;border-right:1px solid #666666;border-bottom:1px solid #666666;}
+.header3 {font-family:'Questrial';font-size:9px;color:darkblue;background-color:#dddddd;text-align:center;border-right:1px solid #666666;border-bottom:1px solid #666666;}
+.text {font-family:'Questrial';color:#000000;font-size:9px;}
+.text {font-family:'Questrial';color:#000000;font-size:9px;text-align:right;}
+table thead th ,.header_l { text-align: left; font-weight: normal; font-size: 16px; }
+table thead th ,.header_l { height: 23px; border-bottom: 1px #b1b1b1 solid; padding: 0px 5px 0px 10px; }
+table thead tr ,.header_l{ background: transparent url(thead_bg.jpg ) repeat-x left bottom;}
+table tbody tr thead,.header_l{ background-color: #ffffff; }
+
+
+a {
+  color: #0088cc;
+  text-decoration: none;
+}
+
+a:hover,
+a:focus {
+  color: #005580;
+  text-decoration: underline;
+}
+
+a:focus {
+  outline: thin dotted #333;
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
+}
+
+a:hover,
+a:active {
+  outline: 0;
+}
+
+a, a:visited {
+    text-decoration: underline;
+    color:#005447;
+  }
+
+table{ 
+    width: 95%; 
+    font-family:'Questrial';
+    background: -moz-linear-gradient(center top , #F1F1F1 0px, #FFFFFF 45px) repeat scroll 0 0 transparent;
+    border: 1px solid #DDDDDD;
+    border-radius: 5px 5px 5px 5px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
+    margin: 5px;
+    padding: 5px;}
+th,.header_l {
+-moz-background-clip:border;
+-moz-background-inline-policy:continuous;
+-moz-background-origin:padding;
+background:#005447 url(ui-bg_highlight.png) repeat-x scroll 50% 50%;
+border:1px solid #000000;
+color:#FFFFFF;
+font-weight:bold;
+text-align:left;
+text-transform:uppercase;
+padding:3px;
+}
+td.data2 { border-bottom: 1px #d5d5d5 solid; ;padding: 0px 5px 0px 10px;background-color: #fafafa;font-size:14px }
+td.data2 a:link,a:visited {font-size:14px;text-decoration:underline;color:#005447}
+td.data a:link,a:visited {font-size:14px;text-decoration:underline;color:#005447}
+td.data{ border-bottom: 1px #d5d5d5 solid; ;padding: 0px 5px 0px 10px;height: 23px; border-bottom: 1px #b1b1b1 solid; padding: 0px 5px 0px 10px; }
+td.data3{ border-bottom: 1px #d5d5d5 solid; ;padding: 0px 5px 0px 10px;height: 23px; border-bottom: 1px #b1b1b1 solid; padding: 0px 5px 0px 10px;text-align:center }
+td.header_c{font-size:13px;height:auto}
+img {border-style: none}
+td.data2 a:hover{font-size:14px;text-decoration:underline;font-weight:bold;color:#B10000}
+td.data a:hover{font-size:14px;text-decoration:underline;font-weight:bold;color:#B10000}
+.logo{background-color:transparent;height:50px;padding:5px}
+th.title_c{
+	font-size:18px;letter-spacing:1px;font-weight:bold;color:#FFFFFF;background-image:transparent;border:0px;text-align:left;text-transform:capitalize;background-color:transparent}
+td.header_c,th.header_c{font-size:11px;padding:4px;
+	text-transform:capitalize;color:#7D7171;
+	background-image:none;border:0px;text-align:right;background-color:#FFFFFF}
+td.link a:link,a:visited{height:auto;color:#B10000}
+td.link{height:auto;color:#B10000}
+td.link a:hover{height:auto;color:#B10000;font-weight:bolder}

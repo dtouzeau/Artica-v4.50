@@ -1,0 +1,16 @@
+<action_100_pourc>Action when score up to 100%</action_100_pourc>
+<rbl_servers>SURBL servers</rbl_servers>
+<surbl_explain>Un Identificador Universal de Recursos (URI) es un medio est%C3¡ndar para direccionar recursos en la Web[br].
+Los URI comunes, como los localizadores uniformes de recursos (URL) y los nombres uniformes de recursos (URN), se utilizan para identificar el destino de los enlaces de hipertexto, as%C3%AD como las fuentes de las im%C3¡genes,
+informaci%C3%B3n y otros objetos en una p%C3¡gina web. [br]
+Las URL se utilizan generalmente en los sitios web, pero también pueden incluirse en el cuerpo de un mensaje de correo electr%C3%B3nico, por ejemplo, para atraer nuevos visitantes a un sitio web[br].
+
+Las SURBL se diferencian de la mayor%C3%ADa de las RBL en que se utilizan para detectar el spam bas%C3¡ndose en las URI del cuerpo del mensaje[br].
+A diferencia de la mayor%C3%ADa de los otros RBL, los SURBL no se utilizan para bloquear a los remitentes de spam, sino que permiten bloquear los mensajes que tienen hosts de spam (por ejemplo, servidores web, dominios, sitios web) que se mencionan en el cuerpo del mensaje. [br]
+Este m%C3%B3dulo utiliza el método del porcentaje para juzgar si un correo es enviado por una web negra o un ordenador de spam.[br]
+Para aumentar la tasa de detecci%C3%B3n, puede superar el 100% de los resultados[br]Por ejemplo, puede establecer[br]
+[ul]
+[li]rhsbl.ahbl.org como 20%[/li]
+[li]multi.surbl.org como 30%[/li]
+[li]adult.rhs.mailpolice.com como 70%[/li]
+[/ul][br]</surbl_explain>

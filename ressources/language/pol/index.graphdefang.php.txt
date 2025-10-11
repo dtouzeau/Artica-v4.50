@@ -1,0 +1,2 @@
+<hourly>Godzinowo</hourly>
+<statistics>Statystyka</statistics>

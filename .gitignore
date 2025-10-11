@@ -1,0 +1,43 @@
+# Created by https://www.gitignore.io/api/visualstudiocode
+# Edit at https://www.gitignore.io/?templates=visualstudiocode
+
+### VisualStudioCode ###
+.config
+.idea
+.project
+.config/*
+.idea/*
+.project/*
+.vscode/*
+js/.project
+js/.project/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.q_file_picker/*
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+.settings
+.settings/*
+bin/go-shield
+bin/go-shield/
+bin/go-shield/*
+# End of https://www.gitignore.io/api/visualstudiocode
+
+
+*.ovpn
+.ressources/logs/*
+.ressources/interface-cache/*
+ressources/logs/*
+ressources/usb.scan.inc
+bin/external_acl_krsn.py
+ressources/usb.scan.serialize
+ressources/databases/ALL_SQUID_STATUS
+ressources/interface-cache/*
+.VERSION
+framework/DEBIAN_INSTALL_PACKAGE_PROXY
+ressources/databases/ALL_UFDB_STATUS
+ressources/smtp-cache
+ressources/usb.scan.serialize

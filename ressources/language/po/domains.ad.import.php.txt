@@ -1,0 +1,27 @@
+<administrator>Administrador</administrator>
+<admin_dn>Conta do administrador</admin_dn>
+<admin_dn_text>Dê a conta e senha do Administrador do Active Directory.[br]Normalmente, o Administrador tem o nome &quot;Administrador&quot; armazenado em cn=&quot;Administrator,cn=Users,...&quot;
+br]Pode dar aqui o nome do Administrador ou o caminho &quot;DN&quot; completo
+O sufixo é o primeiro ramo do seu Active Directory Branch [br]Normalmente se o seu servidor for nomeado tem server.domain.tld,o sufixo ser%C3¡ &quot;dc=server,dc=domain,dc=tld&quot;.</admin_dn_text>
+<ad_server>Active Directory server address</ad_server>
+<ad_server_text>Give here the IP address or server name of your Active Directory/MS Exchange server</ad_server_text>
+<bdu>Mau nome de utilizador ou palavra-passe</bdu>
+<cls>N%C3£o pôde ligar-se ao servidor do Active Directory</cls>
+<connected>Sucesso de conex%C3£o</connected>
+<err_unkown>Warning unable to logon with following</err_unkown>
+<failed>Connection Failed</failed>
+<iar>Insufficient access rights.</iar>
+<importation_completed>Importation task completed</importation_completed>
+<import_ad_title>Active Directory Members Importation</import_ad_title>
+<local_group>Select your local group</local_group>
+<local_group_text>Select in the list the Artica local group that will store your active directory users</local_group_text>
+<perform_importation>Perform the importation task</perform_importation>
+<remote_org>Select Remote organization</remote_org>
+<remote_org_text>Select the container that store users you want to import</remote_org_text>
+<restart_importation>Restart new importation</restart_importation>
+<server_name>Endereço do servidor</server_name>
+<server_port>Porto de escuta</server_port>
+<suffix>Sufixo do Active Directory</suffix>
+<ucl>Unable to connect to the LDAP server specified[br]please,verify if ldap daemon is running or the ldap server address</ucl>
+<unable_to_connect>Unable to connect to the Active Directory server specified</unable_to_connect>
+<users>Membros</users>

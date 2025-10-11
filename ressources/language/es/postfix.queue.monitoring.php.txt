@@ -1,0 +1,32 @@
+<active>The "active" queue</active>
+<active_text>El gestor de colas es un programador de agentes de entrega; trabaja para garantizar una entrega r%C3¡pida y justa del correo a todos los destinos dentro de los l%C3%ADmites de recursos designados[br].
+La cola activa es algo an%C3¡logo a la cola de ejecuci%C3%B3n de procesos de un sistema operativo. Los mensajes en la cola activa est%C3¡n listos para ser enviados (ejecutables), pero no est%C3¡n necesariamente en proceso de ser enviados (en ejecuci%C3%B3n).</active_text>
+<body_message>Body message</body_message>
+<body_message_text>Display message source</body_message_text>
+<create_time>Create time</create_time>
+<deferred>The "deferred" queue</deferred>
+<deferred_text>
+When all the deliverable recipients for a message are delivered, and for some recipients delivery failed for a transient reason (it might succeed later), 
+the message is placed in the deferred queue</deferred_text>
+<incoming>The "incoming" queue</incoming>
+<incoming_text>Todo el correo nuevo que entra en la cola de Postfix es escrito por el servicio de limpieza en la cola &quot;entrante&quot;.[br]
+Los nuevos archivos de cola son creados por el usuario &quot;postfix&quot; con una m%C3¡scara de bits de acceso (o modo) de 0600.[br]
+Una vez que un archivo de cola est%C3¡ listo para ser procesado, el servicio de limpieza cambia el modo del archivo de cola a 0700 y notifica al gestor de colas la llegada de nuevo correo[br].
+El gestor de colas ignora los archivos de cola incompletos cuyo modo es 0600, ya que éstos todav%C3%ADa est%C3¡n siendo escritos por el servicio de limpieza.</incoming_text>
+<maildrop>The "maildrop" queue</maildrop>
+<maildrop_text>Los mensajes que han sido enviados a través del comando sendmail de Postfix, pero que a%C3%BAn no han sido llevados a la cola principal de Postfix por el servicio de recogida, esperan a ser procesados en la cola &quot;maildrop&quot;[br].
+Los mensajes pueden ser a%C3%B1adidos a la cola &quot;maildrop&quot; incluso cuando el sistema Postfix no est%C3¡ funcionando[br].
+Comenzar%C3¡n a ser procesados una vez que Postfix se inicie.
+La cola &quot;maildrop&quot; es vaciada por el servicio de recogida de un solo hilo que escanea el directorio de la cola peri%C3%B3dicamente o cuando es notificado de la llegada de un nuevo mensaje por el programa postdrop[br].
+El programa postdrop es un ayudante setgid que permite al programa sendmail de Postfix sin privilegios inyectar correo en la cola &quot;maildrop&quot; y notificar al servicio pickup(8) de su llegada.[br]
+Todo el correo que entra en la cola principal de Postfix lo hace a través del servicio de limpieza.[br] El servicio de limpieza es responsable de la reescritura del sobre y la cabecera, de la comprobaci%C3%B3n de las expresiones regulares de la cabecera y el cuerpo, del procesamiento autom%C3¡tico del destinatario bcc, del procesamiento del contenido milter y de la inserci%C3%B3n fiable del mensaje en la cola &quot;entrante&quot; de Postfix.</maildrop_text>
+<message_arrival_time>Message arrival time</message_arrival_time>
+<message_size>Message size</message_size>
+<named_attribute>Named attribute</named_attribute>
+<original_recipient>Original recipient</original_recipient>
+<routing_info>Postfix routing info</routing_info>
+<routing_info_text>Display information about postfix used fields</routing_info_text>
+<sender_fullname>sender full name</sender_fullname>
+<show_mail>View message</show_mail>
+<show_queue>Display the list of mails stored</show_queue>
+<too_late_or_no_queue_files>All messages are gone, you have clicked too late on the function... No messages stored...</too_late_or_no_queue_files>

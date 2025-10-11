@@ -1,0 +1,34 @@
+<active>Activo</active>
+<active_text>O gestor da fila é um agente de agendamento de entregas; trabalha para assegurar a entrega r%C3¡pida e justa do correio a todos os destinos dentro dos limites de recursos designados [br].
+A fila activa é um pouco an%C3¡loga à fila de execuç%C3£o de um sistema operacional. As mensagens na fila activa est%C3£o prontas a ser enviadas (execut%C3¡veis), mas n%C3£o est%C3£o necessariamente em processo de ser enviadas (em execuç%C3£o).</active_text>
+<body_message>Body message</body_message>
+<body_message_text>Display message source</body_message_text>
+<create_time>Criar tempo</create_time>
+<deferred>The "deferred" queue</deferred>
+<deferred_text>
+When all the deliverable recipients for a message are delivered, and for some recipients delivery failed for a transient reason (it might succeed later), 
+the message is placed in the deferred queue</deferred_text>
+<incoming>The "incoming" queue</incoming>
+<incoming_text>
+All new mail entering the Postfix queue is written by the cleanup service into the "incoming" queue.[br]
+New queue files are created owned by the "postfix" user with an access bitmask (or mode) of 0600.[br]
+Once a queue file is ready for further processing the cleanup service changes the queue file mode to 0700 and notifies the queue manager of new mail arrival.[br]
+The queue manager ignores incomplete queue files whose mode is 0600, as these are still being written by cleanup. 
+</incoming_text>
+<maildrop>The "maildrop" queue</maildrop>
+<maildrop_text>As mensagens que foram submetidas através do comando Postfix sendmail, mas ainda n%C3£o trazidas para a fila principal do Postfix pelo serviço de recolha, aguardam processamento na fila &quot;maildrop&quot; [br].
+As mensagens podem ser adicionadas à fila de &quot;maildrop&quot; mesmo quando o sistema Postfix n%C3£o est%C3¡ a funcionar [br].
+Começar%C3£o a ser processados assim que o Postfix for iniciado.
+A fila de &quot;maildrop&quot; é drenada pelo serviço de recolha com um %C3%BAnico fio que escaneia periodicamente o direct%C3%B3rio da fila ou quando é notificado da chegada de novas mensagens pelo programa p%C3%B3s-drop.[br]
+O programa p%C3%B3s-lançamento é um ajudante de setgid que permite ao programa de correio postal n%C3£o-privilegiado Postfix injectar correio na fila de &quot;maildrop&quot; e notificar o serviço de recolha(8) da sua chegada[br].
+Todo o correio que entra na fila principal do Postfix f%C3¡-lo através do serviço de limpeza.[br] O serviço de limpeza é respons%C3¡vel pela reescrita de envelopes e cabeçalhos, verificaç%C3µes regulares de express%C3£o do cabeçalho e do corpo, processamento autom%C3¡tico do destinat%C3¡rio do bcc, processamento do conte%C3%BAdo do milter, e inserç%C3£o fi%C3¡vel da mensagem na fila de &quot;entrada&quot; do Postfix.</maildrop_text>
+<message_arrival_time>Message arrival time</message_arrival_time>
+<message_size>Tamanho da mensagem</message_size>
+<named_attribute>Named attribute</named_attribute>
+<original_recipient>Original recipient</original_recipient>
+<routing_info>Postfix routing info</routing_info>
+<routing_info_text>Display information about postfix used fields</routing_info_text>
+<sender_fullname>sender full name</sender_fullname>
+<show_mail>View message</show_mail>
+<show_queue>Display the list of mails stored</show_queue>
+<too_late_or_no_queue_files>All messages are gone, you have clicked too late on the function... No messages stored...</too_late_or_no_queue_files>

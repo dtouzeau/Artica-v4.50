@@ -1,0 +1,37 @@
+/etc/artica-postfix/openvpn/proxy/pki/serial.old
+/etc/artica-postfix/openvpn/proxy/pki/index.txt.attr
+/etc/artica-postfix/openvpn/proxy/pki/serial
+/etc/artica-postfix/openvpn/proxy/pki/private/ca.key
+/etc/artica-postfix/openvpn/proxy/pki/dh.pem
+/etc/artica-postfix/openvpn/proxy/pki/index.txt.old
+/etc/artica-postfix/openvpn/proxy/pki/index.txt
+/etc/artica-postfix/openvpn/proxy/pki/ca.crt
+set_var EASYRSA	"/usr/share/artica-postfix/bin/EasyRSA-3.0.0"
+set_var EASYRSA_OPENSSL	"/usr/bin/openssl"
+set_var EASYRSA_PKI		"/etc/artica-postfix/openvpn/proxy/pki"
+# Choices are:
+#   cn_only  - use just a CN value
+#   org      - use the "traditional" Country/Province/City/Org/OU/email/CN format
+set_var EASYRSA_DN	"org"
+set_var EASYRSA_REQ_COUNTRY	"US"
+set_var EASYRSA_REQ_PROVINCE	"New York"
+set_var EASYRSA_REQ_CITY	"Brooklyn"
+set_var EASYRSA_REQ_ORG	"MyCompany Ltd"
+set_var EASYRSA_REQ_EMAIL	"postmaster@localhost.localdomain"
+set_var EASYRSA_REQ_OU		"IT service"
+set_var EASYRSA_KEY_SIZE	2048
+set_var EASYRSA_ALGO		rsa
+set_var EASYRSA_CURVE		secp384r1
+set_var EASYRSA_CA_EXPIRE	3650
+set_var EASYRSA_CERT_EXPIRE	3650
+set_var EASYRSA_CRL_DAYS	180
+set_var EASYRSA_NS_SUPPORT	"no"
+set_var EASYRSA_NS_COMMENT	"Artica Generated Certificate"
+set_var EASYRSA_TEMP_FILE	"$EASYRSA_PKI/extensions.temp"
+#alias awk="/alt/bin/awk"
+#alias cat="/alt/bin/cat"
+set_var EASYRSA_EXT_DIR	"$EASYRSA/x509-types"
+set_var EASYRSA_SSL_CONF	"$EASYRSA/openssl-1.0.cnf"
+set_var EASYRSA_REQ_CN		"abolinhas.home"
+set_var EASYRSA_DIGEST		"sha256"
+set_var EASYRSA_SUBJ		"/C=US/ST=New York/L=Brooklyn/O=MyCompany Ltd/OU=IT service"

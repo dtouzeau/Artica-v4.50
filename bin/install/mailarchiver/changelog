@@ -1,0 +1,57 @@
+CHANGELOG
+08.12.2010
+1. fixed stupid bug in maildump
+
+05.07.2010
+1. mailimport script now after import in mysql copy dumped mail into 
+   file-based archive, groupped by year/month.
+
+11.08.2009
+1. Mail-dump now try to create dump directory is not exist
+
+08.02.2009
+1. mail-dump now can add timestamp & sender name into creating files.
+
+15.12.2008
+1. mail-dump now daemon. (but it work incomplete - need code for work with signal)
+2. use syslog for logging information about program.
+
+04.12.2008
+1. improve milter filter mail-dump: now you can set output directory by option
+   "-o"
+2. webinterface: now can seek mail by message-id
+
+05.07.2008
+1. change stupid error in tables name - mallarchive_* change to mailarchive_*
+   run this sql-commands:
+    RENAME TABLE `mallarchive_msginfo` TO `mailarchive_msginfo` ;
+    RENAME TABLE `mallarchive_recipient` TO `mailarchive_recipient` ;
+2. improve search mail. now use mailarchive_recipient table where stored only
+   rcpt-to information about mail
+3. improve archimport.php script for insert statistics about mail into
+   special mysql table
+4. fix error in "auto-clean" code. Instead of clearing the contained letter, 
+   there was its full removal.
+
+05.07.2008
+1. At sending the letter to the manager old headings FROM and TO are replaced 
+  on X-OLD-FROM and X-OLD-TO 
+2. At import of the letter in mysql in the special mysql table record for 
+  statistics is done. Then by means of special scripts it is possible to 
+  deduce statistics on a corporate site for users.
+3. The small instruction on installation is written. Covers not all aspects, 
+  but now it is more clear as it to establish on a server
+4. Write email RCPT-TO into special table for improve speed of seek e-mail.
+
+24.06.2008
+1.ƒоделан скрипт поиска сообщений - ищетс€ еще и по отправителю
+2.“ело сообщений теперь записываетс€ в отдельную таблицу базы дл€ снижени€ 
+  фрагментации таблицы, причем в кодировке Base64 чтобы не кособочились 
+  письма присланные в 8битной кодировке
+
+27.12.2007
+1. Improvement milter filter - when message successfull received by mail server
+  file is renamed: add ".msg" extension
+2. Created script for search message. now only by receiver.
+3. Improvement mode "auto-clean" mail database. Now it is possible to adjust 
+  a storage time of contents of letters depending on their size.

@@ -1,0 +1,6 @@
+<?php
+// V1
+$HTTP_X_ARTICA_SUBFOLDER=null;
+//if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){$HTTP_X_ARTICA_SUBFOLDER=$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/"; }
+header("location:/{$HTTP_X_ARTICA_SUBFOLDER}fw.login.php");
+?>

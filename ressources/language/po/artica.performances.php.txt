@@ -1,0 +1,107 @@
+<about_perf>Esta secç%C3£o ajuda-o a definir os desempenhos dos processos e serviços artica de acordo com os seus desempenhos inform%C3¡ticos [br].
+Pode escolher os melhores desempenhos mas serviços baixos ou serviços completos mas menos desempenhos.</about_perf>
+<ADMIN_COVER_PAGE_STATUS>Administrator's cover page status</ADMIN_COVER_PAGE_STATUS>
+<APP_PRELOAD_NOTINSTALLED>Preload daemon is not installed</APP_PRELOAD_NOTINSTALLED>
+<APP_PRELOAD_NOTINSTALLED_TEXT>Preload é um &quot;daemon readahead adaptativo&quot; que corre no fundo do seu sistema,
+e observa que programas utiliza mais frequentemente, armazenando-os em cache para acelerar o tempo de carga da aplicaç%C3£o [br].
+Ao utilizar a Pré-carga, pode colocar a RAM n%C3£o utilizada em bom funcionamento, e melhorar o desempenho geral do seu sistema [br].
+A instalaç%C3£o de pré-carga no Ubuntu é feita facilmente com o comando:[b]apt-get install preload[/b][br]
+Uma vez instalada, a Pré-carga ser%C3¡ iniciada, e n%C3£o é necess%C3¡ria qualquer outra acç%C3£o, mas leia para opç%C3µes de configuraç%C3£o,
+para aprender a monitorizar as actividades da Pré-carga, e ver que tipo de melhorias a Pré-carga ir%C3¡ trazer ao seu sistema</APP_PRELOAD_NOTINSTALLED_TEXT>
+<artica_process>Artica processes</artica_process>
+<artica_process_explain>This parameter drive the nice execution of artica processes (process1,artica-install,artica-ldap...)</artica_process_explain>
+<ARTICA_PROCESS_SCHEDULE>Processes schedule</ARTICA_PROCESS_SCHEDULE>
+<ARTICA_PROCESS_SCHEDULE_EXPLAIN>In order to provide statistics,grapÄ¥s and services informations,Artica need to run some processes in background mode.[br]
+These processes will should consume system resources.[br]You can define here these processes execution frequency.[br]A shorter period will consume more resources but will display you a real status.[br]
+A longer period will safe your system resources but will extend visibility of of your services and statistics status.</ARTICA_PROCESS_SCHEDULE_EXPLAIN>
+<ARTICA_PROCESS_SCHEDULE_TEXT>Define the pooling time to execute Artica processes</ARTICA_PROCESS_SCHEDULE_TEXT>
+<benchmark_result>Resultado do benchmark</benchmark_result>
+<cpu_number>N%C3%BAmero de CPUs</cpu_number>
+<default>Por defeito</default>
+<DisableFollowServiceHigerThan1G>Disable Service Watchdog memory</DisableFollowServiceHigerThan1G>
+<DisableFollowServiceHigerThan1G_explain>Esta funcionalidade desactiva serviços requer o seu computador com mais de 1Gb de mem%C3%B3ria.
+[br] Bloqueia SpamAssassin, amavis e syslog-ng+Myslq para iniciar os serviços a fim de proteger a mem%C3%B3ria do computador [br].
+Se você se ligar a esta funcionalidade, ser%C3¡ permitido iniciar os serviços mesmo que o seu computador n%C3£o tenha a mem%C3%B3ria recomendada.</DisableFollowServiceHigerThan1G_explain>
+<log_fifo_size>Output Buffers</log_fifo_size>
+<log_fifo_size_text>Este é um cen%C3¡rio extremamente importante [br].
+Os &quot;tamp%C3µes de sa%C3%ADda&quot; também &quot;log_fifo_size&quot; definem o tamanho do tamp%C3µes de sa%C3%ADda, que todos os destinos têm.[br]
+O buffer de sa%C3%ADda deve ser suficientemente grande para armazenar as mensagens recebidas de cada fonte [br].
+Esta configuraç%C3£o pode ser definida globalmente ou por destino [br].
+Para os &quot;Buffers de Sa%C3%ADda&quot;, o n%C3%BAmero indicado é o n%C3%BAmero de
+linhas/entradas/mensagens que pode conter[br].
+Por defeito, é definido globalmente, de forma extremamente conservadora -
+e se fizer qualquer quantidade de tr%C3¡fego, acabar%C3¡ por ver mensagens abandonadas em algum momento [br].
+As estat%C3%ADsticas que incluem as mensagens descartadas s%C3£o impressas para o syslog a cada 10 minutos, a menos que o utilizador tenha alterado isto.[br]
+Na linha estat%C3%ADstica indica-lhe qual o destino que est%C3¡ a deixar cair mensagens e quantas.[br]
+Poder%C3¡ ent%C3£o determinar a%C3%AD se deve ser aumentado globalmente ou por destino,
+e também uma ideia de quanto maior é necess%C3¡rio para o fazer.</log_fifo_size_text>
+<low>low</low>
+<MaxtimeBackupMailSizeCalculate>Calculate storages size each</MaxtimeBackupMailSizeCalculate>
+<MaxtimeBackupMailSizeCalculate_explain>When you use quarantine area and backup On the Fly feature, artica will calculate periodically these areas disk consumption.[br]
+This processing should consume I/O on your disk and should decrease server performance during the calculation.[br]
+You should increase or decrease the interval according to the average size of these areas.[br]
+The default value has been calculated for a quarantine/backup area of 10G disk size</MaxtimeBackupMailSizeCalculate_explain>
+<medium>medium</medium>
+<mimedefang_consumption>MimeDefang server consumption</mimedefang_consumption>
+<mimedefang_consumption_text>MimeDefang hook postfix to allow adding services with Artica (anti-spam,backup,diclaimers and others...)[br]
+This software is written in perl and could use many memory, you can tune here mimedefang behavior according your computer performances</mimedefang_consumption_text>
+<mimedefang_macro>MimeDefang Behavior</mimedefang_macro>
+<MX_MAXIMUM>Maximum processes</MX_MAXIMUM>
+<MX_MAXIMUM_TEXT>N%C3%BAmero m%C3¡ximo de processos a executar (correio recebido enquanto estes muitos'); os processos em curso s%C3£o rejeitados com uma falha tempor%C3¡ria, portanto seja
+ware of quantos e-mails recebe de cada vez)[br] Isto aplica-se apenas se utilizar o multiplexor[br].
+O valor por defeito de 2 é provavelmente demasiado baixo; sugerimos 10 em vez disso;</MX_MAXIMUM_TEXT>
+<MX_MAX_AS>Total Memory limit (kb)</MX_MAX_AS>
+<MX_MAX_AS_TEXT>Limit total size of slave processes memory space to this many kilobytes. Default is unlimited.</MX_MAX_AS_TEXT>
+<MX_MAX_RSS>Memory limit (kb)</MX_MAX_RSS>
+<MX_MAX_RSS_TEXT>Limit slave processes resident-set size to this many kilobytes.  Default is unlimited.</MX_MAX_RSS_TEXT>
+<MX_MINIMUM>Minimum processes to keep.</MX_MINIMUM>
+<MX_MINIMUM_TEXT>Minimum number of processes to keep. The default of 0 is probably too low; we suggest 2 instead.</MX_MINIMUM_TEXT>
+<MX_REQUESTS>Pedidos m%C3¡ximos</MX_REQUESTS>
+<MX_REQUESTS_TEXT>N%C3%BAmero m%C3¡ximo de pedidos que um processo trata</MX_REQUESTS_TEXT>
+<mysql_audit>Mysql audit</mysql_audit>
+<mysql_audit_text>Run MySQL High Performance Tuning Script in order to see if your have rights settings</mysql_audit_text>
+<mysql_benchmark>Benchmarks</mysql_benchmark>
+<mysql_benchmark_text>Test your Mysql server and display the global performance with others tests</mysql_benchmark_text>
+<mysql_performance_level_text>Tweaks and tips to tune your mysql server</mysql_performance_level_text>
+<mysql_repair_text>Repair your databases easly...</mysql_repair_text>
+<mysql_server_consumption>Mysql server consumption</mysql_server_consumption>
+<mysql_server_text>O servidor de base de dados MySQL armazena muitas informaç%C3µes utilizadas pela Artica (incluem registos de eventos, cache RouncCube, estat%C3%ADsticas...) o processo do servidor mysql deve tomar tempos de CPU e mem%C3%B3ria enquanto este serviço
+é apenas um serviço de cosmética [br].
+pode conduzir aqui o consumo do servidor mysql</mysql_server_text>
+<NoBootWithoutIP>Start services only with network</NoBootWithoutIP>
+<NoBootWithoutIP_explain>When the server boot-up some services should take time because the server did not already have a network IP address. [br]
+Especially if the server is running in DHCP Client mode.[br]
+If you enable this feature, Artica will start services only if the server has an IP address.[br]This feature is designed to speed the boot time.</NoBootWithoutIP_explain>
+<no_sql_injection>No Mysql injection</no_sql_injection>
+<only_errors>Only errors</only_errors>
+<only_mail>Mail events & errors</only_mail>
+<others_benchmarks>Outros Benchmarks</others_benchmarks>
+<service_performances>Desempenhos de serviço</service_performances>
+<syslogng_intro>Se ainda estiver a ter problemas com as mensagens deixadas cair,
+estudar a utilizaç%C3£o do controlo de fluxo no syslog-ng [br].
+O controlo do fluxo permite afinar a quantidade de mensagens recebidas de uma fonte.[br][br][br]
+Embora existam outras quest%C3µes potenciais que deve ter em conta, tais como o abrandamento da aplicaç%C3£o da fonte, se
+n%C3£o pode entregar as suas mensagens de registo, etc.[br][br][br
+Utilizadores com clientes syslog tradicionais que enviam os seus logs via UDP, devem consultar esta p%C3¡gina em UDP Buffer Sizing [br][br][br]
+Além disso, &quot;Flushing Buffers&quot; e &quot;Output Buffers&quot; devem ser afinados nos seus servidores clientes, conforme necess%C3¡rio, se estiverem a usar syslog-ng,
+e lidar com cargas pesadas, fontes espor%C3¡dicas, etc.[br]
+Lembre-se de utilizar as suas entradas de registo de estat%C3%ADsticas para o ajudar a identificar problemas e a carregar eficazmente.</syslogng_intro>
+<syslogng_max_connections>max-connections</syslogng_max_connections>
+<syslogng_max_connections_text>if you see a lot of "Number of allowed concurrent connections exceeded" that means you must increase this value.[br]
+This parameter Limits the number of simultaneously opened connections</syslogng_max_connections_text>
+<syslogng_sync>Flushing Buffers</syslogng_sync>
+<syslogng_sync_text>
+The syslog-ng application buffers the log messages to be sent in an output queue.[br]
+The sync() parameter specifies the number of messages held in this buffer.[br][br]
+By default, Flushing Buffers is set to 0, which flushes messages immediately - which depending on your logging volume,
+can be fairly taxing.[br]
+Increasing this number gently, say to 10 or 20, will hold that number of messages in its buffer before they are written to their destination.
+</syslogng_sync_text>
+<syslog_server_consumption>Syslog-ng injection</syslog_server_consumption>
+<syslog_server_consumption_text>You using syslog-ng and Artica automatically set it to force sending events to mysql in order to display them.[br]
+Mysql injection increase MySQL processes and need some performances.[br]
+This parameter allow you to totally disable this feature or to specify wich logs you want to send to mysql.</syslog_server_consumption_text>
+<tune_title>Artica Performances</tune_title>
+<useIonice>Enable I/O priorities</useIonice>
+<useIonice_explain>If it is enabled, artica will configure I/O scheduling priority for executed program</useIonice_explain>
+<very_low>Very low</very_low>

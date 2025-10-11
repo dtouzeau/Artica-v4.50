@@ -1,0 +1,11 @@
+<changeClock>To Change the clock, set the time the time exactly as shown below</changeClock>
+<change_clock_tooltip>If you want to change the system clock[br]Click on this Link..</change_clock_tooltip>
+<clocks>Clocks</clocks>
+<clocks_text>Ihr Computer hat zwei Uhren: eine batteriegepufferte, die als ``Hardware'', ``BIOS'' oder ``CMOS'' Uhr immer l%C3%A4uft,
+und eine weitere, die als ``Systemuhr'' von dem Betriebssystem, das gerade auf dem Computer l%C3%A4uft, verwaltet wird.
+Die Hardware-Uhr wird im allgemeinen nur verwendet, um die Systemuhr zu stellen, wenn das Betriebssystem startet,
+Von diesem Zeitpunkt an bis zum Neustart oder Ausschalten des Systems wird die Systemuhr verwendet, um die Zeit zu messen.</clocks_text>
+<convert_clock_tooltip>Set the hardware clock from the system clock</convert_clock_tooltip>
+<hardware_clock>Hardware clock</hardware_clock>
+<system_clock>System clock</system_clock>
+<wrong_date>The date given didn't match the requested format</wrong_date>

@@ -1,0 +1,4 @@
+<generate>Launch web pages generation</generate>
+<infos_awstats_must_generate>Este problema é causado porque n%C3£o h%C3¡ estat%C3%ADsticas ou os awstats n%C3£o s%C3£o gerados[br].
+Pode ger%C3¡-lo por linha de comando :[br]
+[blk][b]/usr/share/artica-postfix/bin/artica-install -awstats geram[/b][/blk]</infos_awstats_must_generate>

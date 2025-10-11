@@ -1,0 +1,36 @@
+<howto_install>Je%C5%9Bli u%C5%BCywasz trybu [b]source[/b], uruchom w konsoli nast%C4%99puj%C4%85c%C4%85 lini%C4%99 polece%C5%84[br]
+[b]/usr/share/artica-postfix/artica-install addons[/b]
+[br]Ta operacja pozwala wybra%C4%87, kt%C3%B3ry z obs%C5%82ugiwanych produkt%C3%B3w ma zosta%C4%87 zainstalowany[br][br]
+
+[H5]Artica Zarz%C4%85dzaj postfixem i addonami[/H5]
+Je%C5%9Bli u%C5%BCywasz [b]repozytori%C3%B3w pakiet%C3%B3w dla debiana lub RedHata (dpkg lub rpm)[/b]:[br]
+Masz do dyspozycji 5 modu%C5%82%C3%B3w, kt%C3%B3re mo%C5%BCesz pobra%C4%87 na sourceforge.
+
+[ul]
+[li][b]artica-postfix-smtp-relay[/b][br]
+Ten pakiet konwertuje artica do roli SMTP Relay u%C5%BCywaj%C4%85c g%C5%82%C3%B3wnego programu postfix, narz%C4%99dzia antyspamowego bogofilter i saslauthd.
+[li][b]artica-postfix-security[/b][br]
+Pakiet ten przekszta%C5%82ca artica w pe%C5%82ny serwer bezpiecze%C5%84stwa SMTP wykorzystuj%C4%85cy Kaspersky Anti-spam i Kaspersky Anti-virus (licencja z 30 dniami na ich ocen%C4%99).
+[li][b]artica-postfix-mailbox[/b][br]
+Pakiet ten konwertuje artica na serwer pocztowy IMAP/POP3 przy u%C5%BCyciu cyrus-imap.
+[li][b]artica-postfix-webmail[/b][br]
+Ten pakiet dodaje modu%C5%82 webmail w artica u%C5%BCywaj%C4%85c RoundCube eMail i Mysql.
+[/ul]
+
+Istnieje kolejno%C5%9B%C4%87 instalacji tych pakiet%C3%B3w, na przyk%C5%82ad, je%C5%9Bli chcesz zainstalowa%C4%87 pe%C5%82ny serwer pocztowy (skrzynka pocztowa i webmail) musisz zainstalowa%C4%87 w tym kierunku : [br]
+artica-postfix-smtp-relay -&amp;amp;raquo; artica-postfix-security -&amp;amp;raquo; artica-postfix-mailbox -&amp;amp;raquo; artica-postfix-webmail[br]
+[br][br]
+[blk][b]http://sourceforge.net[/b][/blk]
+
+[br][br]
+[H5]Artica Manage Squid i dodatki[/H5]
+Ten dzia%C5%82 jest obecnie w fazie &amp;quot;beta&amp;quot;[br]
+je%C5%9Bli chcesz go przetestowa%C4%87, daj mi zna%C4%87 (david.touzeau@fr.kaspersky.com)
+[br][br]
+Je%C5%9Bli u%C5%BCywasz [b]repozytori%C3%B3w pakiet%C3%B3w dla debiana lub RedHata (dpkg lub rpm) [/b]:[br]
+Masz 2 modu%C5%82y, kt%C3%B3re mo%C5%BCesz pobra%C4%87 na sourceforge.
+[ul]
+[li][b]artica-squid-proxy[/b][br]
+Ten pakiet konwertuje artic%C4%99 na serwer proxy u%C5%BCywaj%C4%85cy Squid 3.x
+[li][b]artica-squid-security[/b][br]
+Ten pakiet dodaje modu%C5%82y bezpiecze%C5%84stwa dla Squid 3.x u%C5%BCywaj%C4%85c DansGuardian i Kaspersky Anti-Virus For Squid ICAP (licencja z 30 dniami na jej ocen%C4%99).</howto_install>

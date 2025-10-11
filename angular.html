@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST PLOT</title>
+
+    <link href="angular/bootstrap.min.css" rel="stylesheet">
+    <link href="angular/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    <link href="angular/animate.css" rel="stylesheet">
+    <link href="angular/style.css" rel="stylesheet">
+<link href="http://www.flotcharts.org/flot/examples/examples.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" language="javascript" src="/XHRConnection.js"></script>
+    <script type="text/javascript" language="javascript" src="/mouse.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/jquery/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" language="javascript" src="angular/js/angular/angular.min.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/jquery.flot.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/jquery.flot.pie.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/jquery.flot.time.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/jquery.flot.categories.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/curvedLines.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/jquery.flot.resize.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/jquery.flot.tooltip.min.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/excanvas.min.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/jquery.flot.spline.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/jquery.flot.symbol.js"></script>
+    <script type="text/javascript" language="javascript" src="/angular/js/plugins/flot/angular-flot.js"></script>
+
+    <script type="text/javascript" language="javascript" src="/default.js"></script>
+</head>
+<body>
+
+	<div id="header">
+		<h2>Basic Usage</h2>
+	</div>
+
+	<div id="content">
+
+
+		<div id="placeholder" class="flot-chart" ></div>
+
+		<p>You don't have to do much to get an attractive plot.  Create a placeholder, make sure it has dimensions (so Flot knows at what size to draw the plot), then call the plot function with your data.</p>
+
+		<p>The axes are automatically scaled.</p>
+
+	</div>
+
+	<div id="footer">
+		Copyright &copy; 2007 - 2014 IOLA and Ole Laursen
+	</div>
+	<script type="text/javascript">
+$(function() {
+
+			
+	var options = {
+			lines: {
+				show: true
+			},
+			points: {
+				show: true
+			},
+			xaxis: {
+				mode: 'categories',
+				tickDecimals: 0,
+				tickSize: 1
+			}
+		};
+	
+var data=[
+['1487433600',162831498],['1487434200',28726965],['1487434800',19110263],['1487435400',142036384],['1487436000',104035553],['1487436600',36516155],['1487437200',43202971],['1487437800',27826464],['1487438400',18148045],['1487439000',17193234],['1487439600',8004545],['1487440200',8284153],['1487440800',28159466],['1487441400',36862724],['1487442000',456845319],['1487442600',205269295],['1487443200',50700207],['1487443800',86716686],['1487444400',29394929],['1487445000',23023409],['1487445600',1601400],['1487446200',2449431],['1487446800',187458018],['1487447400',158000193],['1487448000',22868487],['1487448600',29386815],['1487449200',8884334],['1487449800',52431745],['1487450400',15451340],['1487451000',671043996],['1487451600',1397116315],['1487452200',1566976373],['1487452800',1434037920],['1487453400',326129629],['1487454000',12003117],['1487454600',1228190840],['1487455200',1318367245],['1487455800',1383698927],['1487456400',660700239],['1487457000',15730769],['1487457600',369333485],['1487458200',810967122],['1487458800',634358233],['1487459400',80170423],['1487460000',212997807],['1487460600',631945446],['1487461200',616317377],['1487461800',792433238],['1487462400',768648762],['1487463000',281603110],['1487463600',6259314],['1487464200',5059577],['1487464800',5934257],['1487465400',14700167],['1487466000',29169477],['1487466600',167632945],['1487467200',5808423],['1487467800',3449559],['1487468400',2479517],['1487469000',7493282],['1487469600',306708287],['1487470200',15879912],['1487470800',122208490],['1487471400',50250552],['1487472000',8554348],['1487472600',280873762],['1487473200',14301275],['1487473800',26338043],['1487474400',6664440],['1487475000',142992643],['1487475600',6242021],['1487476200',2289574],['1487476800',64467462],['1487477400',15738823],['1487478000',1475518],['1487478600',185972647],['1487479200',11223227],['1487479800',30533844],['1487480400',21862295],['1487481000',38458997],['1487481600',43705070],['1487482200',24701330],['1487482800',36576614],['1487483400',891825],['1487484000',20066781],['1487484600',18490627],['1487485200',911477],['1487485800',2312371],['1487486400',149329208],['1487487000',5013530],['1487487600',13499144],['1487488200',26879028],['1487488800',1607815],['1487489400',202767417],['1487490000',34000682],['1487490600',15672340],['1487491200',24778230],['1487491800',38649814],['1487492400',8555050],['1487493000',8265686],['1487493600',11272316],['1487494200',152781656],['1487494800',44670344],['1487495400',20484714],['1487496000',3192264],['1487496600',294037716],['1487497200',14136384],['1487497800',9621697],['1487498400',121845381],['1487499000',207108740],['1487499600',104828814],['1487500200',64226768],['1487500800',165339740],['1487501400',148789083],['1487502000',105942200],['1487512200',9051447]
+];
+$.plot('#placeholder', [ data ], {
+ grid: {
+
+            color: '#999999',
+            tickColor: '#D4D4D4',
+            borderWidth:0,
+            minBorderMargin: 20,
+            labelMargin: 10,
+            backgroundColor: {
+                colors: ['#ffffff', '#ffffff']
+            },
+            margin: {
+                top: 8,
+                bottom: 20,
+                left: 20
+            } },colors: ["#1ab394"],	
+			series: {
+				lines: {
+					show: true,
+					fill:true,
+					barWidth: 0.6,
+					align: 'center'
+				}
+			},
+			xaxis: {
+				mode: 'time',
+				tickLength: 0
+			}
+		});
+	
+});
+</script>
+</body>
+</html>
+
+

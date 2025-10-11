@@ -1,0 +1,377 @@
+#!/usr/bin/env python
+import sys
+
+sys.path.append('/usr/share/artica-postfix/ressources')
+import re
+import logging, os, getopt
+import psutil, time
+import sqlite3
+import traceback as tb
+from unix import *
+from datetime import datetime
+from phpserialize import serialize, unserialize
+import time
+
+
+def squid_pid():
+    process_name = "/usr/sbin/squid"
+    pidpath = "/var/run/squid/squid.pid"
+
+    if os.path.exists(pidpath):
+        daemon_pid = 0
+        with open(pidpath, 'r') as fp:
+            try:
+                daemon_pid = int(fp.read())
+            except:
+                pass
+        if daemon_pid > 0:
+            if psutil.pid_exists(daemon_pid): return daemon_pid
+
+    for proc in psutil.process_iter():
+        if process_name in proc.exe():
+            username = proc.username()
+            if username != 'squid': continue
+            pid = proc.pid
+            return pid
+    return None
+
+
+def progress(prc, text):
+    array = {}
+    tfile = "/usr/share/artica-postfix/ressources/logs/web/squid.quick.progress"
+    array["POURC"] = prc
+    array["TEXT"] = text
+    final = serialize(array)
+    file_put_contents(tfile, final)
+
+
+def progress_restart(prc, text):
+    array = {}
+    tfile = "/usr/share/artica-postfix/ressources/logs/web/squid.quick.rprogress"
+    array["POURC"] = prc
+    array["TEXT"] = text
+    final = serialize(array)
+    file_put_contents(tfile, final)
+
+
+def QUERY_SQL(sql, db, fetchone=False):
+    rows = None
+    try:
+        conn = sqlite3.connect(db)
+        conn.text_factory = lambda b: b.decode(errors='ignore')
+    except Error as e:
+        print("[ERROR]: SQL %s" % e)
+        return None
+
+    cur = conn.cursor()
+    try:
+        cur.execute(sql)
+        matches = re.search("(INSERT|insert|update|UPDATE)\s+", sql)
+        if matches: conn.commit()
+        if fetchone: rows = cur.fetchone()
+        if not fetchone: rows = cur.fetchall()
+    except:
+        print("[ERROR]: SQL %s" % tb.format_exc())
+        conn.close()
+        return None
+
+    conn.close()
+    return rows
+
+
+def squid_admin_mysql(severity, subject, text):
+    now = datetime.now()
+    CurrentTime = int(now.strftime("%s"))
+    Nexttime = CurrentTime + 604800
+    text = text.replace("'", "\'")
+    subject = subject.replace("'", "\'")
+
+    db = "/home/artica/SQLITE/system_events.db"
+    sql = "INSERT OR IGNORE INTO `squid_admin_mysql` (`zDate`,`content`,`subject`,`function`,`filename`,`line`,`severity`,`removeafter`) " \
+          " VALUES('%s', '%s', '%s', 'Proxy Service', 'squid-service', '0', '%s', '%s')" % (
+          CurrentTime, text, subject, severity, Nexttime)
+    try:
+        QUERY_SQL(sql, db)
+    except:
+        print("[ERROR]: Sqlite %s" % tb.format_exc())
+
+
+def squid_start():
+    spid = squid_pid()
+    sysctl = "/sbin/sysctl"
+    ip_local_port_range = 65535
+    max_filedesc = GET_INFO_INT("max_filedesc")
+    if max_filedesc > ip_local_port_range: ip_local_port_range = max_filedesc
+
+    if spid is not None:
+        print("[Starting]......: Already started pid %s" % spid)
+        squid_admin_mysql(2,"Proxy Service already started","")
+        return False
+
+    print("[Starting]......: Proxy service")
+    squid_admin_mysql(2, "{starting} Proxy Service (by specific binary)", "")
+    os.system("/usr/bin/php /usr/share/artica-postfix/exec.squid.disable.php --squid-service >/dev/null 2>&1")
+    os.system("/usr/bin/nohup /etc/init.d/squid start >/dev/null 2>&1 &")
+
+    for i in [0, 1, 2, 3, 4, 5]:
+        spid = squid_pid()
+        print("[Starting]......: Proxy service waiting %s..." % i)
+        if spid is not None:
+            squid_admin_mysql(2, "{success} {starting} {APP_SQUID} with PID %s" % spid, "")
+            print("[Starting]......: Proxy service success pid %s..." % spid)
+            return True
+        time.sleep(1)
+
+    print("[Starting]......: Force starting proxy service")
+    squid_admin_mysql(1, "FORCE: {starting} Proxy Service (by specific binary)", "")
+    os.system("/usr/bin/nohup /usr/sbin/squid -s -C -f /etc/squid3/squid.conf >/dev/null 2>&1 &")
+    for i in [0, 1, 2, 3, 4, 5]:
+        spid = squid_pid()
+        print("[Starting]......: Proxy service waiting %s..." % i)
+        if spid is not None:
+            squid_admin_mysql(2, "{success} {starting} {APP_SQUID} with PID %s" % spid, "")
+            print("[Starting]......: Proxy service success pid %s..." % spid)
+            return True
+        time.sleep(1)
+
+    squid_admin_mysql(0, "Failed to start proxy service (specific binary)", "")
+    print("[Starting]......: Proxy service [FAILED]...")
+    return False
+
+
+def all_pids():
+    pids = []
+    for proc in psutil.process_iter():
+        pname = proc.exe()
+        if len(pname) == 0: continue
+        username = proc.username()
+        if username != 'squid': continue
+        matches = re.search("(freshclam|clamd|c-icap)+", pname)
+        if matches: continue
+        pid = proc.pid
+        pids.append(pid)
+    return pids
+
+
+def gosts_stop():
+    pids = all_pids()
+    if len(pids) == 0:
+        print("[Stopping]......: No other processes.")
+        return True
+
+    for spid in pids:
+        try:
+            p = psutil.Process(spid)
+            pname = p.exe()
+            print("[Stopping]......: Terminate process %s [%s]" % (spid, pname))
+            p.terminate()
+            p.kill()
+        except:
+            print("[Stopping]......: Terminated process %s [%s]" % (spid, pname))
+
+    pids = all_pids()
+    if len(pids) == 0:
+        print("[Stopping]......: No other processes.")
+        return True
+
+
+def squid_stop():
+    spid = squid_pid()
+    pgress = 35
+    if spid is None:
+        gosts_stop()
+        return True
+
+    p = psutil.Process(spid)
+    TimeMin=process_time_min(spid)
+    print("[Stopping]......: Terminate process %s running since %s minutes" % (spid,TimeMin))
+    os.system("/usr/sbin/squid -f /etc/squid3/squid.conf -k shutdown >/dev/null 2>&1")
+    for i in [0, 1, 2, 3, 4, 5, 6]:
+        pgress = pgress + 2
+        spid = squid_pid()
+        if spid is None:
+            progress_restart(pgress, "{stopping} proxy service {please_wait} %s/5..." % i)
+            print("[Stopping]......: Terminate process %s success (smoothly)" % spid)
+            gosts_stop()
+            return True
+
+        print("[Stopping]......: Waiting pid %s %s/5" % (spid, i))
+        time.sleep(1)
+        os.system("/usr/sbin/squid -f /etc/squid3/squid.conf -k shutdown >/dev/null 2>&1")
+
+    spid = squid_pid()
+    if spid is None:
+        print("[Stopping]......: Terminate process success")
+        pgress = pgress + 2
+        progress_restart(pgress, "{stopping} proxy service killing all processes")
+        gosts_stop()
+        return True
+
+    pgress = pgress + 2
+    progress_restart(pgress, "{stopping} proxy service processes %s" % spid)
+    os.system("/usr/sbin/squid -f /etc/squid3/squid.conf -k kill >/dev/null 2>&1")
+    for i in [0, 1, 2, 3, 4, 5, 6]:
+        pgress = pgress + 2
+        spid = squid_pid()
+        if spid is None:
+            progress_restart(pgress, "{stopping} proxy service killing all processes")
+            gosts_stop()
+            return True
+
+        print("[Stopping]......: Killing process %s" % spid)
+        p = psutil.Process(spid)
+        p.terminate()
+        p.kill()
+
+    time.sleep(1)
+    spid = squid_pid()
+    if spid is None:
+        print("[Stopping]......: Terminate process success")
+        pgress = pgress + 2
+        progress_restart(pgress, "{stopping} proxy service Success")
+        gosts_stop()
+        squid_admin_mysql(1, "Success {stopping} proxy service [FORCED]", "")
+        return True
+
+    squid_admin_mysql(0, "{failed} {stopping} proxy service", "")
+    print("[Stopping]......: [Failed]")
+    return False
+
+
+def ps_aux():
+    for proc in psutil.process_iter():
+        pname = proc.exe()
+        if len(pname) == 0: continue
+        username = proc.username()
+        if username != 'squid': continue
+        pid = proc.pid
+        ppid = proc.ppid()
+        cmdline = proc.cmdline()
+        print("[%s] '%s'[%s] (%s)" % (pid, pname, cmdline, ppid))
+
+
+def process_time_min(pid):
+    process = psutil.Process(pid)
+    create_time = process.create_time()
+    current_time = time.time()
+    ttl_minutes = (current_time -create_time  ) / 60
+    return round(ttl_minutes)
+
+
+def main(argv):
+    if "start" in argv:
+        if not squid_start():
+            progress(110, "Starting {failed}...")
+            sys.exit(0)
+        progress(100, "Starting {success}...")
+        sys.exit(0)
+
+    if "stop" in argv:
+        if not squid_stop():
+            progress(110, "{stopping} {failed}...")
+            sys.exit(0)
+        progress(100, "{stopping} {success}...")
+        sys.exit(0)
+
+    if "ps" in argv:
+        ps_aux()
+        sys.exit(0)
+
+    if "pid" in argv:
+        spid = squid_pid()
+        ptime=process_time_min(spid)
+        print("PID of main proxy service is [%s] TTL=%s minutes" % (spid,ptime))
+        sys.exit(0)
+
+
+    if "restart-rotate" in argv:
+        squid_admin_mysql(1, "{restarting} proxy service after log rotation", "")
+        if not squid_stop():
+            squid_admin_mysql(0, "Unable to restart proxy service after log rotation", "")
+            sys.exit(0)
+        if not squid_start():
+            squid_admin_mysql(0, "Unable to start proxy service after log rotation", "")
+            sys.exit(0)
+        sys.exit(0)
+
+    if "restart2" in argv:
+        print("{stopping} Proxy service...")
+        progress_restart(35, "{stopping}...")
+        if not squid_stop():
+            progress_restart(110, "{stopping} {failed}...")
+            sys.exit(0)
+
+        print("{starting} Proxy service...")
+        progress_restart(65, "{starting}...")
+        if not squid_start():
+            progress_restart(110, "{starting} {failed}...")
+            sys.exit(0)
+        progress_restart(100, "{starting} {success}...")
+        sys.exit(0)
+
+    if "reload-timeout" in argv:
+        spid = squid_pid()
+        if spid is  None:
+            sys.exit(0)
+        ptime=process_time_min(spid)
+        if(ptime<2):
+            sys.exit(0)
+
+        subject = "Reloading Proxy service (Timeout exceed 15s) by the Watchdog Ports monitoring"
+        squid_admin_mysql(1, subject, "")
+        os.system("/usr/sbin/squid -f /etc/squid3/squid.conf -k reconfigure >/dev/null 2>&1")
+        sys.exit(0)
+
+    if "restart-cpu" in argv:
+        percent_cpu = 0
+        spid = squid_pid()
+        if spid is not None:
+            try:
+                p = psutil.Process(spid)
+                percent_cpu = p.cpu_percent()
+                percent_cpu = round(percent_cpu, 2)
+            except:
+                percent_cpu = 0
+
+        subject = "{restarting} Proxy service (" + str(percent_cpu) + "% CPU usage) by the Watchdog CPU monitoring"
+        squid_admin_mysql(0, subject, "")
+        progress_restart(35, "{stopping}...")
+        if not squid_stop():
+            progress_restart(110, "{stopping} {failed}...")
+            sys.exit(0)
+
+        progress_restart(65, "{starting}...")
+        if not squid_start():
+            progress_restart(110, "{starting} {failed}...")
+            sys.exit(0)
+        progress_restart(100, "{starting} {success}...")
+        sys.exit(0)
+
+    if "restart-memory" in argv:
+        percent_mem = 0
+        spid = squid_pid()
+        if spid is not None:
+            try:
+                process = psutil.Process(spid)
+                percent_mem = process.memory_percent()
+                percent_mem = round(percent_mem, 2)
+            except:
+                percent_mem = 0
+
+        subject = "Restarting Proxy service (" + str(percent_mem) + "% memory usage) by the Watchdog Memory monitoring"
+        squid_admin_mysql(0, subject, "")
+        progress_restart(35, "{stopping}...")
+        if not squid_stop():
+            progress_restart(110, "{stopping} {failed}...")
+            sys.exit(0)
+
+        progress_restart(65, "{starting}...")
+        if not squid_start():
+            progress_restart(110, "{starting} {failed}...")
+            sys.exit(0)
+        progress_restart(100, "{starting} {success}...")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

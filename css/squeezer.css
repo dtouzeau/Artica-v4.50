@@ -1,0 +1,101 @@
+html{
+	background: url("/img/pattern.png") repeat scroll 0 0 #263849;
+
+}
+
+body{
+width:95%;
+margin-left:20px;
+margin-right:20px;
+padding-left:20px;
+padding-right:20px;
+background-color:#FFFFFF;
+border-radius: 6px 6px 6px 6px;
+-moz-border-radius: 6px 6px 6px 6px;
+-khtml-border-radius: 6px 6px 6px 6px;
+-webkit-border-radius: 6px 6px 6px 6px;
+font-size:16px;
+
+}
+
+h3{
+font-size:26px !important;
+letter-spacing:2pt;
+}
+
+h2{
+font-size:16px !important;
+margin-top:-20px !important;
+border-top:1px solid #005447;
+font-weight:normal !important;
+letter-spacing:1pt;
+}
+
+h5{
+font-weight:normal !important;
+font-size:16px !important;
+}
+th { 
+background: url("/img/pattern.png") repeat scroll 0 0 #263849;
+text-align: left;
+color:white;
+padding:5px;
+font-weight:normal;
+
+}
+
+.header th {
+    background: url("/img/pattern.png") repeat scroll 0 0 #263849;
+    /* background: none repeat scroll 0 0 #005447; */
+    text-align: center;
+    padding:5px;
+   font-weight:normal;
+}
+
+td{
+padding-right:8px;
+font-size:16px;
+font-weight:bold;
+}
+
+
+.even { 
+	background: #CCCCCC;
+	padding-right:8px;
+}
+.odd  { 
+	background: #FFFFFF; 
+	
+}
+
+
+.graph {
+    font-size: xx-small;
+    font-weight: bold;
+    letter-spacing: -0.25em;
+    text-align: left;
+    color:#E3000A;
+
+}
+
+hr{
+border:0px;
+}
+
+
+
+table{
+ width:95%;
+border-radius: 6px 6px 6px 6px;
+-moz-border-radius: 6px 6px 6px 6px;
+-khtml-border-radius: 6px 6px 6px 6px;
+-webkit-border-radius: 6px 6px 6px 6px;
+border:2px solid #005447;
+}
+
+.special th, .special td { 
+	background: #B80008; color:white; 
+font-size:18px !important;
+font-weight: bold;
+padding:5px;
+}

@@ -1,0 +1,4 @@
+<enable_c_icap>Enable C-ICAP for antivirus</enable_c_icap>
+<enable_c_icap_text>El servicio ICAP Antivirus proporciona an%C3¡lisis antimalware cuando se descargan objetos de Internet a través del proxy.[br]
+Esto permite interceptar los objetos maliciosos antes que los navegadores.[br]
+Tenga en cuenta lo siguiente: Para garantizar la mejor detecci%C3%B3n, es aconsejable permitir que el proxy realice el descifrado de flujos SSL.</enable_c_icap_text>

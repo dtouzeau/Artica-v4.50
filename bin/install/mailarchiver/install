@@ -1,0 +1,82 @@
+Requirement
+*Sendmail with milter enabled.
+*php
+*mysql >4.x.x
+
+If you hve troubles with installing or other, you can contact to me by email
+alexey-pushkin@yandex.ru
+
+Installation
+1. Setup filter for sendmail. (catalogue src/maildump)
+  a. edit predefined variables src/config.h 
+    Some of this variables can be override by option command line.
+  a. compile program
+    Linux-Box(in archive have precompiled file for Linux i686 gnulibc2):
+     cc -I../../sendmail -I../../include -o mail-dump mail-dump.c /usr/lib/libmilter.a libsm.a -pthread
+    Solaris-Box:
+     cc -I../../sendmail -I../../include -o mail-dump mail-dump.c /usr/lib/libmilter.a libsm.a -pthread -lsocket -lnsl -lresolv
+
+  b. you need create dir for dump mail. 
+     by default it "/tmp/savemail", but you can change this by using option -o
+
+  c. change rc.* script for starting maildump before sendmail
+    command to start program is:
+    "./mail-dump -p local:/var/run/maildump.socket -o /mytmpdir"
+     all option for start program:
+     -p _socket_name_  name of socket for contact mailserver
+     -o _dump_dir_     catalogue for write dumped mail
+     -i  - interactive mode
+     -h  - help
+  d. >>SENDMAIL<<:
+    I) change sendmail.cf for using this filter via sock.
+     for this you need in m4 script add next lines:
+       INPUT_MAIL_FILTER(`maildump', `S=local:/var/run/maildump.socket, F=, T=C:15m;S:4m;R:4m;E:10m')
+       define(`confMILTER_MACROS_CONNECT',`b, j, _, {daemon_name}, {if_name}, {if_addr}')
+     and recompile sendmail.cf.
+
+     of course you can attach few filters(spamassasin, clamav) to sendmail 
+     by simple clone INPUT_MAIL_FILTER line.
+
+    II) restart sendmail (killall -HUP sendmail)
+  d. >>POSTFIX<<: (sorry for bad instruction, but i'm use only sendmail.)
+    I) postfix config
+      smtpd_milters = local:/tmp/maildump.socket
+      non_smtpd_milters = local:/tmp/maildump.socket
+      milter_default_action = accept
+      # if lmtp milter exist :
+      lmtpd_milters = local:/tmp/maildump.socket
+    II)
+     right for "/tmp/maildump.socket" must be :
+     chown postfix:postfix maildump.socket 
+     root@second:/tmp# chmod 770 maildump.socket
+
+  f. try to send test mail, you must seed dump mail into /tmp/savemail
+
+2. Configure script in archimport catalogue for import mail into MySQL database
+  a. change in ftpcfg.php connection info(host, database, login, password)
+     for you database, and other settings
+
+  b. create mysql tables (run command from tools_create_mysql.sql)
+
+  c. edit archimport.php if you don't want imported in mysql database mails to
+     be copied into file-based archive.
+      
+   $flag_filearch_subdir=true;	//settings - do we need subdir in filearchive
+
+    and also seek and mopdify in middle this file:
+   $dir           = '/tmp/savemail/';
+   $dir_archascii = '/var/spool/mailarch';
+
+  d. Change /etc/crontab for periodically run archimport.php
+
+  e. check mysqls tables for imported info
+
+3. Install Web interface
+  a. copy htdocs into webserver
+
+  b. change config.inc for your mysql installation
+
+
+
+If this program usefull for you and your company you can donate this project.
+money or not too old hardware...

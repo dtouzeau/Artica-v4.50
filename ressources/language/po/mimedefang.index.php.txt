@@ -1,0 +1,66 @@
+<about>MIMEDefand &eacute; uma framework para filtrar e-mail.[br]
+Usa a API &quot;Milter&quot; do Sendmail, com algum c&oacute;digo em C e em Perl para deixa-lo escrever filtros de correio de alto desempenho.[br]
+
+As pessoas usam MIMEDefand para[ul]
+
+[li]Bloquear virus[/li]
+[li]Bloquear ou etiquetar spam[/li]
+[li]Remover do correio o HTML[/li]
+[li]Adicionar ren&uacute;ncias padronizadas de correio de sa&iacute;da[/li]
+[li]Remover ou alterar anexos[/li]
+[li]Substituir anexo com URL's[/li]
+[li]Implementar controles de acesso sofisticados.[/li]</about>
+<AddWarningsInline>Adicionar Avisos em linha</AddWarningsInline>
+<AddWarningsInline_text>Se o activar, ent%C3£o MIMEDefang tenta *muito* adicionar avisos directamente no corpo da mensagem (texto ou html) em vez de adicionar uma parte separada &quot;WARNING.TXT&quot; MIME [br].
+Se a mensagem n%C3£o tiver texto ou parte html, ent%C3£o ainda é utilizada uma parte MIME separada.</AddWarningsInline_text>
+<add_deny_ext>Add Extension</add_deny_ext>
+<add_deny_ext_prompt>Give the extension name (without dot ".")</add_deny_ext_prompt>
+<add_deny_ext_text>Add a new banned file type</add_deny_ext_text>
+<AdminAddress>Endereço do administrador</AdminAddress>
+<AdminAddress_text>Set administrator's e-mail address here.[br]
+The administrator receives quarantine messages and is listed as the contact for site-wide MIMEDefang policy.[br]
+A good example would be 'defang-admin@mydomain.com</AdminAddress_text>
+<AdminName>Nome do administrador</AdminName>
+<AdminName_text>Administrator's name see in mails sent by MimeDefang</AdminName_text>
+<antispam_features>Anti-Spam features</antispam_features>
+<antivirus_features>Antivirus features</antivirus_features>
+<AUTOWHITE_LIST>Trust emails when my users send mail to</AUTOWHITE_LIST>
+<BACKUP_ENABLED>Enable HTML backup feature</BACKUP_ENABLED>
+<backup_filters>Backup & other filters</backup_filters>
+<backup_rows>Mails number in backup storage</backup_rows>
+<bad_exts>Bad Extensions</bad_exts>
+<BIGHTML_ENABLED>Strip big extensions feature</BIGHTML_ENABLED>
+<config>Ficheiro de configuraç%C3£o principal</config>
+<CONVERT_TNEF>Convert TNEF</CONVERT_TNEF>
+<CONVERT_TNEF_text>convert those pesky winmail.dat into their attachment(s).</CONVERT_TNEF_text>
+<DaemonAddress>Daemon Address</DaemonAddress>
+<DaemonAddress_text>Set the e-mail address from which MIMEDefang quarantine warnings and user notifications appear to come.[br]
+A good example would be mimedefang@mydomain.com.[br]
+Make sure to have an alias for this address if you want replies to it to work.</DaemonAddress_text>
+<database_size>Tamanho da base de dados</database_size>
+<database_stats>Databases statistics</database_stats>
+<diclaimer_text>Estas caracter%C3%ADsticas permitem-lhe adicionar texto de boilerplate em cada mensagem[br]Pode colocar o c%C3%B3digo html aqui</diclaimer_text>
+<DISCARD_SPAM_KAS3>Discard mails when Kaspersky Anti-Spam rate exceed</DISCARD_SPAM_KAS3>
+<DISCARD_SPAM_SPAMASS>Discard mails when spamassassin rate exceed</DISCARD_SPAM_SPAMASS>
+<disclaimer>Disclaimer</disclaimer>
+<disclaimer_servers_address>Servers addresses</disclaimer_servers_address>
+<disclaimer_servers_address_text>Only append boilerplate if relaying from internal address:</disclaimer_servers_address_text>
+<disclaimer_servers_q>Give the address of the sender server eg 192.168.0 or 192. or 192.168.1.2</disclaimer_servers_q>
+<ENABLE_BOGOFILTER>Enable bogofilter</ENABLE_BOGOFILTER>
+<ENABLE_CLAMAV>Enable ClamAV Antivirus</ENABLE_CLAMAV>
+<ENABLE_DISCLAIMER>Enable boilerplate text</ENABLE_DISCLAIMER>
+<ENABLE_SPAMASSASSIN>Enable Spamassassin</ENABLE_SPAMASSASSIN>
+<FILTER_LOCAL_SENDER_ENABLED>Activate allow/disallow your Internet email users</FILTER_LOCAL_SENDER_ENABLED>
+<FILTER_LOCAL_SENDER_ENABLED_TEXT>This feature allow you to specifiy if your local users are allowed to send emails trought Internet or Not.[br]
+After enable this feature you will be able to allow or disallow on the user's section</FILTER_LOCAL_SENDER_ENABLED_TEXT>
+<html_features>HTML Features</html_features>
+<plugins>Plugins</plugins>
+<quarantines>Quarantines</quarantines>
+<quarantine_rows>Mails number in quarantine</quarantine_rows>
+<QUARANTINE_SPAM>Quarantine spams when rates are under discard rates</QUARANTINE_SPAM>
+<RECIPIENT_TRANSFORM>Recipients transform features</RECIPIENT_TRANSFORM>
+<RECIPIENT_TRANSFORM_TEXT>This feature enable:[ul][li]Duplicate messages from recipient rules[/li][li]Translate recipients rules[/li][/ul]</RECIPIENT_TRANSFORM_TEXT>
+<SA_RCPT_EMAIL>If Spam found, then Send to spam email address you fill here</SA_RCPT_EMAIL>
+<SA_RCPT_ENABLE>Enable redirect spam to a spam maildrop</SA_RCPT_ENABLE>
+<spamass_score>SpamAssassin Max Score</spamass_score>
+<whitelists>Listas brancas</whitelists>

@@ -1,0 +1,64 @@
+<additional_routes>Additional Routes</additional_routes>
+<additional_routes_text>A%C3%B1adir informaci%C3%B3n de subredes privadas a su t%C3%BAnel VPN para permitir el acceso a redes de ordenadores remotos</additional_routes_text>
+<ADD_REMOTE_SITES_VPN>Agregar un nuevo sitio remoto</ADD_REMOTE_SITES_VPN>
+<ADD_REMOTE_SITES_VPN_TEXT>Insertar un nuevo elemento para construir un archivo de configuraciones</ADD_REMOTE_SITES_VPN_TEXT>
+<BRIDGE_ETH>Bridged NIC</BRIDGE_ETH>
+<b_received>Received</b_received>
+<b_sent>Enviar</b_sent>
+<enable_openvpn_server_mode>Activate VPN server mode</enable_openvpn_server_mode>
+<ethernet_tunnel>T%C3%BAnel Ethernet</ethernet_tunnel>
+<ip_addr>Start ip</ip_addr>
+<LOCAL_NETWORK>In order to allow remote clients to access to your network, give your network IP Configuration</LOCAL_NETWORK>
+<NETWORK_CONTROL_CENTER>Centro de Control de la Red</NETWORK_CONTROL_CENTER>
+<NETWORK_CONTROL_CENTER_TEXT>Ver el esquema de red que muestra los par%C3¡metros de la VPN</NETWORK_CONTROL_CENTER_TEXT>
+<openvpn_access_interface>Permitir sesiones de VPN a</openvpn_access_interface>
+<openvpn_access_interface_text>When a VPN session is established on your server, wich networks VPN clients can have access</openvpn_access_interface_text>
+<OPENVPN_CLIENT_SETTINGS>VPN Clients configuration</OPENVPN_CLIENT_SETTINGS>
+<OPENVPN_CLIENT_SETTINGS_TEXT>Define parameters that the server will serve when clients establish VPN tunnel</OPENVPN_CLIENT_SETTINGS_TEXT>
+<openvpn_local>Local IP address for bind.</openvpn_local>
+<openvpn_local_text>Si se especifica, OpenVPN se vincular%C3¡ s%C3%B3lo a esta direcci%C3%B3n. Si no se especifica, OpenVPN se vincular%C3¡ a todas las interfaces.</openvpn_local_text>
+<OPENVPN_SERVER_CONNECT>Connect your server</OPENVPN_SERVER_CONNECT>
+<OPENVPN_SERVER_CONNECT_EXPLAIN>Put here your zip Artica server configuration file for your site name.</OPENVPN_SERVER_CONNECT_EXPLAIN>
+<OPENVPN_SERVER_CONNECT_TEXT>Link your server to a VPN Artica server</OPENVPN_SERVER_CONNECT_TEXT>
+<OPENVPN_SERVER_SETTINGS>OpenVPN server parameters</OPENVPN_SERVER_SETTINGS>
+<OPENVPN_SERVER_SETTINGS_TEXT>Define here your VPN server parameters.</OPENVPN_SERVER_SETTINGS_TEXT>
+<OPENVPN_WIZARD>Start first settings</OPENVPN_WIZARD>
+<OPENVPN_WIZARD_TEXT>Start your OpenVPN Connection quickly here without technical skills</OPENVPN_WIZARD_TEXT>
+<PKI>Infraestructura de clave p%C3%BAblica</PKI>
+<public_ip_addr>Public IP address</public_ip_addr>
+<REMOTE_SITES_VPN>Remote sites</REMOTE_SITES_VPN>
+<REMOTE_SITES_VPN_TEXT>Manage remotes sites clients collection</REMOTE_SITES_VPN_TEXT>
+<routed_IP_tunnel>Routed IP tunnel</routed_IP_tunnel>
+<routes_explain>Una vez que la VPN est%C3¡ operativa en una capacidad punto a punto entre el cliente y el servidor,
+puede ser conveniente ampliar el alcance de la VPN para que los clientes puedan llegar a varias m%C3¡quinas de la red del servidor, en lugar de s%C3%B3lo a la propia m%C3¡quina del servidor.[br]
+[b]Si quieres forzar todas las comunicaciones de los clientes a través de la VPN a%C3%B1ade una ruta como 0.0.0.0 0.0 [ip de tu servidor VPN]</routes_explain>
+<SERVER_MODE_TAP>This directive will use your local IP address assigned to OpenServer VPN address.[br]
+The NIC interface will be bridged with the VPN server and your local address[br]It's means if your local address is 192.168.3.1, you must set 192.168.3.1 in this form</SERVER_MODE_TAP>
+<SERVER_MODE_TUNE>[br]This directive will set up an OpenVPN server which will allocate  addresses to clients out of the given network/netmask.[br]
+The server itself will take the ".1" address of the given network for use as the server-side endpoint of the local interface.
+</SERVER_MODE_TUNE>
+<sessions>Sesiones</sessions>
+<sessions_text>Get status of connected users on your VPN server</sessions_text>
+<site_name>Site name</site_name>
+<START_WIZARD>Iniciar asistente</START_WIZARD>
+<tunnel_type>Tunnel type</tunnel_type>
+<VPN_DHCP_FROM>Assign client address FROM</VPN_DHCP_FROM>
+<VPN_DHCP_TO>Assign client address TO</VPN_DHCP_TO>
+<VPN_SERVER_DHCP>VPN DHCP client</VPN_SERVER_DHCP>
+<VPN_SERVER_DHCP_MASK>DHCP network mask</VPN_SERVER_DHCP_MASK>
+<VPN_SERVER_IP>VPN server address</VPN_SERVER_IP>
+<WELCOME_WIZARD>Welcome to the OpenVPN Wizard</WELCOME_WIZARD>
+<WELCOME_WIZARD_TEXT>This wizard will help you to create your first Virtual private network server, after this wizard, you will be able 
+to connect clients to the network trought Artica server</WELCOME_WIZARD_TEXT>
+<WIZARD_FINISH>Wizard end</WIZARD_FINISH>
+<WIZARD_FINISH_TEXT>Ahora puede generar una clave privada para cada ordenador que deba conectarse al servidor de Artica para establecer la conexi%C3%B3n.
+Aplique la configuraci%C3%B3n de su servidor</WIZARD_FINISH_TEXT>
+<WIZARD_SERVER>Define here the parameters of the OpenVPN in server mode.[br]This will be allow clients to connect to Artica server in order to establish VPN connection[br]
+If this server will be a client to another VPN server, disable the server mode
+</WIZARD_SERVER>
+<WIZARD_STEP1>El primer paso es crear una PKI (Infraestructura de Clave P%C3%BAblica):
+[ul]
+[Una clave p%C3%BAblica para el servidor y una clave privada para cada cliente[/li].
+[li]Un certificado maestro y las claves utilizadas para ayudar a la identificaci%C3%B3n de los certificados del servidor/cliente[/li].
+[/ul]
+OpenVPN soporta la autenticaci%C3%B3n bidireccional basada en certificados, lo que significa que los clientes deben autenticar el certificado y el servidor debe autenticar el certificado del cliente antes de establecer una comunicaci%C3%B3n de confianza.</WIZARD_STEP1>

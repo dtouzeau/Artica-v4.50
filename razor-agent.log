@@ -1,0 +1,6 @@
+avr 07 00:04:15.076837 admin[20066]: [ 2] [bootup] Logging initiated LogDebugLevel=3 to file:razor-agent.log
+avr 07 00:04:15.077315 admin[20066]: [ 2]  Razor-Agents v2.84 starting razor-admin -home=/etc/spamassassin/.razor/ -create
+May 27 12:55:12.557892 admin[11040]: [ 2] [bootup] Logging initiated LogDebugLevel=3 to file:razor-agent.log
+May 27 12:55:12.558373 admin[11040]: [ 2]  Razor-Agents v2.84 starting razor-admin -home=/etc/spamassassin/.razor/ -create
+Mar 18 00:00:10.797672 admin[3466]: [ 2] [bootup] Logging initiated LogDebugLevel=3 to file:razor-agent.log
+Mar 18 00:00:10.818120 admin[3466]: [ 2]  Razor-Agents v2.84 starting razor-admin -home=/etc/spamassassin/.razor/ -create

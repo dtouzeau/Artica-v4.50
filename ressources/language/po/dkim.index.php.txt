@@ -1,0 +1,11 @@
+<dkim_about>O DKIM é uma estrutura de autenticaç%C3£o de correio electr%C3%B3nico que aborda a quest%C3£o generalizada da falsificaç%C3£o de correio electr%C3%B3nico,
+utilizando a criptografia para verificar o dom%C3%ADnio do remetente [br].
+Permite aos fornecedores de correio electr%C3%B3nico validar o dom%C3%ADnio de origem do correio electr%C3%B3nico, tornando mais eficaz a utilizaç%C3£o de listas negras e listas brancas.
+[br]Também torna os ataques de phishing mais f%C3¡ceis de detectar, ajudando a identificar dom%C3%ADnios abusivos.</dkim_about>
+<On-BadSignature>Signature fails to validate</On-BadSignature>
+<On-DNSError>Transient DNS error is encountered</On-DNSError>
+<On-InternalError>Internal error of some kind is encountered</On-InternalError>
+<On-NoSignature>Message arrives unsigned</On-NoSignature>
+<On-Security>Message arrives containing properties that may be a security concern</On-Security>
+<On-SignatureMissing>Message is unsigned from a domain which advertises a "we sign everything" policy</On-SignatureMissing>
+<select_action>Selects the action to be taken when</select_action>

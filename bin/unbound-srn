@@ -1,0 +1,693 @@
+import sys
+sys.path.append('/usr/share/artica-postfix')
+sys.path.append('/usr/share/artica-postfix/bin')
+import traceback as tb
+import logging,os
+from netaddr import IPNetwork, IPAddress
+from StringIO import StringIO
+#
+import re
+import pycurl
+import time,json
+import redis
+from googlesafebrowsing import SafeBrowsing
+from pyphishtank import PhishTank
+from socket import inet_aton
+from struct import unpack
+from k9 import K9Query
+
+global DEBUG
+
+
+
+
+
+#   apt-get install libevent-2.1-6
+#   apt-get install libpython2.7
+#   apt-get install libhiredis0.14
+#   apt-get install python-dnspython
+#   apt-get install python-netaddr
+#   apt-get install dnsutils
+#   apt-get install memcached
+#   apt-get install python-pycurl
+#   apt-get install python-memcache
+#   apt-get install python-requests
+#   apt-get install pypy-lib
+DEBUG=False
+
+try:
+    import dns.resolver
+    resolver = dns.resolver.Resolver()
+    resolver.nameservers = ['127.0.0.1']
+    resolver.port = 5553
+    resolver.timeout = 0.90
+    resolver.lifetime = 0.90
+except:
+    print('Error : Unable To Load dns Module.')
+    print('For python3 : pip3 install dnspython3')
+    print('For python2 : pip install dnspython3')
+    sys.exit(0)
+
+whitelist_src = set()
+whitelist_dst = set()
+
+def ip2long(ip_addr):
+    ip_packed = inet_aton(ip_addr)
+    ip = unpack("!L", ip_packed)[0]
+    return ip
+
+def unorton_query(domain,mc):
+    key = "UNORTON:%s" % domain
+    u_resolver = dns.resolver.Resolver()
+    u_resolver.nameservers = ["199.85.126.10", "199.85.126.30"]
+    u_resolver.port = 53
+    u_resolver.timeout = 2
+    u_resolver.lifetime = 2
+
+    try:
+        answers=u_resolver.query(domain, 'A')
+    except dns.resolver.NoAnswer:
+        zevent("[ unorton_query ]: %s No record" % domain)
+        mc.set(key, "2", 1800)
+        return 2
+
+    except dns.resolver.NXDOMAIN:
+        zevent("[ unorton_query ]: %s None of DNS query names exist" % domain)
+        mc.set(key, "0", 1800)
+        return 0
+
+
+    for rdata in answers:
+        if DEBUG: zevent("[ unorton_query ] %s --> %s" % (domain, rdata))
+        matches=re.search('(^[0-9\.]+)$',str(rdata))
+        if matches:
+            ipfound=matches.group(1)
+            iplong=int(ip2long(ipfound))
+            if DEBUG: zevent("[ unorton_query ] %s --> %s  in memory" % (domain, iplong))
+            if iplong==2627383255:
+                if DEBUG: zevent("[ unorton_query ] %s --> %s --> %s=1 in memory" % (domain, ipfound,key))
+                mc.set(key,"1",1800)
+                return 1
+
+            if iplong==2627383511:
+                if DEBUG: zevent("[ unorton_query ] %s --> %s --> %s=1 in memory" % (domain, ipfound,key))
+                mc.set(key,"1",1800)
+                return 1
+
+
+    mc.set(key, "0", 1800)
+    return 0
+
+
+
+
+def cloudflare_query(domain,mc):
+    global DEBUG
+    key="CLOUDFLARE:%s" % domain
+
+    value=mc.get(key)
+    if value is not None:
+        if DEBUG: zevent("[ cloudflare_query ] HIT %s --> %s" % (domain, value))
+        return int(value)
+
+    try:
+        answers=resolver.query(domain, 'A')
+    except dns.resolver.NoAnswer:
+        zevent("[ cloudflare_query ]: %s No record" % domain)
+        mc.set(key, "2", 1800)
+        return 2
+
+    except dns.resolver.NXDOMAIN:
+        zevent("[ cloudflare_query ]: %s None of DNS query names exist" % domain)
+        mc.set(key, "0", 1800)
+        return 0
+
+    except:
+        zevent("[ cloudflare_query ]: Unable to answer from %s" % domain)
+        zevent("[ cloudflare_query ]: %s" % tb.format_exc())
+        mc.set(key, "0", 1800)
+        return 0
+
+    for rdata in answers:
+        if DEBUG: zevent("[ cloudflare_query ] %s --> %s" % (domain, rdata))
+        matches=re.search('(^[0-9\.]+)$',str(rdata))
+        if matches:
+            ipfound=matches.group(1)
+            if ipfound=="0.0.0.0":
+                if DEBUG: zevent("[ cloudflare_query ] %s --> %s --> %s=1 in memory" % (domain, ipfound,key))
+                mc.set(key,"1",1800)
+                return 1
+
+    mc.set(key, "0", 1800)
+    return 0
+
+
+
+
+def rblcheck(searchIp):
+
+    rblDict = {'b.barracudacentral.org': 'b.barracudacentral.org',
+               'bl.spamcop.net': 'bl.spamcop.net',
+               'zen.spamhaus.org': 'zen.spamhaus.org',
+               'dnsbl.cobion.com': 'dnsbl.cobion.com',
+               'hostkarma.junkemailfilter.com':'hostkarma.junkemailfilter.com',
+               'bl.suomispam.net':'bl.suomispam.net',
+               'bl.drmx.org':'bl.drmx.org',
+               'spam.spamrats.com':'spam.spamrats.com',
+               'bl.nosolicitado.org':' bl.nosolicitado.org',
+               'dnsbl-1.uceprotect.net':'dnsbl-1.uceprotect.net'
+               }
+
+
+    for rblOrg in rblDict:
+
+        ipRev = '.'.join(searchIp.split('.')[::-1])
+        searchQuery = ipRev + '.' + rblOrg
+        try:
+            resolver.query(searchQuery, 'A')
+            zevent( "[ FOUND ] %s in %s" % (searchIp, rblOrg))
+            return True
+        except:
+            continue
+
+    return False
+
+
+def read_list(name, xlist):
+    try:
+        with open(name, "r") as f:
+            for line in f:
+                xlist.add(line.rstrip())
+    except IOError:
+        zevent("DNS Filter FATAL: Unable to open %s" % name)
+        return False
+    zevent("DNS Filter "+name+" "+str(len(xlist))+" item(s)")
+        
+        
+def check_name(name, xlist):
+    while True:
+        if (name in xlist):
+            return True
+        elif (name.find('.') == -1):
+            return False;
+        else:
+            name = name[name.find('.')+1:]
+            
+def CheckSources(ipaddr):
+    for line in whitelist_src:
+        if ipaddr==line: return True
+        if line.find('/')>0:
+            if IPAddress(ipaddr) in IPNetwork(line): return True
+    return False
+
+def init(id, cfg):
+    zevent("DNS Filter initialize..")
+    if not os.path.exists("/etc/unbound/whitelist_src.db"): return True
+    read_list("/etc/unbound/whitelist_src.db", whitelist_src)
+    read_list("/etc/unbound/whitelist_dst.db", whitelist_dst)    
+    return True
+
+def deinit(id): return True
+
+def inform_super(id, qstate, superqstate, qdata): return True
+
+def get_remote_ip(qstate):
+    try:
+        reply_list = qstate.mesh_info.reply_list
+
+        while reply_list:
+            if reply_list.query_reply: return reply_list.query_reply.addr
+            reply_list = reply_list.next
+    except:
+         zevent("[ get_remote_ip ]: exception !!")
+        
+    
+    return "0.0.0.0"
+
+def zevent(text):
+    try:
+        message=str(text)
+    except:
+        return False
+    log_info(message)
+    return True
+
+def decrypt_upper(encrypted_text):
+    encrypted_text = encrypted_text.replace('chr2', '.')
+    encrypted_text = encrypted_text.upper()
+    shift = 3  # defining the shift count
+    plain_text = ""
+    for c in encrypted_text:
+        if c.isupper():
+            c_unicode = ord(c)
+            c_index = ord(c) - ord("A")
+            new_index = (c_index - shift) % 26
+            new_unicode = new_index + ord("A")
+            new_character = chr(new_unicode)
+            plain_text = plain_text + new_character
+        else:
+            plain_text += c
+    return plain_text.lower()
+
+def getcache(key,mc):
+    try:
+        value = mc.get(key)
+        return value
+    except:
+        zevent("[ getcache ]: FATAL ERROR %s" % tb.format_exc())
+
+
+
+def srn_checks(domainname,curl_obbj):
+    domainname      = domainname.replace(".crdf.artica.center", "")
+    domainname      = decrypt_upper(domainname)
+    key             = domainname
+    redirect_ip     = "127.0.0.0"
+    mc              = redis.Redis(unix_socket_path="/var/run/redis/redis-server.sock")
+    domaincounter   = "COUNT:%s" % domainname
+    counterdom      = getcache(domaincounter,mc)
+
+    if counterdom is None: counterdom=0
+    counterdom += 1
+    mc.set(domaincounter,counterdom)
+
+    value = getcache(key,mc)
+    if value is not None:
+        if DEBUG: zevent("[ srn_checks ]: [%s] HIT" % domainname)
+        return value
+    else:
+        if DEBUG: zevent("[ srn_checks ]: [%s] MISS" % domainname)
+
+    value=mc.get("MALWARE:%s" % key)
+    if value is not None:
+        if DEBUG: zevent("[ srn_checks ]: [%s] Malware domains HIT malware" % domainname)
+        return "127.10.1.1"
+
+    value=mc.get("MALPHISH:%s" % key)
+    if value is not None:
+        if DEBUG: zevent("[ srn_checks ]: [%s] Malware domains HIT phishing" % domainname)
+        return "127.10.1.2"
+
+
+    if DEBUG: zevent("[ srn_checks ]: domain <%s> --> Google Query" % domainname)
+    if google_query(domainname):
+        redirect_ip = "127.0.2.1"
+        mc.set(key, str(redirect_ip), 86400)
+        return redirect_ip
+
+    if DEBUG: zevent("[ operate ]: domain <%s> --> Cloudlfare Query" % domainname)
+    category = cloudflare_query(domainname, mc)
+    if category == 1:
+        redirect_ip = "127.0.3.1"
+        mc.set(key, str(redirect_ip), 86400)
+        return redirect_ip
+
+    if category == 2:
+        redirect_ip = "127.1.0.0"
+        mc.set(key, str(redirect_ip), 86400)
+        return redirect_ip
+
+    if DEBUG: zevent("[ operate ]: domain <%s> --> unorton Query" % domainname)
+    category = unorton_query(domainname, mc)
+    if category == 1:
+        redirect_ip = "127.0.3.1"
+        mc.set(key, str(redirect_ip), 86400)
+        return redirect_ip
+
+    if DEBUG: zevent("[ operate ]: domain <%s> --> K9 Query" % domainname)
+    k9 = K9Query()
+    category=k9.query(domainname)
+
+    if k9.error==True:
+        if DEBUG: zevent("[ srn_checks ]: %s K9 report [FALSE] with error" % (domainname, k9.errorstr))
+        category=0
+
+
+    if category > 0:
+        if DEBUG: zevent("[ srn_checks ]: %s K9 Category=<%s>" % (domainname, category))
+        redirect_ip = "127.0.5.%s" % category
+        mc.set(key, str(redirect_ip), 86400)
+        return redirect_ip
+
+
+
+    if DEBUG: zevent("[ srn_checks ]: domain <%s> --> Kaspersky Query" % domainname)
+    category = kaspersky_query(curl_obbj, domainname, mc)
+
+    if category > 0:
+        if DEBUG: zevent("[ srn_checks ]: %s kaspersky_query Category=<%s>" % (domainname, category))
+        redirect_ip = "127.0.4.%s" % category
+        mc.set(key, str(redirect_ip), 86400)
+        return redirect_ip
+
+
+    if DEBUG: zevent("[ srn_checks ]: domain <%s> --> PhishTank Query" % domainname)
+    if phishtank_query(domainname, mc):
+        redirect_ip = "127.0.10.1"
+        mc.set(key, str(redirect_ip), 86400)
+        return redirect_ip
+
+    mc.set(key, str(redirect_ip), 86400)
+    return redirect_ip
+
+
+
+
+
+
+
+def operate(id, event, qstate, qdata):
+    global DEBUG
+    
+    if (event == MODULE_EVENT_NEW) or (event == MODULE_EVENT_PASS):
+        redirect_ip     = None
+        redirect_ttl    = 2880
+        domainname      = qstate.qinfo.qname_str.rstrip('.').lower()
+        qname           = qstate.qinfo.qname_str.rstrip('.').lower()
+        SourceIPAddr    = get_remote_ip(qstate)
+        curl_obbj       = kaspersky_load_curl()
+        qtype           = qstate.qinfo.qtype_str.upper()
+
+
+        if DEBUG: zevent("[ operate ]: domain <%s> qtype=[%s]" % (domainname,qtype))
+
+        if (SourceIPAddr == "127.0.0.1"):
+            if DEBUG: zevent("[ operate ]: From <%s> SKIP FILTER" % SourceIPAddr)
+            qstate.ext_state[id] = MODULE_WAIT_MODULE
+            return True
+
+        if qtype != 'A':
+            if DEBUG: zevent("[ operate ]: Type [%s] refused" % qtype)
+            qstate.return_rcode = RCODE_REFUSED
+            qstate.ext_state[id] = MODULE_FINISHED
+            return True
+
+
+
+        if domainname.find("crdf.artica.center") < 0:
+            if DEBUG: zevent("[ operate ]: domain <%s> is not crdf.artica.center" % domainname)
+            msg = DNSMessage(qstate.qinfo.qname_str, RR_TYPE_A, RR_CLASS_IN, PKT_QR | PKT_RA | PKT_AA)
+            msg.answer.append("%s %d IN A %s" % (qstate.qinfo.qname_str.lower(), int(redirect_ttl), "0.0.0.0"))
+            qstate.return_msg.rep.security = 2
+            qstate.return_rcode = RCODE_NOERROR
+            qstate.ext_state[id] = MODULE_FINISHED
+            return True
+
+        try:
+            redirect_ip=srn_checks(domainname,curl_obbj)
+        except:
+            zevent("[ operate ]: FATAL ERROR %s" % tb.format_exc())
+            target = generate_response(qstate, qname, qtype, qstate.qinfo.qtype, "0.0.0.0", redirect_ttl)
+            if target:
+                if DEBUG: zevent("[ operate] REDIRECTED \"%s\" (RR:%s) to %s" % (qname, qtype, redirect_ip))
+                qstate.return_rcode = RCODE_NOERROR
+                qstate.ext_state[id] = MODULE_FINISHED
+                return True
+
+
+
+
+
+        target = generate_response(qstate, qname, qtype, qstate.qinfo.qtype, redirect_ip,redirect_ttl)
+        if target:
+            if DEBUG: zevent("[ operate] REDIRECTED \"%s\" (RR:%s) to %s" % (qname,qtype,redirect_ip))
+            qstate.return_rcode = RCODE_NOERROR
+            qstate.ext_state[id] = MODULE_FINISHED
+            return True
+
+        if DEBUG: zevent("[ operate] REFUSED \"%s\" (RR:%s)" % (qname, qtype))
+        qstate.return_rcode = RCODE_REFUSED
+        return True
+
+    if event == MODULE_EVENT_MODDONE:
+        if DEBUG:log_err("[operate]: MODULE_EVENT_MODDONE")
+        msg = qstate.return_msg
+        if not msg:
+            qstate.ext_state[id] = MODULE_FINISHED
+            return True
+
+        rep = msg.rep
+        rc = rep.flags & 0xf
+        if (rc == RCODE_NOERROR) or (rep.an_numrrsets > 0):
+            qname = qstate.qinfo.qname_str.rstrip('.').lower()
+            qtype = qstate.qinfo.qtype_str.upper()
+            if DEBUG: zevent("[operate]: MODULE_EVENT_MODDONE qname=%s Type=%s" % (qname,qtype))
+
+        qstate.ext_state[id] = MODULE_FINISHED
+        return True
+      
+    log_err("pythonmod: MODULE_ERROR bad event")
+    qstate.ext_state[id] = MODULE_ERROR
+    return True
+
+def generate_response(qstate, rname, rtype, rrtype, intercept_address,newttl):
+    global DEBUG
+    intercept_host="localhost"
+
+    if ((rtype == 'AAAA') or rname.endswith('.ip6.arpa')):
+        if DEBUG: zevent(tag + 'RESPONSE: HIT on IPv6 for \"' + rname + '\" (RR:' + rtype + ')')
+        return False
+
+    if (len(intercept_address) > 0 and len(intercept_host) > 0) and ( rtype in ('A', 'CNAME', 'MX', 'NS', 'PTR', 'SOA', 'SRV', 'TXT', 'ANY')):
+        qname = False
+        if rtype in ('CNAME', 'MX', 'NS', 'PTR', 'SOA', 'SRV'):
+            if rtype == 'MX':
+                fname = '0 ' + intercept_host
+            elif rtype == 'SOA':
+                serial = datetime.datetime.now().strftime('%Y%m%d%H')
+                fname = intercept_host + ' hostmaster.' + intercept_host + ' ' + serial + ' 86400 7200 3600000 ' + str(
+                    newttl)
+            elif rtype == 'SRV':
+                fname = '0 0 80 ' + intercept_host
+            else:
+                fname = intercept_host
+
+            rmsg = DNSMessage(rname, rrtype, RR_CLASS_IN, PKT_QR | PKT_RA)
+            redirect = '\"' + intercept_host.strip('.') + '\" (' + intercept_address + ')'
+            rmsg.answer.append('%s %d IN %s %s' % (rname, newttl, rtype, fname))
+            qname = intercept_host
+        elif rtype == 'TXT':
+            rmsg = DNSMessage(rname, rrtype, RR_CLASS_IN, PKT_QR | PKT_RA)
+            redirect = '\"Domain \'' + rname + '\' blocked by DNS-Firewall\"'
+            rmsg.answer.append('%s %d IN %s %s' % (rname, newttl, rtype, redirect))
+        else:
+            rmsg = DNSMessage(rname, RR_TYPE_A, RR_CLASS_IN, PKT_QR | PKT_RA)
+            redirect = intercept_address
+            qname = rname + '.'
+
+        if qname:
+            rmsg.answer.append('%s %d IN A %s' % (qname, newttl, intercept_address))
+
+        rmsg.set_return_msg(qstate)
+
+        if not rmsg.set_return_msg(qstate):
+            log_err(tag + 'GENERATE-RESPONSE ERROR: ' + str(rmsg.answer))
+            return False
+
+        if qstate.return_msg.qinfo:
+            invalidateQueryInCache(qstate, qstate.return_msg.qinfo)
+
+        qstate.no_cache_store = 0
+        storeQueryInCache(qstate, qstate.return_msg.qinfo, qstate.return_msg.rep, 0)
+        qstate.return_msg.rep.security = 2
+        return redirect
+
+    return False
+
+
+def google_query(szDomain):
+    global DEBUG
+    GsbApiKkey      = "AIzaSyDZDC2ZO5Nmn4q8UG6_AzshGPotWB5sg68"
+    GsbApiServer    = "http://127.0.0.1:9999/v4/threatMatches:find"
+    GsbHandle       = SafeBrowsing(GsbApiKkey, GsbApiServer)
+    bMalicious      = False
+    try:
+        r = GsbHandle.lookup_urls([szDomain])
+        bMalicious = r[szDomain]['malicious']
+        if DEBUG: zevent("[ google_query ]: %s GoogleSafe return [%s]" % (szDomain,bMalicious))
+    except:
+        if DEBUG: zevent("[ google_query ]: %s %s" % (szDomain, tb.format_exc()))
+        return False
+
+    return bMalicious
+
+def phishtank_query(domain,mc):
+
+    key="phishtank:%s" % domain
+    value=mc.get(key)
+    if value is not None:
+        if DEBUG: zevent("[ phishtank_query ]: HIT %s" % value)
+        if value=="TRUE": return True
+        return False
+    else:
+        if DEBUG: zevent("[ phishtank_query ]: %s MISS %s" % (key,value))
+
+    p = PhishTank('https://checkurl.phishtank.com/checkurl/',"e8a14f825d023e4046ffcb5326b3f88dfd7392e71ad615eae4c63664951cfa8c")
+
+    try:
+        result = p.check("http://%s" % domain)
+    except:
+        if DEBUG: zevent("[ phishtank_query ]: ERROR status code %s %s %s" % (p.status_code,domain, tb.format_exc()))
+        return False
+
+    if DEBUG: zevent("[ phishtank_query ]: status, requests:%s, available %s, interval %s" % (p._requests_made,p._requests_available ,p._request_interval))
+
+    try:
+        if result.in_database:
+            if result.valid:
+                if DEBUG: zevent("[ phishtank_query ]: %s is in database OK" % domain)
+                mc.set(key, "TRUE", 1800)
+                return True
+            else:
+                mc.set(key, "FALSE", 1800)
+                return False
+        else:
+            if DEBUG: zevent("[ phishtank_query ]: %s is not in database BAD" % domain)
+            mc.set(key, "FALSE", 1800)
+            return False
+    except:
+        if DEBUG: zevent("[ phishtank_query ]: ERROR %s %s" % (domain, tb.format_exc()))
+        mc.set(key, "FALSE", 1800)
+        return False
+
+def kaspersky_query(curl_obj,domain,mc):
+    global DEBUG
+    key         = "KASPERSKY:%s" % domain
+
+    value       = mc.get(key)
+    if value is not None:
+        if DEBUG: zevent("[DEBUG]: [ kaspersky_query ] %s HIT [%s]" % (domain,value))
+        return int(value)
+    else:
+        if DEBUG: zevent("[ kaspersky_query ]: %s MISS %s" % (key, value))
+
+    uri_to_test = "http://www."+domain
+    cnx_id      = int(time.time())
+    queryenc    = {"id": cnx_id, "uri": uri_to_test}
+    payload     = []
+    buffer      = StringIO()
+
+
+    payload.append(queryenc)
+    curl_obj.setopt(curl_obj.WRITEDATA, buffer)
+    curl_obj.setopt(pycurl.POSTFIELDS, '%s' % json.dumps(payload))
+
+    try:
+        if DEBUG: zevent( "[DEBUG]: [ kaspersky_query ] %s Query the cloud repository" % domain)
+        curl_obj.perform()
+
+    except pycurl.error as exc:
+        pycurl_error(exc, tb, domain, uri_to_test)
+        return 0
+
+    status = int(curl_obj.getinfo(pycurl.RESPONSE_CODE))
+    resp = buffer.getvalue()
+    header_len = curl_obj.getinfo(pycurl.HEADER_SIZE)
+    header = resp[0: header_len]
+    body = resp[header_len:]
+
+    if status == 503:
+        zevent("[ERROR]: %s receive status code: "+str(status)+" Remote Service Unavailable" % domain)
+        return 0
+
+    if status != 200:
+        zevent("[ERROR]: receive status code: "+str(status)+" headers:" + header)
+        return 0
+    try:
+        json_decoded = json.loads(body)
+    except:
+        zevent("[ERROR]: %s L.180 unable to decode answer [%s]" % (domain,body))
+        zevent( "[ERROR]: "+tb.format_exc())
+        return 0
+
+
+    translate_catz = {}
+    translate_text= {}
+    translate_text[1]   = "Web materials related to sex and intimacy in terms of relationships, philosophy,commerce, and other areas."
+    translate_text[38]  = "Pornographic and erotic content, nudity"
+    translate_text[43]  = "Lesbian, gay, bisexual and transgender (LGBT) content"
+    translate_text[44]  = "Sex shops and sex toys"
+    translate_text[45]  = "Narcotics. Sale, manufacturing, discussion. Related articles. Sites that promote drug abstinence"
+    translate_text[54]  = "Torrent trackers and forums, including protocol specifications and software"
+    translate_text[63]  = "Phishing website"
+    translate_text[64]  = "Malicious resources or malicious software download URLs"
+    translate_text[65] = "Content related to suicide, self-harm and self-injury"
+    translate_text[87] = "Content related to hatred and discrimination"
+    translate_text[88] = "Extremist or racist content"
+    translate_text[113] = "Software that downloads or displays unwanted ads..."
+    translate_text[114] = "Legitimate programs that can cause damage.."
+    translate_text[122] = "Resource is a Tor node"
+
+    translate_catz[1] = 109
+    translate_catz[38] = 109
+    translate_catz[44] = 97
+    translate_catz[43] = 97
+    translate_catz[45] = 45
+    translate_catz[54] = 44
+    translate_catz[63] = 105
+    translate_catz[64] = 92
+
+    # 65 Content related to suicide, self-harm and self-injury.
+    # 87 Content related to hatred and discrimination.
+    # 88 Extremist or racist content.
+    translate_catz[65] = 148
+    translate_catz[87] = 148
+    translate_catz[88] = 148
+
+    # 113 Content related to software that downloads or displays unwanted ads when a user
+    # is online, collects marketing data and other information without the user's
+    # knowledge or redirects search requests to certain advertising websites.
+    translate_catz[113] = 135
+
+    # 114 Content related to legitimate programs that can cause damage if they are
+    # exploited by malicious users (in order to delete, block, modify, or copy data, and
+    # disrupt the performance of computers or networks).
+    translate_catz[114] = 135
+
+    # 122 Resource is a Tor node.--> Hacking
+    translate_catz[122] = 64
+    categories = json_decoded[0]["categories"]
+    if DEBUG: zevent("[DEBUG]: %s found %s categories" % (domain,categories))
+    try:
+        for category in categories:
+            category_int = int(category)
+            if category_int in translate_catz:
+                stext=translate_text[category_int]
+                zevent("[INFO]: %s found CATEGORY [%s] (%s) in CATZ=[%s] categories" % (domain, category_int,stext,categories))
+                final=translate_catz[category_int]
+                mc.set(key,str(final),1800)
+                return int(final)
+    except:
+        zevent("[ERROR]: [ kaspersky_query ]: %s L.221 unable to parse/loop answer" % domain)
+        zevent("[ERROR]: [ kaspersky_query ]: " + tb.format_exc())
+    mc.set(key, str(0), 1800)
+    return 0
+
+def kaspersky_load_curl():
+    global DEBUG
+    username    = "artica"
+    password    = "ZVjwrB7BgcmP"
+    headers     = ["Content-Type:application/json"]
+    curl_obj     = None
+
+
+    try:
+        curl_obj = pycurl.Curl()
+        curl_obj.setopt(pycurl.URL, "https://artica.kwf.kaspersky-labs.com/url")
+        curl_obj.setopt(pycurl.CONNECTTIMEOUT, 30)
+        curl_obj.setopt(pycurl.TCP_KEEPALIVE, 1)
+        curl_obj.setopt(pycurl.TCP_KEEPIDLE, 30)
+        curl_obj.setopt(pycurl.TCP_KEEPINTVL, 15)
+        curl_obj.setopt(pycurl.SSL_VERIFYHOST, 0)
+        curl_obj.setopt(pycurl.SSL_VERIFYPEER, False)
+        curl_obj.setopt(pycurl.SSLVERSION, pycurl.SSLVERSION_TLSv1)
+        curl_obj.setopt(pycurl.HEADER, True)
+        curl_obj.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_BASIC)
+        curl_obj.setopt(pycurl.USERPWD, "%s:%s" % (username, password))
+        curl_obj.setopt(pycurl.HTTPHEADER, headers)
+        curl_obj.setopt(pycurl.POST, 1)
+    except:
+        if DEBUG: zevent( "[DEBUG]: [ load_curl_kaspersky ]: Unable to construct HTTP engine object")
+        zevent( "[ERROR]: [ load_curl_kaspersky ]: "+tb.format_exc())
+        return None
+    return curl_obj

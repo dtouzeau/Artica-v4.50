@@ -1,0 +1,15 @@
+uri UNSUBSCRIBE_NEWS_LETTER  /\/unsubscribe\.php\?/
+score UNSUBSCRIBE_NEWS_LETTER 1
+
+
+uri ARTICA_DYNALINK_INTEGER_1 /\/(link|unsubscribe)\.php\?M=[0-9]+/
+describe ARTICA_DYNALINK_INTEGER_1 Links point to an integer value.
+score ARTICA_DYNALINK_INTEGER_1 2
+
+uri ARTICA_BAD_URLS_1 /\/eoeoeo\.co/
+describe ARTICA_BAD_URLS_1 Urls found in spam messages by Messaging Team.
+score ARTICA_BAD_URLS_1 9
+
+uri ARTICA_BAD_URLS_2 /\.flash-des-affaires\.com/
+describe ARTICA_BAD_URLS_2 Urls found in spam messages by Messaging Team.
+score ARTICA_BAD_URLS_2 9

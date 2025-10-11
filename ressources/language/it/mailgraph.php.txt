@@ -1,0 +1,2 @@
+<ERROR_NO_IMG>Spiacenti al momento non ci sono grafici, riprovare pi&ugrave; tardi</ERROR_NO_IMG>
+<title>Statistiche Postfix</title>

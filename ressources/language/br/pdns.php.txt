@@ -1,0 +1,6 @@
+<ADD_DNS_ENTRY>Novo registro DNS</ADD_DNS_ENTRY>
+<ADD_DNS_ENTRY_TEXT>Insira um novo registro no banco de dados do servidor DNS para resolvê-lo diretamente do servidor DNS do Artica.</ADD_DNS_ENTRY_TEXT>
+<pdns_addaliases_text>Give here the FQDN of the server (eg: server.domain.tld)</pdns_addaliases_text>
+<pdns_explain>PowerDNS é um servidor de nomes vers%C3¡til que suporta um grande n%C3%BAmero de backends diferentes, desde simples arquivos zonefiles até bancos de dados relacionais e algoritmos de balanceamento de carga/failover.[br] PowerDNS tenta enfatizar a velocidade e a segurança.[br]
+Este é o servidor de nomes recursivo que sai para a Internet e resolve consultas sobre outros dom%C3%ADnios</pdns_explain>
+<pdns_not_installed>PowerDNS is not installed on your system.[br]Click on this icon if you want to install it</pdns_not_installed>

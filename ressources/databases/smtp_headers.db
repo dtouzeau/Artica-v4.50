@@ -1,0 +1,119 @@
+Authentication-Results	Mail 	 Is a trace header field where a receiver records the results of email authentication checks that it carried out
+   Date                Mail      Message date and time
+   From                Mail      Mailbox of message author
+   Sender              Mail      Mailbox of message sender
+   Reply-To            Mail      Mailbox for replies to message
+   To                  Mail      Primary recipient mailbox
+   Cc                  Mail      Carbon-copy recipient mailbox
+   Bcc                 Mail      Blind-carbon-copy recipient mailbox
+   Message-ID          Mail      Message identifier
+   In-Reply-To         Mail      Identify replied-to message(s)
+   References          Mail      Related message identifier(s)
+   Subject             Mail      Topic of message
+   Comments            Mail      Additional comments about the message
+   Keywords            Mail      Message key words and/or phrases
+   Resent-Date         Mail      Date and time message is resent
+   Resent-From         Mail      Mailbox of person for whom message is resent
+   Resent-Sender       Mail      Mailbox of person who actually resends the message
+   Resent-To           Mail      Mailbox to which message is resent
+   Resent-Cc           Mail      Mailbox(es) to which message iscc'ed on resend
+   Resent-Bcc          Mail      Mailbox(es) to which message is bcc'ed on resend
+   Resent-Reply-To     Mail      Resent reply-to
+   Resent-Message-ID   Mail      Message identifier for resent message
+   Return-Path         Mail      Message return path
+   Received            Mail      Mail transfer trace information
+   Encrypted           Mail      Message encryption information
+   Disposition-Notification-To Mail   Mailbox for sending disposition notification
+   Disposition-Notification-Options Mail      Disposition notification options
+   Accept-Language     Mail      Language(s) for auto-responses
+   Original-Message-ID Mail      Original message identifier
+   PICS-Label          Mail      PICS rating label
+   Encoding            Mail      Message encoding and other information
+   List-Archive        Mail      URL of mailing list archive
+   List-Help           Mail      URL for mailing list information
+   List-ID             Mail      Mailing list identifier
+   List-Owner          Mail      URL for mailing list owner's mailbox
+   List-Post           Mail      URL for mailing list posting
+   List-Subscribe      Mail      URL for mailing list subscription
+   List-Unsubscribe    Mail      URL for mailing list unsubscription
+   Message-Context     Mail      Type or context of message
+Mailing-List	Mail 	Information about mailing list 
+Mail-Reply-Requested-By	Mail 	Address to which notifications are to be sent and a request to get delivery notifications
+User-Agent Mail	client software used by the originator
+Mail-System-Version	Mail 		client software used by the originator
+Mailer	Mail 		client software used by the originator 	
+X-DKIM Mail The DKIM signature header field
+Thread-Index Mail Message Threading Header
+Thread-Topic Mail Message Threading subject
+X-Rid Mail  Unique id per request/response
+X-Abuse-Info Mail	information for reporting abuse
+Content-Language	Mail	Code for natural language used in the message
+Summary		Mail Short text describing a longer article
+   DL-Expansion-History Mail      Trace of distribution lists passed
+   Alternate-Recipient Mail      Controls forwarding to alternate recipients
+   Original-Encoded-Information-Types Mail      Body part types in message
+   Content-Return      Mail      Return content on non-delivery?
+   Generate-Delivery-Report Mail      Request delivery report generation
+   Prevent-NonDelivery-Report Mail      Non-delivery report required?
+   Obsoletes           Mail      Reference message to be replaced
+   Supersedes          Mail      Reference message to be replaced
+   Content-Identifier  Mail      A text string which identifies the content of a message
+   Delivery-Date       Mail      Message delivery time
+   Expiry-Date         Mail      Message expiry time
+   Expires             Mail      Message expiry time
+   Reply-By            Mail      Time by which a reply is requested
+   Importance          Mail      Message importance
+   Incomplete-Copy     Mail      Body parts are missing
+   Priority            Mail      Message priority
+See-Also        Mail    	References to related articles (other than precursors) in Usenet 
+   Sensitivity         Mail      Message content sensitivity
+   Language            Mail      X.400 message content language
+   Conversion          Mail      Conversion allowed?
+   Conversion-With-Loss Mail      Lossy conversion allowed?
+   Message-Type        Mail      Message type: delivery report?
+   Autosubmitted       Mail      Automatically submitted indicator
+   Autoforwarded       Mail      Automatically forwarded indicator
+   Discarded-X400-IPMS-Extensions Mail      X.400 IPM extensions discarded
+   Discarded-X400-MTS-Extensions Mail      X.400 MTS extensions discarded
+   Disclose-Recipients Mail      Disclose names of other recipients?
+   Deferred-Delivery   Mail      Deferred delivery information
+   Latest-Delivery-Time Mail      Latest delivery time requested
+   Originator-Return-Address Mail      Originator return address
+Originating-Client	Mail client software used by the originator
+   X400-Content-Identifier Mail      Message content identifier
+   X400-Content-Return Mail      Return content on non-delivery?
+   X400-Content-Type   Mail      X400 content type
+   X400-MTS-Identifier Mail      X400 MTS-Identifier
+   X400-Originator     Mail      X400 Originator
+   X400-Received       Mail      X400 Received
+   X400-Recipients     Mail      X400 Recipients
+   X400-Trace          Mail      X400 Trace
+X-Antivirus   Mail   Antivirus Editor
+X-Antivirus-Status   Mail   Antivirus results
+X-Virus-Status    Mail   Antivirus results
+X-Apparently-To Mail This discloses the recipient’s email address. 
+Received-SPF Mail Type of email service used for sending email will be exposed here. An ID number is also involved here, which can be used to examine logs form, transmitting e-mail server determining genuineness of an email if it was sent from the same service. If this ID is unavailable, a message has chances of being spoofed
+X-CMAE-Envelope	Mail	Cloudmark Authority Engine and is an e-mail security product (anti-spam)
+X-Greylist	Mail Greylisting status
+X-AMAZON-MAIL-RELAY-TYPE Mail Amazon message type
+X-AMAZON-METADATA Mail Amazon specific header
+X-SES-Outgoing Mail Amazon SES specific header
+Feedback-ID Mail Google campain identifier (campain/customer/other)
+X-MS-Exchange-Organization-SCL Mail Microsoft Spam Confidence Level (SCL)
+X-MS-Exchange-Organization-PCL Mail Microsoft Phishing Confidence Level (PCL)
+X-MS-Has-Attach Mail Microsoft Outlook put this header whether or not it has an attachment.
+X-MS-TNEF-Correlator Mail Microsoft TNEF decoding option.
+X-Originating-IP Mail Facto standard for identifying the originating IP address of a client connecting to a mail service's HTTP frontend
+X-Microsoft-Antispam Mail Microsoft Anti-Spam header string
+X-Google-DKIM-Signature Mail Google SKIM Signature
+X-Gm-Message-State Mail Google message status
+X-Google-Smtp-Source Mail Google Source identifier
+X-YMailISG Mail Yahoo Inbound Spam Guard
+X-YMailOSG Mail Yahoo  Outgoing Spam Guard
+X-Forefront-Antispam-Report  Mail Microsoft Forefront AntiSpam report
+X-MDAV-Result Mail MailDaemon Anti-Spam result
+X-MDAV-Processed  Mail MailDaemon Anti-Spam processed
+X-MDArrival-Date Mail MailDaemon received date
+X-MDaemon-Deliver-To Mail  MailDaemon recipient scanned
+X-CAV-Result Mail MailDaemon ClamAV result
+X-Spam-Processed Mail Anti-Spam information

@@ -1,0 +1,209 @@
+<about>O SQLgrey &eacute; um servi&ccedil;o de inspe&ccedil;&atilde;o do postfix  que implementa uma pol&iacute;tica de grey-listing. [br]
+SQLgrey &eacute; escrito em Perl e usa DBI para aceder a uma base de dados SQL. [br]
+O seu objetivo &eacute; reduzir  o SPAM nas caixas de correio dos utilizadores atingidos.</about>
+<add_white_list>Add a white listed server</add_white_list>
+<admin_mail>Endereço de e-mail do administrador</admin_mail>
+<admin_mail_text>Quem recebe notificaç%C3µes urgentes (DB est%C3¡ em baixo, por exemplo) vazio: n%C3£o enviar notificaç%C3µes por correio</admin_mail_text>
+<awl_age>Auto White List age</awl_age>
+<awl_age_text>Set in day the maximum days to live in auto white list age.[br]
+For bigger sites you may want a smaller Auto White List age and a bigger group domain level
+</awl_age_text>
+<classc>greylist by class C network</classc>
+<connect_src_throttle>Throttling too many new entries from new host</connect_src_throttle>
+<connect_src_throttle_text>A definiç%C3£o deste parâmetro opcional ir%C3¡ recusar um n%C3%BAmero excessivo de novas entradas na tabela de ligaç%C3£o do mesmo anfitri%C3£o, da seguinte forma
+[ul]
+[li]Se j%C3¡ existem entradas &quot;connect_src_throttle&quot; na tabela connect a partir do mesmo host (e-mails que ainda n%C3£o foram novamente testados)[/li].
+[li]E N%C3%83O h%C3¡ nenhuma entrada para este hospedeiro no dom%C3%ADnio awl[/li].
+[li]E h%C3¡ menos entradas do que &quot;connect_src_throttle&quot; na tabela da awl para este anfitri%C3£o[/li].
+[li]ENT%C3%83O novas ligaç%C3µes de entrada deste hospedeiro ser%C3£o (temporariamente)recusadas sem que sejam criadas novas entradas na tabela de ligaç%C3µes (até que algumas entradas j%C3¡ em espera tenham sido novamente testadas com sucesso).[/li]
+[/ul]
+Esta caracter%C3%ADstica pode impedir que a mesa de ligaç%C3£o cresça demasiado grande e seja polu%C3%ADda por spambots, v%C3%ADrus, m%C3¡quinas zombies e similares [br].
+Se definido para &quot;0&quot; (por defeito), esta funcionalidade n%C3£o ser%C3¡ utilizada.[br]</connect_src_throttle_text>
+<discrimination>Discriminating Greylisting</discrimination>
+<discrimination_add_rulenr>Discriminaç%C3£o acrescentar n%C3%BAmero da regra</discrimination_add_rulenr>
+<discrimination_add_rulenr_text>Adicionar o n%C3%BAmero da regra de discriminaç%C3£o nos registos</discrimination_add_rulenr_text>
+<discrimination_text>O comportamento discriminat%C3%B3rio é permitido pela vari%C3¡vel de configuraç%C3£o 'discriminaç%C3£o' em sqlgrey.conf
+[br]
+[H5]Defeito[/H5]
+
+Por defeito, a discriminaç%C3£o est%C3¡ definida para 'off'. [br]
+SQLgrey aplicar%C3¡ greylisting (com a lista branca padr%C3£o e a lista branca autom%C3¡tica descritas no HOWTO) a cada mensagem [br].
+Por defeito &quot;discriminaç%C3£o acrescentar n%C3%BAmero de regra&quot; é &quot;desligado&quot; [br].
+Se a resposta do grelista ao cliente for definida, o n%C3%BAmero da regra ser%C3¡ adicionado ao final do texto de rejeiç%C3£o. (ex. &quot;Greilista durante 5 minutos (2)&quot;).
+[br]
+[H5]Discriminaç%C3£o[/H5]
+As listas cinzentas baseadas na discriminaç%C3£o s%C3%B3 s%C3£o %C3%BAteis se N%C3%83O se quiser fazer uma lista cinzenta a toda a gente.
+[br] Pode haver v%C3¡rias raz%C3µes para isto. [br]
+Por exemplo, pode ser utilizado como uma transiç%C3£o suave para iniciar a grelha, lentamente ao longo do tempo, tornando-a cada vez mais restritiva. [br]
+Ou pode ajud%C3¡-lo a convencer a gerência a permitir-lhe fazer greilistes explicando que s%C3%B3 faria greilistes &quot;qualquer coisa suspeita&quot; e, portanto, n%C3£o os seus pr%C3%B3prios clientes.
+[br]
+
+[H5]Discriminaç%C3£o - o que é?[/H5]
+
+Esta caracter%C3%ADstica foi bastante dif%C3%ADcil de encontrar um nome, mas a discriminaç%C3£o descreve muito bem o que faz. Discrimina ;).
+
+Penso nele como &quot;o princ%C3%ADpio do aeroporto&quot;[br] Toda a gente é deixada entrar no avi%C3£o A MENOS que o considerem suspeito.
+Pode ter cabelo comprido, usar um turbante, ter pele escura ou simplesmente usar uma t-shirt a dizer &quot;explosivo&quot; ou &quot;rochas GNU&quot;.
+[br]Ent%C3£o, por discriminaç%C3£o, ser%C3¡ retido para uma an%C3¡lise mais aprofundada. (n%C3£o estou a dizer justo, é apenas um bom exemplo)
+[br]
+O mesmo princ%C3%ADpio aplica-se aqui.
+[br]Toda a gente est%C3¡ na lista branca SEM que pareçam suspeitos [br].
+Se assim for, têm de passar por listas cinzentas [br].
+O que é suspeito é definido no ficheiro discrimination.regexp.[br]
+Aqui define-se uma express%C3£o regular que ser%C3¡ usada para verificar diferentes atributos [br].
+[br][br][br
+Exemplo:[br]
+sender =~ @microsoft.com$
+[br][br][br
+Esta linha define simplesmente, que se o endereço dos remetentes terminar em microsoft.com, o seu suspeito e, portanto, ser%C3¡ grelhado [br].
+[br][br][br
+Outro exemplo:[br]
+remetente !~ ^(deus|allah|jesus)@heaven.com$[br]
+[br][br][br
+Note-se o !~ que significa &quot;qualquer coisa que N%C3%83O corresponda, é suspeito&quot;.[br]
+Neste exemplo em particular, dizemos n%C3%B3s: &quot;Confiamos em Deus, Al%C3¡ ou Jesus enviando do céu.com, mas TODOS os outros ser%C3£o grelhados&quot;[br].
+
+[br]
+[H5]Detalhes da Regra[/H5]
+As regras em /discrimination.regexp s%C3£o definidas pelo seguinte triplet:
+[br]
+[br]comparaç%C3£o de atributos-operador regex[br]
+[br] Os operadores de comparaç%C3£o v%C3¡lidos s%C3£o:[br]
+[br]=~ Igual a
+[br]!~ N%C3£o Igual a
+[br]
+Os atributos v%C3¡lidos s%C3£o qualquer coisa enviada do postfix para o deamon pol%C3%ADtico, mas o mal explica o mais comum (e %C3%BAtill) aqui:
+[ul]
+[li]sender = o endereço From (de MAIL FROM:)[/li]
+[li]destinat%C3¡rio = endereço postal dos destinat%C3¡rios (de RCPT TO:)[/li]
+[li]client_address = endereço IP do cliente[/li]
+[li]client_name = Nome_do_cliente[/li] inverso do cliente
+[li]helo_name = O texto introduzido como &quot;helo text&quot;[/li]
+[/ul]
+[br]
+As express%C3µes regulares v%C3¡lidas s%C3£o simplesmente express%C3µes regulares compatriotas [br].
+(sem o &quot;/&quot; no in%C3%ADcio e no fim) [br].
+[br]
+[H5]Directiva de configuraç%C3£o: discriminaç%C3£o acrescentar n%C3%BAmero de regra[/H5].
+
+permite acrescentar o n%C3%BAmero da regra que causou a lista negra ao final do texto de rejeiç%C3£o, assim:[br]
+[i]Greylisted por 5 minutos (2)[/i][br][br
+Neste caso, 2 significa a segunda (v%C3¡lida) express%C3£o regular no ficheiro,causou a greilisting[br].
+Esta funcionalidade é para permitir ao departamento de apoio ajudar os clientes a perceber porquê, se o seu correio for grelhado [br].
+
+[br]
+[H5]Dicas de regras[/H5]
+É dif%C3%ADcil definir o que é digno de outro olhar, e n%C3£o é, definitivamente, uma soluç%C3£o a 100%. [br]
+Se tem a coragem e/ou oportunidade, deve optar pela lista negra normal [br].
+Olho frequentemente para o nosso maillog e, ao fazê-lo, começo a ver padr%C3µes de como é o spam.
+[br] Deveria fazer o mesmo para descobrir o que é bom para a greilisting, mas algumas dicas gerais s%C3£o:[br]
+[ul]
+[li]missing reverse-dns[/li]
+[li]mails de microsoft, fbi, paypal, ebay e afins[/li]
+[li]Remetentes do NULL. (endereço do remetente em branco)[/li]
+[li]mailaddresses with special chars (eg. $ ou *)[/li]
+[/ul][br][br
+O primeiro leva muito do lixo. Os remetentes NULL também o fazem, mas é de notar que os remetentes NULL também s%C3£o legalmente utilizados em mensagens de correio de ressalto [br].
+[br]
+[H5]Directrizes de desempenho[/H5]
+
+N%C3£o é preciso muito para fazer esta verificaç%C3£o se mantiver a sua lista de express%C3µes dentro de limites razo%C3¡veis.
+[br] Na verdade, esta caracter%C3%ADstica deve ser uma poupança de desempenho, uma vez que retira um monte de sql de carga, dependendo de quanto discrimina [br].
+[br]
+Esta funç%C3£o est%C3¡ a ser utilizada num cen%C3¡rio da vida real com ~100.000 contas a serem verificadas por 10 express%C3µes regulares[br].
+N%C3£o h%C3¡ perda de desempenho mensur%C3¡vel [br].</discrimination_text>
+<enable_sqlgrey>Enable SQLGrey Policy server</enable_sqlgrey>
+<enable_sqlgrey_text>If enabled, artica will add the policy server into it's confugration in order to force postfix asking what he do when receiving mails</enable_sqlgrey_text>
+<fqdn_white_list>FQDN white list</fqdn_white_list>
+<fqdn_white_list_text>SQLgrey expects the following expressions:[br][br]
+[b]hostname.domain.com[/b] whole system name (least CPU intensive)[br]
+[b]*.domain.com[/b] whitelist any fqdn in the domain 'domain.com'[br]
+[b]/regexp/[/b] whitelist any fqdn matching the regexp (by far most CPU intensive)[br]
+[br]
+[i]Note you need the following two lines to allow both lots of mtas.example.com and example.com [b]*.example.com example.com[/b][/i]
+</fqdn_white_list_text>
+<full>greylist by IP address</full>
+<greymethod>Greylisting method</greymethod>
+<greymethod_text>[ul]
+[li]full   : greylist by IP address[/li]
+[li]classc : greylist by class C network. eg: 2.3.4.6 connection accepted if 2.3.4.145 did connect earlier[/li]
+[li]smart  : greylist by class C network unless there is no reverse lookup or it looks like a home-user address[/li]
+[/ul]
+</greymethod_text>
+<group_domain_level>Group domain level</group_domain_level>
+<group_domain_level_text>wait for X validated adresses to add a whole domain in Auto White List</group_domain_level_text>
+<ip_white_list>IP white list</ip_white_list>
+<ip_white_list_text>Add here only IP address of server that will be exclude from SQLGrey process</ip_white_list_text>
+<max_connect_age>max connect age</max_connect_age>
+<max_connect_age_text>don't allow a reconnection after x hours</max_connect_age_text>
+<optmethod>Optin/Optout</optmethod>
+<optmethod_text>O comportamento SQLgrey depende da vari%C3¡vel de configuraç%C3£o 'optmethod' em sqlgrey.conf
+Por defeito Optin/Optout est%C3¡ definido para 'nenhum' [br].
+SQLgrey aplicar%C3¡ greylisting (com a lista branca padr%C3£o e a lista branca autom%C3¡tica descritas no HOWTO) a cada mensagem.
+[br]
+
+Se Optin/Optout estiver definido para 'optin' ou 'optout', SQLgrey verificar%C3¡ quatro tabelas para decidir se a grelha deve ser utilizada [br].
+Estas quatro tabelas s%C3£o:
+[ul]
+[li]optin_domain[/li]
+[li]optin_email[/li]
+[li]optout_domain[/li]
+[li]optout_email[/li]
+[/ul]
+
+Cada um deles tem apenas uma coluna com um nome de dom%C3%ADnio ou um endereço de e-mail completo (armazenado como VARCHAR(255)).
+[br]
+[br][i][b]o conte%C3%BAdo de cada uma destas tabelas *DEVE* ser *baixado*.[br] SQLgrey utiliza sempre o endereço em letras min%C3%BAsculas internamente e para
+raz%C3µes de desempenho n%C3£o ir%C3£o pedir à base de dados para verificar casos diferentes.[/b][/i]
+[br]
+Se for utilizado 'optin', o SQLgrey s%C3%B3 ser%C3¡ grelhado em dois casos:
+[ul]
+[li]o dom%C3%ADnio est%C3¡ em optin_domain E o endereço n%C3£o est%C3¡ em optout_email,[/li]
+[li]o endereço est%C3¡ em optin_email.[/li]
+[/ul]
+[br]
+Se for usado 'optout', SQLgrey n%C3£o ser%C3¡ grelhado em dois casos:
+[ul]
+[li]o dom%C3%ADnio est%C3¡ em optout_domain E o endereço n%C3£o est%C3¡ em optin_email,[/li]
+[li]o endereço est%C3¡ em optout_email.[/li]
+[/ul]
+[br]
+[b][i][i]
+SQLgrey n%C3£o verifica se o conte%C3%BAdo das 4 tabelas é consistente. [br]
+Por exemplo, deve certificar-se de que um endereço n%C3£o est%C3¡ tanto no optin_email como no optout_email, o que n%C3£o faz sentido (SQLgrey n%C3£o vai falhar, mas o seu
+o comportamento pode mudar entre vers%C3µes)[/i].
+[/b]
+[br][br][br
+[H5]Directrizes de desempenho[/H5]
+Para um desempenho m%C3¡ximo, dever%C3¡ utilizar o método que utilizar%C3¡ menos entradas de tabela [br].
+Se quase todos os seus utilizadores quiserem fazer greylisting, ter%C3¡ um melhor desempenho com 'opt-out'. Se todos eles o querem sem excepç%C3£o, use 'nenhum'.[br]
+
+Se as necessidades dos seus utilizadores mudarem entre dom%C3%ADnios, utilize uma das tabelas optin/out_domain para definir padr%C3µes (dependendo do método optmethod) por dom%C3%ADnio e adicione excepç%C3µes nas tabelas optin/out_email. Isto ir%C3¡
+baixar o n%C3%BAmero de entradas na base de dados e ajudar no desempenho.
+[br]
+[br][H5]Longos endereços de e-mail[/H5]
+
+Para a portabilidade, os endereços s%C3£o limitados a 255 caracteres. Se tiver utilizadores com endereços com mais de 255 caracteres,
+ter%C3¡ de aparar os endereços da mesma forma que SQLgrey: basta tirar os 255 primeiros caracteres do endereço deixando o resto de fora [br].
+Se tiver v%C3¡rios utilizadores com os mesmos 255 primeiros caracteres, ent%C3£o n%C3£o funcionar%C3¡ correctamente (obviamente o %C3%BAltimo utilizador modificado ir%C3¡ definir o
+Como os endereços deste tamanho s%C3£o bastante incomuns, o risco de colis%C3µes é provavelmente apenas te%C3%B3rico.</optmethod_text>
+<reconnect_delay>reconnect delay</reconnect_delay>
+<reconnect_delay_text>don't allow a reconnection before x minutes</reconnect_delay_text>
+<reject_early_reconnect>Reject early reconnect</reject_early_reconnect>
+<reject_early_reconnect_text>Default for early reconnection is the value affected to 'Reject first attempt' </reject_early_reconnect_text>
+<reject_first_attempt>Reject first attempt</reject_first_attempt>
+<reject_first_attempt_text>
+SQLgrey can tell Postfix to:[br]
+[ul]
+[li]immediately reject a message with a temporary reject code[/li]
+[li]only do so if following rules would allow the message to pass [br]
+[/ul][br]
+The first choice will prevent Postfix from spending time evaluating potentially expensive rules.[br]
+In some cases you may want following rules to be aware of the connection this.[br]
+
+[br]We can specify a different rejection strategy for the first connection attempt, and for early reconnections.
+[br]'immed' chooses immediate rejection 'delay' choose delayed rejection
+</reject_first_attempt_text>
+<smart>Smart</smart>
+<whitelists_host>whitelists host</whitelists_host>
+<whitelists_host_text>where to get updates for whitelists</whitelists_host_text>

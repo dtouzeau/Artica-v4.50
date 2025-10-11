@@ -1,0 +1,4 @@
+<conditions>conditions</conditions>
+<give_the_rulename>Dar el nombre de la regla</give_the_rulename>
+<sieve_rule_explain>Esta secci%C3%B3n muestra las reglas maestras almacenadas en su cuenta.[br]S%C3%B3lo se puede activar una regla en su cuenta.[br] Puede desactivar todas las reglas y activar la que desee</sieve_rule_explain>
+<the_following_matches>the following matches</the_following_matches>

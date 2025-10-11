@@ -1,0 +1,2 @@
+<ERROR_NO_IMG>Leider befinden sich derzeit keine Mailgraph-Bilder im img-Ordner, versuchen Sie es sp%C3%A4ter.</ERROR_NO_IMG>
+<title>Postfix statistics</title>

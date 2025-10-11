@@ -1,0 +1,4 @@
+<enable_c_icap>Enable C-ICAP for antivirus</enable_c_icap>
+<enable_c_icap_text>Us%C5%82uga ICAP Antivirus zapewnia skanowanie antymalware, gdy obiekty s%C4%85 pobierane z Internetu przez proxy.[br]
+Dzi%C4%99ki temu z%C5%82o%C5%9Bliwe obiekty mog%C4%85 by%C4%87 przechwytywane przed przegl%C4%85darkami.[br]
+Nale%C5%BCy zwr%C3%B3ci%C4%87 uwag%C4%99 na to: Aby zapewni%C4%87 najlepsz%C4%85 wykrywalno%C5%9B%C4%87, zaleca si%C4%99 zezwolenie proxy na wykonywanie deszyfrowania strumieni SSL</enable_c_icap_text>

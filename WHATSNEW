@@ -1,0 +1,89 @@
+START_WHATSNEW
+Fix: Bungled proxy configuration when using Multiple ActiveDirectory Groups object type and Active Directory is inactive.
+Fix: Bungled proxy configuration on Ip address typing error with 2 dots eg (192.168.1..0/24 instead of 192.168.1.0/24 )
+Fix: Some databases are not correctly patched after an upgrade from 4.30x to 450x
+Fix: Access ACLs group of rules status is allways seen as "inactive"
+Fix: System overloaded after FUSER_MGR(); alert ( improve the test ports function )
+Fix: /var/log/charon.log is not cleaned by Artica.
+Fix: Bug 387 - Too many events in proxy cache.log caused by the eCAP Clamav when surfing on HTTPS sites ( see http://bugs.articatech.com/show_bug.cgi?id=387 )
+Fix: No such column rulevalue in DNS Firewall rule section.
+Add: Possibility to change the domain to test inside the failover service
+Fix: Unable to build Postfix configuration according to a fatal error ( a function postconf() not exist)
+Fix: Load-balancing service and haCluster service stuck caused by a system open files limitation.
+Fix: Too limited Open files for DNS Firewall.
+Fix: Unable to correctly update Filtering daemon service.
+Fix: Rules table in syslogrules.db is not automatically created
+STOP_WHATSNEW
+
+
+to build: 
+***********************************************************
+https://github.com/Vasfed/nginx_ipset_blacklist/issues/4
+20220412
+EnableActiveDirectoryFeature
+	$ISOCanDisplayUserNamePassword=$sock->GET_INFO("ISOCanDisplayUserNamePassword");
+	$ISOCanChangeIP=$sock->GET_INFO("ISOCanChangeIP");
+	$ISOCanReboot=$sock->GET_INFO("ISOCanReboot");
+	$ISOCanShutDown=$sock->GET_INFO("ISOCanShutDown");
+	$ISOCanChangeRootPWD=$sock->GET_INFO("ISOCanChangeRootPWD");
+	$ISOCanChangeLanguage=$sock->GET_INFO("ISOCanChangeLanguage");
+
+txt:doh_uri, root_password_not_changed_text,error_category_textexpl,squid_urgency_explain ,apply_firewall_rules,dashboard_activedirectory_explain,CORP_LICENSE_EXPLAIN,use_remote_server_stats_explain
+artica-patch --patch --force-version=147 --commit="Add hostname corruption control in unbound"
+https://debian-facile.org/doc:install:dual-boot-debian-et-windows-sur-un-ordinateur-equipe-de-l-uefi
+Reverse FTP proxy: http://www.delegate.org/anonftp/DeleGate/download.html
+http://www.howtoforge.com/how-to-set-up-an-ips-intrusion-prevention-system-on-fedora-17
+http://www.stopforumspam.com/downloads/
+https://owncloud.com/
+http://www.unixgarden.com/index.php/administration-systeme/virtualisation-de-serveur-grace-a-linux-vserver
+https://github.com/vmxdev/sidmat/
+2020 R&D
+wvnetflow.sourceforge.net/INSTALL.ubuntu
+
+
+R&D QOS:
+***********************************************************
+http://nefaria.com/2013/03/adding-a-samba-4-0-3-domain-member-to-a-windows-server-2012-domain-the-hard-way/
+http://lartc.org/howto/lartc.cookbook.fullnat.intro.html
+http://www.colvir.net/prof/yves.bergeron/infsp1/QOS-mini.html
+http://www.thierry-jaouen.fr/dokuwiki/doku.php?id=reseaux_qos
+http://formation.bearstech.com/trac/wiki/InsiaAdminSysQos
+http://linuxfr.org/forums/10/27111.html
+http://www.andybev.com/index.php/Fair_traffic_shaping_an_ADSL_line_for_a_local_network_using_Linux
+
+Javascript:
+http://flowplayer.org/tools/download/index.html
+
+/usr/lib/update-notifier/update-motd-reboot-required
+lsof -Pnl +M -i4
+_UNPACK_*
+watch -n 10 ls -l /proc/$$/fd
+lsof
+
+Feb 14 00:46:19 test-artica pure-ftpd: (?@190.212.201-77.rev.gaoland.net) [INFO] New connection from 190.212.201-77.rev.gaoland.net
+Feb 14 00:46:19 test-artica pure-ftpd: (?@190.212.201-77.rev.gaoland.net) [INFO] xxxx is now logged in
+Feb 14 00:46:22 test-artica pure-ftpd: (?@190.212.201-77.rev.gaoland.net) [INFO] New connection from 190.212.201-77.rev.gaoland.net
+Feb 14 00:46:22 test-artica pure-ftpd: (?@190.212.201-77.rev.gaoland.net) [INFO] xxxx is now logged in
+Feb 14 00:46:23 test-artica pure-ftpd: (xxx@190.212.201-77.rev.gaoland.net) [NOTICE] /var/www/articatechnology.com//ressources/class.hosts.inc uploaded  (24781 bytes, 71.72KB/sec)
+slapd[30241]: segfault at 8127238 ip 080c6fcc sp b46feb00 error 7 in slapd[8048000+123000]
+// -> BEN@RLNX.COM -> LXC
+http://serverfault.com/questions/296492/how-do-i-use-opendkim-with-multiple-domain-names-on-a-single-server?answertab=votes#tab-top
+netstat -tlnp 
+
+compile fcron:
+./configure --bindir=/usr/share/artica-postfix/bin --sbindir=/usr/share/artica-postfix/bin --sysconfdir=/etc/artica-cron --with-piddir=/etc/artica-cron --with-fifodir=/etc/artica-cron --with-spooldir=/etc/artica-cron/spool_watchdog --with-username=root --with-groupname=root --with-answer-all=yes --without-sendmail --with-pam=no --with-selinux=no
+
+net.ipv4.tcp_fastopen = 0x3
+net.ipv4.tcp_fastopen_key = <unique-string-of-hex-digits>
+The unique hexdigit string has 4 substrings of 8 hexadecimal digits, separated by a minus sign, e.g.f7792304-bbf0895f-46f4a2e2-dbd23e58. 
+
+
+A FAIRE/
+umount /dev/sda12 && mke2fs -I 128 -N 1000 /dev/sda12 && mount /dev/sda12
+RateLimit
+/sbin/iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 60 --hitcount 4 -j DROP
+/sbin/iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+/sbin/iptables -A INPUT -p tcp --dport 22 -m state --state NEW -j ACCEPT
+
+Listes à intègrer.
+https://someonewhocares.org/hosts/hosts

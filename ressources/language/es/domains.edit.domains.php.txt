@@ -1,0 +1,36 @@
+<add_local_domain_form>Give the local domain you want to store on this server</add_local_domain_form>
+<add_local_domain_text>Local domains are stored on this computer and must be deliver in it`s mailbox server.</add_local_domain_text>
+<add_relay_domain>Add a new relayed domain</add_relay_domain>
+<add_relay_domain_text>All emails for a "relay domain" will be forwarded to an other dedicated server.</add_relay_domain_text>
+<autoaliases>Auto-aliase</autoaliases>
+<autoaliases_text>If you enable this feature, each user will have automatically a new aliase with this domain when you update it on create a new one</autoaliases_text>
+<duplicate_domain>Duplicate domain</duplicate_domain>
+<duplicate_domain_text>If you enable this feature, mails will be forwared to the local mailbox AND be duplicated to a remote target mail server</duplicate_domain_text>
+<introduction>
+This section help you to create smtp domains in your organization.[br]
+You have 2 ways to create your domains[br]
+[ul]
+[li][strong]Local domain[/strong][br]
+local domains are stored on this computer and must be deliver in it's mailbox server.[/li]
+[li][strong]Relay domains[/strong][br]
+All emails for a "relay domain" will be forwarded to an other dedicated server.[/li][/ul]
+</introduction>
+<local_domain_map>Local domains used by your organization</local_domain_map>
+<mx_look>[b]MX lookup[/b][ul]
+[li][b]Red[/b]:disable resolve the computer in DNS[/li]
+[li][b]Green[/b]:Enable resolving the computer by DNS[/li]
+[/ul]</mx_look>
+<mx_look_text>MX lookup</mx_look_text>
+<no_remote_domain_here>Currently, no relayed domain set</no_remote_domain_here>
+<relay_domain_map>others relayed domains used by your organization</relay_domain_map>
+<roundrobin>Round Robin</roundrobin>
+<roundrobin_text>El DNS round robin es una técnica de distribuci%C3%B3n de la carga, de equilibrio de la carga o de provisi%C3%B3n de tolerancia a fallos de m%C3%BAltiples
+m%C3%BAltiples y redundantes hosts de servicio de Protocolo de Correo, por ejemplo, gestionando las respuestas del Sistema de Nombres de Dominio (DNS)
+respuestas a las solicitudes de direcciones del servidor de correo seg%C3%BAn un modelo estad%C3%ADstico adecuado[br].
+En su implementaci%C3%B3n m%C3¡s sencilla, Round-robin DNS funciona respondiendo a las solicitudes de DNS no s%C3%B3lo con una %C3%BAnica direcci%C3%B3n IP,[br]
+sino con una lista de direcciones IP de varios servidores que alojan servicios idénticos.[br]
+El orden en que se devuelven las direcciones IP de la lista es la base del término round robin[br].
+Con cada respuesta DNS, la secuencia de direcciones IP de la lista se permuta. Normalmente, los clientes IP b%C3¡sicos intentan conectarse con la primera
+direcci%C3%B3n devuelta de una consulta DNS para que en diferentes intentos de conexi%C3%B3n los clientes reciban servicio de diferentes proveedores, distribuyendo as%C3%AD la carga total entre los servidores.</roundrobin_text>
+<target_computer_name>Target server name or IP</target_computer_name>
+<target_computer_port>Puerto</target_computer_port>

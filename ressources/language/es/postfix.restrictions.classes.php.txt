@@ -1,0 +1,3 @@
+<permit_tls_clientcerts>Permitir certificados de cliente TLS</permit_tls_clientcerts>
+<permit_tls_clientcerts_text>Permitir la solicitud cuando la huella digital del certificado del cliente SMTP remoto aparece en los certificados del cliente de retransmisi%C3%B3n[br].
+El algoritmo de digesti%C3%B3n de la huella digital es configurable a través del par%C3¡metro smtpd_tls_fingerprint_digest</permit_tls_clientcerts_text>

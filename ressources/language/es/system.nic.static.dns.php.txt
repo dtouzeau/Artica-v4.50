@@ -1,0 +1,11 @@
+<add_nameserver>Add a name server</add_nameserver>
+<add_nameserver_text>Indique la direcci%C3%B3n IP o el nombre de host de su servidor DNS</add_nameserver_text>
+<add_search_domains>Add a search domain</add_search_domains>
+<add_search_domain_text>Give a domain name</add_search_domain_text>
+<nic_dns_search>Search list for host-name lookup</nic_dns_search>
+<nic_dns_search_text>La lista de b%C3%BAsqueda se determina normalmente a partir del nombre del dominio local; por defecto, s%C3%B3lo contiene el nombre del dominio local[br] Esto puede cambiarse enumerando la ruta de b%C3%BAsqueda del dominio deseado[br].
+Si se refiere a otro servidor s%C3%B3lo por su nombre sin a%C3%B1adir el dominio, el DNS de su cliente a%C3%B1adir%C3¡ el nombre del servidor
+a cada dominio de la lista y har%C3¡ una b%C3%BAsqueda DNS en cada uno de ellos para obtener la direcci%C3%B3n IP del servidor remoto%u2019.[br]
+Esta es una caracter%C3%ADstica muy %C3%BAtil para ahorrar tiempo y poder referirse a los servidores en el mismo dominio s%C3%B3lo por su nombre de servidor sin tener que especificar el dominio.
+[br][b]El primer dominio de la lista debe ser el dominio principal de tu red y La lista de b%C3%BAsqueda est%C3¡ actualmente limitada a seis dominios con un total de 256 caracteres.</nic_dns_search_text>
+<nic_nameserver_text>IP addresses of your DNS name servers.[br]The resolver library queries them in the order listed</nic_nameserver_text>

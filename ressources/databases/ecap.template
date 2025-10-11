@@ -1,0 +1,81 @@
+<html>
+<head>
+<title>ERROR: The requested URL could not be retrieved</title>
+<style>
+	body {
+		color:            white;
+		background-color: #8c1919;
+		font-family:      Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif;
+		font-weight:      lighter;
+		font-size:        14pt;
+
+	}
+.bad{ font-size: 110px; float:left; margin-right:30px; }
+.bad:before{ content: "\2639";}
+	h2 {
+		font-size: 	  22pt;
+		color:            white;
+		font-weight: lighter;
+	}
+	h3 {
+		font-size: 18pt;
+		font-weight: lighter;
+		margin-bottom: 0 ;
+	}
+	#wrapper {
+		width: 700px ;
+		margin-left: auto ;
+		margin-right: auto ;
+	}
+	#info {
+		width: 600px ;
+		margin-left: auto ;
+		margin-right: auto ;
+	}
+	.important{
+		font-size: 18pt;
+		font-weight: lighter;
+		margin-bottom: 0 ;
+	}
+	p {
+		font-size: 12pt;
+		font-weight: lighter;
+		margin-bottom: 0 ;
+	}
+	td.info_title {
+		text-align: right;
+		font-size:  12pt;
+		min-width: 100px;
+	}
+	td.info_content {
+		text-align: left;
+		padding-left: 10pt ;
+		font-size:  12pt;
+	}
+	.break-word {
+		width: 500px;
+		word-wrap: break-word;
+	}
+</style>
+</head>
+<body>
+	<div id="wrapper">
+		<h1 class=bad></h1>
+		<div id="titles">
+			<h1>ERROR</h1>
+			<h2>Virus "%virusname%" Found</h2>
+		</div>
+		<hr>
+		<div id="content">
+			<p>The following error was encountered while trying to retrieve the URL: </p>
+			<blockquote id="error">
+				<strong>%originalreq%</strong>
+			</blockquote>
+			<br>
+		</div>
+		<hr>
+		<div id="footer">
+		<small>Detected by the Proxy antivirus plugin</small>
+		</div>
+	</div>
+</body>

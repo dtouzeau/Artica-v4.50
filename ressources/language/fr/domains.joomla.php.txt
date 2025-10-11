@@ -1,0 +1,14 @@
+<administrator>Administrateur</administrator>
+<admin_password>Mot de passe &quot;Admin&quot; principal</admin_password>
+<admin_password_help>Par d&eacute;faut, un Super administrateur appel&eacute; &quot;admin&quot; est d&eacute;fini afin de g&eacute;rer votre site web.[br] Cet &quot;admin&quot; est ind&eacute;pendant et n'est pas stock&eacute; dans la base de donn&eacute;es globale.[br]
+[br]Le mot de passe par d&eacute;faut est &quot;secret&quot; et vous devez le changer pour des raisons de s&eacute;curit&eacute;</admin_password_help>
+<APP_JOOMLA_NOT_INSTALLED>Votre Joomla n'est pas install&eacute;</APP_JOOMLA_NOT_INSTALLED>
+<connection_user>uid de connexion</connection_user>
+<connection_user_help>D&eacute;finissez ici un nom d'utilisateur qui aidera votre site web &agrave; authentifier les utilisateurs internes dans votre panneau d'administration du site web</connection_user_help>
+<install_your_joomla>Installer votre joomla</install_your_joomla>
+<install_your_joomla_text>Installez le programme principal de joomla afin d'ouvrir votre service Web</install_your_joomla_text>
+<joomlaservername>Nom du serveur Web</joomlaservername>
+<joomlaservername_help>D&eacute;finissez ici le nom de domaine/serveur de noms ajout&eacute; &agrave; votre DNS Public/Priv&eacute;.[br]
+Par exemple, si vous souhaitez que ce serveur soit www.mycompany.com, d&eacute;finissez ici &quot;www.mycompany.com&quot;[br]
+[i]Notez que ce nom de serveur doit &ecirc;tre d&eacute;j&agrave; stock&eacute;es sur les serveurs DNS (r&eacute;seau Internet ou Intranet)[/i]</joomlaservername_help>
+<roundcubeservername>Nom du serveur RoundCube</roundcubeservername>

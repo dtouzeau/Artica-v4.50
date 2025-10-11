@@ -1,0 +1,16 @@
+<AddDNSServer>Proporcione una direcci&oacute;n ip a su nuevo servidor DNS</AddDNSServer>
+<apply_network>Aplicar configuraciones de red</apply_network>
+<apply_network_text>Guarde sus ajustes y aplique estas configuraciones al servidor</apply_network_text>
+<change>Change settings</change>
+<ChangeHostName>Proporcione el nombre completo de su servidor DNS</ChangeHostName>
+<DeleteDNS>&iquest;Esta seguro que desea borrar este servidor DNS?</DeleteDNS>
+<nameserver>Servidor DNS</nameserver>
+<network_about>Esta %C3¡rea le ayuda a la configuraci%C3%B3n de la red y a la configuraci%C3%B3n de los servicios de red[br]Aqu%C3%AD es donde usted configura c%C3%B3mo su sistema est%C3¡ conectado a la red</network_about>
+<network_style>Network system</network_style>
+<not_allowed>Not allowed to change settings</not_allowed>
+<primary_dns>Servidor DNS primario</primary_dns>
+<proto>proto</proto>
+<secondary_dns>Servidor DNS segundario</secondary_dns>
+<show_config_file_text>Lea la configuraci%C3%B3n generada para su sistema operativo antes de aplicar los ajustes</show_config_file_text>
+<use_dhcp>Obtener la direcci%C3%B3n IP autom%C3¡ticamente</use_dhcp>
+<warning_wireless_nic>Artica didn't support wireless parameters, this feature is disabled</warning_wireless_nic>

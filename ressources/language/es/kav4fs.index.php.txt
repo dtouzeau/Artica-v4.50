@@ -1,0 +1,11 @@
+<APP_KAV4FS_ABOUT>Kaspersky Anti-virus for Linux File Server est%C3¡ dise%C3%B1ado para proporcionar protecci%C3%B3n a los servidores de archivos que ejecutan sistemas operativos Linux.[br]
+Kaspersky Anti-Virus para Linux permite:
+[ul]
+[li]Garantizar la protecci%C3%B3n en tiempo real del sistema de archivos contra el c%C3%B3digo malicioso:[br]
+interceptar y analizar los intentos de acceso a los archivos, desinfectar y eliminar los objetos infectados.[/li]
+[li]Analizar objetos bajo demanda: buscar archivos infectados y sospechosos (incluidos los archivos en los %C3¡mbitos de an%C3¡lisis especificados); analizar archivos; desinfectar o eliminar archivos infectados.[/li]
+[li]Poner en cuarentena los archivos sospechosos e infectados.[/li]
+[li]Cree una copia de un objeto infectado en el almacenamiento de copia de seguridad antes de intentar desinfectar o eliminar para que sea posible restaurar dicho objeto.[/li]
+[/ul]</APP_KAV4FS_ABOUT>
+<APP_KAV4FS_TEXT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.</APP_KAV4FS_TEXT>
+<LICENSE_INSTALL>Install a license</LICENSE_INSTALL>

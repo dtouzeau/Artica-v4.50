@@ -1,0 +1,2 @@
+<audit_text_1>Esta p%C3¡gina proporciona una s%C3%ADntesis de todas las claves que permiten varios dominios
+Le permite, en colaboraci%C3%B3n con la documentaci%C3%B3n de Postfix, comprobar si las tablas de correspondencias son exactas</audit_text_1>

@@ -1,0 +1,20 @@
+<about>L'NTPD è progettato per sincronizzare gli orologi dei computer in rete a una base di tempo comune (di solito UTC) tramite il protocollo NTP.</about>
+<add_text_server>Click on the picture below in order to add a new Internet Time server....</add_text_server>
+<add_title_server>Nuovo server orario</add_title_server>
+<close_windows>All operations are successfull, you can close this windows now</close_windows>
+<enable_ntpd>Enable NTPD service</enable_ntpd>
+<give_server_name>Give the Internet Time Server name</give_server_name>
+<how_to_find_timeserver>[h5]Dove posso trovare un time server?[/h5][br]
+Come impostazione predefinita, i server vi assegneranno timeserver da tutto il mondo,
+la qualità del tempo non sarà ideale.[br]
+Si ottiene un risultato un po' migliore se si utilizzano i [a http://www.pool.ntp.org/zone/@][u]fusi continentali[/u][/a]
+(Ad esempio [u][a http://www.pool.ntp.org/zone/europe]Europa[/a][/u],
+[a http://www.pool.ntp.org/zone/north-america]nord-america[/a], oceania o asia.pool.ntp.org),
+e ancora meglio se si usa la zona del paese (come ch.pool.ntp.org in Svizzera) [br]
+- Per tutte queste zone, è possibile utilizzare i prefissi 0, 1 o 2, come 0.ch.pool.ntp.org[br].
+Si noti, tuttavia, che la zona nazionale potrebbe non esistere per il proprio Paese, o potrebbe contenere solo uno o due timeserver. [br]
+Se si conoscono timeserver molto vicini (misurati in base alla distanza di rete, con traceroute o ping), probabilmente il tempo sarà ancora migliore.</how_to_find_timeserver>
+<ntpdconf>NTPD Config file</ntpdconf>
+<ntpd_apply>Apply NTPD to server</ntpd_apply>
+<save_ntpd_ok>Saving NTPD settings....OK</save_ntpd_ok>
+<save_toserver_ok>Saving NTPD Settings to server....OK</save_toserver_ok>

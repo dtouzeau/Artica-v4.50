@@ -1,0 +1,43 @@
+<about>O IPTables é um programa de firewall [br].
+Pode restringir o acesso por porta, por endereço IP, ou pelas propriedades dos pacotes [br].
+As firewalls n%C3£o s%C3£o tudo o que precisa para a segurança, mas s%C3£o um excelente primeiro passo.</about>
+<ACCEPT>Permitir conex%C3µes</ACCEPT>
+<add_inboundrule>Inbound rule</add_inboundrule>
+<add_inboundrule_text>Add a rule to Allow or deny connections from others to your server</add_inboundrule_text>
+<close_windows>Todas as operaç%C3µes de Firewall iptables conclu%C3%ADdas, Pode agora fechar as janelas</close_windows>
+<compile>Compilar regras</compile>
+<compile_rules_ok>Rule compilation OK...</compile_rules_ok>
+<compile_text>Compile a regra e guarde-a no sistema de modo a fazê-los em modo de produç%C3£o</compile_text>
+<DROP>Reject (without notify)</DROP>
+<enable_iptables>Enable your IpTables Firewall</enable_iptables>
+<from_help>Deve ser:[br]
+Uma gama IP : [br]
+[blk]192.168.1.12-192.168.1.56[/blk]
+Um endereço IP:[br]
+[blk]192.168.1.12[/blk]
+Um endereço IP com cdir netmask:[br]
+[blk]192.168.1.12/24[/blk]
+Um hostname:[br]
+[blk]proxy.p19.ovh.net[/blk]</from_help>
+<insert_default>Defaults rules</insert_default>
+<insert_default_text>Add pre-defined rules to secure your artica server</insert_default_text>
+<iptablesconf>Show configuration</iptablesconf>
+<iptablescurrules>Current rules status</iptablescurrules>
+<iptables_from>From</iptables_from>
+<iptables_frommac>Or From MAC Address</iptables_frommac>
+<iptables_INPUT>Inbound</iptables_INPUT>
+<iptables_nic>NIC</iptables_nic>
+<iptables_ports>Should be:[br]
+A single port : [br]
+[blk]80[/blk]
+A range port:[br]
+[blk]500:600[/blk]
+ports list:[br]
+[blk]80,21,443,9000,143,993[/blk]
+</iptables_ports>
+<iptables_results>Result</iptables_results>
+<local_port>Local port</local_port>
+<log_this_event>Log this rule if match</log_this_event>
+<proto>Protocolo</proto>
+<REJECT>Reject (notify)</REJECT>
+<save_toserver_ok>Saving order to server OK...</save_toserver_ok>

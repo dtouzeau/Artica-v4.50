@@ -1,0 +1,1 @@
+cc -I../../sendmail -I../../include -o mail-dump mail-dump.c /usr/lib/libmilter.a libsm.a -pthread

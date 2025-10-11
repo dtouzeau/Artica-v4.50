@@ -1,0 +1,272 @@
+#! /bin/bash
+### BEGIN INIT INFO
+# Provides: artica-cd
+# Required-Start: $local_fs
+# Required-Stop: $local_fs
+# Should-Start:
+# Should-Stop:
+# Default-Start: 1 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Start Artica-CD daemon
+# chkconfig: 2345 11 89
+# description: Artica CD Script
+### END INIT INFO
+
+
+
+TARGETS_FREEZE=( "slapd" "samba" "winbind" "samba-common" "squid" "squid3" "squid3-common" "postfix" "exim4-base" "exim4-daemon-light" "exim4" "xmail" "python-unbound" "python3-unbound" "unbound")
+# shellcheck disable=SC2054
+TARGETS_INIT=( "exim4" "dnsmasq" "smartmontools" "lm-sensors" "nscd" "iscsid" "rsync" "ftp-proxy" "conntrackd" "vnstat" "redis-server" "winbind" "autofs" "isc-dhcp-server" "irqbalance" "transmission-daemon" "mimedefang" "open-iscsi" "clamav-daemon" "clamav-freshclam" "smbd" "freeradius" "proftpd" "opendkim" "cyrus-imapd" "postfix" "ziproxy" "x11-common" "nmbd" "clamav-freshclam" "spamassassin" "spamass-milter" "spamassassin" "ntp" "nscd" "nfs-common" "stunnel4" "mysql" "php7.3-fpm" "privoxy" "brightness" "redsocks" "prads" "pads" "mailgraph" "pdns-recursor" "quota" "quotarpc" "samba" "tor" "l7filter" "firehol" "mosquito" "fail2ban" "samba-ad-dc" "rpcbind" "avahi-daemon" "unbound"  "squid" "squid3" "open-vm-tools" "filebeat" )
+
+
+case "$1" in
+start)
+	percent=5
+	Number=0
+if [ ! -d "/etc/artica-postfix" ]
+then
+  mkdir -p /etc/artica-postfix
+fi
+
+mkdir -p "/etc/artica-postfix/settings/Daemons/DoNotUseLocalDNSCache"
+echo "1" > /etc/artica-postfix/settings/Daemons/DoNotUseLocalDNSCache || true
+
+
+if [ ! -f /etc/artica-postfix/chpasswd-done ]
+then
+	echo "############################################"
+	echo "# Please wait, Set root password           #"
+	echo "############################################"
+	echo "##################################################################" >>/var/log/artica-iso.log 2>&1
+   	echo "Change system password" >>/var/log/artica-iso.log 2>&1 || true
+   	/bin/echo "root:artica" | /usr/sbin/chpasswd >/etc/artica-postfix/chpasswd-done 2>&1 || true
+fi
+
+
+if [ -f /home/package.tar.gz ]
+then
+	/bin/echo "Extracting /home/package.tar.gz" >> /var/log/artica-iso.log 2>&1 || true
+ 	/usr/bin/clear
+ 	mkdir -p /home/TempSystem
+	mkdir -p /usr/share/artica-postfix/bin
+ 	echo 40 | dialog --title "ISO Installation" --gauge "Extracting Artica Base package..." 6 80
+ 	/bin/tar xf /home/package.tar.gz -C /home/TempSystem/ >> /var/log/artica-iso.log 2>&1 || true
+ 	((percent++))
+ 	echo $percent| dialog --title "ISO cleaning Installation" --gauge "Please wait, removing source" 6 80
+ 	mv /home/package.tar.gz /home/SrcPackage.tar.gz
+	echo 45 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+	rsync -aL /home/TempSystem/usr/bin/  /usr/bin/ >> /var/log/artica-iso.log 2>&1 || true
+	echo 50 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+	rsync -aL /home/TempSystem/usr/lib/ /usr/lib/ >> /var/log/artica-iso.log 2>&1 || true
+	echo 55 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+	rsync -aL /home/TempSystem/usr/sbin/ /usr/sbin/ >> /var/log/artica-iso.log 2>&1 || true
+	echo 60 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+	rsync -aL /home/TempSystem/usr/share/ /usr/share/ >> /var/log/artica-iso.log 2>&1 || true
+	echo 65 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+	rsync -aL /home/TempSystem/etc/ /etc/ >> /var/log/artica-iso.log 2>&1 || true
+	echo 70 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+	rsync -aL /home/TempSystem/home/ /home/ >> /var/log/artica-iso.log 2>&1 || true
+	echo 75 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+	rsync -aL /home/TempSystem/lib/ /lib/ >> /var/log/artica-iso.log 2>&1 || true
+	echo 80 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+	rsync -aL /home/TempSystem/usr/share/artica-postfix /usr/share/artica-postfix/ >> /var/log/artica-iso.log 2>&1 || true
+	echo 81 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+	rsync -aL /home/TempSystem/usr/share/artica-postfix/bin/ /usr/share/artica-postfix/bin/ >> /var/log/artica-iso.log 2>&1 || true
+fi
+
+/bin/echo "Starting Installation Step 2" >> /var/log/artica-iso.log 2>&1 || true
+
+echo 82 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+chmod 0755 /usr/share/artica-postfix/bin/articarest
+cp /usr/share/artica-postfix/bin/articarest /usr/sbin/artica-phpfpm-service
+chmod 0755 /usr/sbin/artica-phpfpm-service
+echo 83 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+
+/bin/echo "Starting Installation MemCached" >> /var/log/artica-iso.log 2>&1 || true
+/usr/sbin/artica-phpfpm-service -install-memcached >> /var/log/artica-iso.log 2>&1
+/bin/echo "Starting Installation Monit" >> /var/log/artica-iso.log 2>&1 || true
+/usr/sbin/artica-phpfpm-service -install-monit >> /var/log/artica-iso.log 2>&1
+echo 84 | dialog --title "ISO Installation" --gauge "installing Artica Base package..." 6 80
+/bin/echo "Starting Installation Artica Rest Service" >> /var/log/artica-iso.log 2>&1 || true
+/usr/sbin/artica-phpfpm-service -install-me >> /var/log/artica-iso.log >/dev/null 2>&1
+
+LOGONSH="/usr/share/artica-postfix/logon.sh"
+if [ ! -f $LOGONSH ]
+then
+	/bin/echo "Unable to find Artica LOGON binary !!" >> /var/log/artica-iso.log 2>&1 || true
+	/usr/bin/dialog --title "\Zb\Z1ERROR! ERROR!" --colors --infobox "\Zb\Z1Unable to find Artica LOGON binary!"  0 0
+	exit 0
+fi
+
+MIN_SIZE=50
+FILE_SIZE=$(stat -c %s "$LOGONSH")
+echo "* * * $LOGONSH - $FILE_SIZE bytes" >> /var/log/artica-iso.log
+
+
+if [ "$FILE_SIZE" -gt "$MIN_SIZE" ]; then
+	echo "$LOGONSH $FILE_SIZE bytes [OK]" >>/var/log/artica-iso.log
+else
+	/bin/echo "Unable to find LOGON binary WRONG SIZE $FILE_SIZE bytes!" >> /var/log/artica-iso.log 2>&1 || true
+	/usr/bin/dialog --title "\Zb\Z1ERROR! ERROR!" --colors --infobox "\Zb\Z1Unable to find LOGON binary WRONG SIZE $FILE_SIZE bytes!"  0 0
+	exit 0
+fi
+
+
+chmod 0755 /usr/share/artica-postfix/logon.sh
+
+if [ -f /etc/artica-postfix/artica-iso-setup-launched ]
+then
+	/bin/echo "artica-cd, everything is done..." >> /var/log/artica-iso.log 2>&1 || true
+	echo "artica-cd, everything is done...";
+	exit 0
+fi
+
+((percent++))
+echo $percent| dialog --title "ISO Installation" --gauge "Saving Network information" 6 80
+mkdir -p /etc/artica-postfix/NET_BACKUP || true
+mkdir -p /etc/monit/conf.d || true
+mkdir -p /etc/monit || true
+mkdir -p /var/log/lighttpd  2>&1 || true
+
+/bin/echo "Checking Network interfaces" >> /var/log/artica-iso.log 2>&1 || true
+
+
+if [ -f /etc/network/interfaces ]
+then
+	/bin/cp /etc/network/interfaces /etc/artica-postfix/NET_BACKUP/
+fi
+
+if [ -f /etc/resolv.conf ]
+then
+	/bin/cp /etc/resolv.conf /etc/artica-postfix/NET_BACKUP/ || true
+fi
+
+((percent++))
+echo $percent| dialog --title "ISO Installation" --gauge "Saving Network information" 6 80
+
+/bin/ip -f inet addr show | /bin/grep -Po 'inet \K[\d.]+' > /etc/artica-postfix/NET_BACKUP/IPADDR || true
+/bin/ip route show default 0.0.0.0/0 > /etc/artica-postfix/NET_BACKUP/GATEWAY || true
+/sbin/ifconfig | /usr/bin/awk '/netmask/{print $4}' > /etc/artica-postfix/NET_BACKUP/NETMASK || true
+
+mkdir -p /home/artica/tmp >>/var/log/artica-iso.log 2>&1 || true
+
+((percent++))
+echo $percent| dialog --title "ISO Installation" --gauge "Freeze some services.." 6 80
+
+
+/usr/sbin/groupadd winbindd_priv >>/var/log/artica-iso.log 2>&1 || true
+killall apache2 >>/var/log/artica-iso.log 2>&1 || true
+
+
+for path in "${TARGETS_FREEZE[@]}"
+do
+	((Number++))
+	/bin/echo "$path hold | /usr/bin/dpkg --set-selections" >> /var/log/artica-iso.log 2>&1 || true
+	echo $percent| dialog --title "ISO Installation" --gauge "Please wait, freeze $path" 6 80
+	/bin/echo "$path hold" | /usr/bin/dpkg --set-selections >/dev/null 2>&1|| true
+	/usr/bin/apt-mark hold $path
+	((percent++))
+done
+
+((percent++))
+echo $percent| dialog --title "ISO Installation" --gauge "Please wait, Uninstalling exim" 6 80
+/bin/echo "/usr/bin/apt-get --purge --yes --force-yes --remove exim4*" >> /var/log/artica-iso.log 2>&1 || true
+/usr/bin/apt-get --purge --yes --force-yes --remove exim4* >>/var/log/artica-iso.log 2>&1 || true
+killall php5-fpm >>/var/log/artica-iso.log 2>&1 || true
+killall php-fpm >>/var/log/artica-iso.log 2>&1 || true
+
+/bin/echo "Install Logon and apt-sources" >> /var/log/artica-iso.log 2>&1 || true
+/usr/share/artica-postfix/bin/articarest -install-logon 2>&1 || true
+/usr/share/artica-postfix/bin/articarest -apt-sources  2>&1 || true
+
+
+if [ ! -f /bin/login.old ]
+then
+ ((percent++))
+  echo $percent| dialog --title "ISO Installation" --gauge "Please wait, Installing Artica Menu console" 6 80
+  /bin/mv /bin/login /bin/login.old || true
+  /bin/ln -s /usr/share/artica-postfix/logon.sh /bin/login || true
+  dpkg-divert --divert /bin/login.old /bin/login >>/var/log/artica-iso.log 2>&1|| true
+  /bin/chmod 777 /bin/login || true
+  /bin/chmod 777 /usr/share/artica-postfix/logon.sh || true
+fi
+
+
+
+/bin/rm -f /etc/artica-postfix/FROM_ISO  >>/var/log/artica-iso.log 2>&1 || true
+/bin/rm -f /usr/share/artica-postfix/bin/artica-iso >>/var/log/artica-iso.log 2>&1 || true
+/bin/touch /etc/artica-postfix/FROM_ISO
+/bin/rm -f /etc/artica-postfix/ARTICA_ISO2.lock >>/var/log/artica-iso.log 2>&1 || true
+/bin/rm -f /etc/cron.d/artica-boot-first >>/var/log/artica-iso.log 2>&1 || true
+
+
+((percent++))
+echo $percent| dialog --title "ISO Installation" --gauge "Please wait, Patching Filesystem " 6 80
+/bin/touch /etc/artica-postfix/artica-iso-setup-launched || true
+/bin/echo "secret" >/etc/ldap.secret || true
+/bin/touch /etc/artica-postfix/artica-iso-first-reboot || true
+/bin/mkdir -p /etc/artica-postfix/settings/Daemons || true
+/bin/chmod -R 0755 /etc/artica-postfix/settings/Daemons || true
+echo "1" >/etc/artica-postfix/settings/Daemons/ArticaHttpUseSSL 2>&1 || true
+
+
+len=${#TARGETS_INIT[@]}
+Number=0
+for path in "${TARGETS_INIT[@]}"
+do
+	((Number++))
+	if [ -f "/etc/init.d/$path" ]
+	then
+		((percent++))
+		if (( percent > 80 )); then
+			percent=80
+		fi
+		echo $percent| dialog --title "ISO Installation" --gauge "Please wait, uninstalling /etc/init.d/$path ($Number/$len)" 6 80
+		/etc/init.d/$path stop >>/var/log/artica-iso.log 2>&1 || true
+		update-rc.d $path remove >>/var/log/artica-iso.log 2>&1 || true
+		rm -f /etc/init.d/$path||true
+	fi
+done
+
+percent=80
+
+((percent++))
+echo "$percent"| dialog --title "ISO Installation" --gauge "Please wait, Deleting floppy" 6 80
+echo "blacklist floppy" >>/var/log/artica-iso.log 2>&1 || true
+echo 'blacklist floppy' >/etc/modprobe.d/floppy-blacklist.conf 2>&1 || true
+
+((percent++))
+echo "$percent"| dialog --title "ISO Installation" --gauge "Please wait, Installing framework" 6 80
+chmod 0755 /usr/share/artica-postfix/bin/articarest
+
+
+((percent++))
+/bin/echo "Cleaning script" >> /var/log/artica-iso.log 2>&1 || true
+echo $percent| dialog --title "ISO Installation" --gauge "Please wait, Cleaning" 6 80
+chmod 0755 /etc/init.d/artica-iso 2>&1 || true
+echo "artica-cd Remove script" >>/var/log/artica-iso.log 2>&1 || true
+update-rc.d artica-iso remove >>/var/log/artica-iso.log 2>&1 || true
+echo "" > /etc/init.d/artica-iso 2>&1 || true
+
+
+percent=98
+
+echo 100| dialog --title "ISO Installation" --gauge "Rebooting...." 6 80
+/bin/touch /etc/artica-postfix/artica-as-rebooted || true
+
+echo s > /proc/sysrq-trigger
+echo u > /proc/sysrq-trigger
+echo b > /proc/sysrq-trigger
+
+;;
+stop)
+
+;;
+restart)
+;;
+*)
+echo "Usage: $0 {start|stop|}"
+exit 1
+;;
+esac
+exit 0

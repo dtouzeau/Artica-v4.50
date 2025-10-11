@@ -1,0 +1,7 @@
+1. improve mail-dump program - catch signal HUP and other.
+  i'm write signal handling code, but it doesn't work. I don't know why...
+2. improve mail-import program - store config in database
+3. mail-import must copy processed mail into file-archive groupping by
+   year/month for burning on CD/DVD
+4. improve script for seek mail - localize to english
+5. improve script for restore mail - can restore to separate emails

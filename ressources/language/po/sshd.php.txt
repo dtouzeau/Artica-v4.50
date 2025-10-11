@@ -1,0 +1,36 @@
+<AuthorizedKeysFile>AuthorizedKeysFile</AuthorizedKeysFile>
+<AuthorizedKeysFile_text>File that contains	the public keys	that can be used for user authentication</AuthorizedKeysFile_text>
+<ChallengeResponseAuthentication>Challenge Response Authentication</ChallengeResponseAuthentication>
+<ChallengeResponseAuthentication_text>Specifies whether challenge-response authentication is allowed (e.g. via PAM)</ChallengeResponseAuthentication_text>
+<HostKey>Host key file</HostKey>
+<HostKey_text>Ficheiro que contém uma chave privada do host usada pelo SSH</HostKey_text>
+<LoginGraceTime>Login grace time</LoginGraceTime>
+<LoginGraceTime_text>O servidor desliga-se ap%C3%B3s este tempo se o utilizador n%C3£o tiver feito o login com sucesso [br].
+Se o valor for 0, n%C3£o h%C3¡ limite de tempo. O valor por defeito é 120 segundos.</LoginGraceTime_text>
+<MaxAuthTries>Max authentications attempts</MaxAuthTries>
+<MaxAuthTries_text>Especifica o n%C3%BAmero m%C3¡ximo de tentativas de autenticaç%C3£o permitidas por ligaç%C3£o [br] Quando o n%C3%BAmero de falhas atinge metade deste valor, s%C3£o registadas falhas adicionais</MaxAuthTries_text>
+<MaxSessions>Max sessions</MaxSessions>
+<MaxSessions_text>Especifica o n%C3%BAmero m%C3¡ximo de sess%C3µes abertas permitido por ligaç%C3£o à rede</MaxSessions_text>
+<PasswordAuthentication>Password Authentication</PasswordAuthentication>
+<PasswordAuthentication_text>Specifies whether password authentication is allowed</PasswordAuthentication_text>
+<PermitRootLogin>Permit Root Login</PermitRootLogin>
+<PermitRootLogin_text>Specifies whether root can log in using ssh</PermitRootLogin_text>
+<PermitTunnel>Permit Tunnel</PermitTunnel>
+<PermitTunnel_text>Specifies whether tunX devices forwarding is allowed</PermitTunnel_text>
+<SSHD_KEYS_SERVER>Allow keys on this server</SSHD_KEYS_SERVER>
+<SSHD_KEYS_SERVER_TEXT>Put you rsa.pub key generated on your Linux workstation/Server/Artica in order to allow them to connect trough the SSH server</SSHD_KEYS_SERVER_TEXT>
+<SSHD_NOFINGER_NEED_GENERATE>Nenhuma impress%C3£o digital pode ser exportada, gerar primeiro o par de chaves</SSHD_NOFINGER_NEED_GENERATE>
+<SSH_KEYS_CLIENT>generate a pair of authentication keys</SSH_KEYS_CLIENT>
+<SSH_KEYS_CLIENT_EXPLAIN>Esta tarefa ir%C3¡ gerar um par de chaves de autenticaç%C3£o para permitir que este servidor se ligue a outro servidor [br].
+Tem de escolher o utilizador local que deve ser utilizado para as suas tarefas SSH</SSH_KEYS_CLIENT_EXPLAIN>
+<SSH_KEYS_WHY>se quiser que o OpenSSH automatize tarefas (ex. BackuPC, login sem password, instalaç%C3£o remota, comunicaç%C3£o entre 2 servidores artica...). Por isso precisa de um login autom%C3¡tico a partir do seu servidor e deste servidor ou o oposto.[br]
+N%C3£o quer introduzir nenhuma palavra-passe, porque quer chamar ssh a partir de um gui%C3£o de shell</SSH_KEYS_WHY>
+<UseDNS>Use DNS</UseDNS>
+<UseDNS_sshd_text>Specifies whether daemon should look up the remote host name and check that the resolved host name for the remote IP address maps back to the very same IP address</UseDNS_sshd_text>
+<UsePAM>Use PAM</UsePAM>
+<UsePAM_TEXT>Permite a interface do M%C3%B3dulo de Autenticaç%C3£o Pluggable [br].
+Se definido isto permitir%C3¡ a autenticaç%C3£o PAM usando ChallengeResponseAuthentication e PasswordAuthentication
+além do processamento de contas PAM e m%C3%B3dulos de sess%C3£o para todos os tipos de autenticaç%C3£o[br].
+Uma vez que a autenticaç%C3£o PAM responde a um desafio normalmente serve um papel equivalente à autenticaç%C3£o por senha,
+deve desactivar ou PasswordAuthentication ou ChallengeResponseAuthentication [br].
+Se estiver activado, n%C3£o poder%C3¡ executar o sshd como um utilizador n%C3£o-root. O padr%C3£o est%C3¡ desactivado.</UsePAM_TEXT>

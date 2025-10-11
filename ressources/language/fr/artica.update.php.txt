@@ -1,0 +1,14 @@
+<autoupdate_text>Cette fonction permet &agrave; artica de v&eacute;rifier s'il y a de nouvelles mises &agrave; jour sur le serveur de mise &agrave; jour d' artica . [Br] Vous pouvez activer/d&eacute;sactiver l'auto-installation de nouvelles mises &agrave; jour [br] si vous voulez d&eacute;sactiver l'auto-installation, l'agent de mise &agrave; jour attendra votre ordre pour ex&eacute;cuter auto-installe.</autoupdate_text>
+<CheckEveryMinutes>V&eacute;rifier les mises &agrave; jour toutes les x minutes</CheckEveryMinutes>
+<current_version>Version actuelle</current_version>
+<enable_autoinstall>Appliquer la mise &agrave; jour</enable_autoinstall>
+<enable_autoupdate>T&eacute;l&eacute;charger les mises 	&agrave; jour</enable_autoupdate>
+<enable_nightlybuild>T&eacute;l&eacute;charger les versions interm&eacute;diaires</enable_nightlybuild>
+<front_page_notify>Afficher sur la page de garde</front_page_notify>
+<install_package>Installer le paquetage</install_package>
+<install_package_text>Mettre &agrave; jour le noyau d'Artica en utilisant ce paquet ?
+Si oui, le processus de mise &agrave; jour red&eacute;marrera Artica et l'interface ne devrait pas &ecirc;tre disponible pendant quelques secondes.</install_package_text>
+<perform_update_text>Cette op&eacute;ration va lancer maintenant la mise &agrave; jour du logiciel Artica sur votre serveur en fonction des param&egrave;tres de mise &agrave; jour enregistr&eacute;s</perform_update_text>
+<samba_notify>Afficher/Notifier les mises &agrave; jour Samba</samba_notify>
+<update_list>Liste des mises &agrave; jour</update_list>
+<uri>URL du serveur de mise &agrave; jour</uri>

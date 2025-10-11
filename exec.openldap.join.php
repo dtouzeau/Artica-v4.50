@@ -1,0 +1,217 @@
+<?php
+if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}if(function_exists("posix_getuid")){if(posix_getuid()<>0){die("Cannot be used in web server mode\n\n");}}
+if(preg_match("#--verbose#",implode(" ",$argv))){$GLOBALS["DEBUG"]=true;$GLOBALS["VERBOSE"]=true;}
+if(preg_match("#--force#",implode(" ",$argv))){$GLOBALS["FORCE"]=true;}
+if($GLOBALS["VERBOSE"]){ini_set('html_errors',0);ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);}
+include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
+include_once(dirname(__FILE__).'/ressources/class.ldap.inc');
+include_once(dirname(__FILE__).'/ressources/class.ini.inc');
+include_once(dirname(__FILE__).'/ressources/class.mysql.inc');
+include_once(dirname(__FILE__).'/ressources/class.ccurl.inc');
+include_once(dirname(__FILE__).'/framework/class.unix.inc');if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__).'/framework/frame.class.inc');
+include_once(dirname(__FILE__).'/ressources/class.system.nics.inc');
+
+if($argv[1]=="--join"){register();exit;}
+if($argv[1]=="--unlink"){exunlink();exit;}
+
+
+
+function build_progress($text,$pourc){
+    $unix=new unix();
+    $unix->framework_progress($pourc,$text,"openldap.join.prog");
+}
+
+
+
+function register(){
+	$sock=new sockets();
+	$unix=new unix();
+
+    $WizardLdapCluster=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardLdapCluster"));
+    $REMOTE_ARTICA_SERVER=$WizardLdapCluster["REMOTE_ARTICA_SERVER"];
+    $REMOTE_ARTICA_SERVER_PORT=intval($WizardLdapCluster["REMOTE_ARTICA_SERVER_PORT"]);
+    $REMOTE_ARTICA_USERNAME=trim($WizardLdapCluster["REMOTE_ARTICA_USERNAME"]);
+    $REMOTE_ARTICA_PASSWORD=trim($WizardLdapCluster["REMOTE_ARTICA_PASSWORD"]);
+    if($REMOTE_ARTICA_SERVER_PORT==0){$REMOTE_ARTICA_SERVER_PORT=9000;}
+    if($REMOTE_ARTICA_USERNAME==null){$REMOTE_ARTICA_USERNAME="Manager";}
+
+    $t=time();
+
+	$proto="https";
+	$WgetBindIpAddress=$sock->GET_INFO("WgetBindIpAddress");
+    $MAIN["username"]=$REMOTE_ARTICA_USERNAME;
+    $MAIN["password"]=$REMOTE_ARTICA_PASSWORD;
+	$SEND_SETTING=urlencode(base64_encode(serialize($MAIN)));
+	
+	$uri="$proto://$REMOTE_ARTICA_SERVER:$REMOTE_ARTICA_SERVER_PORT/nodes.listener.php?ldapcluster=$SEND_SETTING";
+	
+	echo "Communicate with $REMOTE_ARTICA_SERVER:$REMOTE_ARTICA_SERVER_PORT with interface $WgetBindIpAddress\n";
+    build_progress("{connecting_to} $REMOTE_ARTICA_SERVER:$REMOTE_ARTICA_SERVER_PORT",15);
+	
+	$curl=new ccurl($uri,true,$WgetBindIpAddress,true);
+	$curl->NoHTTP_POST=true;
+	$curl->Timeout=10;
+	if(!$curl->get()){
+		echo "Failed with error: $curl->error\n";
+		build_progress("{connecting_to} $REMOTE_ARTICA_SERVER:$REMOTE_ARTICA_SERVER_PORT {failed} $WgetBindIpAddress",17);
+		$curl=new ccurl($uri,true,"none",true);
+		$curl->NoHTTP_POST=true;
+		$curl->Timeout=10;
+		if(!$curl->get()){
+			echo "Failed with error: $curl->error\n";
+			build_progress("{connecting_to} $REMOTE_ARTICA_SERVER:$REMOTE_ARTICA_SERVER_PORT {failed} NONE",110);
+			return;
+		}else{
+			$sock->SET_INFO("WgetBindIpAddress", null);
+			$WgetBindIpAddress=null;
+		}
+		
+	}
+	
+	
+	if(!preg_match("#<RESULTS>(.+?)</RESULTS>#is", $curl->data,$re)){
+		echo "Please verify that both servers must have the same Artica version\n";
+		build_progress("{connecting_to} $REMOTE_ARTICA_SERVER:$REMOTE_ARTICA_SERVER_PORT {protocol_error}",110);
+		return;
+	}
+
+    $RESULTS=unserialize(base64_decode($re[1]));
+	if($RESULTS["ERROR"]){
+		echo "{$RESULTS["ERROR_SHOW"]}\n";
+		build_progress("{connecting_to} $REMOTE_ARTICA_SERVER:$REMOTE_ARTICA_SERVER_PORT {failed}",110);
+		return;
+		
+	}
+
+    if(!isset($RESULTS["LDAPSyncProvClientBindPassword"])){
+        echo "LDAPSyncProvClientBindPassword not matches\n";
+        build_progress("{connecting_to} $REMOTE_ARTICA_SERVER:$REMOTE_ARTICA_SERVER_PORT {failed}",110);
+        return;
+    }
+
+    build_progress("{linking} $REMOTE_ARTICA_SERVER:$REMOTE_ARTICA_SERVER_PORT",30);
+
+    $LDAPSyncProvID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvID"));
+    if($LDAPSyncProvID==0){$LDAPSyncProvID=1;}
+    if($LDAPSyncProvID>999){$LDAPSyncProvID=999;}
+
+    foreach ($RESULTS as $key=>$val){
+        if($key=="ERROR"){continue;}
+        if($key=="ERROR_SHOW"){continue;}
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO($key,$val);
+    }
+
+    if($LDAPSyncProvID==1){ $LDAPSyncProvID=rand(1,900); }
+
+    @file_put_contents("/etc/artica-postfix/ldap_settings/suffix", $RESULTS["LDAPSyncProvClientSearchBase"]);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableLDAPSyncProv",1);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LDAPSyncProvID",$LDAPSyncProvID);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableLDAPSyncProvClient",1);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LDAPSyncProvClientServer",$REMOTE_ARTICA_SERVER);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LDAPSyncProvClientSearchBase",$RESULTS["LDAPSyncProvClientSearchBase"]);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("WizardLdapCluster",serialize(array()));
+    build_progress("{restarting}",50);
+    shell_exec("/etc/init.d/slapd restart");
+	build_progress("{done}",100);
+	
+}
+
+function exunlink(){
+	
+	$unix=new unix();
+	$sock=new sockets();
+	$net=new networking();
+	$WgetBindIpAddress=$sock->GET_INFO("WgetBindIpAddress");
+	$MAIN=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HASettings")));
+	$eth=$MAIN["eth"];
+	$t=time();
+	if(!is_numeric($MAIN["SLAVE_SSL"])){$MAIN["SLAVE_SSL"]=1;}
+	$proto="http";
+	if($MAIN["SLAVE_SSL"]==1){$proto="https";}
+	
+	$MAIN=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HASettings")));
+	$eth=$MAIN["eth"];
+	$nic=new system_nic($eth);
+	$MAIN["BALANCE_IP"]=$MAIN["first_ipaddr"];
+	$SEND_SETTING=base64_encode(serialize($MAIN));
+	
+	$uri="$proto://{$MAIN["SLAVE"]}:{$MAIN["SLAVE_PORT"]}/nodes.listener.php?ucarp2-remove=$SEND_SETTING&continue=true";
+	
+	if(!$GLOBALS["FORCE"]){
+		build_progress("Notify {$MAIN["SLAVE"]}",20);
+		
+		$curl=new ccurl($uri,true,$WgetBindIpAddress,true);
+		$curl->NoHTTP_POST=true;
+		if(!$curl->get()){
+			echo "$curl->error\n";
+			debug_curl($curl->CURL_ALL_INFOS);
+			build_progress("{reboot_networks} {$MAIN["SLAVE"]}:{$MAIN["SLAVE_PORT"]} {failed}",110);
+			return;
+		}
+		
+		if(!preg_match("#<RESULTS>(.+?)</RESULTS>#is", $curl->data,$re)){
+			echo "Please verify that both servers must have the same Artica version\n";
+			build_progress("{reboot_networks} {$MAIN["SLAVE"]}:{$MAIN["SLAVE_PORT"]} {protocol_error}",110);
+			return;
+		}
+		
+		$array=unserialize(base64_decode($re[1]));
+        if(!is_array($array)){$array=array();}
+		if($array["ERROR"]){
+			echo "{$array["ERROR_SHOW"]}\n";
+			build_progress("{reboot_networks} {$MAIN["SLAVE"]}:{$MAIN["SLAVE_PORT"]} {failed}",110);
+			return;
+		}
+	}
+	build_progress("{please_wait_reconfigure_network}",80);
+	if(!$GLOBALS["FORCE"]){sleep(3);}
+	$nic=new system_nic($eth);
+	$nic->ucarp_enabled=0;
+	$nic->ucarp_vip=null;
+	$nic->ucarp_vid=0;
+	$nic->ucarp_master=0;
+	$nic->NoReboot=true;
+	if(isset($MAIN["first_ipaddr"])){
+		if($MAIN["first_ipaddr"]<>null){
+			$nic->IPADDR=$MAIN["first_ipaddr"];
+		}
+	}
+	if(!$nic->SaveNic()){
+		echo "Unable to save local settings\n";
+		build_progress("{saving_local_parameters} {failed}",110);
+		return;
+	}	
+	//please_wait_reconfigure_network
+	$sock->SET_INFO("HASettings", base64_encode(serialize(array())));
+	
+	build_progress("{reboot_networks}",75);
+	if(!$GLOBALS["FORCE"]){sleep(3);}
+	$php=$unix->LOCATE_PHP5_BIN();
+	system("$php /usr/share/artica-postfix/exec.virtuals-ip.php --build --force");
+	build_progress("{reboot_networks}",80);
+	squid_admin_mysql(0, "Rebooting Network", null,__FILE__,__LINE__);
+	system("/usr/sbin/artica-phpfpm-service -restart-network --script=exec.failover.php/".__FUNCTION__);
+	build_progress("{starting_service}",90);
+	system("/etc/init.d/artica-failover stop");
+	sleep(3);
+	build_progress("{done}",100);
+	
+}
+
+function debug_curl($array){
+	
+
+	foreach ($array as $num=>$val){
+		if(is_array($val)){
+
+            foreach ($val as $a=>$b){echo "$a......:$b\n";}
+			$val=null;
+			$val=@implode("\n", $tt);
+		}
+		
+		
+		if(strtolower($num)=="url"){continue;}
+		echo "$num......:$val\n";
+	}
+}

@@ -1,0 +1,8 @@
+<enable_original_recipient>Original recipient (X-Original-To)</enable_original_recipient>
+<enable_original_recipient_text>Activar o suporte para o cabeçalho [b]X-Original-To da mensagem[/b].[br] Este cabeçalho é necess%C3¡rio para caixas de correio multi-recipientes[br].
+Quando este parâmetro é activado, o daemon de limpeza realiza a eliminaç%C3£o de duplicados em pares distintos de (recipiente original, recipiente reescrito),
+e gera registos originais n%C3£o vazios dos ficheiros da fila de receptores [br][br][br]
+Quando este parâmetro é desactivado, o daemon de limpeza efectua a eliminaç%C3£o de duplicados apenas no endereço do destinat%C3¡rio reescrito,
+e gera registos de ficheiros de fila de destinat%C3¡rios originais vazios</enable_original_recipient_text>
+<undisclosed_recipients_header>Undisclosed Recipients Header</undisclosed_recipients_header>
+<undisclosed_recipients_header_text>Message header that the Postfix cleanup server inserts when a message contains no To: or Cc: message header.</undisclosed_recipients_header_text>

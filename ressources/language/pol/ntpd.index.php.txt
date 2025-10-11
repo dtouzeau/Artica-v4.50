@@ -1,0 +1,20 @@
+<about>NTPD jest przeznaczony do synchronizacji zegar%C3%B3w komputer%C3%B3w w sieci do wsp%C3%B3lnej bazy czasowej (zwykle UTC) za pomoc%C4%85 protoko%C5%82u NTP.</about>
+<add_text_server>Click on the picture below in order to add a new Internet Time server....</add_text_server>
+<add_title_server>Nowy serwer czasu</add_title_server>
+<close_windows>All operations are successfull, you can close this windows now</close_windows>
+<enable_ntpd>Enable NTPD service</enable_ntpd>
+<give_server_name>Give the Internet Time Server name</give_server_name>
+<how_to_find_timeserver>[h5]Gdzie mog%C4%99 znale%C5%BA%C4%87 serwer czasu ?[/h5].[br]
+Jako domy%C5%9Blne serwery przypisz%C4%85 Ci timeservery z ca%C5%82ego %C5%9Bwiata,
+jako%C5%9B%C4%87 czasu nie b%C4%99dzie idealna.[br]
+Uzyskasz nieco lepsze wyniki je%C5%9Bli u%C5%BCyjesz [a http://www.pool.ntp.org/zone/@][u]stref kontynentalnych[/u][/a]
+(Na przyk%C5%82ad [u][a http://www.pool.ntp.org/zone/europe]europa[/a][/u],
+[a http://www.pool.ntp.org/zone/north-america]north-america[/a], oceania lub asia.pool.ntp.org),
+i jeszcze lepszy czas, je%C5%9Bli u%C5%BCywasz strefy krajowej (jak ch.pool.ntp.org w Szwajcarii) [br]
+- dla wszystkich tych stref mo%C5%BCesz ponownie u%C5%BCy%C4%87 prefiks%C3%B3w 0, 1 lub 2, jak 0.ch.pool.ntp.org.[br]
+Zauwa%C5%BC jednak, %C5%BCe strefa country mo%C5%BCe nie istnie%C4%87 dla Twojego kraju, lub mo%C5%BCe zawiera%C4%87 tylko jeden lub dwa timeservers. [br]
+Je%C5%9Bli znasz timeservers, kt%C3%B3re s%C4%85 naprawd%C4%99 blisko Ciebie (mierzone odleg%C5%82o%C5%9Bci%C4%85 sieciow%C4%85, za pomoc%C4%85 traceroute lub ping), czas prawdopodobnie b%C4%99dzie jeszcze lepszy.</how_to_find_timeserver>
+<ntpdconf>NTPD Config file</ntpdconf>
+<ntpd_apply>Apply NTPD to server</ntpd_apply>
+<save_ntpd_ok>Saving NTPD settings....OK</save_ntpd_ok>
+<save_toserver_ok>Saving NTPD Settings to server....OK</save_toserver_ok>

@@ -1,0 +1,422 @@
+Postfix log summaries for Aug 17
+
+Grand Totals
+------------
+messages
+
+    228   received
+    149   delivered
+      0   forwarded
+      5   deferred  (47  deferrals)
+    162   bounced
+    130   rejected (46%)
+      0   reject warnings
+      0   held
+      0   discarded (0%)
+
+   4765k  bytes received
+   5177k  bytes delivered
+     47   senders
+     27   sending hosts/domains
+     25   recipients
+     15   recipient hosts/domains
+
+
+Per-Hour Traffic Summary
+------------------------
+    time          received  delivered   deferred    bounced     rejected
+    --------------------------------------------------------------------
+    0000-0100          22         16          3         12          7 
+    0100-0200          11          5          4         12          3 
+    0200-0300           7          1          3         12         14 
+    0300-0400           6          0          4         12          8 
+    0400-0500           9          3          3         12          2 
+    0500-0600          13          7          4         12         10 
+    0600-0700          15          9          3         12          8 
+    0700-0800          12          6          3         12          6 
+    0800-0900          14          8          4         12          6 
+    0900-1000          34         28          4         12         17 
+    1000-1100          26         20          4         12         34 
+    1100-1200          26         20          3         12          9 
+    1200-1300          23         19          4         12          5 
+    1300-1400          10          7          1          6          1 
+    1400-1500           0          0          0          0          0 
+    1500-1600           0          0          0          0          0 
+    1600-1700           0          0          0          0          0 
+    1700-1800           0          0          0          0          0 
+    1800-1900           0          0          0          0          0 
+    1900-2000           0          0          0          0          0 
+    2000-2100           0          0          0          0          0 
+    2100-2200           0          0          0          0          0 
+    2200-2300           0          0          0          0          0 
+    2300-2400           0          0          0          0          0 
+
+Host/Domain Summary: Message Delivery 
+--------------------------------------
+ sent cnt  bytes   defers   avg dly max dly host/domain
+ -------- -------  -------  ------- ------- -----------
+    124     3080k       0     0.9 s    6.2 s  articatech.com
+      4     1102k       0     9.7 s   14.0 s  reseau-stas.fr
+      4      793k       0    17.5 s   18.0 s  macandco.fr
+      3   160512        0     1.1 s    1.5 s  nimes.fr
+      2     4762        0    21.0 s   24.0 s  securisys.com.au
+      2     4759        0     1.1 s    1.2 s  gmail.com
+      2     4750        0     0.6 s    0.8 s  buffetti.it
+      1    16084        0     4.9 s    4.9 s  answertelecom.com.br
+      1     3980        1     5.8 m    5.8 m  safe-international.ch
+      1     2970        0     1.2 s    1.2 s  loste.com
+      1     2399        0     5.2 s    5.2 s  montyholding.com
+      1     2345        0     8.1 s    8.1 s  eao.ru
+      1     1614        0     2.4 s    2.4 s  teralibris.com
+      1     1595        0     2.0 s    2.0 s  jeanlain.com
+      1     1077        0     1.2 s    1.2 s  yahoo.fr
+      0        0       12     0.0 s   69.0 h  logcorp.com
+      0        0       11     0.0 s   85.3 h  thebigtree.house
+      0        0       11     0.0 s   91.0 h  articatech.net
+      0        0       12     0.0 s   42.1 h  osx.co.il
+
+Host/Domain Summary: Messages Received 
+---------------------------------------
+ msg cnt   bytes   host/domain
+ -------- -------  -----------
+     81   119043   artica.com
+     31   122147   artica.fr
+     28     1723k  articatech.com
+     17    82021   github.com
+     15      559k  formilux.org
+     10    24826   ks220503.kimsufi.com
+      7    38700   sgmail.github.com
+      5   181676   nimes.fr
+      5    66352   lists.squid-cache.org
+      5    17794   nginx.org
+      4     1098k  reseau-stas.fr
+      3     5597   gmail.com
+      2    21276   alerts.bounces.google.com
+      2     9277   free.org
+      1   299923   zodiacaerospace.com
+      1    74109   channelnews.fr
+      1    51149   tr.arxms07.com
+      1    50556   macandco.fr
+      1    50108   demand.eloqua.com
+      1    46786   conso-serv01.com
+      1    40308   track.spiceworks.com
+      1    37449   cnet.neolane.net
+      1    34625   bounce.twitter.com
+      1    19355   facebookmail.com
+      1    15703   emails.affiliation360.com
+      1     4433   web1.uk.assimilatedservers.net
+      1     3817   johnbutler.us
+
+Senders by message count
+------------------------
+     81   root@artica.com
+     31   postmaster@artica.fr
+     17   noreply@github.com
+     12   sales@articatech.com
+     10   root@ks220503.kimsufi.com
+      8   david@articatech.com
+      7   bounces+848413-9cad-david=articatech.com@sgmail.github.com
+      5   cedric.gausserand@nimes.fr
+      5   nginx-bounces@nginx.org
+      5   squid-users-bounces@lists.squid-cache.org
+      4   prvs=16710df1bc=benoit.grellet@reseau-stas.fr
+      3   andre.bolinhas@articatech.com
+      3   angelique.lecadre@articatech.com
+      3   dtouzeau@gmail.com
+      2   poubelle@free.org
+      1   noreply@emails.affiliation360.com
+      1   alexandre@articatech.com
+      1   support@articatech.com
+      1   bounce-md_30252377.55d18813.v1-8b51e932e1214245b3bb9f234585b5f7@tr.arxms07.com
+      1   news@conso-serv01.com
+      1   eloqua@demand.eloqua.com
+      1   notification+zj4yza0fja_c@facebookmail.com
+      1   3ABnRVRQKBysNVVNSLHSLYaZ-UVYLWSfNVVNSL.JVTcHSLYPLHYaPJHaLJO.JVT@alerts.bounces.google.com
+      1   3YG3RVRQKBzUXffXcVRcVikj-efiVgcpXffXcV.TfdmRcViZVRikZTRkVTY.Tfd@alerts.bounces.google.com
+      1   bounce-md_30047178.55d16b1c.v1-7c45bdf910cc4cd89947a52f47ea3002@track.spiceworks.com
+      1   b066404ed90contact=articatech.com@bounce.twitter.com
+      1   prvs=2671a35f67=suriya.phetdee@zodiacaerospace.com
+      1   bounce@channelnews.fr
+      1   jbrych@macandco.fr
+      1   httpd@web1.uk.assimilatedservers.net
+      1   auchan@cnet.neolane.net
+      1   haproxy+bounces-26542-david=articatech.com@formilux.org
+      1   haproxy+bounces-26543-david=articatech.com@formilux.org
+      1   haproxy+bounces-26544-david=articatech.com@formilux.org
+      1   haproxy+bounces-26545-david=articatech.com@formilux.org
+      1   haproxy+bounces-26546-david=articatech.com@formilux.org
+      1   haproxy+bounces-26547-david=articatech.com@formilux.org
+      1   haproxy+bounces-26548-david=articatech.com@formilux.org
+      1   haproxy+bounces-26549-david=articatech.com@formilux.org
+      1   haproxy+bounces-26550-david=articatech.com@formilux.org
+      1   haproxy+bounces-26551-david=articatech.com@formilux.org
+      1   haproxy+bounces-26552-david=articatech.com@formilux.org
+      1   haproxy+bounces-26553-david=articatech.com@formilux.org
+      1   haproxy+bounces-26554-david=articatech.com@formilux.org
+      1   haproxy+bounces-26555-david=articatech.com@formilux.org
+      1   haproxy+bounces-26556-david=articatech.com@formilux.org
+      1   MarieLaureDELIGNY@johnbutler.us
+
+Recipients by message count
+---------------------------
+     89   david@articatech.com
+     17   angelique.lecadre@articatech.com
+     12   valerie@articatech.com
+      4   benoit.grellet@reseau-stas.fr
+      3   cedric.gausserand@nimes.fr
+      2   pjose@securisys.com.au
+      2   contact@articatech.com
+      2   jbrych@macandco.fr
+      2   m.franco@buffetti.it
+      1   ti@answertelecom.com.br
+      1   jerome.beunel@safe-international.ch
+      1   alexandre@articatech.com
+      1   angelique@articatech.com
+      1   andre.bolinhas@articatech.com
+      1   cedric@articatech.com
+      1   2pxtecnologia@gmail.com
+      1   mihai.nanu@gmail.com
+      1   ffresno@jeanlain.com
+      1   ml@loste.com
+      1   hasan.fakih@montyholding.com
+      1   michel.poirson@teralibris.com
+      1   Achats@macandco.fr
+      1   compta@macandco.fr
+      1   adblaiso@yahoo.fr
+      1   mfc@eao.ru
+
+Senders by message size
+-----------------------
+   1259k  david@articatech.com
+   1098k  prvs=16710df1bc=benoit.grellet@reseau-stas.fr
+ 449573   haproxy+bounces-26554-david=articatech.com@formilux.org
+ 371469   angelique.lecadre@articatech.com
+ 299923   prvs=2671a35f67=suriya.phetdee@zodiacaerospace.com
+ 181676   cedric.gausserand@nimes.fr
+ 122147   postmaster@artica.fr
+ 119043   root@artica.com
+  82021   noreply@github.com
+  74109   bounce@channelnews.fr
+  69387   andre.bolinhas@articatech.com
+  66352   squid-users-bounces@lists.squid-cache.org
+  51149   bounce-md_30252377.55d18813.v1-8b51e932e1214245b3bb9f234585b5f7@tr.arxms07.com
+  50556   jbrych@macandco.fr
+  50108   eloqua@demand.eloqua.com
+  46786   news@conso-serv01.com
+  40308   bounce-md_30047178.55d16b1c.v1-7c45bdf910cc4cd89947a52f47ea3002@track.spiceworks.com
+  38700   bounces+848413-9cad-david=articatech.com@sgmail.github.com
+  37449   auchan@cnet.neolane.net
+  36695   haproxy+bounces-26545-david=articatech.com@formilux.org
+  34625   b066404ed90contact=articatech.com@bounce.twitter.com
+  30139   sales@articatech.com
+  24826   root@ks220503.kimsufi.com
+  19355   notification+zj4yza0fja_c@facebookmail.com
+  17794   nginx-bounces@nginx.org
+  15703   noreply@emails.affiliation360.com
+  14340   haproxy+bounces-26546-david=articatech.com@formilux.org
+  12768   haproxy+bounces-26547-david=articatech.com@formilux.org
+  12580   haproxy+bounces-26552-david=articatech.com@formilux.org
+  10722   3YG3RVRQKBzUXffXcVRcVikj-efiVgcpXffXcV.TfdmRcViZVRikZTRkVTY.Tfd@alerts.bounces.google.com
+  10554   3ABnRVRQKBysNVVNSLHSLYaZ-UVYLWSfNVVNSL.JVTcHSLYPLHYaPJHaLJO.JVT@alerts.bounces.google.com
+   9277   poubelle@free.org
+   6876   haproxy+bounces-26544-david=articatech.com@formilux.org
+   5981   haproxy+bounces-26542-david=articatech.com@formilux.org
+   5637   haproxy+bounces-26549-david=articatech.com@formilux.org
+   5597   dtouzeau@gmail.com
+   5147   haproxy+bounces-26543-david=articatech.com@formilux.org
+   5108   haproxy+bounces-26550-david=articatech.com@formilux.org
+   4566   haproxy+bounces-26551-david=articatech.com@formilux.org
+   4433   httpd@web1.uk.assimilatedservers.net
+   4189   haproxy+bounces-26548-david=articatech.com@formilux.org
+   4033   haproxy+bounces-26555-david=articatech.com@formilux.org
+   3817   MarieLaureDELIGNY@johnbutler.us
+   3119   haproxy+bounces-26556-david=articatech.com@formilux.org
+   2970   support@articatech.com
+   2487   haproxy+bounces-26553-david=articatech.com@formilux.org
+    740   alexandre@articatech.com
+
+Recipients by message size
+--------------------------
+   2257k  david@articatech.com
+   1102k  benoit.grellet@reseau-stas.fr
+ 401226   angelique.lecadre@articatech.com
+ 286020   valerie@articatech.com
+ 271327   jbrych@macandco.fr
+ 270587   Achats@macandco.fr
+ 270587   compta@macandco.fr
+ 160512   cedric.gausserand@nimes.fr
+  50556   alexandre@articatech.com
+  50108   cedric@articatech.com
+  39058   contact@articatech.com
+  16084   ti@answertelecom.com.br
+  12428   andre.bolinhas@articatech.com
+   4762   pjose@securisys.com.au
+   4750   m.franco@buffetti.it
+   3980   jerome.beunel@safe-international.ch
+   3817   angelique@articatech.com
+   2970   ml@loste.com
+   2399   hasan.fakih@montyholding.com
+   2384   2pxtecnologia@gmail.com
+   2375   mihai.nanu@gmail.com
+   2345   mfc@eao.ru
+   1614   michel.poirson@teralibris.com
+   1595   ffresno@jeanlain.com
+   1077   adblaiso@yahoo.fr
+
+message deferral detail
+-----------------------
+  smtp (total: 47)
+        12   logcorp.com[207.148.248.143]:25: Connection timed out
+        12   mc.osx.co.il[37.19.125.236]:25: Connection timed out
+        11   25: Connection refused
+        11   unable to verify user (in reply to RCPT TO command
+         1   03:00 (in reply to RCPT TO command
+
+message bounce detail (by relay)
+--------------------------------
+  127.0.0.1[127.0.0.1]:2003 (total: 162)
+       162   5.1.1 User does not exist (in reply to RCPT TO command)
+
+message reject detail
+---------------------
+  RCPT
+    cannot find your hostname (total: 75)
+          14   208.98.46.36
+          13   208.98.33.173
+           4   123.28.63.136
+           4   1.39.8.225
+           4   222.252.24.23
+           4   41.57.102.250
+           4   113.168.137.40
+           4   113.167.143.144
+           4   190.173.82.173
+           4   14.166.16.83
+           4   115.79.44.32
+           4   117.204.228.126
+           2   162.213.152.24
+           1   177.185.63.6
+           1   187.253.173.182
+           1   180.103.196.14
+           1   183.182.112.188
+           1   113.167.117.86
+           1   178.91.18.121
+    Client host rejected: Go Away! rule id (total: 12)
+           2   brasiltelecom.net.br
+           2   ccnw.ne.jp
+           2   hinet.net
+           1   fibertel.com.ar
+           1   consultorpc.com
+           1   mailjet.com
+           1   mchsi.com
+           1   rr.com
+           1   a94-132-196-110.cpe.netcabo.pt
+    Client host rejected: Go Away! rule id 1215 (total: 2)
+           1   e25.upp-down.fr
+           1   e16.wox50so.fr
+    Client host rejected: Go Away! rule id 1319 (total: 1)
+           1   a100.service-mail-pro.fr
+    Client host rejected: Go Away! rule id 2009 (total: 1)
+           1   service-mail-pro.com
+    Client host rejected: Go Away! rule id 2372 (total: 1)
+           1   e7.pc2uxf.fr
+    Client host rejected: Go Away! rule id 2529 (total: 1)
+           1   e35.upp-down.fr
+    Client host rejected: Go Away! rule id 2550 (total: 1)
+           1   a216.emailingpremium.fr
+    Client host rejected: Go Away! rule id 2681 (total: 1)
+           1   e24.pc2uxf.fr
+    Client host rejected: Go Away! rule id 2822 (total: 1)
+           1   e22.grandissime-cuvee.fr
+    Client host rejected: Go Away! rule id 2905 (total: 6)
+           1   ta120.ma86.fr
+           1   ta131.ma86.fr
+           1   ta160.ma86.fr
+           1   ta161.ma86.fr
+           1   ta47.ma86.fr
+           1   ta71.ma86.fr
+    Client host rejected: Go Away! rule id 2915 (total: 4)
+           1   tb48.ma86.fr
+           1   tb51.ma86.fr
+           1   tb63.ma86.fr
+           1   tb97.ma86.fr
+    Client host rejected: Go Away! rule id 3023 (total: 4)
+           2   m6473.zexymivymimyw.fr
+           1   m4445.dygyqyvetesaf.fr
+           1   m6463.zexymivymimyw.fr
+    Client host rejected: Go Away! rule id 3028 (total: 5)
+           2   m4423.dygyqyvetesaf.fr
+           1   m3424.cyqujeqowufah.fr
+           1   m3627.tevoxinodazup.fr
+           1   m3637.tevoxinodazup.fr
+    Client host rejected: Go Away! rule id 3059 (total: 1)
+           1   didier-roi-du-prix-bas.com
+    Client host rejected: Go Away! rule id 3098 (total: 10)
+           1   mn12.info-manews.fr
+           1   mn14.info-manews.fr
+           1   mn18.info-manews.fr
+           1   mn21.info-manews.fr
+           1   mn27.info-manews.fr
+           1   mn28.info-manews.fr
+           1   mn29.info-manews.fr
+           1   mn3.info-manews.fr
+           1   mn4.info-manews.fr
+           1   mn8.info-manews.fr
+    Client host rejected: Go Away! rule id 3193 (total: 2)
+           1   162.213.152.24
+           1   162.213.152.83
+    Client host rejected: Go Away! rule id 408 (total: 1)
+           1   e12.upp-down.fr
+    Recipient address rejected: User unknown in local recipient table (total: 1)
+           1   info@artica.fr
+
+message reject warning detail: none
+
+message hold detail: none
+
+message discard detail: none
+
+smtp delivery failures: none
+
+Warnings
+--------
+  postmap (total: 29)
+        14   /etc/postfix/check_client_access.db: duplicate entry: "regex:"
+         1   /etc/postfix/check_client_access, line 509: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 403: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 481: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 492: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 379: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 123: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 479: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 498: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 510: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 496: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 414: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 468: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 499: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 505: record is in "key: ...
+         1   /etc/postfix/check_client_access, line 507: record is in "key: ...
+  smtpd (total: 133)
+        45   unknown[155.133.18.16]: SASL LOGIN authentication failed: authe...
+        45   hostname ptr-155.133.18.16.vmline.pl does not resolve to addres...
+        13   hostname jvba11.olharonline.adm.br does not resolve to address ...
+         4   hostname 190-173-82-173.speedy.com.ar does not resolve to addre...
+         4   hostname static.vnpt-hanoi.com.vn does not resolve to address 2...
+         4   hostname localhost does not resolve to address 113.168.137.40
+         4   hostname 1-39-8-225.live.vodafone.in does not resolve to addres...
+         4   hostname adsl.viettel.vn does not resolve to address 115.79.44....
+         4   hostname localhost does not resolve to address 113.167.143.144
+         1   hostname unitel.com.la does not resolve to address 183.182.112.188
+         1   hostname localhost does not resolve to address 113.167.117.86
+         1   hostname hosted-by.hostgrad.ru does not resolve to address 185....
+         1   hostname 178.91.18.121.megaline.telecom.kz does not resolve to ...
+         1   hostname 187.253.173.182.cable.dyn.cableonline.com.mx does not ...
+         1   hostname 177-185-63-006.turbosp.com.br does not resolve to addr...
+
+Fatal Errors: none
+
+Panics: none
+
+Master daemon messages
+----------------------
+      1   reload -- version 2.12-20140626, configuration /etc/postfix

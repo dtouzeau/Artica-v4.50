@@ -1,0 +1,6 @@
+github.com/leekchan/timeutil v0.0.0-20150802142658-28917288c48d h1:2puqoOQwi3Ai1oznMOsFIbifm6kIfJaLLyYzWD4IzTs=
+github.com/leekchan/timeutil v0.0.0-20150802142658-28917288c48d/go.mod h1:hO90vCP2x3exaSH58BIAowSKvV+0OsY21TtzuFGHON4=
+github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 h1:lDH9UUVJtmYCjyT0CI4q8xvlXPxeZ0gYCVvWbmPlp88=
+github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
+github.com/techoner/gophp v0.2.0 h1:vVFoS2XC/NZariagUOhAGqC8p/Ws8R8ARYpj/9lTIAo=
+github.com/techoner/gophp v0.2.0/go.mod h1:NOxB/qoTl4+G82CkQp60T18Az5rOTufCqm83x9i/u7M=

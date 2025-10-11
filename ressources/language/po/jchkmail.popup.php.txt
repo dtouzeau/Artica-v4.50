@@ -1,0 +1,80 @@
+<AddRate>Give the rate number for this source</AddRate>
+<archive>Archiving</archive>
+<archive_explain>Archiving electronic messages is a growing need in many organisations, for many reasons :[ul]
+[li]Indexing and information retrieval[/li]
+[li]Data mining[/li]
+[li]Restoring a lost or filtered message[/li]
+[li]Backucp[/li]
+[/ul]
+</archive_explain>
+<badmx_explain>
+This check consists in checking MXs (name and address) of the domain part of the sender address against a blacklist.[br]
+Some spammers use domain names with MXs defined on private networks or at IP addresses without any real machine configured at that address.[br]
+Usually you can reject messages if the domain part of the sender address can't receive mail (you can't answer him).[br]
+This kind of check doesn't block too much spam, but can alleviate mail queue from bounces to unreacheable addresses...
+</badmx_explain>
+<check_element>Check element</check_element>
+<ConnOpen>Simultaneous Open Connections</ConnOpen>
+<ConnRate>Connection Rate</ConnRate>
+<enable_filter>Enable this filter</enable_filter>
+<eNO>Don't filter</eNO>
+<eNOQUICK>Disable checking & stop other filters</eNOQUICK>
+<eYES>Filter</eYES>
+<eYESQUICK>Enable checking & stop others filters</eYESQUICK>
+<gl_NO>Never greylist bet check sender and recipient</gl_NO>
+<gl_NO-QUICK>Never greylist</gl_NO-QUICK>
+<gl_YES>Greylisting is applied to every triplet</gl_YES>
+<gl_YES-QUICK>GreyList</gl_YES-QUICK>
+<GreyCheckConnect>Connection address</GreyCheckConnect>
+<GreyCheckFrom>Endereço do remetente</GreyCheckFrom>
+<GreyCheckTo>Recipient address</GreyCheckTo>
+<greylist_explain>[b]Default Greylisting Behaviour[/b] - You have to decide if you will enable greylisting
+for all of your users and disable for those who don't want this feature or if you will enable only for some of your users.[br]
+Generally, you can start with the last option, with some "beta testers" and if people are happy with greylisting,
+migrate to the first option and remove those who don't want greylisting (this is how we've done at our domain).</greylist_explain>
+<greylist_intro>j-chkmail implementa o método de greilisting de Evan Harris.
+A implementaç%C3£o do j-chkmail destina-se a ser utilizada em grandes servidores [br].
+Por isso, tenta reduzir o n%C3%BAmero de entradas na base de dados,
+e utiliza resultados de outros métodos de filtragem para remover entradas indesejadas [br].
+Para além das bases de dados originais (entradas pendentes e validadas),
+j-chkmail utiliza duas novas bases de dados: as entradas da lista branca e as entradas da lista negra.
+A base de dados de entradas em lista branca contém apenas casais de IP e nomes de dom%C3%ADnio.</greylist_intro>
+<MaxMsgs>Messages per connection</MaxMsgs>
+<MaxRcpt>Recipient count per message</MaxRcpt>
+<MIN_BODY_LENGTH>Minimum body length allowed</MIN_BODY_LENGTH>
+<MsgRate>Message Rate</MsgRate>
+<NetClass>Network Classes</NetClass>
+<NetClassAddName>Give the name of your class</NetClassAddName>
+<NetClassHoToAdd>You can define a domain or a part of ip address
+10
+193.200
+domain.com
+212.3.1.4</NetClassHoToAdd>
+<Netclass_AUTH>people connecting to your mailserver from everywhere and using your mailserver to relay their messages. E. g. roaming users.[br]
+This network class isn't explicitly defined.[br]
+Connections are put in this class, if the SMTP client use an anthenticated connection.</Netclass_AUTH>
+<Netclass_DEFAULT>All other clients not defined</Netclass_DEFAULT>
+<Netclass_dnsbl>IP Realtime Black/White Lists</Netclass_dnsbl>
+<Netclass_DOMAIN>SMTP clients in your domain. This may be the case if your domain covers many geographically distinct sites</Netclass_DOMAIN>
+<NetClass_explain>What's this ???[br]
+"Network Classes" is a way to handle in a differently connections coming from different sources.[br]
+Surely, you don't want to grant the same rights to clients in your local network and unknown clients in the other side of the world.[br]
+Assigning "Network Classes" to networks is a comprehensive way to aggregate heterogeneous networks (IPv4, IPv6, host names, â€¦)
+in order to assign common privileges, without having to specify all IP addresses/networks for each control parameter.
+</NetClass_explain>
+<Netclass_FRIEND>some SMTP clients with whom you talk frequently and you can give some privileges</Netclass_FRIEND>
+<Netclass_LOCAL>SMTP clients in your really local network.</Netclass_LOCAL>
+<rate>Rate</rate>
+<rate_explain>J-chkmail evaluate some "resource" rates on a 10 minutes sliding time window [br]
+the filter administrator can set limits based on some parameters...</rate_explain>
+<RcptRate>Recipient Rate</RcptRate>
+<RejectShortMsgs_explain>Se o seu servidor de correio tem de lidar frequentemente com mensagens indesejadas
+cujo tamanho corporal é muito curto (digamos, algo como uma d%C3%BAzia de caracteres), é poss%C3%ADvel rejeit%C3¡-los [br].
+Este tipo de mensagens s%C3£o geralmente enviadas por pessoas que querem validar uma lista de endereços de correio electr%C3%B3nico [br].
+Assim, eles enviam lentamente uma mensagem por endereço e esperam por um salto [br].
+Se a mensagem n%C3£o saltar, isso significa que o endereço de correio electr%C3%B3nico é provavelmente um endereço v%C3¡lido [br].
+Por vezes, é adicionado um c%C3%B3digo curto à mensagem para facilitar a correlaç%C3£o entre uma mensagem devolvida e um endereço de correio electr%C3%B3nico</RejectShortMsgs_explain>
+<SCANNER_ACTION>Action when virus found</SCANNER_ACTION>
+<SCANNER_PROTOCOL>Scanner used protocol</SCANNER_PROTOCOL>
+<SCANNER_SAVE>Quarantine detected messages</SCANNER_SAVE>
+<SCANNER_SOCK>Clamav socket path</SCANNER_SOCK>

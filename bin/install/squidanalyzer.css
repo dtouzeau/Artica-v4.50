@@ -1,0 +1,147 @@
+/***********/
+/* General */
+/***********/
+
+@import '/angular/style.css';
+@import '/angular/fonts.css';
+
+html, body { margin:0; padding: 0; height: 100%; font-family: "lato","Trebuchet MS", Verdana, Arial, Helvetica; }
+
+body { font-size: 10pt; background-color: #FFFFFF; min-width: 900px; }
+
+.notification { color: #222222; font-style: normal; font-size:0.8em; }
+
+#conteneur { height: auto !important; min-height: 100%; height: 100%; position: relative; }
+
+.line-separator { height:1px; width:520px; background:#FFFFFF; border-bottom:0px solid #FFFFFF; margin-top:-25px; margin-left: 10px; margin-bottom: 45px; }
+
+.descLegend { font-style: normal; }
+
+.legendeTitle { font-variant: small-caps; font-weight: bold; font-size: 1.3em; line-height: 18pt; letter-spacing: 2px; }
+
+#alignLeft { float: left; }
+
+.italicPercent { font-style: normal; font-size: 0.813em; }
+
+#contenu { padding-bottom: 50px; }
+
+#contenu h4 { font-size: 1.6em; font-variant: small-caps; padding-left: 15px; letter-spacing: 2px; }
+
+#contenu h3 { font-size: 1.2em; font-variant: small-caps; padding-left: 15px; letter-spacing: 2px; }
+
+.displayGraph { border: 0px; }
+
+div.uplink { margin-top: 30px; margin-left: 0; margin-right: 0; text-align: center; }
+
+div.uplink a { color: #222222; text-decoration: none; font-variant: small-caps; font-weight: bold; }
+
+div.uplink a:hover { color: #76add2; }
+
+table.stata td a.domainLink { font-size: 1em; font-variant: normal; font-style: normal; }
+
+table.graphs { margin-right: auto; margin-left: auto; }
+
+table.stata th.headerBlack { color: #222222; font: bold 12px "lato","Trebuchet MS", Verdana, Arial, Helvetica, sans-serif; font-variant: small-caps; }
+
+table.stata { border-collapse: collapse; border-spacing: 0;width: 90%; margin-left:auto; margin-right:auto; margin-bottom: 25px;white-space:nowrap; font-size: 0.9em; }
+
+table.stata th { background: #F5F5F6; font: 14px "lato","Trebuchet MS", Verdana, Arial, Helvetica, sans-serif;font-weight: bold; padding-left: 5px; padding-right: 5px; padding-top: 3px; padding-bottom: 3px; border: 1px solid #e7e7e7; color: #676a6c; }
+
+table.stata td { text-align: center; padding-left: 5px; padding-right: 5px; padding-top: 5px; padding-bottom: 5px; border: 1px solid #e7e7e7; font-style: normal; }
+
+table.stata th.nobg { background: none; border-top: 0px; border-left: 0px; padding-left: 5px; padding-right: 5px; padding-top: 3px; padding-bottom: 3px; }
+
+table.stata td a { text-decoration: none; color: #676a6c; font-weight: bold; font-style: normal; font-size: 12px; }
+
+table.stata td a:hover { color: #76add2;text-decoration:underline }
+
+.displayLegend { margin-left: 50px; }
+
+.iconUpArrow { background-image: url("./images/up-arrow.png"); background-position: left bottom; background-repeat: no-repeat; padding-left: 25px; margin-bottom: 20px; }
+
+/**************/
+/*   Graphs   */
+/**************/
+
+#code_requests, #network_hits, #user_hits, #domain_hits, #second_domain_hits, #mime_hits, #code_bytes, #network_bytes, #user_bytes, #domain_bytes, #second_domain_bytes, #mime_bytes, #squidguard_acl, #throughput_bytes {
+     width : 550px;
+     height: 300px;
+     background:#F5F5F6;
+     border:1px solid #CCCCCC;
+     padding:0 10px;
+     margin:30px 10px 30px 10px;
+     border-radius:10px;
+     -moz-border-radius:10px;
+     -webkit-border-radius:10px;
+}
+
+/**************/
+/*   Header   */
+/**************/
+
+.iconUpArrow { background-image: url("./images/up-arrow.png"); background-position: left bottom; background-repeat: no-repeat; padding-left: 25px; margin-bottom: 20px; }
+#header { background: #FFFFFF; height: 155px; width: 100%; border-bottom: 3px solid #676a6c; }
+#header h1 { margin: 0; color: #656565; font-size: 3em; font-style: normal; font-variant: small-caps; letter-spacing: 2px;font-weight:bold; }
+#header h1 img { float: left; margin-top: 5px; margin-right: 20px; padding-left: 20px; }
+#header .sous-titre { color: #656565; font-style: normal; padding-left: 180px; font-size:12px; font-weight: bold; }
+
+/****************/
+/*    Footer    */
+/****************/
+
+#footer { background: #FFFFFF; height: 30px; width: 100%; border-top: 3px solid #CCCCCC; position: absolute; bottom: 0; }
+#footer h4 { margin: 0; color: #656565; font-size: 0.8em; font-style: normal; text-align: right; padding-top: 8px; padding-right: 5px; }
+#footer h4 a { color: silver; text-decoration: none; font-size: 1.1em; }
+#footer h4 a:hover { color: #656565; font-weight:bold; text-decoration: none; font-size: 1.1em; }
+
+/***********************/
+/*        Menu         */
+/***********************/
+
+ul { padding:0; margin:0; list-style-type:none; }
+li { float:right; }
+ul li a { display:block; width:135px; text-decoration:none; text-align:center; padding:5px; color: #676a6c; }
+ul li a:hover { color: #76add2; }
+#menu { margin: 0 auto; padding: 0 auto; height: 28px; clear: both; background-color: #FFFFFF; border-bottom: 1px solid 3px solid #CCCCCC;; }
+
+.iconUser { background-image: url("./images/user.png"); background-position: left center; background-repeat: no-repeat; padding-left: 20px;color:#676a6c }
+.iconArrow { background-image: url("./images/back-arrow.png"); background-position: left center; background-repeat: no-repeat; padding-left: 20px;color:#676a6c }
+.iconDomain { background-image: url("./images/domain.png"); background-position: left center; background-repeat: no-repeat; padding-left: 20px;color:#676a6c }
+.iconNetwork { background-image: url("./images/network.png"); background-position: left center; background-repeat: no-repeat; padding-left: 20px;color:#676a6c }
+.iconUrl { background-image: url("./images/cursor.png"); background-position: left center; background-repeat: no-repeat; padding-left: 20p;color:#676a6c; }
+.iconMime { background-image: url("./images/info.png"); background-position: left center; background-repeat: no-repeat; padding-left: 20px ;color:#676a6c }
+
+/******************************/
+/*         Calendar           */
+/******************************/
+
+#calendar { border-radius: 5px;float: right; border: 0px; margin-top: 5px; margin-right: 10px; padding:2px; background-color:#1ab394; }
+#calendar th { color: white; background-color: #1ab394; border: 0px; font-style: normal; font-size: 12px; }
+#calendar td { color: white; background-color: #1ab394; border: 0px; font-style: normal; font-size: 12px;}
+#calendar table { width: 200px; position: right; background-color: #1ab394; color: white; text-align: center; border: 0px; }
+#calendar table a { color: #FFFFFF; }
+#calendar table a:hover { font-weight:bold;text-decoration:underline }
+
+div.information {
+        background:#F3F2ED;
+        border:4px double white;
+        padding:0 10px;
+        margin:30px 0 30px 0;
+        border-radius:10px;
+        -moz-border-radius:10px;
+        -webkit-border-radius:10px;
+        box-shadow:3px 3px 6px 2px #A9A9A9;
+        -moz-box-shadow:3px 3px 6px 2px #A9A9A9;
+        -webkit-box-shadow:3px 3px 6px #A9A9A9;
+        width: 1035px;
+}
+
+div.tooltipLink { position:relative; cursor:pointer; }
+div.tooltipLink span.information { border-bottom:1px dotted gray; z-index:10; }
+div.tooltipLink div.tooltip { display:none; background-color:#EBF0FC; border:1px solid #FFFFFF; -moz-border-radius:10px; padding:6px; width:200px; }
+div.tooltipLink div.tooltip table { background-color:white; width:200px; }
+div.tooltipLink div.tooltip table tr.row0 td { background-color: #FFFFFF; border: 1px solid #EEEEEE; }
+div.tooltipLink div.tooltip table tr.row1 td { background-color: #EEEEEE; border: 1px solid #EEEEEE; }
+div.tooltipLink div.tooltip th { font-size:11px; }
+div.tooltipLink div.tooltip td { font-size:10px; font-weight:normal; padding:1px; }
+div.tooltipLink:hover div.tooltip { display:block; z-index:20; position:absolute; top:1.5em; left:2em; }

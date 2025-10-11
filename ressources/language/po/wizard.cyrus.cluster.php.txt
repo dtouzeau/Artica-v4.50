@@ -1,0 +1,20 @@
+<BUILD_CLUSTER>Build cluster</BUILD_CLUSTER>
+<WIZARD_CLUSTER_CYRUS_EXPLAIN>Este assistente ir%C3¡ ajud%C3¡-lo a criar um servidor de caixa de correio activo/passivo na sua rede.[br]
+Para definir esta estrutura necessita de um segundo servidor Artica em funcionamento com serviço IMAP [br].
+Este segundo servidor Artica ser%C3¡ a réplica/escravo das caixas de correio [br].
+Receber%C3¡ notificaç%C3µes deste servidor a fim de replicar caixas de correio em tempo real[br].
+Se a configuraç%C3£o for um sucesso, nunca perder%C3¡ os correios [br].
+br] A primeira operaç%C3£o é verificar se o servidor escravo armazena elementos mandat%C3%B3rios para o procedimento de ligaç%C3£o [br].
+Se a operaç%C3£o de ligaç%C3£o for um sucesso, os 2 servidores artica (mestre e escravo) alterar%C3£o os parâmetros e iniciar%C3£o o modo de produç%C3£o em cluster [br].
+Poder%C3¡ regressar a um modo aut%C3%B3nomo para n%C3£o perder correio numa operaç%C3£o falhada.[br][br]
+Portanto, é tempo de iniciar o primeiro procedimento [br].
+Preencha o formul%C3¡rio abaixo definindo as credenciais do servidor remoto.[br] Isto ajudar%C3¡ a Artica a falar com o servidor remoto para verificar o seu estado.[br]</WIZARD_CLUSTER_CYRUS_EXPLAIN>
+<WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>Slave/replica informations</WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>The target server is ready</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>This server is ready to be a replica/slave after clicking on the "build cluster" button the Master and the Slave
+will be notified to be linked in order to build a cluster configuration.[br]
+Your Master should be behind a Firewall with NAT, it is necessary to define which IP address/Server name the replica must use.
+In the form below, put the Ip address of your server act has a Master. 
+</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>
+<WIZARD_CLUSTER_CYRUS_WELCOME>Welcome on the Wizard for Clustering mailboxes</WIZARD_CLUSTER_CYRUS_WELCOME>
+<WIZARD_CLUSTER_ERROR>The wizard is blocked, it encounter some error, try to fix it ans restart the operation</WIZARD_CLUSTER_ERROR>

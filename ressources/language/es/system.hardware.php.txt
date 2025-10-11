@@ -1,0 +1,11 @@
+<changeClock>To Change the clock, set the time the time exactly as shown below</changeClock>
+<change_clock_tooltip>If you want to change the system clock[br]Click on this Link..</change_clock_tooltip>
+<clocks>Clocks</clocks>
+<clocks_text>Tu ordenador tiene dos relojes: uno con bater%C3%ADa que siempre est%C3¡ funcionando como reloj de ``hardware'', ``BIOS'' o ``CMOS'',
+y otro que es mantenido por el sistema operativo que se ejecuta actualmente en su ordenador como el reloj del ``sistema''.[br]
+El reloj de hardware generalmente s%C3%B3lo se utiliza para ajustar el reloj del sistema cuando su sistema operativo arranca,
+y desde ese momento hasta que se reinicie o apague el sistema, el reloj del sistema es el que se utiliza para llevar la cuenta del tiempo.</clocks_text>
+<convert_clock_tooltip>Ajustar el reloj del hardware desde el reloj del sistema</convert_clock_tooltip>
+<hardware_clock>Hardware clock</hardware_clock>
+<system_clock>System clock</system_clock>
+<wrong_date>The date given didn't match the requested format</wrong_date>

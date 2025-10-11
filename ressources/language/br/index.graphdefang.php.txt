@@ -1,0 +1,2 @@
+<hourly>Hor%C3¡rio</hourly>
+<statistics>Estat%C3%ADsticas</statistics>

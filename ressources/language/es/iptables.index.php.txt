@@ -1,0 +1,43 @@
+<about>IPTables es un programa cortafuegos[br].
+Puede restringir el acceso por puerto, por direcci%C3%B3n IP o por las propiedades de los paquetes[br].
+Los cortafuegos no son todo lo que necesitas para la seguridad, pero son un excelente primer paso.</about>
+<ACCEPT>Permitir conexiones</ACCEPT>
+<add_inboundrule>Regla de entrada</add_inboundrule>
+<add_inboundrule_text>Add a rule to Allow or deny connections from others to your server</add_inboundrule_text>
+<close_windows>All iptables Firewall operations completed, You can close the windows now</close_windows>
+<compile>Compilaci%C3%B3n de reglas</compile>
+<compile_rules_ok>Rule compilation OK...</compile_rules_ok>
+<compile_text>Compilar la regla y guardarla en el sistema para hacerla en modo de producci%C3%B3n</compile_text>
+<DROP>Rechazar (sin notificar)</DROP>
+<enable_iptables>Activar su contra-fuegos Ip Tables</enable_iptables>
+<from_help>Deber%C3%ADa ser:[br]
+Un rango de IP : [br]
+[blk]192.168.1.12-192.168.1.56[/blk]
+Una direcci%C3%B3n IP:[br]
+[blk]192.168.1.12[/blk]
+Una direcci%C3%B3n IP con m%C3¡scara de red cdir:[br]
+[blk]192.168.1.12/24[/blk]
+Un nombre de host:[br]
+[blk]proxy.p19.ovh.net[/blk]</from_help>
+<insert_default>Reglas por defecto</insert_default>
+<insert_default_text>Add pre-defined rules to secure your artica server</insert_default_text>
+<iptablesconf>Mostrar configuraci&oacute;n</iptablesconf>
+<iptablescurrules>Situaci%C3%B3n actual de las reglas</iptablescurrules>
+<iptables_from>From</iptables_from>
+<iptables_frommac>O desde la direcci%C3%B3n MAC</iptables_frommac>
+<iptables_INPUT>Inbound</iptables_INPUT>
+<iptables_nic>NIC</iptables_nic>
+<iptables_ports>Should be:[br]
+A single port : [br]
+[blk]80[/blk]
+A range port:[br]
+[blk]500:600[/blk]
+ports list:[br]
+[blk]80,21,443,9000,143,993[/blk]
+</iptables_ports>
+<iptables_results>Result</iptables_results>
+<local_port>Puerto local</local_port>
+<log_this_event>Log this rule if match</log_this_event>
+<proto>Protocolo</proto>
+<REJECT>Reject (notify)</REJECT>
+<save_toserver_ok>Saving order to server OK...</save_toserver_ok>

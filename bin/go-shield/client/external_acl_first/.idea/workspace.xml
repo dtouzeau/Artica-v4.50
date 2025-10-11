@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="760d3aab-bb6b-4fa7-9ff2-0b9b3c4d31e2" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../../ad/.idea/ad.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ad/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ad/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ad/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ad/ad.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ad/go.mod" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ad/go.sum" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/.idea/categorization.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/.idea/deployment.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/.idea/sshConfigs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/.idea/webServers.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/categorization.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/go.mod" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../categorization/go.sum" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../handlers/.idea/handlers.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../handlers/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../handlers/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../handlers/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../handlers/go.mod" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../handlers/go.sum" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../handlers/handlers.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../itchart/.idea/itchart.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../itchart/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../itchart/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../itchart/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../itchart/go.mod" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../itchart/go.sum" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../itchart/itchart.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../server/.idea/sshConfigs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../shields/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../shields/.idea/shields.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../shields/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../shields/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../shields/go.mod" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../shields/go.sum" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../shields/shields.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../storage/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../storage/.idea/storage.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../storage/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../storage/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../storage/go.mod" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../storage/go.sum" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../storage/storage.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ufdbguard/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ufdbguard/.idea/ufdbguard.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ufdbguard/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ufdbguard/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ufdbguard/go.mod" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ufdbguard/go.sum" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../ufdbguard/ufdbguard.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/external_acl_first.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/external_acl_first.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/webServers.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/webServers.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bin/go-shield-connector" beforeDir="false" afterPath="$PROJECT_DIR$/bin/go-shield-connector" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/.idea/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/.idea/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/.idea/deployment.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/.idea/server.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/.idea/server.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/.idea/webServers.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/.idea/webServers.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/bin/go-shield-server" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/bin/go-shield-server" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/categorization/categorization.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/internal/bigcache.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/internal/handlers.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../server/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/../../server/main.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
+  </component>
+  <component name="GOROOT" url="file://C:/Program Files/Go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="GoLibraries">
+    <option name="indexEntireGoPath" value="false" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="26U8StbwumumKv2pM8hT8yIbOIl" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="DefaultGoTemplateProperty" value="Go File" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="go.format.on.save.advertiser.fired" value="true" />
+    <property name="go.formatter.settings.were.checked" value="true" />
+    <property name="go.import.settings.migrated" value="true" />
+    <property name="go.modules.go.list.on.any.changes.was.set" value="true" />
+    <property name="go.watchers.conflict.with.on.save.actions.check.performed" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/internal" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\artica-dev\external-artica4x-d10\bin\go-shield\client\external_acl_first\internal" />
+      <recent name="D:\artica-dev\external-artica4x-d10\bin\go-shield\client\external_acl_first\categorization" />
+      <recent name="D:\artica-dev\external-artica4x-d10\bin\go-shield\client\external_acl_first\uddbguard" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="go build external_acl_first" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="external_acl_first" />
+      <working_directory value="$PROJECT_DIR$" />
+      <go_parameters value="-o bin/go-shield-connector" />
+      <envs>
+        <env name="GOARCH" value="amd64" />
+        <env name="GOOS" value="linux" />
+      </envs>
+      <kind value="PACKAGE" />
+      <package value="external_acl_first" />
+      <directory value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <option name="run" value="false" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Build.go build external_acl_first" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+  </component>
+  <component name="VgoProject">
+    <integration-enabled>true</integration-enabled>
+  </component>
+</project>

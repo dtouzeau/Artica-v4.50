@@ -1,0 +1,37 @@
+<howto_install>Si utilizas el [b]modo fuente[/b], ejecuta en una consola esta l%C3%ADnea de comandos[br]
+[b]/usr/share/artica-postfix/artica-install addons[/b]
+[br]Esta operaci%C3%B3n permite seleccionar qué producto soportado instalar[br][br]
+
+[H5]Artica Manage postfix y addons[/H5]
+Si utiliza [b]paquetes de repositorios para debian o RedHat (dpkg o rpm)[/b]:[br]
+Tienes 5 m%C3%B3dulos que puedes descargar en sourceforge.
+
+[ul]
+[li][b]artica-postfix-smtp-relay[/b][br]
+Este paquete convierte a artica en un Relay SMTP usando el programa principal de postfix, la herramienta anti-spam bogofilter y saslauthd
+[li][b]artica-postfix-security[/b][br]
+Este paquete convierte a artica en un completo servidor de seguridad SMTP utilizando Kaspersky Anti-spam y Kaspersky Anti-virus (licencia con 30 d%C3%ADas para evaluarlos).
+[li][b]artica-postfix-mailbox[/b][br]
+Este paquete convierte a artica en un servidor IMAP/POP3 de buzones utilizando cyrus-imap
+[li][b]artica-postfix-webmail[/b][br]
+Este paquete a%C3%B1ade un m%C3%B3dulo de webmail en artica usando RoundCube eMail y Mysql.
+[/ul]
+
+Hay un orden para instalar estos paquetes, por ejemplo, si quieres instalar un servidor de correo completo (buz%C3%B3n y webmail) debes instalar en esta direcci%C3%B3n : [br]
+artica-postfix-smtp-relay -&amp;amp;raquo; artica-postfix-security -&amp;amp;raquo; artica-postfix-mailbox -&amp;amp;raquo;artica-postfix-webmail[br].
+[br][br]
+[blk][b]http://sourceforge.net[/b][/blk]
+
+[br][br]
+[H5]Artica Manage Squid y addons[/H5]
+Esta secci%C3%B3n est%C3¡ actualmente en &amp;quot;fase beta&amp;quot;[br]
+si quieres probarla, por favor h%C3¡zmelo saber (david.touzeau@fr.kaspersky.com)
+[br][br]
+Si usas [b]repositorios de paquetes para debian o RedHat(dpkg o rpm) [/b]:[br]
+Tienes 2 m%C3%B3dulos que puedes descargar en sourceforge.
+[ul]
+[li][b]artica-squid-proxy[/b][br]
+Este paquete convierte a artica en un servidor proxy usando Squid 3.x
+[li][b]artica-squid-security[/b][br]
+Este paquete a%C3%B1ade m%C3%B3dulos de seguridad para Squid 3.x usando DansGuardian y Kaspersky Anti-Virus para Squid ICAP (licencia con 30 d%C3%ADas para evaluarlo).
+[/ul]</howto_install>

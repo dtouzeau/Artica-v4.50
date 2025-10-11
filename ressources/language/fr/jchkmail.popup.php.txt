@@ -1,0 +1,69 @@
+<AddRate>Donnez le nombre de taux pour cette source</AddRate>
+<archive>Archivage</archive>
+<archive_explain>L'Archivage des messages &eacute;lectroniques sont un besoin en croissance dans beaucoup d'organisations, pour beaucoup de raisons :[ul]
+[li]Indexation et recherche documentaire[/li]
+[li]Donn&eacute;es extrayant[/li]
+[li]Reconstitution d'un message perdu ou filtr&eacute;[/li] [li]Backup[/li]
+[/ul]</archive_explain>
+<badmx_explain>Ce contr&ocirc;le consiste &agrave; v&eacute;rifier les MXs (nom et adresse) de la partie domaine de l'adresse de l'exp&eacute;diteur sur une liste noire.[br]
+Certains spammeurs utilisent des noms de domaine avec des MXs d&eacute;finis sur des r&eacute;seaux priv&eacute;s ou &agrave; des adresses IP sans aucune machine r&eacute;elle configur&eacute;e &agrave; cette adresse.[br]
+Habituellement, vous pouvez rejeter les messages si la partie domaine de l'adresse de l'exp&eacute;diteur ne peut pas recevoir de courrier (vous ne pouvez pas lui r&eacute;pondre).[br]
+Ce type de contr&ocirc;le ne bloque pas beaucoup le spam, mais peut soulager la file d'attente courrier des rebonds vers des adresses inaccessibles ...</badmx_explain>
+<check_element>El&eacute;ments d'analyse</check_element>
+<ConnOpen>Connexions ouvertes simultan&eacute;es</ConnOpen>
+<ConnRate>Taux de connexion</ConnRate>
+<enable_filter>Activer ce filtre</enable_filter>
+<eNO>Sans filtre</eNO>
+<eNOQUICK>D&eacute;sactiver l'analyse &amp; arr&ecirc;ter les autres filtres</eNOQUICK>
+<eYES>Filtre</eYES>
+<eYESQUICK>Activer l'analyse &amp; arr&ecirc;ter les autres filtres</eYESQUICK>
+<gl_NO>Ne jamais mettre sur liste grise mais v&eacute;rifier exp&eacute;diteur et le destinataire</gl_NO>
+<gl_NO-QUICK>Jamais de retardement</gl_NO-QUICK>
+<gl_YES>Le greylisting est appliqu&eacute; &agrave; chaque triplet</gl_YES>
+<gl_YES-QUICK>Liste Grise</gl_YES-QUICK>
+<GreyCheckConnect>Adresse de connexion</GreyCheckConnect>
+<GreyCheckFrom>Adresse d'exp&eacute;diteur</GreyCheckFrom>
+<GreyCheckTo>Adresse de destinataire</GreyCheckTo>
+<greylist_explain>[b]Comportement par d&eacute;faut du greylisting[/b] -. Vous devez d&eacute;cider si vous allez activer le greylisting pour tous vos utilisateurs et le d&eacute;sactiver pour ceux qui ne veulent pas de cette fonctionnalit&eacute; ou si vous allez l'activer uniquement pour certains de vos utilisateurs.[br ]
+En r&egrave;gle g&eacute;n&eacute;rale, vous pouvez commencer avec la derni&egrave;re option, avec quelques &quot;b&ecirc;ta-testeurs&quot; et, si les gens sont satisfaits par le greylisting, migrer vers la premi&egrave;re option et supprimer ceux qui ne veulent pas du greylisting (c'est ainsi que nous avons proc&eacute;d&eacute; dans notre domaine) .</greylist_explain>
+<greylist_intro>j-chkmail impl&eacute;mente la m&eacute;thode de greylisting de Evan Harris.
+La mise en %u0153uvre de j-chkmail est destin&eacute;e &agrave; &ecirc;tre utilis&eacute;e sur de gros serveurs.[br]
+Il essaye, donc, de r&eacute;duire le nombre des entr&eacute;es dans la base de donn&eacute;es et il utilise les r&eacute;sultats d'autres m&eacute;thodes de filtrage pour supprimer les entr&eacute;es non d&eacute;sir&eacute;es.[br]
+Outre les bases de donn&eacute;es originales (entr&eacute;es en attente et entr&eacute;es valid&eacute;es) j-chkmail utilise deux nouvelles bases de donn&eacute;es: les entr&eacute;es en liste blanche et les entr&eacute;es en liste noire.
+La base de donn&eacute;es des entr&eacute;es en liste blanche contient seulement des couples IP et noms de domaine.</greylist_intro>
+<MaxMsgs>Messages par connexion</MaxMsgs>
+<MaxRcpt>Compteur de destinataires par message</MaxRcpt>
+<MIN_BODY_LENGTH>Longueur de corps minimum autoris&eacute;</MIN_BODY_LENGTH>
+<MsgRate>Taux de Message</MsgRate>
+<NetClass>Classes R&eacute;seaux</NetClass>
+<NetClassAddName>Donner un nom &agrave; votre classe</NetClassAddName>
+<NetClassHoToAdd>Vous pouvez d&eacute;finir un domaine ou une partie de l'adresse ip
+10
+193.200
+domaine.com
+212.3.1.4</NetClassHoToAdd>
+<Netclass_AUTH>Personnes se connectant &agrave; votre serveur de messagerie de partout et en utilisant votre serveur de messagerie pour relayer leurs messages. Par exemple des utilisateurs itin&eacute;rants.[br]
+Cette classe de r&eacute;seau n'est pas explicitement d&eacute;finie.[br]
+Les connexions sont plac&eacute;es dans cette classe, si le client SMTP utilise une connexion authentifi&eacute;e.</Netclass_AUTH>
+<Netclass_DEFAULT>Tout les autres clients non d&eacute;finis</Netclass_DEFAULT>
+<Netclass_dnsbl>Listes Noire/Blanche d'IP en temps r&eacute;el</Netclass_dnsbl>
+<Netclass_DOMAIN>Client SMTP dans votre domaine. Ceci pourrait &ecirc;tre le cas si votre domaine couvre plusieurs sites g&eacute;ographiquement distincts</Netclass_DOMAIN>
+<NetClass_explain>Qu'est-ce c'est???[br]
+Les &quot;Classes R&eacute;seau&quot; est une fa&ccedil;on de traiter diff&eacute;remment les connexions provenant de sources diff&eacute;rentes.[br]
+Vous ne voulez, assur&eacute;ment, pas accorder les m&ecirc;mes droits aux clients de votre r&eacute;seau local qu'&agrave; des clients inconnus &agrave; l'autre bout du monde. [br]
+L'affectation de &quot;Classes r&eacute;seau&quot; &agrave; des r&eacute;seaux est une fa&ccedil;on globale d'agr&eacute;ger des r&eacute;seaux h&eacute;t&eacute;rog&egrave;nes (IPv4, IPv6, les noms d'h&ocirc;tes...) dans le but de leur attribuer des privil&egrave;ges communs, sans avoir &agrave; sp&eacute;cifier toutes les adresses IP/r&eacute;seaux pour chaque param&egrave;tre de contr&ocirc;le.</NetClass_explain>
+<Netclass_FRIEND>Quelques clients SMTP avec lesquels vous discutez fr&eacute;quemment et auxquels vous pouvez donner certains privil&egrave;ges</Netclass_FRIEND>
+<Netclass_LOCAL>Clients SMTP dans leur r&eacute;seau local.</Netclass_LOCAL>
+<rate>Taux</rate>
+<rate_explain>J-chkmail &eacute;value le taux d'une &quot;ressource&quot; selon une fen&ecirc;tre de temps coulissante de 10 minutes[br]
+l'administrateur du filtre peut fixer des limites bas&eacute;es sur certains param&egrave;tres ...</rate_explain>
+<RcptRate>Taux de destinataire</RcptRate>
+<RejectShortMsgs_explain>Si votre serveur de messagerie doit fr&eacute;quemment g&eacute;rer des messages ind&eacute;sirables dont la taille du corps de texte est tr&egrave;s courte (par exemple, quelque chose comme une douzaine de caract&egrave;res), il est possible de les rejeter.[br]
+Ce genre de messages est g&eacute;n&eacute;ralement envoy&eacute; par des gens qui veulent valider une liste d'adresses e-mail.[br]
+Ils envoient, donc, doucement, un message par l'adresse et d'attendre un rebond.[br]
+Si le message ne %u200B%u200Brebondit pas, cela signifie que l'adresse e-mail est probablement une adresse valide.[br]
+Parfois, un code court est ajout&eacute; au message afin de faciliter la corr&eacute;lation entre un message renvoy&eacute; et une adresse e-mail</RejectShortMsgs_explain>
+<SCANNER_ACTION>Action pour un virus d&eacute;couvert</SCANNER_ACTION>
+<SCANNER_PROTOCOL>Protocole utilis&eacute; par module de balayage</SCANNER_PROTOCOL>
+<SCANNER_SAVE>La quarantaine a d&eacute;tect&eacute; des messages</SCANNER_SAVE>
+<SCANNER_SOCK>Chemin du socket Clamav</SCANNER_SOCK>

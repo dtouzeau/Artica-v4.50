@@ -1,0 +1,16 @@
+<about>Nmap &eacute; um scanner de seguran&ccedil;a originalmente escrito por Gordon Lyon (Fyodor). [br]
+Pode ser usado para descobrir computadores e servi&ccedil;os numa rede de computadores, criando assim um &quot;mapa&quot; da rede.[br]
+Assim  como muitos scanners de portas simples, o Nmap &eacute; capaz de descobrir servi&ccedil;os passivos numa rede, apesar do facto tais servi&ccedil;os n&atilde;o se anunciarem como um protocolo de descoberta de servi&ccedil;os. [br]
+Em resumo o Nmap &eacute; capaz de obter v&aacute;rios detalhes sobre os computadores remotos. [br]
+Isso inclui sistema operativo, tipo de dispositivo, o tempo de atividade, software usados %u200B%u200Bpara executar um determinado servi&ccedil;o, n&uacute;mero exato da vers&atilde;o do produto, a presen&ccedil;a de algumas t&eacute;cnicas de firewall e,  numa rede local, at&eacute; o fornecedor da placa de rede remota.</about>
+<add_network>Adicionar uma nova rede para digitalizar</add_network>
+<add_network_text>Adicionar gama IP para digitalizar a fim de descobrir novos computadores remotos</add_network_text>
+<ip>Endereço TCP/IP</ip>
+<mask>M%C3¡scara de rede</mask>
+<networks_list>Networks list</networks_list>
+<NmapRotateMinutes>Pooling time (in minutes)</NmapRotateMinutes>
+<NmapScanEnabled>Enable scanning your network</NmapScanEnabled>
+<nmap_logs>NMAP events</nmap_logs>
+<nmap_logs_text>See events ordered by artica</nmap_logs_text>
+<perform_scan>Perform scan</perform_scan>
+<perform_scan_text>Perform a scan now and broacast your networks to discover nodes</perform_scan_text>

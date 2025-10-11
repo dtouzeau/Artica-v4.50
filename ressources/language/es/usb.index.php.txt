@@ -1,0 +1,30 @@
+<about_usb>Esta secci%C3%B3n le ayuda a jugar con los dispositivos de almacenamiento usb, puede conectar dispositivos conectarlos y desconectarlos con esta interfaz[br].
+Al hacer clic en un elemento puede delegar un dispositivo usb tiene el dispositivo usb auto-backup[br]
+Esto significa que cuando se conecta el dispositivo en el equipo, artica se montar%C3¡ autom%C3¡ticamente y realizar la funci%C3%B3n de copia de seguridad[br].
+Si deja este dispositivo permanentemente, la operaci%C3%B3n de copia de seguridad se realizar%C3¡ cada 2 horas</about_usb>
+<automount>Auto-connect</automount>
+<automount_explain>Automatically connect this device when you plug it on the system</automount_explain>
+<automount_explain_text>This operation will automatically connect the device into /automounts directory when it is plugged on the system.[br]
+the linking operation will be automatic when the system wants to access it.</automount_explain_text>
+<auto_folder>Directory name point</auto_folder>
+<click_to_edit>Haga clic para editar...</click_to_edit>
+<connected>Conectado</connected>
+<dismount_text>[b]Disconnect this key[/b][br]Destroy the pointer to this usb storage in order to physically remove it from the computer</dismount_text>
+<error_understand_fs>No se puede entender el tipo de sistema de archivos</error_understand_fs>
+<file_system>Sistema de archivos</file_system>
+<formatdevice>Format this device</formatdevice>
+<format_warning>Are you sure to perform this operation,all datas will be erased...</format_warning>
+<local>local</local>
+<make_autobackup>Auto-backup device</make_autobackup>
+<manufacturer>manufacturer</manufacturer>
+<model>Modelo</model>
+<mounted_on>mounted on</mounted_on>
+<mount_text>[b]Connect this key[/b][br]create a pointer to this usb storage in order to access it</mount_text>
+<not_applicable>Not applicable</not_applicable>
+<plugged>plugged</plugged>
+<speed>Velocidad</speed>
+<system>Sistema</system>
+<umake_autobackup>Remove Auto-backup</umake_autobackup>
+<vendor>Vendor</vendor>
+<warnautoback>You choose that this device will be an auto-backup device.\nThis meens that when you plug this device on this computer,\nArtica will backup automatically mandatories datas on this device</warnautoback>
+<warnautobackremove>This device will be disconnected has an auto-backup device\nContinue?</warnautobackremove>

@@ -1,0 +1,142 @@
+
+Artica Software License
+ARTICA TECH SAS.
+PROPRIETARY END USER LICENSE AGREEMENT
+
+This End User License Agreement (this "Agreement") is entered into between ARTICA TECH SAS. ("Artica") and the person or entity ("you" or "Licensee") that purchases, receives, installs, or subscribes to the Software Product(s) (as defined below) accompanying this Agreement. 
+If you do not agree to the terms and conditions of this Agreement, Artica Tech is unwilling to license the Software Product to you. 
+Artica Tech reserves the right to refuse to sell Enterprise Licenses, or allow usage of, any Software Products to any customer at its sole discretion.
+
+1. Definitions. The following capitalized terms have the meanings ascribed to them below.
+
+1.1 "Nightly Software (Betas)" means any License that is designated by Artica as being in "beta" or pre-release status.
+
+1.2 "Documentation" means the documentation for a particular Enterprise License Software Product.
+
+1.3 “Effective Date” means the date on which you activate your Enterprise License and thereby make this Agreement binding between you and ARTICA TECH SAS.
+
+1.4 "Enterprise License Software Product(s)" means extended features modules that Licensee may access via a designated Artica portal and pursuant to a Enterprise License (as defined below).
+
+1.5 “Enterprise License” means the fee you pay to access to extended features. 
+The amount of your Enterprise License fee will depend on the users to which you have subscribed and on the number of server you desire.
+
+1.6 "Community Edition" or "Community Edition" means features that Licensee that do not require Enterprise Licenses. 
+These features are made available under an open-source license agreement (as defined in Section 3.5) and do not require paying a Enterprise License fee to Artica Tech SAS.
+
+1.7 "Update" means any of the following software that Artica may release from time to time in its sole discretion: (a) any virus signature update, new threat profiles, or any other similar updates to the data libraries contained within certain Enterprise License; and (b) any patch, bug fix, error-correction, or other new release of the Enterprise License.
+
+1.8 “Website” means the Artica website located at licensing.artica.center.
+
+2. License Grant for Enterprise License  and Community Edition
+
+2.1 License Grant for Enterprise License. Subject to the terms and conditions of this Agreement and as of the Effective Date, Artica grants to Licensee a nonexclusive, non- transferable license to access, use, perform, and display the Enterprise License identified in your Enterprise License and in compliance with the terms of your Enterprise License.
+
+2.2. License Grant for Community Edition. Artica licenses the Artica components of the Community Edition License under version 3 of the GNU General Public License (GPL).
+
+Certain third-party software components distributed with the Community Edition are licensed under other free or open source license terms.. 
+Many of the Artica components are also licensed with the GNU Classpath exception, which allows linking of independent non-GPL modules with the Artica software.
+The GNU Classpath exception applies to source files in which Artica has placed a notice stating the exception. 
+See the source code files for more details.
+
+3. License Restrictions and Intellectual Property
+
+3.1 General Restrictions. 
+Notwithstanding anything to the contrary in this Agreement, Licensee shall not (a) copy any part of the Software Products or the Documentation except to the extent expressly permitted under Section 2 (License Grant to Enterprise License) above; (b) reverse engineer, reverse compile, disassemble, or attempt to derive the source code of any portion of the Enterprise License, or allow any person to do or attempt to do any of the foregoing; (c) attempt to circumvent any license key, disabling code, or license management mechanism in the Enterprise License; (d) distribute, rent, lease, assign, or otherwise transfer any interest in the Software Products or Documentation; (e) disclose benchmarks or other comparisons of the Enterprise License without Artica Tech's prior written consent; (f) modify, adapt, enhance, or create derivative works of the Enterprise License or Documentation; (g) use the Enterprise License for service-bureau use, or otherwise for the benefit of third parties; or (h) otherwise exceed the scope of the express licenses granted herein. 
+Licensee may not remove from the Software Products, or alter, any of the trademarks, trade names, logos, patent or copyright notices or markings, or add any other notices or markings to the Software Products.
+LICENSEE UNDERSTANDS, ACKNOWLEDGES, AND AGREES THAT IF ARTICA TECH BECOMES AWARE OF ANY BREACH, ATTEMPTED BREACH, OR SUSPECTED BREACH BY YOU OF ANY OF THE FOREGOING CONDITIONS, ARTICA TECH SHALL HAVE, AMONG OTHER REMEDIES AVAILABLE UNDER LAW AND AT EQUITY, SOLE DISCRETION TO SUSPEND OR TERMINATE YOUR ACCESS TO THE "ENTREPRISE LICENSE" AND TO SUSPEND OR CANCEL YOUR ENTREPRISE LICENSE AT ANY TIME AND WITHOUT ADVANCE NOTICE TO YOU.
+
+3.2 Nightly Software (Betas). From time to time, Artica Tech may make Nightly Software (Betas) available for access and use in accordance with the licenses granted above in Section 2 (License Grant for Enterprise License), subject to the terms and conditions in this section. 
+Users agrees and acknowledges that Nightly Software (Betas) is not for production use and may contain errors adversely affecting its proper operation. Unless and until Artica notifies Licensee to the contrary, Licensee agrees not to share or disclose to any third party any non-public information regarding the Nightly Software (Betas) or its features, bugs, performance, or operation.
+
+3.3 Licensing per users. 
+Artica Enterprise License (and any accompanying services which are available, or may be made available) are licensed according to either licensing per users and per servers.
+
+3.3.1 Licensing per users refer to the number of unique devices/users on any given day for one server.
+More explicitly, the licensing refers to the number of unique Accounts/MAC Addresses/IP addresses on any non-WAN (local) interface including VPN users seen from midnight to midnight the next day.
+If the number of unique IP addresses is below the upper bound of the Enterprise License for that unique server, that license Enterprise License is fully compliant.
+
+3.3.2 Unlimited Enterprise License refer to unlimited Artica software installations according to a scope of the number of users.
+
+3.4  NFR Enterprise Licenses. 
+Artica licenses certain Enterprise Licenses to its authorized distribution partners under a Not For Resale (“NFR”) arrangement. 
+As part of this arrangement, Artica grants partner use of Artica’s Enterprise License provided that (a) the Enterprise License Software Product is used exclusively by the partner for its internal operations and is not being resold in any form, or (b) the Software Products are being used by the partner for trials at its prospects and/or customer locations, so long as the trial does not extend beyond 30 days in any one location. 
+Any usage outside of Sections 3.4(a)(b) must comply with the terms of Section 3.3 (Licensing per users and Unlimited Enterprise License) of this Agreement.
+
+3.5 Open Source Software. 
+Some software code incorporated into or distributed with some of Artica’s downloadable Community Edition may be licensed by third parties under various "open-source" or "public-source" software licenses (such as the GNU General Public License, the GNU Lesser General Public License, the Apache License, the Berkeley Software Distribution License, and the Sun Public License) (collectively, the "Open Source Software"). Notwithstanding anything to the contrary in this Agreement, the Open Source Software is not licensed under Section 2 (License Grant for Enterprise License), and instead is separately licensed pursuant to the terms and conditions of their respective open-source software licenses, copies of which are either attached to this Agreement, reproduced in the appropriate readme file, or available on the Website. 
+Licensee agrees to comply with the terms and conditions of such open-source software license agreements, if applicable to Licensee’s Enterprise License.
+
+3.6 Additional Terms. 
+The use of particular Enterprise License may be subject to additional or supplementary terms and conditions, which Licensee will be given the opportunity to review and accept prior to the activation of your Enterprise License. 
+If Licensee elects to proceed with activating a Enterprise License to a Enterprise License Software Product to which supplementary terms and conditions apply, such additional or supplementary terms and conditions shall be incorporated by reference into this Agreement.
+
+3.7 Ownership. The Enterprise License are licensed, not sold, and, as between Licensee and Artica Tech, Artica Tech shall retain all right, title, and ownership interests in and to the Enterprise License, including all intellectual property rights contained therein. 
+There are no implied licenses under this Agreement, and all rights not expressed granted are reserved.
+
+4. Updates. Licensee or Community edition will be responsible for providing Internet connectivity to allow Licensee to access an Update, and Artica shall not be responsible for any access errors or failures, which occur due to Licensee’s internet connectivity. 
+For the avoidance of doubt, for Artica Tech SAS makes no representations as to the frequency of Updates, nor does it guarantee that any particular Update will be implemented or that any particular errors will be corrected. 
+In addition, this Agreement creates no obligation for Artica Tech SAS to provide any telephone, email, or other technical support for the Enterprise License; rather, the parties may enter into a separate support agreement governing the provision of such support by for Artica Tech SAS.
+
+5. Fees and Payments
+
+5.1 Enterprise License Fees. 
+Upon the execution of this Agreement and before accessing any Enterprise License Software Product, Licensee will pay the applicable Enterprise License fees required for any Enterprise License Software Product. Additional information may be available on the Enterprise Licenses page of the Website.
+
+5.2 Payment Authorization. Licensee agrees to make the foregoing payments (including any applicable taxes) via a valid credit card, Paypal or other authorized payment method, and authorizes Artica TECH to automatically charge such amounts against the credit card, Paypal or other applicable payment information furnished by Licensee to Artica via Artica TECH ’s billing system.
+Licensee agrees to provide Artica TECH with a valid credit card and accurate, complete, and updated information required by the payment information interface on the Website. 
+Licensee authorizes Artica to automatically charge the applicable fees at the beginning of each month (or at such other billing interval as Licensee may select using the account setup function on the Enterprise Licenses page of the Website), until Licensee elects to terminate the Enterprise License to one or more Enterprise License in accordance with the terms of each individual Enterprise License. 
+All payments are non-refundable unless otherwise allowed by Artica TECH’s current published warranty and refund policies. 
+Artica TECH may suspend the license to any Enterprise License and its provision of related Updates, if any, if Licensee fails to provide a valid means of payment for any of the amounts due hereunder.
+
+6. Privacy Policy. Artica TECH may collect, store, use, and share aggregated and personally-identifiable information from Licensee relating to Licensee's use and operation of the Enterprise License from time to time. In doing so, Artica TECH will comply with the terms and conditions of its Privacy Policy, available on the Website, which Licensee agrees that it has reviewed.
+
+7. Right to Disable. Licensee understands, acknowledges, and agrees that Artica TECH shall have the right, at any time and without prior notice to licensee, 
+to disable the operation of any Nightly Software (Betas), any Enterprise License for which Licensee has not paid fees due to Artica TECH under this agreement. 
+Licensee hereby consents to Artica’s use of any disable mechanism pursuant to this agreement, and Artica shall not be liable for any costs or damages incurred by Licensee or any third party as a result of any Enterprise License being disabled or accessed by Artica.
+
+8. DISCLAIMERS OF WARRANTY. LICENSEE AGREES AND ACKNOWLEDGES THAT COMPUTER SECURITY THREATS ARE EVOLVING AND THAT NO TOOLS CAN GUARANTEE THAT SECURITY BREACHES WILL NOT OCCUR. 
+ARTICA TECH PROVIDES NO ASSURANCE THAT THE Enterprise License WILL PROTECT AGAINST ALL COMPUTER VIRUS INFECTIONS, UNAUTHORIZED INTRUSIONS, IDENTITY THEFT, PRIVACY VIOLATIONS, SPYWARE, SPAM, OR OTHER FORMS OF HARMFUL ACTIVITY. ANY CHANGE IN THE OPERATING SYSTEM OR OTHER SOFTWARE OR CONFIGURATION OF LICENSEE'S HARDWARE MAY AFFECT THE PERFORMANCE AND OPERATION OF THE SOFTWARE PRODUCTS. ACCORDINGLY, ARTICA TECH SHALL HAVE NO LIABILITY TO LICENSEE FOR ANY OF THE FOREGOING SECURITY BREACHES OR OTHER HARMFUL EFFECTS THAT MAY RESULT DESPITE THE DEPLOYMENT OF THE Enterprise License. 
+WITHOUT LIMITING THE GENERALITY OF THESE DISCLAIMERS, LICENSEE AGREES THAT ARTICA TECH MAKES NO REPRESENTATIONS OR WARRANTIES WITH RESPECT TO THE OPERATION, PERFORMANCE, OR COMPATIBILITY OF ANY Enterprise License SOFTWARE PRODUCT IN CONNECTION WITH INTERNET ACCESS DEVICE OWNED BY LICENSEE OR BY ANY THIRD PARTY. FURTHER, THE OPERATION OR PERFORMANCE OF THE SOFTWARE MAY BE AFFECTED BY INTERNET OUTAGES OR OTHER NETWORK OUTAGES DUE TO FAILURES IN SERVICES BY INTERNET SERVICE PROVIDERS OR DUE TO OTHER CAUSES, AND, CONSEQUENTLY, ARTICA TECH MAKES NO WARRANTY THAT THE Enterprise License WILL ALWAYS BE AVAILABLE OR WILL ALWAYS PERFORM WITH THEIR FULL FUNCTIONALITY, AND ARTICA TECH SHALL HAVE NO LIABILITY FOR FAILURES IN OPERATION OR PERFORMANCE WHICH ARE DUE TO THIRD-PARTY INTERNET SERVICE PROVIDERS. 
+ARTICA TECH MAKES NO WARRANTY IN ADDITION, ARTICA TECH MAKES NO WARRANTY OR REPRESENTATION. 
+LICENSEE AGREES AND ACKNOWLEDGES THAT THE USE OF ANY Enterprise License SOFTWARE PRODUCT IS AT ITS OWN RISK AND DISCRETION, AND THAT ARTICA TECH HAS NO OBLIGATION UNDER THIS AGREEMENT TO PROVIDE ANY SUPPORT OR ASSISTANCE WITH RESPECT TO ANY Enterprise License SOFTWARE PRODUCT. 
+ARTICA TECH DOES NOT WARRANT THAT THE Enterprise License ARE ERROR-FREE, THAT THEY WILL OPERATE WITH LICENSEE'S HARDWARE OR NETWORK WITHOUT ANY IMPAIRMENT OF ITS FUNCTIONALITY, THAT THEY WILL OPERATE IN ERROR-FREE COMPATIBILITY WITH ANY ARTICA DOWNLOADABLE SOFTWARE PRODUCT, THAT THEY WILL MEET ALL OF LICENSEE’S NEEDS, OR THAT THEY WILL DELIVER ANY PARTICULAR OR DESIRED RESULTS. 
+THE Enterprise License ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, AND ARTICA TECH EXPRESSLY DISCLAIMS ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON INFRINGEMENT. 
+ARTICA TECH SHALL NOT BE LIABLE TO LICENSEE OR ANY THIRD PARTY FOR ANY DEFECTS IN THE Enterprise License. 
+Some jurisdictions do not allow the disclaimer of implied warranties, so the above disclaimer may not apply, in which case the duration of any such implied warranty is limited to sixty (60) days from the date the software is received by Licensee.
+
+9. LIMITATION OF LIABILITY. AERICA TECH WILL NOT BE LIABLE TO LICENSEE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, EXEMPLARY, OR CONSEQUENTIAL DAMAGES, WHETHER ARISING IN TORT, CONTRACT, OR OTHERWISE, OR FOR ANY LOST PROFITS, LOST DATA, OR LOSS OF USE, ARISING FROM OR RELATING TO THE Enterprise License, EVEN IF ARTICA TECH HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. ARTICA TECH'S LIABILITY TO LICENSEE IN ANY EVENT SHALL NOT EXCEED THE GREATER OF (A) THE TOTAL AMOUNT OF FEES PAID BY LICENSEE TO ARTICA TECH FOR THE LICENSE TO THE Enterprise License, OR (B) FIFTY U.S. DOLLARS (U.S. $50). THIS DISCLAIMER CONSTITUTES AN ESSENTIAL PART OF THIS AGREEMENT, AND NO USE OF THE SOFTWARE PRODUCTS IS AUTHORIZED HEREUNDER EXCEPT UNDER THIS DISCLAIMER.
+
+10. Termination. 
+This Agreement will become effective at the time that Licensee clicks the "Agree" button, and will continue in full force and effect until any breach of any of its terms and conditions by Licensee, as determined by ARTICA TECH in its sole discretion and judgment, whereupon the Agreement (and all licenses granted hereunder) will automatically terminate without advance notice to Licensee. 
+Sections 1, 3.5, 6, 8, 9, 10, 11, 12, 13, 14, and any accrued payment obligations will survive any such termination.
+
+11. Assignment. 
+Licensee shall not transfer or assign this Agreement (or any rights or obligations hereunder) without the prior written consent of ARTICA TECH, which may be withheld or delayed in its sole discretion. Any purported assignment in violation of the foregoing will be null and void. The rights granted under this Agreement are personal to Licensee, and do not extend to any subsidiary, parent, or affiliate of Licensee.
+
+12. Governing Law. 
+This Agreement shall be governed by the laws of the FRANCE, without giving effect to any conflicts of laws principles that would require the application of the laws of a different jurisdiction. 
+Neither the Uniform Computer Information Transactions Act nor the United Nations Convention on the International Sale of Goods apply to this Agreement. 
+If either party employs attorneys to enforce any rights arising out of or relating to this Agreement, the prevailing party shall be entitled to recover reasonable attorney's fees. 
+The parties consent to the exclusive jurisdiction of France's courts located in Paris; provided, however, that nothing in this sentence will prevent Artica Tech from seeking injunctive relief to protect its intellectual property rights in any venue or forum that it deems appropriate.
+
+13. General. 
+If any provision of this Agreement is held by a court of competent jurisdiction to be unenforceable for any reason, the remaining provisions hereof shall be unaffected and remain in full force and effect. This Agreement constitutes the entire agreement between the parties concerning Licensee's use of the Enterprise License. 
+This Agreement supersedes any prior verbal understanding between the parties and any Licensee purchase order or other ordering document, regardless of whether such document is received by Artica Tech before or after Licensee agrees to this Agreement. 
+This Agreement may be amended only in writing signed by an authorized officer of Artica Tech specifically evidencing an intent to amend this Agreement.
+
+14. Confidentiality. 
+End User acknowledges that, it may obtain information relating to the Enterprise License, including, but not limited to, any code, technology, know-how, ideas, algorithms, testing procedures, structure, interfaces, specifications, documentation, bugs, problem reports, analysis and performance information, and other technical, business, product, and data (“Confidential Information”). 
+End User shall not disclose Confidential Information to any third party or use Confidential Information for any purpose other than the use of the Enterprise License as licensed under the EULA.
+
+15. Export Compliance. 
+End User acknowledges that the Enterprise License may be subject to export restrictions by the French government and import restrictions by certain foreign governments. 
+End User shall not and shall not allow any third-party to remove or export from the France or allow the export or re-export of any part of the Software or any direct product thereof: (i) into (or to a national or resident of) any embargoed or terrorist-supporting country; (ii) to anyone on the French Commerce Department’s Table of Denial Orders or French Treasury Department’s list of Specially Designated Nationals; (iii) to any country to which such export or re-export is restricted or prohibited, or as to which the United States government or any agency thereof requires an export license or other governmental approval at the time of export or re-export without first obtaining such license or approval; or (iv) otherwise in violation of any export or import restrictions, laws or regulations of any french or foreign agency or authority. 
+End User agrees to the foregoing and warrants that it is not located in, under the control of, or a national or resident of any such prohibited country or on any such prohibited party list.
+The Enterprise License is further restricted from being used for the design or development of nuclear, chemical, or biological weapons or missile technology, or for terrorist activity, without the prior permission of the french government.
+
+16. Government Users. 
+The Enterprise License is commercial computer software. 
+If the user or licensee of the Enterprise License  is an agency, department, or other entity of the french Government, the use, duplication, reproduction, release, modification, disclosure, or transfer of the Enterprise License, or any related documentation of any kind, including technical data and manuals, is restricted by a license agreement or by the terms of this EULA.
+The Enterprise License extra features are developed fully at private expense. 
+All other use is prohibited.
+
