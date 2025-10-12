@@ -963,10 +963,12 @@ function ProcessLine($line):string{
     }
     $tdhead1="style='width:1%;$color_style' nowrap";
     $tdhead2="style='width:99%;$color_style'";
-    if($size>1024){
-        $size=FormatBytes($size/1024);
-    }else{
-        $size="$size bytes";
+    if($size>0) {
+        if ($size > 1024) {
+            $size = FormatBytes($size / 1024);
+        } else {
+            $size = "$size bytes";
+        }
     }
 
 
