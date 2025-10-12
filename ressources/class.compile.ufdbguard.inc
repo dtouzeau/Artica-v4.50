@@ -995,8 +995,7 @@ function ParseLDAPSubUsersGroups($LDAPID,$dn){
 		echo "Starting......: ".date("H:i:s")." Building `$category` (L.".__LINE__.")\n";
 		$category_id=intval($category);
 		$postgress=new postgres_sql();
-		
-		$ligne=pg_fetch_array($postgress->QUERY_SQL("SELECT categoryname,official_category FROM personal_categories WHERE category_id='$category_id'"));
+		$ligne=$postgress->mysqli_fetch_array("SELECT categoryname,official_category FROM personal_categories WHERE category_id='$category_id'");
 
 		if(!$postgress->ok){
 		    $this->CATEGORY_EVENTS[]="Category id $category_id (PostGresSQL error)";

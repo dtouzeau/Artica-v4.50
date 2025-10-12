@@ -145,7 +145,7 @@ function table():bool{
 		
 		
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
-		$html[]="<td style='width:1%' nowrap>".$tpl->td_href("$TEMPLATE_TITLE","{view2}",$linkJS)."</td>";
+		$html[]="<td style='width:1%' nowrap>".$tpl->td_href($TEMPLATE_TITLE,"{view2}",$linkJS)."</td>";
 		$html[]="<td>".$tpl->td_href("$title","{view2}",$linkJS)."$subtitle2</td>";
 		$html[]="<td style='width:1%' nowrap>$linkZoom</td>";
 		$html[]="<td></td>";
@@ -187,6 +187,14 @@ function table():bool{
 
 }
 function utf8_decode_switch($value):string{
+
+    if( (strpos($value,"Ã©")>0) OR  (strpos($value,"Ãª")>0) ){
+        $value=str_replace("Ã´","ô",$value);
+        $value=str_replace("Ã©","é",$value);
+        $value=str_replace("Ãª","ê",$value);
+        $value=str_replace("Ã","à",$value);
+
+    }
     if(is_null($value)){
         return "";
     }
