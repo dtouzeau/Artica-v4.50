@@ -989,10 +989,12 @@ $visitorId="";
 
     $POST_OUT=false;
     clean_xss_deep();
-    if(preg_match("#(.+?):VERBOSE#i",$_POST["username"],$re)){
-        $_POST["username"]=$re[1];
-        $POST_OUT=true;
-        $GLOBALS["VERBOSE"]=true;
+    if(is_file("/usr/share/artica-postfix/ressources/VERBOSE")) {
+        if (preg_match("#(.+?):VERBOSE#i", $_POST["username"], $re)) {
+            $_POST["username"] = $re[1];
+            $POST_OUT = true;
+            $GLOBALS["VERBOSE"] = true;
+        }
     }
 
     if(isset($_COOKIE["visitorId"])){

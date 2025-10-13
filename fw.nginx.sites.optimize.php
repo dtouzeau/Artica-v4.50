@@ -135,6 +135,17 @@ function www_parameters():bool{
     echo "<script>LoadAjax('optimize-nginx-$ID','$page?www-parameters2=$ID');</script>";
     return true;
 }
+function www_parameters_advanced_caching($tpl,$socknginx){
+
+    $AdvancedCaching=intval($socknginx->GET_INFO("AdvancedCaching"));
+    if($AdvancedCaching==0){
+        $tpl->table_form_field_js("Loadjs('fw.nginx.sites.advanced-caching.php?serviceid=$socknginx->serviceid')");
+        $tpl->table_form_field_bool("{advanced_caching}",0,ico_hd);
+        return $tpl;
+    }
+    return  $tpl;
+
+}
 
 function www_parameters_redis_flat($tpl,$socknginx){
     $proxy_cache_revalidate=intval($socknginx->GET_INFO("proxy_cache_revalidate"));
@@ -149,7 +160,6 @@ function www_parameters_redis_flat($tpl,$socknginx){
    return  $tpl->table_form_field_text("{caching_using_redis}","<small>".@implode(",",$f),ico_mem);
 
 }
-
 function www_browser_caching_popup():bool{
 
     $tpl=new template_admin();
@@ -233,7 +243,6 @@ function www_parameters_browser_caching_flat($tpl,$socknginx){
     return $tpl;
 
 }
-
 function www_parameters_redis($tpl,$socknginx):array{
     $tpl=www_parameters_redis($tpl,$socknginx);
     $proxy_cache_valid = intval($socknginx->GET_INFO("proxy_cache_valid"));
@@ -364,7 +373,7 @@ function www_parameters3_flat():bool{
         $tpl->table_form_field_js("");
         $tpl->table_form_field_bool("{caching}",0,ico_hd);
     }
-
+    $tpl=www_parameters_advanced_caching($tpl,$socknginx);
     $tpl->table_form_field_js("Loadjs('$page?optimize-for-large-files-js=$ID')");
     $tpl->table_form_field_bool("{optimize_for_large_files}",$OptimizeForLargeFiles,ico_hd);
 

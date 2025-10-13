@@ -1,7 +1,7 @@
 <?php
 
 class socksngix{
-	private $serviceid=0;
+    public $serviceid=0;
 	public $found=false;
 	private $localid=0;
 	
