@@ -108,6 +108,19 @@ function change_manager_perform():bool{
         @mkdir("/usr/share/artica-postfix/ressources/conf/upload",0755,true);
     }
     @file_put_contents("/usr/share/artica-postfix/ressources/conf/upload/ChangeLDPSSET", base64_encode(serialize($_POST)));
+
+
+    $data=urlencode(base64_encode("{$_POST["change_admin"]}|||{$_POST["change_password"]}"));
+
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/password/manager/$data"));
+    if(!$json->Status){
+        echo $tpl->post_error($json->Error);
+        return false;
+    }
+    
+
+
     return admin_tracks("SuperAdmin credentials as been changed from $ldap->ldap_admin to $change_admin with a password of $password_len characters");
 }
 
@@ -117,13 +130,9 @@ function change_manager_popup():bool{
     $tpl=new template_admin();
     $ldap=new clladp();
 
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/account.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/account.progress.txt";
-    $ARRAY["CMD"]="/system/superadmin";
-    $ARRAY["TITLE"]="{administrator}";
-    $ARRAY["AFTER"]="dialogInstance1.close();LoadAjax('table-loader','$page?table=yes');";
-    $prgress=base64_encode(serialize($ARRAY));
-    $f[]="Loadjs('fw.progress.php?content=$prgress&mainid=ch-super-admin-progress')";
+   
+
+    $f[]="dialogInstance1.close();LoadAjax('table-loader','$page?table=yes');";
 
     $field[]=$tpl->field_text("change_admin","{SuperAdmin}",$ldap->ldap_admin,true);
     $field[]=$tpl->field_password2("change_password", "{password}", $ldap->ldap_password,true);

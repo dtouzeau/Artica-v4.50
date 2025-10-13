@@ -1033,10 +1033,12 @@ function ParseLDAPSubUsersGroups($LDAPID,$dn){
 				if(!preg_match("#ufdbguard\.php#",$this->SquidGuardIPWeb)){$this->SquidGuardIPWeb=$this->SquidGuardIPWeb."/ufdbguardd.php";}
 			}
 
-			if(!preg_match("#^http.*?\/\/#",$this->SquidGuardIPWebSSL)){
-				$this->SquidGuardIPWebSSL="https://$this->SquidGuardIPWebSSL";
+            if(!is_null($this->SquidGuardIPWebSSL)) {
+                if (!preg_match("#^http.*?\/\/#", $this->SquidGuardIPWebSSL)) {
+                    $this->SquidGuardIPWebSSL = "https://$this->SquidGuardIPWebSSL";
 
-			}			
+                }
+            }
 			
 		}
         if(!is_null($this->SquidGuardIPWebSSL)) {

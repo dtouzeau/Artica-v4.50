@@ -19,7 +19,7 @@ class class_manager{
             }
         }
         $this->admin=$json->admin;
-        $this->password=$json->password;
+        $this->password=base64_decode($json->password);
         $this->server=$json->server;
         $this->port=$json->port;
         $this->suffix=$json->suffix;
