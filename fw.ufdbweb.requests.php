@@ -64,11 +64,11 @@ function accept():bool{
         $exploded=explode("||",$decoded);
         $MAIN["CATEGORY"]=$exploded[1];
         $MAIN["IPADDR"]=$exploded[2];
-        $MAIN["CLIENT_HOSTNAME"]=$exploded[3];
+        //$MAIN["CLIENT_HOSTNAME"]=$exploded[3];
+        //$MAIN["URL"]=$exploded[0];
+        //$MAIN["CATEGORY_NAME"]=$exploded[11];
+        //$MAIN["UFDBGRULE"]=$exploded[12];
         $MAIN["USERID"]=$exploded[4];
-        $MAIN["URL"]=$exploded[0];
-        $MAIN["CATEGORY_NAME"]=$exploded[11];
-        $MAIN["UFDBGRULE"]=$exploded[12];
         $MAIN["SITENAME"]=$exploded[7];
         $MAIN["maxtime"]=0;
 
@@ -88,23 +88,20 @@ function accept():bool{
         $MAIN["FAMILYSITE"]=$fam->GetFamilySites($MAIN["SITENAME"]);
     }
 
-	$ufdb_page_rules_md5=$MAIN["UFDBGRULE"];
-	$SITENAME=$MAIN["SITENAME"];
-	$URL=$MAIN["URL"];
-	$IPADDR=$MAIN["IPADDR"];
-	$_CATEGORIES_K=$MAIN["CATEGORY"];
-	$CATEGORY_NAME=$MAIN["CATEGORY_NAME"];
-	$CLIENT_HOSTNAME=$MAIN["CLIENT_HOSTNAME"];
-	$FAMILYSITE=$MAIN["FAMILYSITE"];
+	//$ufdb_page_rules_md5=$MAIN["UFDBGRULE"];
+	//$SITENAME=$MAIN["SITENAME"];
+    //$URL=$MAIN["URL"];
+    //$IPADDR=$MAIN["IPADDR"];
+    //$_CATEGORIES_K=$MAIN["CATEGORY"];
+    //$CATEGORY_NAME=$MAIN["CATEGORY_NAME"];
+    //$CLIENT_HOSTNAME=$MAIN["CLIENT_HOSTNAME"];
+    //$templateid=$MAIN["TEMPLATE_ID"];
+    $FAMILYSITE=$MAIN["FAMILYSITE"];
 	$maxtime=$MAIN["maxtime"];
 	$uid=$MAIN["USERID"];
 	$IPADDR=$MAIN["IPADDR"];
-	$templateid=$MAIN["TEMPLATE_ID"];
-	if($maxtime==0){$MAX="5256000";}else{$MAX=$maxtime;}
-
-
-	
-	$EnOfLife = strtotime("+{$MAX} minutes", time());
+	if($maxtime==0){$MAX="5184000";}else{$MAX=$maxtime;}
+    $EnOfLife = strtotime("+{$MAX} minutes", time());
 
 
 
@@ -133,21 +130,13 @@ function accept():bool{
 	echo "$('#$md5').remove();\n";
 	
 	$distance=distanceOfTimeInWords(time(),$EnOfLife);
-	$text=$tpl->_ENGINE_parse_body("{success} {$IPADDR}/$uid {to} *.$FAMILYSITE $distance");
+	$text=$tpl->_ENGINE_parse_body("{success} $IPADDR/$uid {to} *.$FAMILYSITE $distance");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/whitelists/nohupcompile");
     admin_tracks("Accept unblock ticket $md5");
 	echo $tpl->js_display_results($text);
     return true;
 	
 }
-
-function EXPLODE_MAIN($MAIN){
-	unset($MAIN["PINFO"]);
-	foreach ($MAIN as $key=>$val){$tt[]="$key:\t$val";}
-	return @implode("\n", $tt);
-}
-
-
 function table(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
@@ -175,7 +164,7 @@ function table(){
 	$sql="SELECT * FROM `webfilters_usersasks` ORDER BY zDate LIMIT 500";
 	$results=$q->QUERY_SQL($sql);
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
-	
+	$sst="style='width:1%' nowrap";
 	$TRCLASS=null;
 	foreach ($results as $index=>$ligne){
 		$zmd5=$ligne["zmd5"];
@@ -189,15 +178,15 @@ function table(){
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
 		$html[]="<td><strong>$www</strong></td>";
-        $html[]="<td width='1%' nowrap><strong>$zmd5</strong></td>";
-		$html[]="<td width='1%' nowrap>$uid/$ipaddr</td>";
+        $html[]="<td $sst><strong>$zmd5</strong></td>";
+		$html[]="<td $sst>$uid/$ipaddr</td>";
 		$distance=distanceOfTimeInWords(time(),$zDate);
 		
 		$accept=$tpl->icon_check(0,"Loadjs('$page?accept=$zmd5')","AsProxyMonitor");
 		
-		$html[]="<td width=1% nowrap>".$tpl->time_to_date($zDate,true)."<br><small>$distance</small></td>";
-		$html[]="<td width=1% class='center' nowrap>$accept</center></td>";
-		$html[]="<td width=1% class='center' nowrap>$delete</center></td>";
+		$html[]="<td $sst>".$tpl->time_to_date($zDate,true)."<br><small>$distance</small></td>";
+		$html[]="<td class='center' $sst>$accept</center></td>";
+		$html[]="<td class='center' $sst>$delete</center></td>";
 		$html[]="</tr>";
 		
 	}

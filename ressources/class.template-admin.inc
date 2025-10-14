@@ -9513,6 +9513,12 @@ $('#data_$id .input-group.date').datepicker({
         $Timez[720]="12 {hours}";
         $Timez[1440]="1 {day}";
         $Timez[2880]="2 {days}";
+        $Timez[10080]="1 {week}";
+        $Timez[20160]="2 {weeks}";
+        $Timez[43200]="1 {month}";
+        $Timez[129600]="3 {months}";
+        $Timez[518400]="1 {year}";
+
         return $this->field_array_hash($Timez, $name, $label, $value,false,$explain);
     }
 

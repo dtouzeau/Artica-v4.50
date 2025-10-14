@@ -859,10 +859,10 @@ function table(){
 				$automatically_add_to_text=" {and} $automatically_add_to <strong>$addTocat_name</strong>";
             }
 
-			$unlocktime=" {for_unlimited_time}";
+			$unlocktime=" {for_unlimited_time} (10 {years})";
 
             if($maxtime>0){
-                $unlocktime=" <i style='font-weight:bold'>( {unlock_during} {$maxtime} {minutes} )</i>";
+                $unlocktime=" <i style='font-weight:bold'>( {unlock_during} $maxtime {minutes} )</i>";
             }
 			
 			if($adgroup<>null){
