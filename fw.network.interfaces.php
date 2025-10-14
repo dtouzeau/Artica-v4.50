@@ -3669,7 +3669,9 @@ function table(){
 	$sql="SELECT Interface FROM nics ORDER BY metric";
 	$results=$q->QUERY_SQL($sql);
 	if(!$q->ok){echo "<div class='alert alert-danger'>$q->mysql_error</div>";}
-	foreach ($results as $index=>$ligne){$MYSQL_NIC[$ligne["Interface"]]=$ligne["Interface"];}
+	foreach ($results as $index=>$ligne){
+        $datas[]=$ligne["Interface"];
+        $MYSQL_NIC[$ligne["Interface"]]=$ligne["Interface"];}
 	
 	$FIREHOLE=false;
 	$FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
@@ -3696,6 +3698,9 @@ function table(){
         }
     }
     foreach ($datas as $val){$H[$val]=$val;}
+
+
+
     ksort($H);
     $datas=array();
     foreach ($H as $val=>$none){$datas[]=$val;}
@@ -3803,9 +3808,7 @@ function table(){
 		if($nicz->IPADDR=="0.0.0.0"){$nicz->IPADDR=null;}
         if($nicz->NETMASK=="0.0.0.0"){$nicz->NETMASK=null;}
         if($nicz->GATEWAY=="no"){$nicz->GATEWAY=null;}
-
         $NetStatus = new NetStatus($val);
-
 
         $ACTUAL_IPADDR=$NetStatus->IPADDR;
         $ACTUAL_NETMASK=$NetStatus->NETMASK;
@@ -3892,7 +3895,6 @@ function table(){
 
         }
 		if($nicz->enabled==0){$MUST_CHANGE=false;}
-
 		if($nicz->enabled==1){
 			
 			if($NOT_CONFIGURED){
