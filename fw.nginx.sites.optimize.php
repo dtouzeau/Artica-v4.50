@@ -157,7 +157,8 @@ function www_parameters_redis_flat($tpl,$socknginx){
     if($proxy_cache_revalidate==1) {
         $f[] = "{proxy_cache_revalidate}";
     }
-   return  $tpl->table_form_field_text("{caching_using_redis}","<small>".@implode(",",$f),ico_mem);
+    $tpl->table_form_field_text("{caching_using_redis}","<small>".@implode(",",$f),ico_mem);
+   return $tpl;
 
 }
 function www_browser_caching_popup():bool{
@@ -355,10 +356,7 @@ function www_parameters3_flat():bool{
     $gzip               = intval($socknginx->GET_INFO("gzip"));
     $pagespeed=intval($socknginx->GET_INFO("pagespeed"));
     $OptimizeForLargeFiles=intval($socknginx->GET_INFO("OptimizeForLargeFiles"));
-
     $tpl->table_form_field_js("Loadjs('$page?www-parameters3-js=$ID')");
-
-
 
     if($cgicache==1){
         $nginxsockGen=new socksngix(0);

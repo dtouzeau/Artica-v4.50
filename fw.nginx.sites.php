@@ -175,6 +175,7 @@ function restart_needed_perform():bool{
 function rows_ping(){
     $tb=explode(",",$_GET["rows-ping"]);
     $f=array();
+    $page=CurrentPageName();
     foreach ($tb as $sID){
         $ID=intval($sID);
         if($ID==0){continue;}
@@ -183,7 +184,7 @@ function rows_ping(){
         $f[]="\ttempdata=base64_decode('$ServerStats');";
         $f[]="\tdocument.getElementById('rcolorStats-$ID').innerHTML=tempdata;";
         $f[]="}";
-
+        $f[]="Loadjs('$page?td-row=$ID&no-destinations=yes');";
     }
     echo @implode("\n",$f);
 }
@@ -3569,9 +3570,9 @@ function td_row_status($id=0):bool{
 
 
 
-    $f[]="if( document.getElementById('status-$id') ){";
+    $f[]="if( document.getElementById('rcolor0-$id') ){";
     $f[]="\ttempdata=base64_decode('$status');";
-    $f[]="\tdocument.getElementById('status-$id').innerHTML=tempdata;";
+    $f[]="\tdocument.getElementById('rcolor0-$id').innerHTML=tempdata;";
     $f[]="}";
 
 
@@ -3624,8 +3625,9 @@ function td_row_status($id=0):bool{
         $f[]="}";
 
     }
-
-    $f[]="Loadjs('$page?td-destinations=$id&function=');";
+    if(!isset($_GET["no-destinations"])){
+        $f[]="Loadjs('$page?td-destinations=$id&function=');";
+    }
 
     echo @implode("\n",$f);
     return true;
@@ -3891,7 +3893,8 @@ function table():bool{
         $StartItems=0;
         $SessionTableOffset=0;
     }
-
+    $spans=array();
+$ssTyle1="style='width:1%'";
     foreach ($results as $index=>$ligne){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $ID=$ligne["ID"];
@@ -3905,7 +3908,6 @@ function table():bool{
         }
 
         $icon_type="";
-        $ssl_client_label=null;
         $color=null;
         $debug_ico=null;
         $debug=intval($sockngix->GET_INFO("Debug"));
@@ -3920,7 +3922,6 @@ function table():bool{
 
         list($serversnames,$ServerNameFields)=extract_hosts($ligne["hosts"],$ID);
         VERBOSE("$ID) Server type: {$ligne["type"]} $ServerNameFields",__LINE__);
-
 
         if($SEARCH_SSL){
             if (!preg_match("#https:\/\/#is", strip_tags($serversnames))) {continue;}
@@ -3952,32 +3953,10 @@ function table():bool{
         if($WebSiteType==14){
             $ligne['isDefault']=1;
         }
-        $badconflength=0;
-
-        if(!is_null($ligne["badconf"])) {
-            $badconflength = strlen($ligne["badconf"]);
-        }
 
         $isDefault=$ligne['isDefault'];
-        $DenyAccess=intval($sockngix->GET_INFO("DenyAccess"));
         $is_default_icon=null;
         if($isDefault==1){$is_default_icon="<i class='fas fa-check'></i>";}
-        $EnableClientCertificate    = $sockngix->GET_INFO("EnableClientCertificate");
-
-        if($EnableClientCertificate==1){
-            $ssl_client_label=$tpl->icon_user_lock("Loadjs('fw.nginx.sites.ServerCertificate.php?client-certificate-js=$ID&function=$function')");
-        }
-        if($badconflength>10){
-            $badconf="<br><small class=text-danger>".$tpl->td_href("{bad_configuration}",null,"Loadjs('$page?badconf=$ID');")."</small>";
-        }
-
-        $saved_text=td_saved($ligne,$sockngix);
-
-        if($DenyAccess==1){
-            $badconf=$badconf."&nbsp;<span class='label label-danger'>{deny_access}</span>";
-        }
-
-        $ssl_certificate=td_row_sslcertificate($ID);
 
         $jsCompile="Loadjs('fw.nginx.apply.php?serviceid=$ID&function=$function&addjs=');";
         $icon_run=$tpl->icon_run($jsCompile,"AsSystemWebMaster");
@@ -3985,7 +3964,7 @@ function table():bool{
             $icon_run=$tpl->icon_run();
         }
 
-        $WAF=td_row_waf($ID);
+
         if($ligne["enabled"]==0){
             $color="color:rgb(191, 194, 196);";
 
@@ -3997,7 +3976,7 @@ function table():bool{
         }
 
 
-        $status=td_status($ligne,$sockngix);
+
         list($peity_div,$peityjs)=table_peity($ID);
         if(strlen($peityjs)>3){
             $peity_js[]=$peityjs;
@@ -4015,22 +3994,23 @@ function table():bool{
         if($enabled==0){
             $pleasewait="";
         }
-        $RCOlor2="<span style='$color' id='rcolor2-$ID'>$icon_type$jssite$badconf$ssl_certificate$debug_ico</span>$peity_div";
+        $RCOlor2="<span style='$color' id='rcolor2-$ID'>$icon_type$jssite$debug_ico</span>$peity_div";
 
         $TypeText=$Types[$ligne["type"]];
+        $spans[]="<span id='status-$ID'></span>";
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%'><span id='status-$ID'>$status<span></span></td>";
-        $html[]="<td style='width:1%' nowrap><span style='$color' id='rcolor1-$ID'>$saved_text</span></td>";
+        $html[]="<td $ssTyle1><span id='rcolor0-$ID'><span></td>";
+        $html[]="<td $ssTyle1 nowrap><span style='$color' id='rcolor1-$ID'></span></td>";
         $html[]="<td nowrap>$RCOlor2<span id='rcolorStats-$ID'></span></td>";
-        $html[]="<td><span style='$color' id='rcolor3-$ID'>$ssl_client_label</span></td>";
-        $html[]="<td><span style='$color' id='rcolor4-$ID'>$WAF</span></td>";
-        $html[]="<td><span style='$color' id='rcolor7-$ID'>".td_btnAction($ID)."</span></td>";
+        $html[]="<td><span style='$color' id='rcolor3-$ID'></span></td>";
+        $html[]="<td><span style='$color' id='rcolor4-$ID'></span></td>";
+        $html[]="<td><span style='$color' id='rcolor7-$ID'></span></td>";
         $html[]="<td><span style='$color;width:35%' id='rcolor5-$ID'>$ServerNameFields</span></td>";
-        $html[]="<td style='width:1%' class='center' nowrap>$is_default_icon</td>";
-        $html[]="<td style='width:1%' nowrap><span style='$color' id='rcolor7-$ID'>$TypeText</span></td>";
+        $html[]="<td $ssTyle1 class='center' nowrap>$is_default_icon</td>";
+        $html[]="<td $ssTyle1 nowrap><span style='$color' id='rcolor7-$ID'>$TypeText</span></td>";
         $html[]="<td nowrap><span style='$color' id='rcolor9-$ID'>$pleasewait</td>";
         if(!isHarmpID()) {
-            $html[] = "<td style='width:1%'>$icon_run</td>";
+            $html[] = "<td $ssTyle1>$icon_run</td>";
         }
 
         $html[]="</tr>";
@@ -4040,6 +4020,7 @@ function table():bool{
     $html[]="</tbody>";
     $html[]=table_footer($MAX_WEB_SITES);
     $html[]="</table>";
+    $html[]=@implode("",$spans);
     $html[]="";
     $html[]="<script>";
     $html[]="Loadjs('$page?js-tiny=yes&function=$function')";

@@ -73,7 +73,11 @@ class squid_reverse{
                 }
             }
 			if($ligneZ["IsClientCert"]==1){$client=" (client)";}
-			if(strlen($ligneZ["clientkey"])>50){$client=" (client)";}
+            if(!is_null($ligneZ["clientkey"])) {
+                if (strlen($ligneZ["clientkey"]) > 50) {
+                    $client = " (client)";
+                }
+            }
 			$sslcertificates[$ligneZ["CommonName"]]=$ligneZ["CommonName"].$client;
 		}
         $results=$q->QUERY_SQL("SELECT ID,DateTo,commonName,organizationName,emailAddress,subjectAltName FROM subcertificates WHERE Certype=1 ORDER BY commonName ASC");
