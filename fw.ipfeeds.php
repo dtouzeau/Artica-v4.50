@@ -1563,6 +1563,14 @@ function left_status():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $t=time();
+    $errorFile="/usr/share/artica-postfix/ressources/logs/NFQueue/error.txt";
+    if(is_file($errorFile)) {
+        $NFQUEUE_ERROR = @file_get_contents($errorFile);
+        if (strlen($NFQUEUE_ERROR)) {
+            $tb = explode("||", $NFQUEUE_ERROR);
+            echo $tpl->_ENGINE_parse_body($tpl->div_error($tb[0] . "||" . $tb[1]));
+        }
+    }
 
 
     $html[]="<div id='pcap-here-$t'>";

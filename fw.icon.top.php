@@ -219,16 +219,20 @@ function notifs(){
     $UnboundEnabled = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
     $SQUIDEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
 
-  if(is_file("/etc/artica-postfix/ARTICA_REVERSE_PROXY_APPLIANCE")){
-        $REVERSE_APPLIANCE=true;
+      if(is_file("/etc/artica-postfix/ARTICA_REVERSE_PROXY_APPLIANCE")){
+            $REVERSE_APPLIANCE=true;
+      }
+    $errorFile="/usr/share/artica-postfix/ressources/logs/NFQueue/error.txt";
+    if(is_file($errorFile)) {
+        $ERR[]=@file_get_contents($errorFile);
     }
 
-    if($REVERSE_APPLIANCE){
+   if($REVERSE_APPLIANCE){
         $SEE_SSHPROXY=false;
         $LIBCACHE_PERL=false;
         $PYTHON_CARE=false;
         $AD_CARE=false;
-    }
+   }
 
     $php_error=_php_error();
     if($php_error<>null){

@@ -3069,3 +3069,8 @@ If your upstream uses very short TTLs for fast changes/rotation, clamping may de
 <signed_js_browser_challenge_explain>Enforce a lightweight, invisible check to confirm the client is a real web browser used by a human.[br]When enabled, first-time visitors briefly run a small JS task (WebCrypto + DOM probe). If it succeeds, the server issues a short-lived, signed cookie and the user proceeds without captchas.[br]Headless scripts and basic bots usually fail or are rate-limited.[br][b]Notes:[/b] static assets and health endpoints can be excluded; no personal data is collected; works transparently for legitimate users.</signed_js_browser_challenge_explain>
 <delayed_startup_service_explain>This option only applies during server boot.[br]In some cases, the service should start only after the operating environment is fully up; otherwise it may take longer to start and slow down the overall boot process.[br]With this option enabled, the service will start only once the server has been up for X seconds, allowing initialization to complete properly.</delayed_startup_service_explain>
 <cache_expert>Caching — Expert Mode</cache_expert>
+<kernel_version_failed>Failed to get kernel version</kernel_version_failed>
+<ERR_NO_PFRING>PF_RING module missing on this system</ERR_NO_PFRING>
+<ERR_NO_PFRING_EXPLAIN>The PF_RING network-tapping kernel module isn’t available for the current kernel version.[br]Install or build this module to enable network monitoring tools.</ERR_NO_PFRING_EXPLAIN>
+<ERR_NO_LIBPFRING>PF_RING library not found</ERR_NO_LIBPFRING>
+<ERR_LOADING_LIBPFRING>Error loading PF_RING user-space library</ERR_LOADING_LIBPFRING>
