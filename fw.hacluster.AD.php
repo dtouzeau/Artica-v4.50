@@ -840,7 +840,7 @@ function form_flat(){
     $button = $tpl->button_autnonome("{download_powershell_script}",$js,
         ico_download, "AsProxyMonitor");
 
-    $html[]=$tpl->div_explain("{download_powershell_script}||{download_powershell_script_explain}<br>
+    $html[]=$tpl->div_explain("{download_powershell_script}||{download_powershell_script_explain}<br>{download_powershell_script_exp}<br>
 <p style=\"font-family:'Courier New';color:black;background-color:#EEF2FE;border:1px solid #c0c0c0; font-weight:bold;padding: 9px;border-radius:5px;margin:5px;font-size: initial\">Unblock-File \"$myhostname.int-keytab.ps1\"</p>
     <div style='text-align:right;margin-top:20px'>$button</div>");
 
