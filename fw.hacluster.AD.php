@@ -1,7 +1,7 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
-include_once("/usr/share/artica-postfix/ressources/class.ActiveDirectory.inc");
-
+include_once(dirname(__FILE__)."/ressources/class.ActiveDirectory.inc");
+include_once(dirname(__FILE__)."/ressources/PowerShellKTPass.inc.php");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["disable-ad"])){disable_ad_ask();exit;}
 if(isset($_GET["enable-ad"])){enable_ad();exit;}
@@ -29,6 +29,7 @@ if(isset($_GET["flat-ticket"])){flat_ticket();exit;}
 if(isset($_GET["formflat"])){form_flat();exit;}
 if(isset($_GET["ad-form-js"])){ad_form_js();exit;}
 if(isset($_GET["ad-form-popup"])){ad_form_popup();exit;}
+if(isset($_GET["download-ps1"])){DownloadKeyTab();exit;}
 page();
 
 function wizard_js(){
@@ -320,8 +321,6 @@ function page(){
 	echo $tpl->_ENGINE_parse_body($html);
 	
 }
-
-
 function feature_disabled(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -803,6 +802,28 @@ function flat_keytab():string{
 
 }
 
+function DownloadKeyTab(){
+    $page=CurrentPageName();
+    $haClusterAD=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAD"));
+    $KerberosUsername=$haClusterAD["KerberosUsername"];
+    $kerberosRealm=strtoupper($haClusterAD["kerberosRealm"]);
+    $myhostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
+    $data=BuildPowerShellKTPass($kerberosRealm,$myhostname,$KerberosUsername);
+    $timestamp =time();
+    $tsstring = gmdate('D, d M Y H:i:s ') . 'GMT';
+    header("Content-Length: ".strlen($data));
+    header('Content-type: application/x-powershell');
+    header('Content-Transfer-Encoding: binary');
+    header("Content-Disposition: attachment; filename=\"$myhostname-keytab.ps1\"");
+    header("Cache-Control: no-cache, must-revalidate");
+    header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', $timestamp + (60 * 60)));
+    header("Last-Modified: $tsstring");
+    ob_clean();
+    flush();
+    echo $data;
+}
+
+
 function form_flat(){
     $page=CurrentPageName();
     $haClusterAD=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAD"));
@@ -812,25 +833,24 @@ function form_flat(){
     $KerberosPassword=$haClusterAD["KerberosPassword"];
     $kerberosActiveDirectoryHost=$haClusterAD["kerberosActiveDirectoryHost"];
 
-
-    $adm=$KerberosUsername;
-    if(strpos($KerberosUsername,"@")>0){
-        $tb=explode("@",$KerberosUsername);
-        $adm=$tb[0];
-    }
-
     $kerberosActiveDirectorySuffix=trim($haClusterAD["kerberosActiveDirectorySuffix"]);
     $KerberosLDAPS=intval($haClusterAD["KerberosLDAPS"]);
+    $tpl=new template_admin();
+    $js="document.location.href='/$page?download-ps1=yes'";
+    $button = $tpl->button_autnonome("{download_powershell_script}",$js,
+        ico_download, "AsProxyMonitor");
 
-    $html[]="<p>{kerberos_authentication_ktpass}</p>";
-    $html[]="<p style=\"font-family:'Courier New';color:black;background-color:#EEF2FE;border:1px solid #c0c0c0; font-weight:bold;padding: 9px;border-radius:5px;margin:5px;font-size: initial\">setspn -S HTTP/$myhostname@$kerberosRealm $adm<br>ktpass -princ HTTP/$myhostname@$kerberosRealm -mapuser $KerberosUsername -crypto AES256-SHA1 -pass ****** -ptype KRB5_NT_PRINCIPAL -out C:\Users\\".$adm."\Downloads\krb5.keytab</p>";
+    $html[]=$tpl->div_explain("{download_powershell_script}||{download_powershell_script_explain}<br>
+<p style=\"font-family:'Courier New';color:black;background-color:#EEF2FE;border:1px solid #c0c0c0; font-weight:bold;padding: 9px;border-radius:5px;margin:5px;font-size: initial\">Unblock-File \"$myhostname.int-keytab.ps1\"</p>
+    <div style='text-align:right;margin-top:20px'>$button</div>");
+
 
     if (!is_file("/home/artica/PowerDNS/Cluster/storage/krb5.keytab")) {
            $html[] = "<div class='alert alert-danger'>{KRB5_FILE_MISSING}</div>";
     }
 
 
-    $tpl=new template_admin();
+
 
     $tpl->table_form_field_js("Loadjs('$page?ad-form-js=yes')","AsSystemAdministrator");
     $tpl->table_form_field_text("{ad_full_hostname}",$kerberosActiveDirectoryHost,ico_microsoft);

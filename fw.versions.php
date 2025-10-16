@@ -170,6 +170,7 @@ function table():bool{
     $html[]=APP_GO_EXEC($UPDATES_ARRAY);
     $html[]=APP_AUTOFS($UPDATES_ARRAY);
     $html[]=APP_FIRMWARES($UPDATES_ARRAY);
+    $html[]=PFRING($UPDATES_ARRAY);
     $html[]=APP_DOCKER($UPDATES_ARRAY);
     $html[]=APP_FIRECRACKER($UPDATES_ARRAY);
 
@@ -1766,7 +1767,28 @@ function APP_PROFTPD($UPDATES_ARRAY):string{
     $html[]="</tr>";
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
+function PFRING($UPDATES_ARRAY):string{
+    $tpl=new template_admin();
 
+    $bton=$tpl->icon_nothing();
+
+
+    if(isset($UPDATES_ARRAY["PFRING"])){
+        $bton=$tpl->button_autnonome("{install_upgrade2}",
+            "Loadjs('fw.system.upgrade-software.php?product=PFRING');",
+            "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
+    }
+
+    $DHCPD_VERSION=php_uname("r");
+
+
+    $html[]="<tr>";
+    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{PFRING}:</strong></td>";
+    $html[]="<td style='width:1%'  nowrap>$DHCPD_VERSION</td>";
+    $html[]="<td style='text-align:left;width:99%' nowrap>$bton</td>";
+    $html[]="</tr>";
+    if(!is_array($html)){$html=array();} return @implode("\n",$html);
+}
 function APP_DHCP($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $DHCPD_VERSION=$tpl->icon_nothing();
@@ -1780,9 +1802,6 @@ function APP_DHCP($UPDATES_ARRAY):string{
             "Loadjs('fw.system.upgrade-software.php?product=APP_DHCP');",
             "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
     }
-
-
-
 
     $html[]="<tr>";
     $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_DHCP}:</strong></td>";

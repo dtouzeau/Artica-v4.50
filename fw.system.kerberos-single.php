@@ -6,6 +6,7 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.ActiveDirectoryRootDSE.inc");
 include_once(dirname(__FILE__)."/ressources/class.activedirectory.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+include_once(dirname(__FILE__)."/ressources/PowerShellKTPass.inc.php");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -31,7 +32,7 @@ if(isset($_GET["ktpass4"])){ktpass_popup4();exit;}
 if(isset($_GET["ticket-audit"])){ticket_audit();exit;}
 if(isset($_GET["ticket-audit-popup"])){ticket_audit_popup();exit;}
 if(isset($_GET["renew-keytab-js"])){renew_key_tab_js();exit;}
-//
+if(isset($_GET["download-ps1"])){DownloadKeyTab();exit;}
 page();
 
 function renew_key_tab_js():bool{
@@ -211,23 +212,60 @@ function ktpass_popup3():bool{
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
-function ktpass_popup4(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
+
+function DownloadKeyTab():bool{
     $array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
     $myhostname=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname");
     $tt=explode(".",$myhostname);
-    $Netb=$tt[0];
     unset($tt[0]);
     $DEFAULT_DOMAIN=@implode(".",$tt);
     $DEFAULT_DOMAIN_UPPER=strtoupper($DEFAULT_DOMAIN);
     $kerberosRealm=$DEFAULT_DOMAIN_UPPER;
     $KerberosUsername=$array["WINDOWS_SERVER_ADMIN"];
+
+
+    $data=BuildPowerShellKTPass($kerberosRealm,$myhostname,$KerberosUsername);
+    $timestamp =time();
+    $tsstring = gmdate('D, d M Y H:i:s ') . 'GMT';
+    header("Content-Length: ".strlen($data));
+    header('Content-type: application/x-powershell');
+    header('Content-Transfer-Encoding: binary');
+    header("Content-Disposition: attachment; filename=\"$myhostname-keytab.ps1\"");
+    header("Cache-Control: no-cache, must-revalidate");
+    header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', $timestamp + (60 * 60)));
+    header("Last-Modified: $tsstring");
+    ob_clean();
+    flush();
+    echo $data;
+    return true;
+}
+
+function ktpass_popup4(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $myhostname=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname");
+    $tt=explode(".",$myhostname);
+    $Netb=$tt[0];
+    unset($tt[0]);
+
+
+
     $bt_upload=$tpl->button_upload("krb5.keytab",$page)."&nbsp;&nbsp;";
     $makesureadcomp=$tpl->_ENGINE_parse_body("{makesureadcomp}");
     $makesureadcomp=str_replace("%s",$Netb,$makesureadcomp);
-    $html[]="<p>{kerberos_authentication_ktpass}</p><strong>$makesureadcomp</strong>";
-    $html[]="<p style=\"font-family:'Courier New';color:black;background-color:#EEF2FE;border:1px solid #c0c0c0; font-weight:bold;padding: 9px;border-radius:5px;margin:5px;font-size: initial\">ktpass -princ HTTP/$myhostname@$kerberosRealm -mapuser [user]@$DEFAULT_DOMAIN_UPPER -crypto AES256-SHA1 -pass ****** -ptype KRB5_NT_PRINCIPAL -out C:\Users\\"."$KerberosUsername\Downloads\krb5.keytab</p>";
+
+    $js="document.location.href='/$page?download-ps1=yes'";
+    $button = $tpl->button_autnonome("{download_powershell_script}",$js,
+        ico_download, "AsProxyMonitor");
+
+    $html[]=$tpl->div_explain("{download_powershell_script}||{download_powershell_script_explain}<br>
+<strong>$makesureadcomp</strong><br>
+<p style=\"font-family:'Courier New';color:black;background-color:#EEF2FE;border:1px solid #c0c0c0; font-weight:bold;padding: 9px;border-radius:5px;margin:5px;font-size: initial\">Unblock-File \"$myhostname.int-keytab.ps1\"</p>
+    <div style='text-align:right;margin-top:20px'>$button</div>");
+
+
+
+
     $html[]="<div style='margin-top:20px;text-align:right'>$bt_upload</div>";
     echo $tpl->_ENGINE_parse_body($html);
 }

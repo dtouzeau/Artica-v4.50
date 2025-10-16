@@ -9,10 +9,9 @@ if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 
 js();
 
-function file_uploaded(){
+function file_uploaded():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/articaweb/chown");
     $tpl=new template_admin();
-    $page=CurrentPageName();
     $file=$_GET["file-uploaded"];
     $id=$_GET["id"];
     $id2=$_GET["id2"];
@@ -32,8 +31,8 @@ function file_uploaded(){
     }
 
     $t=time();
-    if(!preg_match("#{$width}x{$height}-#",$file)){
-        $target_file="{$width}x{$height}-$target_file";
+    if(!preg_match("#{$width}x$height-#",$file)){
+        $target_file="{$width}x$height-$target_file";
     }
     $target_file=$target_file.".$ext";
     $nextpath="/usr/share/artica-postfix/img/$target_file";
@@ -60,11 +59,11 @@ function file_uploaded(){
 	Final$t();
 	";
 
-
+return true;
 }
 
 
-function js(){
+function js():bool{
     $id=$_GET["id"];
     $id2=$_GET["id2"];
     $path=$_GET["path"];
@@ -72,7 +71,7 @@ function js(){
     $encoded_string=urlencode($path);
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $tpl->js_dialog8("{picture} $basename","$page?popup=yes&id=$id&id2=$id2&path=$encoded_string",600);
+   return  $tpl->js_dialog8("{picture} $basename","$page?popup=yes&id=$id&id2=$id2&path=$encoded_string",600);
 }
 
 function popup(){
@@ -95,10 +94,10 @@ function popup(){
 
     if(!is_file($tmpapth)){
         if(resizeImage($path,$tmpapth,250,250)){
-            $tmpOut="<img src='ressources/logs/web/thumb-$basename'>";
+            $tmpOut="<img src='ressources/logs/web/thumb-$basename' alt=''>";
         }
     }else{
-        $tmpOut="<img src='ressources/logs/web/thumb-$basename'>";
+        $tmpOut="<img src='ressources/logs/web/thumb-$basename' alt=''>";
     }
 
     $html[]="<table style='width:100%'>";
@@ -107,7 +106,7 @@ function popup(){
     if(resizeImage($path,$tmpapth,250,250)){
         $html[]="<div style='margin-bottom: 20px'>$tmpOut</div>";
     }
-    $html[]="<center><strong>$basename<br><small>{$width}px x {$height}px $image_mime</small></strong></center>";
+    $html[]="<div class='center'><strong>$basename<br><small>{$width}px x {$height}px $image_mime</small></strong></div>";
     $html[]="</td>";
     $html[]="<td width='250px' valign='top'>";
     $html[]="<center>";

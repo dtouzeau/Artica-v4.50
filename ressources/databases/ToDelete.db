@@ -17,6 +17,7 @@ exec.change.password.php
 prox-dns-tests.py
 exec.squid.ssl.certificates.php
 exec.system.last.php
+bin/install/libpfring.so.9.1.0
 exec.check.repositories.php
 fw.admin.guide.php
 exec.rpz-client.php

@@ -3074,3 +3074,9 @@ If your upstream uses very short TTLs for fast changes/rotation, clamping may de
 <ERR_NO_PFRING_EXPLAIN>The PF_RING network-tapping kernel module isn’t available for the current kernel version.[br]Install or build this module to enable network monitoring tools.</ERR_NO_PFRING_EXPLAIN>
 <ERR_NO_LIBPFRING>PF_RING library not found</ERR_NO_LIBPFRING>
 <ERR_LOADING_LIBPFRING>Error loading PF_RING user-space library</ERR_LOADING_LIBPFRING>
+<error_last_kernel_deb10>To use this feature, you must run the latest kernel released for Debian [b]%lastver[/b].[br]The currently installed kernel version is %localver.[br]
+You need to update your system kernel to the new version.</error_last_kernel_deb10>
+<PFRING>PF_RING library</PFRING>
+<download_powershell_script_explain>Download the PowerShell script using the button below, then run it as an administrator on your Active Directory.</download_powershell_script_explain>
+<download_powershell_script>Download PowerShell script</download_powershell_script>
+<analyzed_ip_addresses>Analyzed IP addresses</analyzed_ip_addresses>

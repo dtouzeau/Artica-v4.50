@@ -109,7 +109,7 @@ function popup():bool{
 
     if(!isset($UPDATES_ARRAY[$PKEY])){$UPDATES_ARRAY[$PKEY]=array();}
 	$ISARRAY    = $UPDATES_ARRAY[$PKEY];
-    if($PKEY=="APP_XKERNEL" OR $PKEY=="APP_XTABLES") {
+    if($PKEY=="APP_XKERNEL" OR $PKEY=="APP_XTABLES" OR $PKEY=="PFRING") {
         $kernbin = $tpl->kernel_binary_ver();
     }
 
@@ -193,7 +193,7 @@ function popup():bool{
         $upload=$tpl->button_upload("{upload}",$page,"btn-primary btn-xs","&product={$_GET["popup"]}&key=$integ");
 
 
-        if($PKEY=="APP_XKERNEL" OR $PKEY=="APP_XTABLES") {
+        if($PKEY=="APP_XKERNEL" OR $PKEY=="APP_XTABLES" OR $PKEY=="PFRING") {
             VERBOSE("Check $integ<>$kernbin",__LINE__);
 		    if($integ<>$kernbin){
                 $bton=$tpl->button_autnonome("{install_upgrade}",

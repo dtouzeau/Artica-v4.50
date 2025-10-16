@@ -78,7 +78,6 @@ if(isset($_POST["EnableFireholIPSets"])){Save();exit;}
 if(isset($_GET["top-status"])){top_status();exit;}
 if(isset($_GET["left-status"])){left_status();exit;}
 if(isset($_GET["left-status-pcap"])){echo left_status_pcap();exit;}
-if(isset($_GET["pcap-refresh"])){left_status_refresh();exit;}
 if(isset($_GET["fixed-params"])){fixed_params();exit;}
 
 if(isset($_GET["ipfeed-articapcap"])){params_ipfeed_pcap_js();exit;}
@@ -744,6 +743,24 @@ function ProtectMySite_save():bool{
 function parameters():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
+
+    $DEBIAN_VERSION=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DEBIAN_VERSION"));
+    if($DEBIAN_VERSION<12) {
+        $kernver = php_uname("r");
+        if($kernver<>"4.19.0-27-amd64") {
+        $error_last_kernel_deb10=$tpl->_ENGINE_parse_body("{error_last_kernel_deb10}");
+        $error_last_kernel_deb10=str_replace("%localver",$kernver,$error_last_kernel_deb10);
+        $error_last_kernel_deb10=str_replace("%lastver","4.19.0-27-amd64",$error_last_kernel_deb10);
+        $js="Loadjs('fw.system.upgrade-kernel.php')";
+        $button=$tpl->button_autnonome("{kernel_update}",$js, ico_cd, "AsSystemAdministrator",300,"btn-danger");
+        echo $tpl->div_error("{incompatible_system}:$kernver||$error_last_kernel_deb10<div style='text-align:right'>$button</div>");
+        return false;
+        }
+        //Loadjs('Loadjs('fw.system.upgrade-software.php?product=APP_PROFTPD')')
+
+    }
+
+
     $html[]="<table style='width:100%;margin-top:10px'>";
     $html[]="<tr>";
     $html[]="<td style='vertical-align: top' colspan='2'>";
@@ -763,10 +780,10 @@ function parameters():bool{
     $html[]="<script>";
     $jsRefresh=$tpl->RefreshInterval_js("articapfilter-status",$page,"left-status=yes");
     $jsRefresh2=$tpl->RefreshInterval_js("cyberipcrime-status",$page,"top-status=yes");
-
+    $jsRefresh3=$tpl->RefreshInterval_js("ipfeeds-fixed-params",$page,"fixed-params=yes");
     $html[]=$jsRefresh2;
     $html[]=$jsRefresh;
-    $html[]="LoadAjax('ipfeeds-fixed-params','$page?fixed-params=yes');";
+    $html[]=$jsRefresh3;
     $html[]="</script>";
     echo $tpl->_ENGINE_parse_body($html);
     return true;
@@ -851,6 +868,13 @@ function fixed_params():bool{
         }
 
         $Config = $json->Config;
+        $pp="";
+        $ver=$json->PFRingVersion;
+        if($json->PFRingPackets>0){
+            $pp=" &nbsp;-&nbsp;{packets}: ".$tpl->FormatNumber($json->PFRingPackets);
+
+        }
+        $tpl->table_form_field_text("{PFRING}","<small>$ver$pp</small>",ico_engine);;
 
         $ll=array();
         foreach ($Config->LocalPorts as $LocalPort) {
@@ -1346,17 +1370,12 @@ function articapcap_reload($usejs=true):bool{
     }
 
     header("content-type: application/x-javascript");
-    $html[]="LoadAjax('cyberipcrime-status','$page?top-status=yes');";
-    $html[]="LoadAjax('articapfilter-status','$page?left-status=yes');";
+
 
     $CrowdSecCyberCrimeIPfeed=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CrowdSecCyberCrimeIPfeed"));
     if($CrowdSecCyberCrimeIPfeed==1){
         $GLOBALS["CLASS_SOCKETS"]->getFrameWork("crowdsec.php?restart-custom-bouncer=yes");
     }
-
-
-    echo @implode("\n",$html);
-
     return true;
 
 }
@@ -1512,23 +1531,23 @@ function widget_nfqueue_status($json):string{
         $jsbut = "Loadjs('$page?cyberipcrime-enable=yes')";
         $button["name"] = "{enable}";
         $button["js"] = $jsbut;
-        return $tpl->widget_h("minheight:169px:gray",ico_firewall,"{disabled}","{CybercrimeIPFeeds}",$button);
+        return $tpl->widget_h("minheight:169px:gray",ico_firewall,"{disabled}","{analyzed_ip_addresses}",$button);
     }
     $jsbut_uninstall = "Loadjs('$page?cyberipcrime-disable=yes')";
     $button["name"] = "{disable}";
     $button["js"] = $jsbut_uninstall;
 
     if(!$json->Status){
-        return $tpl->widget_h("minheight:169px:red",ico_firewall,"{error}","{CybercrimeIPFeeds}<br><small>$json->Error</small>",$button);
+        return $tpl->widget_h("minheight:169px:red",ico_firewall,"{error}","{analyzed_ip_addresses}<br><small>$json->Error</small>",$button);
     }
 
     if(!$json->Status){
-        return $tpl->widget_h("minheight:169px:red",ico_firewall,"{error}","{CybercrimeIPFeeds}<br><small>$json->Error</small>",$button);
+        return $tpl->widget_h("minheight:169px:red",ico_firewall,"{error}","{analyzed_ip_addresses}<br><small>$json->Error</small>",$button);
     }
 
-    $Size=FormatBytes($json->Size/1024);
-    $Packets=$tpl->FormatNumber($json->Packets);
-    return $tpl->widget_h("minheight:169px:green",ico_firewall,"$Size<div style='margin-top: -15px'><small style='color:white;font-size:12px'>{packets}: $Packets</small></div>","{CybercrimeIPFeeds}",$button);
+    $Buffers=$tpl->FormatNumber($json->Buffer);
+    $Packets=$tpl->FormatNumber($json->PacketsScanned);
+    return $tpl->widget_h("minheight:169px:green",ico_firewall,"$Buffers<div style='margin-top: -15px'><small style='color:white;font-size:12px'>{packets}: $Packets</small></div>","{analyzed_ip_addresses}",$button);
 
 }
 function widget_nfqueue_blocks($json):string{
@@ -1571,14 +1590,9 @@ function left_status():bool{
             echo $tpl->_ENGINE_parse_body($tpl->div_error($tb[0] . "||" . $tb[1]));
         }
     }
-
-
     $html[]="<div id='pcap-here-$t'>";
     $html[]=left_status_pcap();
     $html[]="</div>";
-    $html[]="<script>";
-    $html[]="Loadjs('$page?pcap-refresh=$t');";
-    $html[]="</script>";
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
@@ -1609,25 +1623,7 @@ function left_status_pcap():string{
 
 
 }
-function left_status_refresh():bool{
-    $page=CurrentPageName();
-    $t=$_GET["pcap-refresh"];
-    header("content-type: application/x-javascript");
-    $f[]="function RefreshPCAPS$t(){";
-    $f[]="\tif(!document.getElementById('pcap-here-$t') ){ return;}";
-    $f[]="\tLoadAjaxSilent('pcap-here-$t','$page?left-status-pcap=yes');";
-    $f[]="\tLoadjs('$page?pcap-refresh=$t');";
-    $f[]="}";
-    $f[]="function RefreshPCAP$t(){";
-    $f[]="\tif(!document.getElementById('pcap-here-$t') ){";
-    $f[]="\t\treturn;";
-    $f[]="\t}";
-    $f[]="\tsetTimeout(\"RefreshPCAPS$t()\",2500);";
-    $f[]="}";
-    $f[]="RefreshPCAP$t();";
-    echo @implode("\n",$f);
-    return true;
-}
+
 function params_ipfeed_pcap_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -1825,6 +1821,7 @@ function top_status():bool{
     $tpl=new template_admin();
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NFQUEUE("/status"));
 
+
     $EnableArticaNFQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaNFQueue"));
     if($EnableArticaNFQueue==0){
         return false;
@@ -1866,11 +1863,6 @@ function CybercrimeIPFeeds_disable():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
 
-   return $tpl->js_confirm_delete("{CybercrimeIPFeeds}","cyberipcrime-disable","yes","LoadAjax('cyberipcrime-status','$page?top-status=yes');");
-
-}
-function CybercrimeIPFeeds_disable_confirm():bool{
-    $tpl=new template_admin();
     $jsInstall=$tpl->framework_buildjs(
         "/nfqueue/uninstall",
         "nfqueue.progress",
@@ -1878,8 +1870,12 @@ function CybercrimeIPFeeds_disable_confirm():bool{
         "progress-CybercrimeIPFeeds-restart"
     );
     header("content-type: application/x-javascript");
-    echo $jsInstall;
 
+
+   return $tpl->js_confirm_delete("{CybercrimeIPFeeds}","cyberipcrime-disable","yes",$jsInstall);
+
+}
+function CybercrimeIPFeeds_disable_confirm():bool{
     return admin_tracks("Remove CybercrimeIPFeeds feature");
 }
 function Save(){
