@@ -46,7 +46,8 @@ function BuildPowerShellKTPass($KerberosRealm="EXAMPLE.COM",$ServiceHostname="my
     $f[]="";
     $f[]="function Resolve-AccountForSetspn {";
     $f[]="    param([Parameter(Mandatory)][string]\$MapUserInput) # UPN, sam, or DOMAIN\sam";
-    $f[]="    if (\$MapUserInput -match '^[^\\]+\\[^\\]+\$') { return \$MapUserInput } # already DOMAIN\sam";
+
+    $f[]="    if (\$MapUserInput -match '^[^\\\]+\\[^\\\]+\$') { return \$MapUserInput } # already DOMAIN\sam";
     $f[]="";
     $f[]="    \$adLoaded = \$false";
     $f[]="    try { Import-Module ActiveDirectory -ErrorAction Stop; \$adLoaded = \$true } catch {}";
@@ -86,7 +87,7 @@ function BuildPowerShellKTPass($KerberosRealm="EXAMPLE.COM",$ServiceHostname="my
     $f[]="        \$dn = \$Matches[1]";
     $f[]="    } else {";
     $f[]="        # If the line already looks like DOMAIN\sam, return it";
-    $f[]="        if (\$DnOrLine -match '^[^\\]+\\[^\\]+\$') { return \$DnOrLine }";
+    $f[]="        if (\$DnOrLine -match '^[^\\\]+\\[^\\\]+\$') { return \$DnOrLine }";
     $f[]="        # Otherwise, leave as-is (best effort)";
     $f[]="        \$dn = \$DnOrLine";
     $f[]="    }";

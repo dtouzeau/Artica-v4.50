@@ -311,12 +311,14 @@ class features{
         if($this->OnlyActive){return "";}
         $color="#CCCCCC";
         $wiki_ico="&nbsp;";
-        $label="<a href=\"javascript:blur()\" OnClick=\"javascript:blur()\" class='btn btn-default btn-sm'>
+        $label="<a href=\"javascript:Blur()\" OnClick=\"Blur()\" class='btn btn-default btn-sm'>
 				<i class='fas fa-exclamation-triangle'></i> $button_name</strong></a>";
 
         $explain_text=null;
-        if($_GET["expand"]==1){
-            $explain_text="<br><small style='color:$color'>$explain</small>";
+        if(isset($_GET["expand"])) {
+            if ($_GET["expand"] == 1) {
+                $explain_text = "<br><small style='color:$color'>$explain</small>";
+            }
         }
         $tpl=new template_admin();
         if($wiki<>null){
@@ -1195,7 +1197,7 @@ class features{
         $config["SECURITY"]="AsSystemAdministrator";
         $config["TITLE"]="{APP_NTPD}";
         $config["EXPLAIN"]="{ntp_about}";
-        $config["TOKEN"]="NTPDEnabled";
+        $config["TOKEN"]="ChronydEnabled";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/ntpd.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/ntpd.progress.log";
         $config["CMD_ON"]="/ntpd/install";

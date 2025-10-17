@@ -44,13 +44,29 @@ function service_status_clients(){
     if(!property_exists($json,"Info")){
         return $tpl->widget_rouge("{clients}","{error} 2",null,ico_computer);
     }
-    $c=0;
-    foreach($json->Info as $client){
-        if(strlen($client->hostname)==0){
-            continue;
-        }
+    $info = $json->Info ?? [];
+
+    /* Normalize Info into an array of objects */
+    if (is_string($info)) {
+        $tmp = json_decode($info);
+        if (is_array($tmp))    { $info = $tmp; }
+        elseif (is_object($tmp)) { $info = array_values(get_object_vars($tmp)); }
+    }
+    elseif (is_object($info)) {
+        $info = array_values(get_object_vars($info));
+    }
+    elseif (!is_array($info)) {
+        $info = []; // anything else => empty
+    }
+
+    $c = 0;
+    foreach ($info as $client) {
+        if (!is_object($client)) { continue; }
+        $hostname = $client->hostname ?? $client->name ?? '';
+        if ($hostname === '') { continue; }
         $c++;
     }
+
     if($c==0){
         return $tpl->widget_grey("{clients}","0",null,ico_computer);
     }

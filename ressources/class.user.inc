@@ -394,11 +394,13 @@ class user{
 		
 		if(isset($attrs["distinguishedName"][0])){$this->dn=$attrs["distinguishedName"][0];}
 		if(isset($attrs["dn"])){$this->dn=$attrs["dn"];}
-		
-		for($i=0;$i<$attrs["objectClass"]["count"];$i++){
-			$class=$attrs["objectClass"][$i];
-			$this->objectClass_array[$class]=$class;
-		}
+
+        if(isset($attrs["objectClass"]["count"])) {
+            for ($i = 0; $i < $attrs["objectClass"]["count"]; $i++) {
+                $class = $attrs["objectClass"][$i];
+                $this->objectClass_array[$class] = $class;
+            }
+        }
 		
 		
 		
