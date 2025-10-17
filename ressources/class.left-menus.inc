@@ -1297,33 +1297,22 @@ class left_menus{
         if($this->users->isProxyManagerOnly()){return false;}
         if(isset($_GET["dynacls"])){return false;}
         if(!$this->users->AsFirewallManager){return false;}
-        $EnableNetMonix=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNetMonix");
-        $NetMonixInstalled=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetMonixInstalled");
-        if($NetMonixInstalled==0){$EnableNetMonix=0;}
-        if($EnableNetMonix==1){return true;}
-        if(!$this->users->SURICATA_INSTALLED){return false;}
-        $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
-        if(!$this->users->SURICATA_INSTALLED){
-            $EnableSuricata=0;
-        }
-        if($EnableSuricata==1){return true;}
-        return false;
+        $SURICATA_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_INSTALLED"));
+        if($SURICATA_INSTALLED==0){return false;}
+        return true;
     }
 
-    public function Suricata(){
+    public function Suricata():string{
         if(!$this->isIds()){
             return "";
         }
 
-        $EnableNetMonix=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNetMonix");
-        $NetMonixInstalled=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetMonixInstalled");
-        if($NetMonixInstalled==0){$EnableNetMonix=1;}
+        //$EnableNetMonix=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNetMonix");
+        //$NetMonixInstalled=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetMonixInstalled");
+        //if($NetMonixInstalled==0){$EnableNetMonix=1;}
 
 
         $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
-        if(!$this->users->SURICATA_INSTALLED){
-            $EnableSuricata=0;
-        }
         $tpl=new template_admin();
         $f[]="<!-- IDS START -->";
         $f[]="                <li id='left-menu'>";

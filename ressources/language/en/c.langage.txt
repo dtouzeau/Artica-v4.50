@@ -3081,3 +3081,9 @@ You need to update your system kernel to the new version.</error_last_kernel_deb
 <download_powershell_script>Download PowerShell script</download_powershell_script>
 <analyzed_ip_addresses>Analyzed IP addresses</analyzed_ip_addresses>
 <download_powershell_script_exp>This PowerShell script lets you generate the [b]Kerberos ticket[/b] (keytab) in your Active Directory.[br]Once the keytab is created, you can upload it in this section to join this server to your Active Directory domain.</download_powershell_script_exp>
+<suricata_market_explain>[b]Deep network visibility, powered by Suricata.[/b]
+Artica integrates the Suricata IDS engine directly inside your server, giving you enterprise-grade intrusion detection without the complexity.[br]
+Monitor every packet in real time, detect advanced threats, and visualize malicious traffic patterns as they happen — all from the comfort of your Artica console.[br]
+Whether it’s malware, C2 traffic, or zero-day exploitation attempts, Suricata continuously inspects and correlates flows to keep your network one step ahead.[br]
+[b]Combined with Artica’s automation and reporting tools, you get powerful, AI-ready network intelligence that turns raw packets into actionable security insights.[/b]
+</suricata_market_explain>

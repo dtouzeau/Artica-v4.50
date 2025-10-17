@@ -87,48 +87,85 @@ class lib_memcached{
         return false;
 
     }
-	
-	public function getKey($key):string{
-        if(!$this->Connect()){
-            $this->ok=false;
+
+    public function getKey($key): string
+    {
+        if (!$this->Connect() || !$this->memcached_exists) {
+            $this->ok = false;
             return "";
         }
 
-		if(!$this->memcached_exists){
-		    $this->ok=false;
-		    return "";
+        $this->ok = true;
+        $this->MemCachedFound = false;
+
+        // Optional: keep reads snappy so socket hiccups don't hang forever
+        if ($this->Memcached instanceof \Redis) {
+            $this->Memcached->setOption(\Redis::OPT_READ_TIMEOUT, 1.0); // seconds
         }
-		$this->ok=true;
 
         try {
-            $tmpval = $this->Memcached->get($key);
+            $val = $this->Memcached->get($key);
+
+            // Distinguish “key missing” from “stored false/empty”
+            if ($val === false) {
+                if (method_exists($this->Memcached, 'exists') && $this->Memcached->exists($key) === 0) {
+                    $this->ok = false;
+                    $this->MemCachedFound = false;
+                    $this->mysql_error = "$key does not exist";
+                    $this->saveKey($key, "");
+                    return "";
+                }
+                // else: value could be a serialized false/empty string
+            }
+
+            $this->MemCachedFound = true;
+
+            if (is_array($val)) {
+                return serialize($val);
+            }
+
+            $value = is_string($val) ? trim($val) : (string)$val;
+            if ($value === "!nil") {
+                return "";
+            }
+            return $value;
+        } catch (\RedisException $e) {
+            // Handle read errors, log and return a safe default
+            $this->ok = false;
+            $this->mysql_error = $e->getMessage();
+
+            // (Optional) one-shot reconnect & retry
+            try {
+                if ($this->Memcached) { @$this->Memcached->close(); }
+                // If your Connect() supports forcing a new socket, call it here
+                $this->Connect(); // re-establish
+                $val = $this->Memcached->get($key);
+                if ($val === false && method_exists($this->Memcached, 'exists') && $this->Memcached->exists($key) === 0) {
+                    $this->mysql_error = "$key does not exist";
+                    $this->saveKey($key, "");
+                    return "";
+                }
+                $this->MemCachedFound = true;
+                return is_array($val) ? serialize($val) : (string)$val;
+            } catch (\Throwable $e2) {
+                // Give up cleanly
+                return "";
+            }
+        } catch (\Throwable $e) {
+            // Any other unexpected error
+            $this->ok = false;
+            $this->mysql_error = $e->getMessage();
+            return "";
         } finally {
-            // Ensure that the connection is closed
             if ($this->Memcached) {
-                $this->Memcached->close();
+                @$this->Memcached->close();
             }
         }
+    }
 
-        if ($tmpval === false) {
-            $this->ok=false;
-            $this->MemCachedFound=false;
-            $this->mysql_error="$key does not exist";
-            $this->saveKey($key,"",);
-            return "";
-        }
-        $this->MemCachedFound=true;
-        if(is_array($tmpval)){
-            return serialize($tmpval);
-        }
-		$value=trim($tmpval);
-        if($value=="!nil"){
-            return "";
-        }
-		return $value;
-	}
-	
 
-	public function getSetting($Key):string{
+
+    public function getSetting($Key):string{
         $this->ok=true;
 
 

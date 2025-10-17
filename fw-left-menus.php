@@ -468,9 +468,15 @@ function xgen(){
                     $f[] = $tpl->LeftMenu(
                         array("PAGE" => "fw.ipfeeds.php",
                             "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
+
+                    $f[] = $tpl->LeftMenu(
+                        array("PAGE" => "fw.ids.wizard.php",
+                            "ICO" => ico_sensor, "TEXT" => "{IDS}"));
+
+
                 }
             }
-
+/*
             $NetMonixInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetMonixInstalled"));
 
             if($NetMonixInstalled==1){
@@ -484,7 +490,7 @@ function xgen(){
                 }
             }
 
-
+*/
 
           $IPAUDIT_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPAUDIT_INSTALLED"));
             if($IPAUDIT_INSTALLED==1){
