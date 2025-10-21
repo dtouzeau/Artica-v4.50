@@ -553,18 +553,18 @@ function GDCats():array{
         105 => 'Email Marketing',
         106 => 'Greeting Cards',
         107 => 'Informational',
-        108 => 'Information Security', // new BlueCoat
-        109 => 'Internet Connected Devices', // new BlueCoat
+        108 => 'Information Security', // 
+        109 => 'Internet Connected Devices', // 
         110 => 'Internet Telephony', // 502 -> 110
         111 => 'Online Meetings',
         112 => 'Media Sharing',
         113 => 'Radio / Audio Streams',
         114 => 'TV / Video Streams',
-        116 => 'Cloud Infrastructure', // new BlueCoat
-        117 => 'Cryptocurrency', // new BlueCoat
-        118 => 'Piracy / Copyright', // new BlueCoat
-        121 => 'Illegal Drugs', // new BlueCoat
-        124 => 'Compromised Sites', // new BlueCoat
+        116 => 'Cloud Infrastructure', // 
+        117 => 'Cryptocurrency', // 
+        118 => 'Piracy / Copyright', // 
+        121 => 'Illegal Drugs', // 
+        124 => 'Compromised Sites', // 
 
         503 => 'Warez',
         504 => 'Tracker',

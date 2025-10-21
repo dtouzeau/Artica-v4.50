@@ -230,7 +230,7 @@ $frm[]="exec.ipset.master.compile.php";
 $frm[]="exec.nrds.master.compile.php";
 $frm[]="compile-go-shield-server.php";
 $frm[]="compile-go.php";
-$frm[]="exec.dshield.php";
+
 
 echo "Copy files to [$TARGET_PATH]\n";
 system("cp -rf /home/dtouzeau/PhpstormProjects/Articav4/* $TARGET_PATH/");
@@ -347,7 +347,6 @@ if(is_file("/home/dtouzeau/artica-compile/artica-$VERSION.tgz")){@unlink("/home/
     $excludes[]="artica-postfix/computers";
     $excludes[]="artica-postfix/user-backup";
     $excludes[]="artica-postfix/zabbix";
-    $excludes[]="artica-postfix/exec.dshield.php";
     $excludes[]="artica-postfix/PDFs";
     $excludes[]="artica-postfix/tests.py";
     $excludes[]="artica-postfix/.eric4project";

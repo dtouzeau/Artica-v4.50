@@ -32,6 +32,15 @@ ulogd.disable.progress.php
 ulogd.enable.progress.php
 ulogd.main.php
 ulogd.update.engine.php
+exec.dshield.php
+exec.dshield.uts.php
+exec.iseclab.malware.php
+exec.cleancloudcatz.php
+exec.phistank.cloud.php
+exec.squid.checkscatz.php
+ressources/UBoxBrightcloud.php
+ressources/class.categorize.externals.bright.inc
+ressources/class.categorize.jp.inc
 ulogd.update.engine.progress.php
 statistics.systems.yorel.php
 exec.virtuals-ip-notify.php

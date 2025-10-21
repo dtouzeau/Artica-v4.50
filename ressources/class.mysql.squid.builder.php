@@ -1167,7 +1167,7 @@ class mysql_squid_builder{
         $this->tasks_processes[20]="exec.squid.cloud.compile.php --ufdb";
         //$this->tasks_processes[21]="exec.adusers.php";
         $this->tasks_processes[22]="exec.squidguard.php --build --force";
-        $this->tasks_processes[24]="exec.cleancloudcatz.php --all";
+        //$this->tasks_processes[24]="exec.cleancloudcatz.php --all";
         //$this->tasks_processes[29]="exec.squid.updateuris.malware.php --www";
         $this->tasks_processes[30]="/usr/sbin/artica-phpfpm-service -categories-update";
         //$this->tasks_processes[31]="exec.dansguardian.injector.php";
