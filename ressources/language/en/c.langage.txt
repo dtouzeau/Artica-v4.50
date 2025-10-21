@@ -3087,3 +3087,5 @@ Monitor every packet in real time, detect advanced threats, and visualize malici
 Whether it’s malware, C2 traffic, or zero-day exploitation attempts, Suricata continuously inspects and correlates flows to keep your network one step ahead.[br]
 [b]Combined with Artica’s automation and reporting tools, you get powerful, AI-ready network intelligence that turns raw packets into actionable security insights.[/b]
 </suricata_market_explain>
+<must_update_system>System update required before installation</must_update_system>
+<must_update_suricata>The intrusion detection engine installed on your system is version [b]%localver[/b].[br]Please update it to at least [b]%nextver[/b].</must_update_suricata>

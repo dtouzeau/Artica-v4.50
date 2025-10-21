@@ -1311,23 +1311,40 @@ class left_menus{
         //$NetMonixInstalled=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetMonixInstalled");
         //if($NetMonixInstalled==0){$EnableNetMonix=1;}
 
-
+        $sensor=ico_sensor;
         $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
         $tpl=new template_admin();
         $f[]="<!-- IDS START -->";
         $f[]="                <li id='left-menu'>";
-        $f[]="                    <a href='#' ><i class=\"fa fa-binoculars\"></i> <span class=\"nav-label\">IDS</span> </a>";
+        $f[]="                    <a href='#' ><i class=\"$sensor\"></i> <span class=\"nav-label\">IDS</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
 
-        $f[] = $tpl->LeftMenu(
-            array("PAGE" => "fw.ids.dashboard.php", "ICO" => "fas fa-tachometer-alt", "TEXT" => "{dashboard}", ));
+        if($EnableSuricata==0) {
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.ids.wizard.php",
+                    "ICO" => ico_cd,
+                    "TEXT" => "{about2}" )
+            );
+
+        }
+
+
 
 
 
         if($EnableSuricata==1) {
 
             $f[] = $tpl->LeftMenu(
-                array("PAGE" => "fw.ids.categories.php", "ICO" => "fa fa-sitemap", "TEXT" => "{categories}", ));
+                array("PAGE" => "fw.ids.dashboard.php",
+                    "ICO" => "fas fa-tachometer-alt",
+                    "TEXT" => "{dashboard}" )
+            );
+
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.ids.categories.php",
+                    "ICO" => "fa fa-sitemap",
+                    "TEXT" => "{categories}" )
+            );
 
 
 

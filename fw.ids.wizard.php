@@ -33,18 +33,33 @@ function page(){
 function table(){
     $page=CurrentPageName();
 	$tpl=new template_admin();
+    $Button=true;
+
+    $suricata_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_VERSION");
+    $vR=explode(".",$suricata_version);
+    $major=intval($vR[0]);
+    if($major<8){
+        $Button=false;
+        $must_update_suricata=$tpl->_ENGINE_parse_body("{must_update_suricata}");
+        $must_update_suricata=str_replace("%localver","",$suricata_version,$must_update_suricata);
+        $must_update_suricata=str_replace("%nextver","","8.x",$must_update_suricata);
+        $html[]=$tpl->div_error("{must_update_system}||$must_update_suricata");
+
+    }
 
 
-    $html[]="<p style='text-align:left;font-size:16px'>{suricata_market_explain}</p>";
+    $html[]="<p style='text-align:left;font-size:16px;margin-left:100px;margin-right:100px;margin-top:30px'>{suricata_market_explain}</p>";
 
     $after= "document.location.href='/ids';";
     $jsinstall=$tpl->framework_buildjs("/suricata/install",
         "suricata.progress","suricata.progress.txt",
         "progress-suricata-restart",$after);
 
-    $html[]="<div style='margin:30px;text-align:right'>";
-    $html[]=$tpl->button_autnonome("{install}",$jsinstall,ico_cd,"AsFirewallManager",350,"btn-primary",80);
-    $html[]="</div>";
+    if($Button) {
+        $html[] = "<div style='margin:30px;text-align:right'>";
+        $html[] = $tpl->button_autnonome("{install}", $jsinstall, ico_cd, "AsFirewallManager", 350, "btn-primary", 80);
+        $html[] = "</div>";
+    }
 
 
     $suricata_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_VERSION");

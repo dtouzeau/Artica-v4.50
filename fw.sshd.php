@@ -4,6 +4,7 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.openssh.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+if(isset($_GET["UseBanner-js"])){UseBanner_js();exit;}
 if(isset($_GET["OpenSSHStatus"])){OPenSSHStatus();exit;}
 if(isset($_GET["reconfigure"])){reconfigure_js();exit;}
 if(isset($_GET["private-host-key-js"])){private_host_key_js();exit;}
@@ -1927,11 +1928,6 @@ function main_general():bool{
         "QUIET"=>"QUIET", "FATAL"=>"FATAL", "ERROR"=>"ERROR", "INFO"=>"INFO", "VERBOSE"=>"VERBOSE",
         "DEBUG1"=>"DEBUG1", "DEBUG2"=>"DEBUG2","DEBUG3"=>"DEBUG3"
     );
-
-
-
-
-    $form[]=$tpl->field_checkbox("Banner","{UseBanner}",$sshd->main_array["Banner"],false);
     $form[]=$tpl->field_text("MaxStartups","{MaxStartups}",$sshd->main_array["MaxStartups"]);
     $form[]=$tpl->field_section("{events}");
     if(!$FAIL2BAN){
@@ -2398,6 +2394,8 @@ function status_config():bool{
     $tpl->table_form_field_text("{listen_interface}",$SSHDInterface,ico_nic);
     $tpl->table_form_field_js("Loadjs('$page?settings-js=yes&section=general')");
     $tpl->table_form_field_text("{MaxStartups}",$sshd->main_array["MaxStartups"],ico_configure);
+
+    $tpl->table_form_field_js("Loadjs('$page?UseBanner-js=yes')");
     $tpl->table_form_field_bool("{UseBanner}",$sshd->main_array["Banner"],ico_proto);
 
     $tpl->table_form_field_js("Loadjs('$page?banner-js=yes')");
@@ -2586,6 +2584,21 @@ function save_config():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/ssh/reconfigure");
     return true;
 }
+function UseBanner_js():bool{
+    $sshd=new openssh();
+    $page=CurrentPageName();
+    if($sshd->main_array["Banner"]==0){
+        $sshd->main_array["Banner"]=1;
+    }else{
+        $sshd->main_array["Banner"]=0;
+    }
+    $sshd->SaveInterface();
+    header("content-type: application/x-javascript");
+    echo "LoadAjax('openssh-status-config','$page?openssh-status-config=yes')";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ssh/reconfigure");
+    return admin_tracks("Set the OpenSSH banner to {$sshd->main_array["Banner"]}");
+}
+
 function tabs():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
