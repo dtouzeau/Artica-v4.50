@@ -6,6 +6,7 @@ if (!isset($GLOBALS["CLASS_SOCKETS"])) {
     }
     $GLOBALS["CLASS_SOCKETS"] = new sockets();
 }
+
 include_once(dirname(__FILE__) . "/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__) . "/ressources/class.keepalived.inc");
 include_once(dirname(__FILE__) . '/framework/class.unix.inc');

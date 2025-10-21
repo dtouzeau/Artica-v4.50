@@ -986,7 +986,7 @@ class keepalived_secondary_nodes
         $this->hostname = intval($ligne['hostname']);
         $this->force_action = intval($ligne['force_action']);
         $this->lastSync = $ligne['last_sync'];
-        $this->rewriteInterface = intval($ligne['rewriteInterface']);
+        $this->rewriteInterface = $ligne['rewriteInterface'];
 
         $sql = "SELECT COUNT(*) as tcount from keepalived_secondary_nodes";
         $ligne = $q->mysqli_fetch_array($sql);

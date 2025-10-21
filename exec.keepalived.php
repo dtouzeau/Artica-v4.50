@@ -10,6 +10,7 @@ if (function_exists("posix_getuid")) {
         die("Cannot be used in web server mode\n\n");
     }
 }
+
 include_once(dirname(__FILE__) . '/ressources/class.users.menus.inc');
 include_once(dirname(__FILE__) . '/ressources/class.mysql.inc');
 include_once(dirname(__FILE__) . '/ressources/class.user.inc');
