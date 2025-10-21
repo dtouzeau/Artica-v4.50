@@ -197,7 +197,7 @@ function reload_services():bool{
     $NTPDEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDEnabled"));
 
 	if($EnableFail2Ban==1){$GLOBALS["CLASS_SOCKETS"]->getFrameWork("fail2ban.php?restart=yes");}
-	if($EnableSuricata==1){$GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/reload");}
+	if($EnableSuricata==1){$GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/reload");}
     if($EnableDKFilter==1){$GLOBALS["CLASS_SOCKETS"]->getFrameWork("opendkim.php?restart=yes");}
     if($EnableTailScaleService==1){$GLOBALS["CLASS_SOCKETS"]->getFrameWork("tailscale.php?connect=yes");}
     if($NTPDEnabled==1){$GLOBALS["CLASS_SOCKETS"]->REST_API("/ntpd/reconfigure");}

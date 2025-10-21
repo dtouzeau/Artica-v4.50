@@ -1025,8 +1025,26 @@ function get_tickets()
         $createdAt = strtotime($ticket['createdAt']);
         $updatedAt = strtotime($ticket['updatedAt']);
         $mailboxId = intval($ticket['mailboxId']);
-        $createdBy = $ticket['createdBy']['firstName'] . ' ' . $ticket['createdBy']['lastName'];
-        $assignee = $ticket['assignee']['firstName'] . ' ' . $ticket['assignee']['lastName'];
+        $firstName="";
+        $lastName="";
+        $assignee="";
+        $createdBy="";
+        if(isset($ticket['createdBy']['firstName'])){
+            $firstName=$ticket['createdBy']['firstName'];
+        }
+        if(isset($ticket['createdBy']['firstName'])){
+            $firstName=$ticket['createdBy']['firstName'];
+        }
+        if(isset($ticket['createdBy']['lastName'])){
+            $lastName=$ticket['createdBy']['lastName'];
+        }
+        if(strlen($firstName)>0 OR strlen($lastName)>0){
+            $assignee=trim("$firstName $lastName");
+            $createdBy=trim("$firstName $lastName");
+        }
+
+
+
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("supportCustomerID",base64_encode(serialize($ticket['customer']['id'])));
         $f[] = "('$id','$tnumber','$threads','$folderId','$status','$state','$subject','$customFields','$tags','$createdAt','$updatedAt','$mailboxId','$createdBy','$assignee')";
         build_progress(65, "{getting_ticket} #$tnumber");

@@ -455,6 +455,26 @@ function RUN_CMD($CMD):string{
         }
         return "";
     }
+    if(preg_match("#^suricata:(.+)$#",$CMD,$match)){
+        $CMD=$match[1];
+        writelogs("REST_API_SURICATA($CMD) Status=FALSE",__FUNCTION__,__FILE__,__LINE__);
+        $data=$sock->REST_API_SURICATA($CMD);
+        $json = json_decode($data);
+        if (json_last_error() > JSON_ERROR_NONE) {
+            return "Decoding data".json_last_error()."<br>$sock->mysql_error";
+        }
+        if(!$json->Status){
+            $info="";
+            if(property_exists($json,"Info")){
+                $info=$json->Info;
+            }
+            writelogs("REST_API_SURICATA($CMD) Status=FALSE",__FUNCTION__,__FILE__,__LINE__);
+            return "Status false<br>$data<br>$info";
+        }
+        return "";
+    }
+
+
 
     if (substr($CMD, 0, 1) === '/') {
             writelogs("REST_API($CMD)",__FUNCTION__,__FILE__,__LINE__);

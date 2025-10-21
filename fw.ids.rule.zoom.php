@@ -70,9 +70,9 @@ function rule_settings_save(){
 	if($_POST["enabled"]==0){
 		$q->QUERY_SQL("DELETE FROM suricata_events WHERE signature='$sig'");
 		if(!$q->ok){echo $q->mysql_error;return;}
-        $sock->REST_API("/suricata/sid/disable/$sig");
+        $sock->REST_API_SURICATA("/suricata/sid/disable/$sig");
 	}else{
-        $sock->REST_API("/suricata/sid/enable/$sig");
+        $sock->REST_API_SURICATA("/suricata/sid/enable/$sig");
 		if($_POST["firewall"]==1){
 			$sock->getFrameWork("suricata.php?firewall-sid=yes&sig=$sig");
 		}

@@ -43,7 +43,7 @@ function pf_ring_popup(){
 	$tpl=new template_admin();
 	$sock=new sockets();
 
-    $json=json_decode($sock->REST_API("/suricata/pfring"));
+    $json=json_decode($sock->REST_API_SURICATA("/suricata/pfring"));
 
     if(!$json->Status){
         echo $tpl->div_error($json->Error);
@@ -104,7 +104,7 @@ function reconfigure_popup(){
 	$t=time();
     $tpl=new template_admin();
 
-    $jsrestart=$tpl->framework_buildjs("/suricata/reconfigure",
+    $jsrestart=$tpl->framework_buildjs("suricata:/suricata/reconfigure",
         "suricata.progress",
         "suricata.progress.txt","&mainid=$t",
         "dialogInstance6.close()"
@@ -117,7 +117,7 @@ function restart_popup(){
 	$t=time();
     $tpl=new template_admin();
 
-    $jsrestart=$tpl->framework_buildjs("/suricata/restart",
+    $jsrestart=$tpl->framework_buildjs("suricata:/suricata/restart",
     "suricata.progress",
         "suricata.progress.txt","&mainid=$t",
         "dialogInstance6.close()"
@@ -175,7 +175,7 @@ function top_widgets():bool{
         $widget_srcIps=$tpl->widget_style1("navy-bg",ico_computer,"{src_ips}",$tpl->FormatNumber($COUNT_OF_SURICATA_IP_SRC));
     }
 
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/stats"));
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/stats"));
 
     if(!is_null($json->Info)) {
         $json2=json_decode($json->Info);
@@ -281,7 +281,7 @@ function main():bool{
         "suricata.progress.txt","progress-suricata-restart",
         ""
     );
-    $jsRestart=$tpl->framework_buildjs("/suricata/restart",
+    $jsRestart=$tpl->framework_buildjs("suricata:/suricata/restart",
         "suricata.progress",
         "suricata.progress.txt",
         "progress-suricata-restart"
@@ -332,7 +332,7 @@ function main():bool{
 
 function suricata_status():bool{
     $tpl=new template_admin();
-    $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/status"));
+    $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/status"));
     if (json_last_error() > JSON_ERROR_NONE) {
         echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("Decoding data ".json_last_error()."<br>{$GLOBALS["CLASS_SOCKETS"]->mysql_error}","{error}"));
         return false;
@@ -344,7 +344,7 @@ function suricata_status():bool{
         return false;
         }
 
-    $jsRestart=$tpl->framework_buildjs("/suricata/restart",
+    $jsRestart=$tpl->framework_buildjs("suricata:/suricata/restart",
         "suricata.progress",
         "suricata.progress.txt",
         "progress-suricata-restart"

@@ -315,6 +315,12 @@ function create_ticket_popup(){
     $PRIORITY["5"]="Low";
     $PRIORITY["6"]="Monitor";
     $PRIORITY["7"]="Informational";
+    if(!isset($DEF["priority"])){
+        $DEF["priority"]=7;
+    }
+    if(!isset($DEF["SupportTool"])){
+        $DEF["SupportTool"]=0;
+    }
 
     $form[]=$tpl->field_hidden("new-ticket", 1);
     $form[]=$tpl->field_array_hash($PRIORITY, "priority", "{priority}", $DEF["priority"],true);

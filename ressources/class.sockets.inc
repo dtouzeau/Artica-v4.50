@@ -417,6 +417,62 @@ class sockets{
 
 
     }
+    public function REST_API_SURICATA($endpoint):string{
+        if(!function_exists("curl_init")){
+            $array["Status"] = false;
+            $array["Error"] = "Error curl_init No such function available";
+            return json_encode($array);
+        }
+
+        $cURLConnection=$this->GENERIC_API_CLIENT("/usr/share/artica-postfix/bin/run/suricata-service.sock",$endpoint);
+        $resp = curl_exec($cURLConnection);
+        $curl_error_num=curl_errno($cURLConnection);
+        $HTTP_CODE=curl_getinfo($cURLConnection,CURLINFO_HTTP_CODE);
+
+        curl_close($cURLConnection);
+        if ($curl_error_num>0){
+            writelogs("$endpoint Error $curl_error_num",__FUNCTION__,__FILE__,__LINE__);
+        }
+
+        if($this->is_curl_error($curl_error_num)){
+            $array["Status"]=false;
+            $array["Error"]="Error Connecting to the REST API server $curl_error_num $this->mysql_error";
+            $array["JsonFailed"]=true;
+            $array["Info"] ="";
+            VERBOSE("$endpoint $this->mysql_error",__LINE__);
+            $this->go_exec_syslog("[FATAL] ".$this->mysql_error);
+            return json_encode($array);
+        }
+
+        if($HTTP_CODE==404){
+            $array["Status"]=false;
+            $array["Error"]="$endpoint<br>404 Not found, did you use the Correct version of the Web API service?<br>If so, try restarting it to update it.";
+            $array["JsonFailed"]=true;
+            $array["Info"] ="";
+            $this->go_exec_syslog("[FATAL] 404 Not found");
+            return json_encode($array);
+        }
+
+        if(preg_match("#\/squidclient#",$endpoint)){
+            return $resp;
+        }
+
+        if(function_exists("json_decode")) {
+            json_decode($resp);
+            if (json_last_error() > JSON_ERROR_NONE) {
+                $array["Status"] = false;
+                $array["Error"] = "Error parsing Json [$resp] HTTP CODE $HTTP_CODE " . json_last_error_msg();
+                $array["JsonFailed"]=true;
+                $array["Info"] ="";
+                return json_encode($array);
+            }
+        }
+
+        if(function_exists("VERBOSE")){
+            VERBOSE("$endpoint= [$resp]",__LINE__);
+        }
+        return $resp;
+    }
     public function REST_API($endpoint):string{
         if(!function_exists("curl_init")){
             $array["Status"] = false;
