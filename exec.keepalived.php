@@ -790,6 +790,22 @@ function reconfigure()
         }
         foreach ($results_vips as $index => $vips) {
             $dev = (empty($vips["dev"])) ? "" : "dev {$vips["dev"]}";
+            if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE_SLAVE"))==1){
+                $rwInterface="SELECT * FROM keepalived_secondary_nodes WHERE primary_node_id='{$ligne["ID"]}'";
+                $reRW=$q->QUERY_SQL($rwInterface);
+                if (!$q->ok) {
+                    echo $q->mysql_error_html();
+                }
+                foreach ($reRW as $index => $rw) {
+                    $inter=trim($rw["rewriteInterface"]);
+                    if (!empty($inter)){
+                        $dev="dev $inter";
+                        $split=explode(":",$vips["label"]);
+                        $vips["label"]="$inter:".$split[1];
+                    }
+
+                }
+            }
             if (intval($ligne["use_vmac"])==0) {
                 $f[] = "     {$vips["virtual_ip"]}/{$vips["netmask"]} $dev label {$vips["label"]}";
             }

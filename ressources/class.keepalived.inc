@@ -949,10 +949,14 @@ class keepalived_secondary_nodes
     public $priority;
     public $count_secondary_nodes = 0;
     public $lastSync = null;
+    public $rewriteInterface=null;
 
     function __construct($primary_node_id = null, $secondary_node_id = null)
     {
-
+        $q = new lib_sqlite("/home/artica/SQLITE/keepalived.db");
+        if(!$q->FIELD_EXISTS("keepalived_secondary_nodes","rewriteInterface")){
+            $q->QUERY_SQL("ALTER TABLE keepalived_secondary_nodes ADD rewriteInterface TEXT");
+        }
         if ($primary_node_id <> null) {
             $this->primary_node_id = $primary_node_id;
 
@@ -982,6 +986,7 @@ class keepalived_secondary_nodes
         $this->hostname = intval($ligne['hostname']);
         $this->force_action = intval($ligne['force_action']);
         $this->lastSync = $ligne['last_sync'];
+        $this->rewriteInterface = intval($ligne['rewriteInterface']);
 
         $sql = "SELECT COUNT(*) as tcount from keepalived_secondary_nodes";
         $ligne = $q->mysqli_fetch_array($sql);
@@ -1008,8 +1013,8 @@ class keepalived_secondary_nodes
     {
         $q = new lib_sqlite("/home/artica/SQLITE/keepalived.db");
         if ($this->secondary_node_id == 0) {
-            $sql = "INSERT INTO keepalived_secondary_nodes (primary_node_id,secondary_node_ip,secondary_node_port,primary_node_ip,secondary_node_can_overwrite_settings,enable,synckey,nopreempt,priority,last_sync) 
-			VALUES ('$this->primary_node_id','$this->secondary_node_ip','$this->secondary_node_port','$this->primary_node_ip','$this->secondary_node_can_overwrite_settings','1','$this->synckey','$this->nopreempt','$this->priority',DateTime('now'))";
+            $sql = "INSERT INTO keepalived_secondary_nodes (primary_node_id,secondary_node_ip,secondary_node_port,primary_node_ip,secondary_node_can_overwrite_settings,enable,synckey,nopreempt,priority,last_sync,rewriteInterface) 
+			VALUES ('$this->primary_node_id','$this->secondary_node_ip','$this->secondary_node_port','$this->primary_node_ip','$this->secondary_node_can_overwrite_settings','1','$this->synckey','$this->nopreempt','$this->priority',DateTime('now'),$this->rewriteInterface)";
             $q->QUERY_SQL($sql);
             if (!$q->ok) {
                 echo $q->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
@@ -1025,7 +1030,8 @@ class keepalived_secondary_nodes
                 enable='$this->enable',
                 nopreempt='$this->nopreempt',
                 priority='$this->priority',
-                last_sync=DateTime('now')
+                last_sync=DateTime('now'),
+                rewriteInterface='$this->rewriteInterface'
 				WHERE ID='$this->secondary_node_id'
 				";
             $q->QUERY_SQL($sql);

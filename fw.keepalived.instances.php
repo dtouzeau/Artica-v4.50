@@ -2143,7 +2143,7 @@ function add_secondary_node()
     $form[] = $tpl->field_numeric("secondary_node_port", "{artica_listen_port}", $ligne["secondary_node_port"]);
     $form[] = $tpl->field_numeric("priority", "{priority}", $ligne["priority"], '{priority_explain}');
     $form[] = $tpl->field_checkbox("nopreempt", "{nopreempt_1}", $ligne["nopreempt"], false, "{nopreempt}");
-
+    $form[] = $tpl->field_text("rewriteInterface","{rewrite} {interface}",$ligne["rewriteInterface"]);
     //$form[] = $tpl->field_section("DANGER ZONE", "If you disconnect the Slave from farm, means that any changes made on Master will not be replicated to the Slave.", true);
     //$form[] = $tpl->field_checkbox("allow_secondary_node_overwrite", "{disonnect_from_farm}", $ligne["secondary_node_can_overwrite_settings"], false, "{allow_overwrite_explain}");
 
@@ -2195,6 +2195,7 @@ function save_secondary_node()
     $keepalived_secondary_node->priority = intval($_POST['priority']);
     $keepalived_secondary_node->secondary_node_can_overwrite_settings = 0;
     $keepalived_secondary_node->nopreempt = intval($_POST['nopreempt']);
+    $keepalived_secondary_node->rewriteInterface = $_POST['rewriteInterface'];
     $keepalived_secondary_node->save();
 
 

@@ -31,6 +31,14 @@ function tabs():bool{
     return true;
 }
 
+function table_flat(){
+
+    $Overcommiting_Memory[0]="{Overcommiting_Memory_0}";
+    $Overcommiting_Memory[1]="{Overcommiting_Memory_1}";
+    $Overcommiting_Memory[2]="{Overcommiting_Memory_2}";
+
+}
+
 function table(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -73,8 +81,8 @@ for($i=50;$i<101;$i++){
 
     $html[]="<table style='width:100%'>";
     $html[]="<tr>";
-    $html[]="<td valign='top' style='width:450px' nowrap><div id='memory-graph'></div><div id='memory-graph2'></div></td>";
-    $html[]="<td valign='top' style='width:100%'>";
+    $html[]="<td style='width:450px;vertical-align:top' nowrap><div id='memory-graph'></div><div id='memory-graph2'></div></td>";
+    $html[]="<td style='width:100%;;vertical-align:top'>";
     $html[]="<div id='overcommit-progress' style='margin-bottom:10px'></div>";
     $html[]=$xform;
 
