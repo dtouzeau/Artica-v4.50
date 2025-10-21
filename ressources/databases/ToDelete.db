@@ -11,6 +11,7 @@ altermime.php
 amanda.php
 artica-system-alert.php
 arkeia.php
+exec.phistank.cloud.php
 amada.clients.php
 update.refresh.index.php
 ufdbgweb.py
@@ -29,7 +30,6 @@ thinclient.parameters.php
 thinclient.softs.php
 ulogd.disable.progress.php
 ulogd.enable.progress.php
-
 ulogd.main.php
 ulogd.update.engine.php
 ulogd.update.engine.progress.php

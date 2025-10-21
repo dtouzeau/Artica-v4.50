@@ -356,7 +356,6 @@ if(is_file("/home/dtouzeau/artica-compile/artica-$VERSION.tgz")){@unlink("/home/
     $excludes[]="artica-postfix/exec.compile-official-ufdb.php";
     $excludes[]="artica-postfix/exec.malware-domains.php";
     $excludes[]="artica-postfix/exec.c-icap.cloud.php";
-    $excludes[]="artica-postfix/exec.phistank.cloud.php";
     $excludes[]="artica-postfix/.git";
 
     foreach ($excludes as $path){
