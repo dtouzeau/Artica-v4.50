@@ -10,7 +10,6 @@ if (function_exists("posix_getuid")) {
         die("Cannot be used in web server mode\n\n");
     }
 }
-
 include_once(dirname(__FILE__) . '/ressources/class.users.menus.inc');
 include_once(dirname(__FILE__) . '/ressources/class.mysql.inc');
 include_once(dirname(__FILE__) . '/ressources/class.user.inc');
@@ -791,22 +790,6 @@ function reconfigure()
         }
         foreach ($results_vips as $index => $vips) {
             $dev = (empty($vips["dev"])) ? "" : "dev {$vips["dev"]}";
-            if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE_SLAVE"))==1){
-                $rwInterface="SELECT * FROM keepalived_secondary_nodes WHERE primary_node_id='{$ligne["ID"]}'";
-                $reRW=$q->QUERY_SQL($rwInterface);
-                if (!$q->ok) {
-                    echo $q->mysql_error_html();
-                }
-                foreach ($reRW as $index => $rw) {
-                    $inter=trim($rw["rewriteInterface"]);
-                    if (!empty($inter)){
-                        $dev="dev $inter";
-                        $split=explode(":",$vips["label"]);
-                        $vips["label"]="$inter:".$split[1];
-                    }
-
-                }
-            }
             if (intval($ligne["use_vmac"])==0) {
                 $f[] = "     {$vips["virtual_ip"]}/{$vips["netmask"]} $dev label {$vips["label"]}";
             }
@@ -1015,6 +998,11 @@ function sync_nodes($primary_node_id = 0, $secondary_node_id = 0)
 
         //NODE INFO
         $array["interface"] = $primary_node["interface"];
+        //Check RW INTERFACE
+        $rwInterface=trim($ligne["rewriteInterface"]);
+        if (!empty($rwInterface)){
+            $array["interface"] = $rwInterface;
+        }
         $array["virtual_router_id"] = intval($primary_node["virtual_router_id"]);
         $array["priority"] = intval($ligne["priority"]);
         $array["nopreempt"] = intval($ligne["nopreempt"]);
@@ -1078,6 +1066,11 @@ function sync_nodes($primary_node_id = 0, $secondary_node_id = 0)
             $array["VIP"]["{$vip["ID"]}"]["virtual_ip"] = $vip["virtual_ip"];
             $array["VIP"]["{$vip["ID"]}"]["netmask"] = $vip["netmask"];
             $array["VIP"]["{$vip["ID"]}"]["dev"] = $vip["dev"];
+            //Check RW INTERFACE
+            $rwInterface=trim($ligne["rewriteInterface"]);
+            if (!empty($rwInterface)){
+                $array["VIP"]["{$vip["ID"]}"]["dev"] = $rwInterface;
+            }
             $array["VIP"]["{$vip["ID"]}"]["virtual_interface"] = $vip["virtual_interface"];
             $array["VIP"]["{$vip["ID"]}"]["enable"] = $vip["enable"];
             $array["VIP"]["{$vip["ID"]}"]["synckey"] = $vip["synckey"];

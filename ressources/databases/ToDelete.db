@@ -18,6 +18,9 @@ ufdbgclient.php
 auth-tail.py
 artica.iso.php
 ldap.py
+BrowseFreeWebs.php
+BrowsePDNS.php
+DomainsBrowse.php
 exec.cron.notifs.php
 squid.blacklist.upd.php
 TestsClasses.php

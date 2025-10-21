@@ -141,15 +141,14 @@ if(isset($argv[1])) {
     }
 }
 migrate_backup_tasks();
+check_hotspot_tables();
 radius_db();
 upgrade_smtp_tables();
 rpz_database();
-
 if(!$force) {if(system_is_overloaded(__FILE__)){ die(); }}
 sidentity();
 if(!$force) {if(system_is_overloaded(__FILE__)){ die(); }}
 migrate_interfaces();
-
 if(!$force) {if(system_is_overloaded(__FILE__)){ die(); }}
 imapbox_tables();
 if(!$force) {if(system_is_overloaded(__FILE__)){ die(); }}
@@ -162,7 +161,6 @@ $php=$unix->LOCATE_PHP5_BIN();
 $nohup=$unix->find_program("nohup");
 if(!is_dir("/etc/artica-postfix")){@mkdir("/etc/artica-postfix",0755);}
 if(!is_file("/etc/artica-postfix/UPGRADE_SQLITE_440")){@touch("/etc/artica-postfix/UPGRADE_SQLITE_440");}
-
 $unix->chown_func("www-data", "www-data", "/home/artica/SQLITE/*");
 
 function analyze():bool{
@@ -184,7 +182,6 @@ function analyze():bool{
 
     return true;
 }
-
 function upgrade_smtp_tables():bool{
 
     $q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
@@ -327,7 +324,6 @@ function siege_db():bool{
     return true;
 
 }
-
 function sshd():bool{
     @mkdir("/home/artica/SQLITE", 0755, true);
     $q=new lib_sqlite("/home/artica/SQLITE/sshd.db");
@@ -383,7 +379,6 @@ function sshd():bool{
     }
     return true;
 }
-
 function schedules():bool{
     @mkdir("/home/artica/SQLITE", 0755, true);
     $q=new lib_sqlite("/home/artica/SQLITE/sys_schedules.db");
@@ -423,10 +418,6 @@ function schedules():bool{
     }
     return true;
 }
-
-
-
-
 function dns_tables():bool{
     rpz_database();
     $q=new lib_sqlite("/home/artica/SQLITE/dns.db");
@@ -586,8 +577,6 @@ function dns_tables():bool{
     echo "[".__LINE__."]: Create table dns_pools\n";
     return true;
 }
-
-
 function CheckNGINXTables($groupid=0):bool{
     $dbpath="/home/artica/SQLITE/nginx.db";
     if($groupid==0) {
@@ -651,7 +640,6 @@ function CheckNGINXTables($groupid=0):bool{
 
     return true;
 }
-
 function wordpress():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
     @chmod("/home/artica/SQLITE/wordpress.db", 0644);
@@ -747,8 +735,6 @@ function wordpress():bool{
     return true;
 
 }
-
-
 function check_hotspot_tables():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/hotspot.db");
     $sql="CREATE TABLE IF NOT EXISTS `network_rules` (
@@ -758,11 +744,6 @@ function check_hotspot_tables():bool{
     $q->QUERY_SQL($sql);
     return true;
 }
-
-
-
-
-
 function suricata():bool{
     @mkdir("/home/artica/SQLITE", 0755, true);
     $q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
@@ -821,7 +802,6 @@ function suricata():bool{
     }
     return true;
 }
-
 function caches():bool{
     @mkdir("/home/artica/SQLITE", 0755, true);
     $q=new lib_sqlite("/home/artica/SQLITE/caches.db");
@@ -869,7 +849,6 @@ function CheckUsersTables():bool{
     $qlite->QUERY_SQL($sql);
     return true;
 }
-
 function sidentity():bool{
     @mkdir("/home/artica/SQLITE", 0755, true);
     $qlite=new lib_sqlite("/home/artica/SQLITE/identity.db");
@@ -887,10 +866,6 @@ function sidentity():bool{
     }
     return true;
 }
-
-
-
-
 function migrate_interfaces():bool
 {
     @mkdir("/home/artica/SQLITE", 0755, true);
@@ -984,9 +959,6 @@ function migrate_interfaces():bool
     sshd();
     return true;
 }
-
-
-
 function groups_privs():bool
 {
     $q=new lib_sqlite("/home/artica/SQLITE/privileges.db");
@@ -998,8 +970,6 @@ function groups_privs():bool
     return true;
 
 }
-
-
 function hypercaches_tables():bool
 {
     $q=new lib_sqlite("/home/artica/SQLITE/hypercache.db");
@@ -1029,7 +999,6 @@ function hypercaches_tables():bool
     }
 return true;
 }
-
 function keepalived():bool
 {
     $q = new lib_sqlite("/home/artica/SQLITE/keepalived.db");
@@ -1160,7 +1129,6 @@ function keepalived():bool
 return true;
 
 }
-
 function strongswan():bool
 {
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
@@ -1241,8 +1209,6 @@ function strongswan():bool
     }
 return true;
 }
-
-
 function openvpn():bool
 {
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
@@ -1337,7 +1303,6 @@ function openvpn():bool
     return true;
 
 }
-
 function acls_tables():bool
 {
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -2117,8 +2082,6 @@ function acls_tables():bool
 return true;
 
 }
-
-
 function admins_tables():bool
 {
     $q=new lib_sqlite("/home/artica/SQLITE/admins.db");
@@ -2187,10 +2150,6 @@ function admins_tables():bool
 
     return true;
 }
-
-
-
-
 function webfilter_tables():bool
 {
     $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
@@ -2629,7 +2588,6 @@ function webfilter_tables():bool
     }
     return true;
 }
-
 function fill_webfilter_certs($db="webfilter.db"):bool
 {
     if ($db==null) {
@@ -2656,7 +2614,6 @@ function fill_webfilter_certs($db="webfilter.db"):bool
 
     return true;
 }
-
 function proxy_search():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/proxy_search.db");
     @chmod("/home/artica/SQLITE/proxy_search.db", 0644);
@@ -2687,10 +2644,7 @@ function proxy_search():bool{
     if (!$q->ok) {echo "$q->mysql_error (".__LINE__.")\n$sql\n";}
     return true;
 }
-
 function proxy_tables():bool{
-
-
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     @chmod("/home/artica/SQLITE/proxy.db", 0644);
     @chown("/home/artica/SQLITE/proxy.db", "www-data");
@@ -2756,30 +2710,8 @@ function proxy_tables():bool{
         echo "[".__LINE__."]:$index: {$lignePorts["ID"]}=TCP {$lignePorts["ipaddr"]}:{$lignePorts["port"]}\n";
     }
 
-    echo "[".__LINE__."]: Migrate table squid_balancers\n";
-    $sql="CREATE TABLE IF NOT EXISTS `squid_balancers` (
-			`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-			`ipsrc` TEXT NOT NULL ,
-			`enabled` INT( 1 ) NOT NULL DEFAULT '1')";
-
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {echo "$q->mysql_error (".__LINE__.")\n$sql\n";}
 
 
-    echo "[".__LINE__."]: Migrate table webfilters_schedules\n";
-    $sql="CREATE TABLE IF NOT EXISTS `webfilters_schedules` (
-			`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-			`TimeText` VARCHAR( 128 ) NOT NULL ,
-			`TimeDescription` VARCHAR( 128 ) ,
-			`TaskType` INTEGER ,
-			`Params` TEXT,
-			`enabled` INTEGER)";
-
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {
-        echo "$q->mysql_error (".__LINE__.")\n$sql\n";
-        return false;
-    }
     if (!$q->FIELD_EXISTS("webfilters_schedules", "Params")) {
         $q->QUERY_SQL("ALTER TABLE webfilters_schedules ADD `Params` TEXT");
         if (!$q->ok) {
@@ -2787,25 +2719,8 @@ function proxy_tables():bool{
         }
     }
 
-    echo "[".__LINE__."]: Migrate table publiccerts\n";
-    $sql="CREATE TABLE IF NOT EXISTS `publiccerts` (
-				`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-				`zmd5` TEXT UNIQUE,
-				`issuer` TEXT,
-				`zDate` text NOT NULL,
-				`subject`  TEXT NOT NULL,
-				`enabled` INTEGER NULL DEFAULT 1,
-				`content` TEXT
-			 )  ";
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {
-        echo "$q->mysql_error (".__LINE__.")\n$sql\n";
-        return false;
-    }
-
     return true;
 }
-
 function adagent_tables():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/adagent.db");
     @chmod("/home/artica/SQLITE/adagent.db", 0644);
@@ -2931,7 +2846,6 @@ function adagent_tables():bool{
     }
     return true;
 }
-
 function haproxy_tables():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
     @chmod("/home/artica/SQLITE/haproxy.db", 0644);
@@ -3087,7 +3001,6 @@ function haproxy_tables():bool{
     }
     return true;
 }
-
 function postfix_events():bool{
     echo "[".__LINE__."]: Create table postfix_search FROM nothing\n";
     $q=new lib_sqlite("/home/artica/SQLITE/postfix_events.db");
@@ -3112,9 +3025,6 @@ function postfix_events():bool{
     }
     return true;
 }
-
-
-
 function spammassassin_tables():bool{
     echo "[".__LINE__."]: CREATE table meta_rules\n";
     $q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
@@ -3221,8 +3131,6 @@ function spammassassin_tables():bool{
 			  `subject` TEXT NOT NULL)");
     return true;
 }
-
-
 function postfix_tables():bool{
     echo "[".__LINE__."]: Migrate table relay_domains_restricted FROM artica_backup\n";
 
@@ -3448,10 +3356,6 @@ function postfix_tables():bool{
 
     return spammassassin_tables();
 }
-
-
-
-
 function imapbox_tables():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/imapbox.db");
 
@@ -3603,7 +3507,6 @@ function hamrp():bool{
     }
     return true;
 }
-
 function rpz_database():bool{
     $q = new lib_sqlite("/home/artica/SQLITE/rpz.db");
     $sql="CREATE TABLE IF NOT EXISTS `policies` (
@@ -3709,8 +3612,6 @@ function proftpd_table():bool{
     }
     return true;
 }
-
-
 function ipinfo():bool{
 
     $q=new lib_sqlite("/home/artica/SQLITE/ipinfo.db");
@@ -3724,7 +3625,6 @@ function ipinfo():bool{
     $q->QUERY_SQL($sql);
     return true;
 }
-
 function ntp():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/ntp.db");
     @chmod("/home/artica/SQLITE/ntp.db", 0644);
@@ -3742,7 +3642,6 @@ function ntp():bool{
     }
     return true;
 }
-
 function sys():bool{
     echo "[".__LINE__."]: Migrate table last_boot FROM artica_events\n";
     $q=new lib_sqlite("/home/artica/SQLITE/sys.db");

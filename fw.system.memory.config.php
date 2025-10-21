@@ -1,10 +1,12 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
-
+if(isset($_POST["overcommit_memory"])){table_save();exit;}
+if(isset($_GET["form-popup"])){form_popup();exit;}
+if(isset($_GET["form-js"])){form_js();exit;}
+if(isset($_GET["flat"])){table_flat();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["table"])){table();exit;}
-if(isset($_POST["overcommit_memory"])){Save();exit;}
 if(isset($_GET["memory-graph"])){memory_graph();exit;}
 if(isset($_GET["memory-graph2"])){memory_graph2();exit;}
 page();
@@ -30,51 +32,87 @@ function tabs():bool{
     echo $tpl->tabs_default($array);
     return true;
 }
+function form_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return  $tpl->js_dialog1("{parameters}","$page?form-popup=yes",650);
+}
+function table_flat():bool{
 
-function table_flat(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/sysctl/json"));
+
+    if(!$json->Status){
+        echo $tpl->div_error($json->Error);
+        return false;
+    }
 
     $Overcommiting_Memory[0]="{Overcommiting_Memory_0}";
     $Overcommiting_Memory[1]="{Overcommiting_Memory_1}";
     $Overcommiting_Memory[2]="{Overcommiting_Memory_2}";
-
+    for($i=50;$i<101;$i++){
+        $overcommit_ratioH[$i]="$i%";
+    }
+    $tpl->table_form_field_js("Loadjs('$page?form-js=yes');","AsSystemAdministrator");
+    $tpl->table_form_field_text("{Overcommiting_Memory_behavior}",$Overcommiting_Memory[$json->kernel->overcommit_memory],ico_mem);
+    if($json->kernel->overcommit_memory==2) {
+        $tpl->table_form_field_text("{ratio}", $overcommit_ratioH[$json->kernel->overcommit_ratio], ico_mem);
+    }
+    $tpl->table_form_field_text("{kernel_shmmax}",FormatBytes($json->kernel->shmmax/1024),ico_mem);
+    $tpl->table_form_field_text("{kernel_shmall}",FormatBytes($json->kernel->shmall/1024),ico_mem);
+    echo $tpl->table_form_compile();
+    return true;
 }
 
+
+
+function form_popup():bool{
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/sysctl/json"));
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    if(!$json->Status){
+        echo $tpl->div_error($json->Error);
+        return false;
+    }
+
+    $Overcommiting_Memory[0]="{Overcommiting_Memory_0}";
+    $Overcommiting_Memory[1]="{Overcommiting_Memory_1}";
+    if($json->kernel->isSwapByTable) {
+        $Overcommiting_Memory[2] = "{Overcommiting_Memory_2}";
+    }
+    for($i=50;$i<101;$i++){
+        $overcommit_ratioH[$i]="$i%";
+    }
+    $form[]=$tpl->field_section("{Overcommiting_Memory_behavior}","{vm.overcommit_memory}");
+    $form[]=$tpl->field_array_hash($Overcommiting_Memory,"overcommit_memory","{Overcommiting_Memory_behavior}",$json->kernel->overcommit_memory);
+
+    $form[]=$tpl->field_section("{ratio}","{vm.overcommit_ratio}");
+    $form[]=$tpl->field_array_hash($overcommit_ratioH,"overcommit_ratio","{ratio}",$json->kernel->overcommit_ratio);
+
+    $form[]=$tpl->field_section("{kernel_shmmax}","{kernel_shmmax_explain}");
+    $form[]=$tpl->field_numeric("kernel_shmmax","{kernel_shmmax} (bytes)",$json->kernel->shmmax);
+    $form[]=$tpl->field_section("{kernel_shmall}","{kernel_shmall_explain}");
+    $form[]=$tpl->field_numeric("kernel_shmall","{kernel_shmall} (bytes)",$json->kernel->shmall);
+
+    $js[]="LoadAjax('overcommit-progress','$page?flat=yes');";
+    $js[]="dialogInstance1.close();";
+    $js[]="LoadAjax('overcommit-progress','$page?flat=yes');";
+
+    echo $tpl->form_outside("",$form,"","{apply}",implode(";",$js));
+    return true;
+
+}
+function table_save():bool{
+    $tpl=new template_admin();
+    $tpl->SAVE_POSTs();
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/sysctl");
+    return admin_tracks_post("Saving system parameters");
+
+}
 function table(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-
-    $Overcommiting_Memory[0]="{Overcommiting_Memory_0}";
-    $Overcommiting_Memory[1]="{Overcommiting_Memory_1}";
-    $Overcommiting_Memory[2]="{Overcommiting_Memory_2}";
-
-for($i=50;$i<101;$i++){
-    $overcommit_ratioH[$i]="{$i}%";
-}
-
-
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/system.memory.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/system.memory.progress.txt";
-    $ARRAY["CMD"]="system.php?overcommit-mem=yes";
-    $ARRAY["TITLE"]="{Overcommiting_Memory_behavior}";
-    $ARRAY["AFTER"]="LoadAjax('table-system-memory','$page?table=yes');;";
-
-
-    $tpl->field_read_array_hash_setinfo($Overcommiting_Memory,"overcommit_memory","nonull:{Overcommiting_Memory_behavior}","sysctl:vm.overcommit_memory",true,"{vm.overcommit_memory}","AsSystemAdministrator","exec.sysctl.php --build");
-    $tpl->field_read_array_hash_setinfo($overcommit_ratioH,"overcommit_ratio","nonull:{ratio}","sysctl:vm.overcommit_ratio",false,"{vm.overcommit_ratio}","AsSystemAdministrator","exec.sysctl.php --build");
-    $tpl->field_read_numeric_setinfo("kernel_shmmax","{kernel_shmmax}","sysctl:kernel.shmmax","{kernel_shmmax_explain}","AsSystemAdministrator","exec.sysctl.php --build");
-    $tpl->field_read_numeric_setinfo("kernel_shmall","{kernel_shmall}","sysctl:kernel.shmall","{kernel_shmall_explain}","AsSystemAdministrator","exec.sysctl.php --build");
-
-
-
-
-    $xform=$tpl->field_read_compile();
-
-    //$form[]=$tpl->field_array_hash($Overcommiting_Memory,"overcommit_memory","nonull:{Overcommiting_Memory_behavior}",$overcommit_memory,false,"{vm.overcommit_memory}");
-
-   // $form[]=$tpl->field_array_hash($overcommit_ratioH,"overcommit_ratio","nonull:{ratio}",$overcommit_ratio,false,"{vm.overcommit_ratio}");
-
-
-    //Memory Allocation Limit = Swap Space + RAM * (Overcommit Ratio / 100)
 
 
 
@@ -84,7 +122,7 @@ for($i=50;$i<101;$i++){
     $html[]="<td style='width:450px;vertical-align:top' nowrap><div id='memory-graph'></div><div id='memory-graph2'></div></td>";
     $html[]="<td style='width:100%;;vertical-align:top'>";
     $html[]="<div id='overcommit-progress' style='margin-bottom:10px'></div>";
-    $html[]=$xform;
+
 
     if(is_file("img/squid/system_memory-day.flat.png")){
         $t=time();
@@ -103,6 +141,9 @@ for($i=50;$i<101;$i++){
     $html[]="</tr>";
     $html[]="</table>";
     $html[]="<script>";
+
+
+    $html[]=$tpl->RefreshInterval_js("overcommit-progress",$page,"flat=yes");
     $html[]="Loadjs('$page?memory-graph=yes');";
     $html[]="Loadjs('$page?memory-graph2=yes');";
     $html[]=$jstiny;

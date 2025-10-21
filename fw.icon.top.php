@@ -327,7 +327,10 @@ function notifs(){
     $BTMMPWarn = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BTMMPWarn"));
     $LicensingServerError=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicensingServerError"));
 
-    if(strlen($LicensingServerError)>3){$ERR[] = "{license_server_inacc}||||||js:Loadjs('fw.system.watchdog.php?licenseserver-js=yes');";
+    if (!$GLOBALS["CLASS_SOCKETS"]->CORP_GOLD()) {
+        if (strlen($LicensingServerError) > 3) {
+            $ERR[] = "{license_server_inacc}||||||js:Loadjs('fw.system.watchdog.php?licenseserver-js=yes');";
+        }
     }
 
 

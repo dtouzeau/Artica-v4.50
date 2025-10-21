@@ -2187,7 +2187,6 @@ class sockets{
 
     }
     public function CORP_GOLD():bool{
-
         if(intval($this->GET_INFO(base64_decode("aXNDb3JwR29sZA==")))==1){
             return true;
         }
