@@ -9,7 +9,7 @@ if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 if(isset($_GET["jsafter"])){jsafter();exit;}
 js();
 
-function jsafter(){
+function jsafter():bool{
 
     header("content-type: application/x-javascript");
     $f[]="if(document.getElementById('table-loader-versions-service')){";
@@ -24,9 +24,14 @@ function jsafter(){
     $f[]="if(document.getElementById('dnsdist-left')){";
     $f[]="LoadAjax('dnsdist-left','fw.dns.unbound.php?dnsdist-status-left=yes');";
     $f[]="}";
+    $f[]="if(document.getElementById('progress-suricata-wizard')){";
+    $f[]="LoadAjax('progress-suricata-wizard','fw.ids.wizard.php?table=yes');";
+    $f[]="}";
+    
+
     $f[]="Loadjs('fw.icon.top.php')";
     echo @implode("\n",$f)."\n";
-
+    return true;
 }
 
 function js():bool{

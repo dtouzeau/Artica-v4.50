@@ -7,6 +7,7 @@ if(isset($_POST["NetDataListenPort"])){Save();exit;}
 if(isset($_GET["status"])){Status();exit;}
 if(isset($_GET["ndpid-flat-config"])){flat_config();exit;}
 if(isset($_GET["ndpi-top-status"])){Status_top();exit;}
+if(isset($_GET["start"])){start();exit;}
 page();
 function page(){
 	$page=CurrentPageName();
@@ -14,7 +15,7 @@ function page(){
 
     $suricata_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_VERSION");
 
-    $html= $tpl->page_header("{IDS} v$suricata_version",ico_sensor,"{about_ids}","$page?table=yes","ids-wizard","progress-suricata-restart",false,"table-loader-suricata");
+    $html= $tpl->page_header("{IDS} v$suricata_version",ico_sensor,"{about_ids}","$page?start=yes","ids-wizard","progress-suricata-restart",false,"table-loader-suricata");
 
     if(isset($_GET["main-page"])){
         $tpl=new template_admin("{IDS}",$html);
@@ -28,7 +29,14 @@ function page(){
 
 
 }
-
+function start():bool{
+    $tpl=new template_admin();
+    $html[]="<div id='progress-suricata-wizard'></div>";
+    $js=$tpl->RefreshInterval_js("progress-suricata-wizard","fw.ids.wizard.php","table=yes");
+    $html[]="<script>$js;</script>";
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
 
 function table(){
     $page=CurrentPageName();
@@ -41,14 +49,24 @@ function table(){
     if($major<8){
         $Button=false;
         $must_update_suricata=$tpl->_ENGINE_parse_body("{must_update_suricata}");
-        $must_update_suricata=str_replace("%localver","",$suricata_version,$must_update_suricata);
-        $must_update_suricata=str_replace("%nextver","","8.x",$must_update_suricata);
-        $html[]=$tpl->div_error("{must_update_system}||$must_update_suricata");
+        $must_update_suricata=str_replace("%localver",$suricata_version,$must_update_suricata);
+        $must_update_suricata=str_replace("%nextver","8.x",$must_update_suricata);
+        $btn="<div style='margin:30px;text-align:right'>".$tpl->button_autnonome("{install}", "Loadjs('fw.system.upgrade-software.php?product=APP_SURICATA')", ico_cd, "AsFirewallManager", 350, "btn-primary", 80)."</div>";
+        //
+
+        $html[]=$tpl->div_error("{must_update_system}||$must_update_suricata$btn");
 
     }
+    if($major>7){
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/pfring"));
+        if(!$json->Status){
+            $btn="<div style='margin:30px;text-align:right'>".$tpl->button_autnonome("{install}", "Loadjs('fw.system.upgrade-software.php?product=APP_XTABLES')", ico_cd, "AsFirewallManager", 350, "btn-primary", 80)."</div>";
+            $Button=false;
+            $html[]=$tpl->div_error("{must_update_system}||$json->Error$btn");
+        }
+    }
 
-
-    $html[]="<p style='text-align:left;font-size:16px;margin-left:100px;margin-right:100px;margin-top:30px'>{suricata_market_explain}</p>";
+    $html[]="<p style='text-align:left;font-size:18px;margin-left:100px;margin-right:150px;margin-top:30px'>{suricata_market_explain}</p>";
 
     $after= "document.location.href='/ids';";
     $jsinstall=$tpl->framework_buildjs("/suricata/install",
@@ -56,7 +74,7 @@ function table(){
         "progress-suricata-restart",$after);
 
     if($Button) {
-        $html[] = "<div style='margin:30px;text-align:right'>";
+        $html[] = "<div style='margin:30px;text-align:right;margin-right:150px'>";
         $html[] = $tpl->button_autnonome("{install}", $jsinstall, ico_cd, "AsFirewallManager", 350, "btn-primary", 80);
         $html[] = "</div>";
     }
@@ -73,7 +91,7 @@ function table(){
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
     $html[]="<script>";
-    $html[]="LoadAjaxSilent('ndpid-flat-config','$page?ndpid-flat-config=yes');";
+   // $html[]="LoadAjaxSilent('ndpid-flat-config','$page?ndpid-flat-config=yes');";
     $html[]=$jstiny;
     $html[]="</script>";
 	echo $tpl->_ENGINE_parse_body($html);
