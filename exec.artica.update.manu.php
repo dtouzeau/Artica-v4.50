@@ -238,7 +238,6 @@ function install($filename):bool{
 	system("$php $ARTICA_BASE/exec.initslapd.php");
 	build_progress("{updating_network}...",75);
 	system("$php $ARTICA_BASE/exec.virtuals-ip.php");
-	system("$php $ARTICA_BASE/exec.monit.php --build");
 	echo "Starting......: ".date("H:i:s")." Purge and clean....\n";
 	build_progress("{restarting} Artica...",80);
 	if(is_file("/etc/init.d/nginx")){shell_exec("$nohup /etc/init.d/nginx reload >/dev/null 2>&1 &");}

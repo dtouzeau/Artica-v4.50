@@ -104,7 +104,7 @@ shell_exec("$php /usr/share/artica-postfix/exec.convert-to-sqlite.php");
 
 $functions=array("upgrades","artica_monitor","bandwidthd","hypercache_tail","vsftpd","irqbalance","artica_firewall","artica_fw_hotspot",
     "specialreboot","buildscript","mysqlInit","remove_nested_services","netdiscover",
-    "conntrackd","monit","nscd_init_debian","wsgate_init_debian","buildscriptLoopDisk",
+    "conntrackd","nscd_init_debian","wsgate_init_debian","buildscriptLoopDisk",
     "ifup","ftpproxy","webservices","phppfm","cicap",
     "CleanUbuntu","UpstartJob","debian_mirror","artica_categories","roundcube_http","fetchmail","vde_switch","squid_db","clamav_freshclam","postgres",
     "artica_iso","syncthing","getty","proftpd",
@@ -1426,74 +1426,7 @@ function hypercache_tail(){remove_service("/etc/init.d/hypercache-tail");}
 
 
 
-function monit(){
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    $INITD_PATH="/etc/init.d/monit";
-    $php5script="exec.monit.php";
-    $daemonbinLog="Monitor Daemon";
-    $monitbin=$unix->find_program("monit");
 
-
-    $f[]="#!/bin/sh";
-    $f[]="### BEGIN INIT INFO";
-    $f[]="# Provides:         artica-monit";
-    $f[]="# Required-Start:    \$local_fs \$syslog";
-    $f[]="# Required-Stop:     \$local_fs \$syslog";
-    $f[]="# Should-Start:";
-    $f[]="# Should-Stop:";
-    $f[]="# Default-Start:     3 4 5";
-    $f[]="# Default-Stop:      0 1 6";
-    $f[]="# Short-Description: $daemonbinLog";
-    $f[]="# chkconfig: - 80 75";
-    $f[]="# description: $daemonbinLog";
-    $f[]="### END INIT INFO";
-
-    $f[]="case \"\$1\" in";
-    $f[]=" start)";
-    $f[]="    $php /usr/share/artica-postfix/$php5script --start \$2 \$3";
-    $f[]="    ;;";
-    $f[]="";
-    $f[]="  stop)";
-    $f[]="    $php /usr/share/artica-postfix/$php5script --stop \$2 \$3";
-    $f[]="    ;;";
-    $f[]="";
-    $f[]=" restart)";
-    $f[]="    $php /usr/share/artica-postfix/$php5script --restart \$2 \$3";
-    $f[]="    ;;";
-    $f[]=" reload)";
-    $f[]="    $monitbin -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload \$2 \$3";
-    $f[]="    ;;";
-    $f[]="";
-    $f[]=" reconfigure)";
-    $f[]="    $php /usr/share/artica-postfix/$php5script --build \$2 \$3";
-    $f[]="    $monitbin -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload \$2 \$3";
-    $f[]="    ;;";
-    $f[]="";
-    $f[]="  *)";
-    $f[]="    echo \"Usage: \$0 {start|stop|restart|reload|reconfigure} (+ '--verbose' for more infos)\"";
-    $f[]="    exit 1";
-    $f[]="    ;;";
-    $f[]="esac";
-    $f[]="exit 0\n";
-
-
-    echo "$daemonbinLog: [INFO] Writing $INITD_PATH with new config\n";
-    @unlink($INITD_PATH);
-    @file_put_contents($INITD_PATH, @implode("\n", $f));
-    @chmod($INITD_PATH,0755);
-
-    if(is_file('/usr/sbin/update-rc.d')){
-        shell_exec("/usr/sbin/update-rc.d -f " .basename($INITD_PATH)." defaults >/dev/null 2>&1");
-    }
-
-    if(is_file('/sbin/chkconfig')){
-        shell_exec("/sbin/chkconfig --add " .basename($INITD_PATH)." >/dev/null 2>&1");
-        shell_exec("/sbin/chkconfig --level 345 " .basename($INITD_PATH)." on >/dev/null 2>&1");
-    }
-
-
-}
 
 
 

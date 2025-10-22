@@ -676,7 +676,6 @@ function install($product, $key,$localpath=null){
         echo "Binary file on the Artica Repo: $md52\n";
         echo "Binary file on the binary Repo: $md51\n";
         if($md51==$md52){
-            shell_exec("$php $AR_ROOT/exec.monit.php --start");
             shell_exec("/usr/sbin/artica-phpfpm-service -start-artica-status");
             build_progress("{success} {{$product}} ($key) (Same version)...", 100);
             return true;
@@ -691,7 +690,6 @@ function install($product, $key,$localpath=null){
         build_progress("{updating} {{$product}} ($key)...", 85);
         if(!@copy($dst,$src)){
             echo "Copy failed ". error_get_last()["message"] . "\n";
-            shell_exec("$php $AR_ROOT/exec.monit.php --start");
             shell_exec("/usr/sbin/artica-phpfpm-service -start-artica-status");
             if($IF_INIT){shell_exec("/usr/sbin/artica-phpfpm-service -start-go-shield");}
             build_progress("{success} {{$product}} ($key) {failed}...", 110);
@@ -699,7 +697,6 @@ function install($product, $key,$localpath=null){
         }
         $md51=md5_file($src);
         if($md51!=$md52){
-            shell_exec("$php $AR_ROOT/exec.monit.php --start");
             shell_exec("/usr/sbin/artica-phpfpm-service -start-artica-status");
             if($IF_INIT){shell_exec("/usr/sbin/artica-phpfpm-service -start-go-shield");}
             build_progress("{success} {{$product}} ($key) {failed}...", 110);
@@ -711,7 +708,6 @@ function install($product, $key,$localpath=null){
         build_progress("{starting} {{$product}} ($key)...", 90);
         if($IF_INIT){shell_exec("$php $AR_ROOT/exec.go.shield.server.php --start");}
         build_progress("{starting} {{$product}} ($key)...", 92);
-        shell_exec("$php $AR_ROOT/exec.monit.php --start");
         build_progress("{starting} {{$product}} ($key)...", 95);
         shell_exec("/usr/sbin/artica-phpfpm-service -start-artica-status");
         build_progress("{success} {{$product}} ($key)...", 100);

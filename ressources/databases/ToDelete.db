@@ -38,6 +38,7 @@ exec.iseclab.malware.php
 exec.cleancloudcatz.php
 exec.phistank.cloud.php
 exec.squid.checkscatz.php
+exec.monit.php
 ressources/UBoxBrightcloud.php
 ressources/class.categorize.externals.bright.inc
 ressources/class.categorize.jp.inc

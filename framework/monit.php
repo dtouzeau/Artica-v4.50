@@ -92,8 +92,7 @@ function chock_status(){
 
 
 function restart():bool{
-	$unix=new unix();
-    return $unix->framework_execute("exec.monit.php --restart","exec.monit.progress","exec.monit.progress.txt");
+
 }
 
 function delete_cache(){

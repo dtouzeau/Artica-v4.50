@@ -2101,9 +2101,6 @@ function restart_squid(){
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.monit.php --build >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
 
     $cmd=trim("$nohup /etc/init.d/artica-status reload  >/dev/null 2>&1 &");
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
@@ -2212,9 +2209,6 @@ function articadb_restart(){
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.monit.php --build >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
 
 }
 function artica_catz_restart(){
@@ -2225,9 +2219,6 @@ function artica_catz_restart(){
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.monit.php --build >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
 }
 
 function squid_get_system_info(){

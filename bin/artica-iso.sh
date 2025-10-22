@@ -248,8 +248,6 @@ echo $percent| dialog --title "ISO Installation" --gauge "Please wait, Configuri
 ((percent++))
 echo "Installing monit..." >>/var/log/artica-iso.log 2>&1 || true
 echo $percent| dialog --title "ISO Installation" --gauge "Please wait, installing default services" 6 80
-/usr/bin/php /usr/share/artica-postfix/exec.monit.php --install >>/var/log/artica-iso.log 2>&1|| true
-
 ((percent++))
 echo $percent| dialog --title "ISO Installation" --gauge "Please wait, installing default services" 6 80
 /usr/bin/php /usr/share/artica-postfix/exec.initslapd.php >>/var/log/artica-iso.log 2>&1|| true
@@ -318,11 +316,6 @@ echo $percent| dialog --title "ISO Installation" --gauge "Please wait, Installin
 
 
 ((percent++))
-echo $percent| dialog --title "ISO Installation" --gauge "Please wait, Reconfiguring MONIT" 6 80
-echo "/usr/bin/php /usr/share/artica-postfix/exec.monit.php --build" >>/var/log/artica-iso.log 2>&1 || true
-rm -rf /etc/monit/monitrc >>/var/log/artica-iso.log 2>&1 || true
-/usr/bin/php /usr/share/artica-postfix/exec.monit.php --build >>/var/log/artica-iso.log 2>&1 || true
-
 ((percent++))
 echo $percent| dialog --title "ISO Installation" --gauge "Please wait, installing TailON" 6 80
 echo "/usr/bin/php /usr/share/artica-postfix/exec.tailon.php --install" >>/var/log/artica-iso.log 2>&1 || true

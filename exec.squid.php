@@ -2467,9 +2467,6 @@ function IfTemplateExistsinEn($template_name){
 
 
 function watchdog_config(){
-	$unix=new unix();
-	$php=$unix->LOCATE_PHP5_BIN();
-	$unix->THREAD_COMMAND_SET("$php /usr/share/artica-postfix/exec.monit.php --build");
 }
 
 function checkdatabase(){}
