@@ -199,6 +199,9 @@ function haclient_flat(){
         $json = json_decode($GLOBALS["CLASS_SOCKETS"]->HACLUSTERCLIENT_API("/status"));
 
         if ($json->Status) {
+            if($json->HaClusterClientMaxLoadPeriod<5){
+                $json->HaClusterClientMaxLoadPeriod=0;
+            }
             $HaClusterStatus = strtoupper($json->HaClusterStatus);
             $HaPeriod = $periods[$json->HaClusterClientMaxLoadPeriod];
             $HaClusterClientMaxClient = $json->HaClusterClientMaxClient;

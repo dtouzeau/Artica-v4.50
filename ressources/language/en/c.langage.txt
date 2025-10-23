@@ -3089,3 +3089,11 @@ Whether it’s malware, C2 traffic, or zero-day exploitation attempts, Suricata 
 </suricata_market_explain>
 <must_update_system>System update required before installation</must_update_system>
 <must_update_suricata>The intrusion detection engine installed on your system is version [b]%localver[/b].[br]Please update it to at least [b]%nextver[/b].</must_update_suricata>
+<remove_ids_menu>This action will remove the IDS menu from the interface.[br]If you later want to use the intrusion detection system again, go to the “Features” section.</remove_ids_menu>
+<OPenSSHMAxStartupExplain>Controls how many unauthenticated SSH connection attempts the daemon allows to exist simultaneously.[br]It does not limit fully authenticated sessions — only those still negotiating / not yet logged in (for example, many connection attempts during a brute-force or port scan).</OPenSSHMAxStartupExplain>
+<OPenSSHMAxStartupExplain1>Concurrent unauthenticated connections</OPenSSHMAxStartupExplain1>
+<OPenSSHMAxStartup_deal>Up to %max unauthenticated connections allowed freely.[br]
+Beyond %max, new connections are dropped randomly with a probability (from 0% up to %rate%).[br]
+Once %full unauthenticated connections exist, new ones are always dropped (100% probability).
+</OPenSSHMAxStartup_deal>
+<full2>Full</full2>

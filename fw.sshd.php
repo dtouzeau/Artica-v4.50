@@ -4,6 +4,9 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.openssh.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+if(isset($_GET["MaxStartups-js"])){MaxStartups_js();exit;}
+if(isset($_GET["MaxStartups-popup"])){MaxStartups_popup();exit;}
+if(isset($_POST["MaxStartups"])){MaxStartups_save();exit;}
 if(isset($_GET["UseBanner-js"])){UseBanner_js();exit;}
 if(isset($_GET["OpenSSHStatus"])){OPenSSHStatus();exit;}
 if(isset($_GET["reconfigure"])){reconfigure_js();exit;}
@@ -1910,6 +1913,32 @@ function SSHDInterface_Save():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/ssh/reconfigure-restart");
     return admin_tracks("Save OpenSSH interface settings");
 }
+function MaxStartups_popup():bool{
+    $tpl                    = new template_admin();
+    $page                   = CurrentPageName();
+    $sshd                   = new openssh();
+    $MaxStartups            = $sshd->main_array["MaxStartups"];
+
+    $tb=explode(":",$MaxStartups);
+
+    $form[]=$tpl->field_numeric("MaxStartups","{OPenSSHMAxStartupExplain1}",$tb[0]);
+    $form[]=$tpl->field_numeric("rate","{rate}",$tb[1]);
+    $form[]=$tpl->field_numeric("full","{full2}",$tb[2]);
+    $jsrestart=main_reload();
+    echo $tpl->form_outside("{OPenSSHMAxStartupExplain}", @implode("\n", $form),null,"{apply}",
+        "BootstrapDialog1.close();LoadAjax('openssh-status-config','$page?openssh-status-config=yes');$jsrestart",
+        "AsSystemAdministrator");
+    return true;
+}
+function MaxStartups_save():bool{
+    $tpl                    = new template_admin();
+    $tpl->CLEAN_POST();
+    $MaxStartups            = $_POST["MaxStartups"].":".$_POST["rate"].":".$_POST["full"];
+    $sshd                   = new openssh();
+    $sshd->main_array["MaxStartups"]=$MaxStartups;
+    $sshd->SaveInterface();
+    return admin_tracks("Save OpenSSH MaxStartups settings");
+}
 function main_general():bool{
     $tpl                    = new template_admin();
     $page                   = CurrentPageName();
@@ -1928,6 +1957,9 @@ function main_general():bool{
         "QUIET"=>"QUIET", "FATAL"=>"FATAL", "ERROR"=>"ERROR", "INFO"=>"INFO", "VERBOSE"=>"VERBOSE",
         "DEBUG1"=>"DEBUG1", "DEBUG2"=>"DEBUG2","DEBUG3"=>"DEBUG3"
     );
+
+
+
     $form[]=$tpl->field_text("MaxStartups","{MaxStartups}",$sshd->main_array["MaxStartups"]);
     $form[]=$tpl->field_section("{events}");
     if(!$FAIL2BAN){
@@ -2392,8 +2424,15 @@ function status_config():bool{
     $tpl->table_form_field_bool("{firewall_protection}",$SSHDIptables,ico_shield);
     $tpl->table_form_field_js("Loadjs('$page?settings-js=yes&section=interface')");
     $tpl->table_form_field_text("{listen_interface}",$SSHDInterface,ico_nic);
-    $tpl->table_form_field_js("Loadjs('$page?settings-js=yes&section=general')");
-    $tpl->table_form_field_text("{MaxStartups}",$sshd->main_array["MaxStartups"],ico_configure);
+    $tpl->table_form_field_js("Loadjs('$page?MaxStartups-js=yes')");
+
+    $MaxStartups=explode(":",$sshd->main_array["MaxStartups"]);
+    $OPenSSHMAxStartup_deal=$tpl->_ENGINE_parse_body("{OPenSSHMAxStartup_deal}");
+    $OPenSSHMAxStartup_deal=str_replace("%max",$MaxStartups[0],$OPenSSHMAxStartup_deal);
+    $OPenSSHMAxStartup_deal=str_replace("%rate",$MaxStartups[1],$OPenSSHMAxStartup_deal);
+    $OPenSSHMAxStartup_deal=str_replace("%full",$MaxStartups[2],$OPenSSHMAxStartup_deal);
+
+    $tpl->table_form_field_text("","<strong>{MaxStartups}</strong><br><i style='font-size:12px;text-transform: none;font-weight: normal'>$OPenSSHMAxStartup_deal</i>",ico_configure);
 
     $tpl->table_form_field_js("Loadjs('$page?UseBanner-js=yes')");
     $tpl->table_form_field_bool("{UseBanner}",$sshd->main_array["Banner"],ico_proto);
@@ -2583,6 +2622,11 @@ function save_config():bool{
 	@unlink(PROGRESS_DIR."/sshd.config");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/ssh/reconfigure");
     return true;
+}
+function MaxStartups_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog1("{MaxStartups}","$page?MaxStartups-popup=yes",650);
 }
 function UseBanner_js():bool{
     $sshd=new openssh();

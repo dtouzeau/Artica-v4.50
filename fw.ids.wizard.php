@@ -83,6 +83,11 @@ function table(){
     $suricata_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_VERSION");
 
     $topbuttons=array();
+    $jsUninstall="Loadjs('$page?uninstall-js=yes');";
+
+    $topbuttons[]=array($jsUninstall,ico_trash,"{remove_from_menu}");
+
+
 
     $TINY_ARRAY["TITLE"]="{IDS} v$suricata_version";
     $TINY_ARRAY["ICO"]=ico_sensor;

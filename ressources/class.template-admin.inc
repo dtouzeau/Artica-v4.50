@@ -363,11 +363,15 @@ return implode(', ', $timeParts);
         $INT[] = "<td style='width:1%;padding-left:10px;color:$color' $style>
                     <i class='$ico fa-2x' style='color:$color'></i>
                 </td>";
-        $INT[] = "<td style='width:1%;font-size:large;text-align:left;text-transform:capitalize;padding-left:10px;color:$color' nowrap $style>$field:</td>";
-        $INT[] = "<!-- Button: ".strlen($Button)." -->";
+        $colspan="colspan=2";
+        if(strlen($field)>0) {
+            $INT[] = "<td style='width:1%;font-size:large;text-align:left;text-transform:capitalize;padding-left:10px;color:$color' nowrap $style>$field:</td>";
+            $INT[] = "<!-- Button: " . strlen($Button) . " -->";
+            $colspan="";
+        }
 
         if( strlen($Button)==0 ) {
-            $INT[] = "<td $style_value >";
+            $INT[] = "<td $style_value $colspan>";
             $INT[] = "<strong style='text-transform:capitalize;color:$color'>$value</strong>$icon_help";
         }else{
             $INT[] = "<td>";

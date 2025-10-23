@@ -52,6 +52,7 @@ function popup():bool{
 
     $form[]=$tpl->field_checkbox("PasswordAuthentication","{PasswordAuthentication}",$ligne["PasswordAuthentication"],false,"{PasswordAuthentication_text}");
     $form[]=$tpl->field_checkbox("PermitRootLogin","{PermitRootLogin}",$ligne["PermitRootLogin"],false,"{PermitRootLogin_text}");
+    $form[]=$tpl->field_checkbox("deny","{deny}",$ligne["deny"],false);
 
     $html[]=$tpl->form_outside($ipaddr,$form,null,$btn,
         "$function();dialogInstance1.close();","AsDebianSystem",false);
@@ -93,7 +94,8 @@ function Save():bool{
     $page=CurrentPageName();
     $ipaddr=$_POST["ipaddr"];
     $Password=intval($_POST["PasswordAuthentication"]);
-      $Root=intval($_POST["PermitRootLogin"]);
+    $Root=intval($_POST["PermitRootLogin"]);
+    $deny=intval($_POST["deny"]);
     if(isset($_POST["new"])){
 
         $IP=new IP();
@@ -101,14 +103,15 @@ function Save():bool{
             echo $tpl->post_error("Invalid IP address [$ipaddr] should be (1.2.3.4 or 1.2.3.0/24)");
             return false;
         }
-        $sql="INSERT INTO sshd_client (Ipaddr,PasswordAuthentication,PermitRootLogin) 
-        VALUES('$ipaddr',$Password,$Root);";
+        $sql="INSERT INTO sshd_client (Ipaddr,PasswordAuthentication,PermitRootLogin,deny) 
+        VALUES('$ipaddr',$Password,$Root,$deny);";
 
 
     }else{
         $sql="UPDATE sshd_client SET 
                         PasswordAuthentication=$Password,
-                        PermitRootLogin=$Root
+                        PermitRootLogin=$Root,
+                        deny=$deny
                         WHERE Ipaddr='$ipaddr';";
     }
     $q=new lib_sqlite("/home/artica/SQLITE/sshd.db");
@@ -163,8 +166,17 @@ function search():bool{
         $ipaddr=$ligne["Ipaddr"];
         $PermitRootLogin=intval($ligne["PermitRootLogin"]);
         $ipaddrEnc=urlencode($ipaddr);
-        $ipaddrF=$tpl->td_href($ipaddr,"","Loadjs('$page?js=$ipaddrEnc&function=$function')");
         $PasswordAuthentication=$ligne["PasswordAuthentication"];
+        $deny=intval($ligne["deny"]);
+        $denylabel="";
+        if($deny==1){
+            $PasswordAuthentication=0;
+            $PermitRootLogin=0;
+            $denylabel="&nbsp;<span class='label label-danger'>{deny}</span>";
+        }
+
+        $ipaddrF=$tpl->td_href($ipaddr,"","Loadjs('$page?js=$ipaddrEnc&function=$function')");
+
         if($PasswordAuthentication==1){
             $PasswordAuthenticationICO="<span class='fas fa-check'></span>";
         }
@@ -174,7 +186,7 @@ function search():bool{
         $enable=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable=$ipaddrEnc')","AsSystemAdministrator");
         $delete=$tpl->icon_delete("Loadjs('$page?delete=$ipaddrEnc&md=$md')","AsSystemAdministrator");
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td>$ico_networks&nbsp;$ipaddrF</td>";
+        $html[]="<td>$ico_networks&nbsp;$ipaddrF$denylabel</td>";
         $html[]="<td style='width:1%' class='center' nowrap>$PasswordAuthenticationICO</td>";
         $html[]="<td style='width:1%' class='center' nowrap>$PermitRootLoginICO</td>";
         $html[]="<td style='width:1%' class='center' nowrap>$enable</td>";

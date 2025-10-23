@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+if(isset($_GET["uninstall-js"])){uninstall_js();exit;}
+if(isset($_POST["unstall-confirm"])){uninstall_confirm();exit;}
 if(isset($_GET["flat-config"])){flat_config();exit;}
 if(isset($_GET["suricata-top"])){top_widgets();exit;}
 if(isset($_POST["SnortRulesCode"])){Save_gen();exit;}
@@ -13,9 +15,13 @@ if(isset($_GET["reconfigure-js"])){reconfigure_js();exit;}
 if(isset($_GET["restart-js"])){restart_js();exit;}
 if(isset($_GET["reconfigure-popup"])){reconfigure_popup();exit;}
 if(isset($_GET["restart-popup"])){restart_popup();exit;}
+
 page();
 
 
+function uninstall_confirm():bool{
+    return admin_tracks("Uninstall IDS service..");
+}
 
 function pf_ring_infos(){
 	$page=CurrentPageName();
@@ -30,6 +36,16 @@ function reconfigure_js(){
 	$tpl->js_dialog6("{reconfigure_service}", "$page?reconfigure-popup=yes",650);
 	
 }
+
+function uninstall_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsFirewallManager){$tpl->popup_no_privs();}
+    $after=$tpl->framework_buildjs("/suricata/uninstall","suricata.progress","suricata.progress.log","progress-suricata-restart","window.location.href ='/index'");
+    return $tpl->js_confirm_execute("{uninstall}","unstall-confirm","yes",$after);
+}
+
 function restart_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
@@ -222,6 +238,13 @@ function flat_config():bool{
     if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){$SuricataPurge=2;}
     $SuricataPfRing=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataPfRing"));
 
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/pfring"));
+    if(!$json->Status){
+        $btn="<div style='margin:30px;text-align:right'>".$tpl->button_autnonome("{install}", "Loadjs('fw.system.upgrade-software.php?product=APP_XTABLES')", ico_cd, "AsFirewallManager", 350, "btn-primary", 80)."</div>";
+        $html[]=$tpl->div_error("{must_update_system}||$json->Error$btn");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    }
+
     $tpl->table_form_field_bool("{SuricataPfRing}",$SuricataPfRing,ico_performance);
 
 
@@ -299,16 +322,18 @@ function main():bool{
     $html[]="<div id='suricata-top'></div>";
     $html[]="<div id='suricata-config'></div>";
 
-    $SuricataPfRing=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataPfRing"));
+
     $EnableNetMonix=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNetMonix"));
     if($EnableNetMonix==1){
         $topbuttons[]=array($jsUninstallNetMonix,ico_trash,"{uninstall} NetMonix");
     }
+    $jsUninstall="Loadjs('$page?uninstall-js=yes');";
+
+    $topbuttons[]=array($jsUninstall,ico_trash,"{uninstall}");
     $topbuttons[]=array($jsReconfigure,ico_save,"{reconfigure_service}");
     $topbuttons[]=array($jsRestart,ico_retweet,"{restart}");
-    if($SuricataPfRing==1){
-        $topbuttons[]=array("Loadjs('$page?pf-ring-infos=yes');",ico_plug,"PF Ring Info");
-    }
+    $topbuttons[]=array("Loadjs('$page?pf-ring-infos=yes');",ico_plug,"PF Ring Info");
+
     $suricata_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_VERSION");
     $TINY_ARRAY["TITLE"]="{IDS} v$suricata_version";
     $TINY_ARRAY["ICO"]="fas fa-tachometer-alt";
