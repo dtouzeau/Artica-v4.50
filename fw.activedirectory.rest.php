@@ -213,7 +213,25 @@ function webunix_status():string{
     $bsini->loadString($json->Info);
     return $tpl->SERVICE_STATUS($bsini, "APP_SHELLINABOX",$htopwebrestart);
 }
+function redis_status():string{
+    $tpl    = new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/redis/status"));
+    $ini=new Bs_IniHandler();
+    $ini->loadString($json->Info);
+    $jsrestart=$tpl->framework_buildjs(
+        "/redis/restart","redis.restart.progress","redis.restart.progress.logs",
+        "progress-redis-restart");
+
+    return $tpl->SERVICE_STATUS($ini, "APP_REDIS_SERVER",$jsrestart);
+}
+
 function pogocache_status():string{
+
+    $PogoCacheEnabled=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("PogoCacheEnabled");
+    if($PogoCacheEnabled==0){
+        return redis_status();
+    }
+
     $tpl    = new template_admin();
     $htopwebrestart=$tpl->framework_buildjs("/pogocache/restart","redis.restart.progress","redis.restart.progress.log","progress-webapi-restart");
     $data=$GLOBALS["CLASS_SOCKETS"]->REST_API("/pogocache/status");

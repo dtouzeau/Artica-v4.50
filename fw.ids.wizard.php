@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+if(isset($_GET["uninstall-js"])){uninstall_js();exit;}
+if(isset($_POST["uninstall"])){uninstall_perform();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_POST["NetDataListenPort"])){Save();exit;}
 if(isset($_GET["status"])){Status();exit;}
@@ -29,6 +31,10 @@ function page(){
 
 
 }
+function uninstall_js(){
+    $tpl=new template_admin();
+    return $tpl->js_confirm_execute("{remove_ids_menu}","uninstall","ids-wizard","document.location.href='/index'");
+}
 function start():bool{
     $tpl=new template_admin();
     $html[]="<div id='progress-suricata-wizard'></div>";
@@ -36,6 +42,9 @@ function start():bool{
     $html[]="<script>$js;</script>";
     echo $tpl->_ENGINE_parse_body($html);
     return true;
+}
+function uninstall_perform(){
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SURICATA_NO_WIZARD",1);
 }
 
 function table(){

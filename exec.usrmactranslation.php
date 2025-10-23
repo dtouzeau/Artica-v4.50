@@ -91,7 +91,7 @@ function build(){
 	@chgrp($HotSpotDirectory, "squid");
     $RedisServer=false;
 	$Count=0;
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
 
     if($EnableRedisServer==1) {
         $RedisServer=true;

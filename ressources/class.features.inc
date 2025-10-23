@@ -1172,7 +1172,7 @@ class features{
         $config["TOKEN_INSTALLED"]="SURICATA_INSTALLED";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/suricata.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/suricata.progress.txt";
-        $config["CMD_ON"]="/suricata/install";
+        $config["CMD_ON"]="/suricata/install-wizard";
         $config["CMD_OFF"]="/suricata/uninstall";
         $config["MEMMIN"]="1999";
         return $this->build_paragraph($config);

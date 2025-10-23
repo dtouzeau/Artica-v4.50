@@ -60,7 +60,7 @@ function isAuth(){
     }
 
 
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
 
     if($EnableRedisServer==0){
         $array["status"] = false;

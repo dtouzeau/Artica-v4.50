@@ -443,7 +443,7 @@ function parameters1():bool{
         $tpl->table_form_field_js(null);
         $tpl->table_form_field_text("{caching_using_redis}","{missing_module}",ico_mem);
     }else{
-        $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+        $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
         $tpl->table_form_field_js("Loadjs('$page?section-redis-js=yes')","AsWebMaster");
         if($EnableRedisServer==0){
             $tpl->table_form_field_bool("{caching_using_redis}",0,ico_mem);
@@ -557,7 +557,7 @@ function section_redis_popup():bool{
 
 
     $form[]=$tpl->field_checkbox("NginxCacheRedis","{caching_using_redis}",$NginxCacheRedis,"NginxCacheRedisHost,NginxCacheRedisPort,NginxCacheRedisPassword,NginxCacheRedisLocal","{nginx_redis_caching_explain}");
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
 
     if($EnableRedisServer==1) {
         $form[] = $tpl->field_checkbox_disbaleON("NginxCacheRedisLocal", "{use_local_service}", $NginxCacheRedisLocal,"NginxCacheRedisHost,NginxCacheRedisPort,NginxCacheRedisPassword");
@@ -1357,7 +1357,7 @@ function nginx_cache_status():string{
 
     $nginxCachesDir=intval($nginxsock->GET_INFO("nginxCachesDir"));
     $NginxCacheRedis=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxCacheRedis"));
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
     if($EnableRedisServer==0){
         $NginxCacheRedis=0;
     }
@@ -1407,7 +1407,7 @@ function nginx_cache_status():string{
 function srcache_redis_pwd():string{
 
     $NginxCacheRedisLocal=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxCacheRedisLocal"));
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
     if($EnableRedisServer==0){$NginxCacheRedisLocal=0;}
     if($NginxCacheRedisLocal==1){
         $RedisPassword=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RedisPassword"));
@@ -1427,7 +1427,7 @@ function srcache_redis_pass():array{
     $NginxCacheRedisPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxCacheRedisPort"));
     if($NginxCacheRedisPort==0){$NginxCacheRedisPort=6379;}
     $NginxCacheRedisLocal=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxCacheRedisLocal"));
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
     if($EnableRedisServer==0){$NginxCacheRedisLocal=0;}
 
     if($NginxCacheRedisLocal==1){

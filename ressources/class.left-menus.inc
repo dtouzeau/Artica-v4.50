@@ -1306,13 +1306,20 @@ class left_menus{
         if(!$this->isIds()){
             return "";
         }
+        $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
+        $SURICATA_NO_WIZARD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_NO_WIZARD"));
+        if($EnableSuricata==0) {
+            if($SURICATA_NO_WIZARD==1) {
+                return "";
+            }
+        }
 
         //$EnableNetMonix=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNetMonix");
         //$NetMonixInstalled=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetMonixInstalled");
         //if($NetMonixInstalled==0){$EnableNetMonix=1;}
 
         $sensor=ico_sensor;
-        $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
+
         $tpl=new template_admin();
         $f[]="<!-- IDS START -->";
         $f[]="                <li id='left-menu'>";
@@ -1320,12 +1327,11 @@ class left_menus{
         $f[]="                    <ul class='nav nav-second-level'>";
 
         if($EnableSuricata==0) {
-            $f[] = $tpl->LeftMenu(
-                array("PAGE" => "fw.ids.wizard.php",
-                    "ICO" => ico_cd,
-                    "TEXT" => "{about2}" )
-            );
-
+                $f[] = $tpl->LeftMenu(
+                    array("PAGE" => "fw.ids.wizard.php",
+                        "ICO" => ico_cd,
+                        "TEXT" => "{about2}")
+                );
         }
 
 

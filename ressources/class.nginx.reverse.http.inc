@@ -663,7 +663,7 @@ function build_httpreverse($MASTER_LINE,$SERVICE_ID,$DEFAULT_SERVER=false):strin
 function redis_pwd():string{
 
     $NginxCacheRedisLocal=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxCacheRedisLocal"));
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
     if($EnableRedisServer==0){$NginxCacheRedisLocal=0;}
     if($NginxCacheRedisLocal==1){
         $RedisPassword=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RedisPassword"));
@@ -683,7 +683,7 @@ function redis_pass():string{
     $NginxCacheRedisPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxCacheRedisPort"));
     if($NginxCacheRedisPort==0){$NginxCacheRedisPort=6379;}
     $NginxCacheRedisLocal=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxCacheRedisLocal"));
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
     if($EnableRedisServer==0){$NginxCacheRedisLocal=0;}
 
     if($NginxCacheRedisLocal==1){

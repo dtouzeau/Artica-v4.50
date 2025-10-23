@@ -1809,7 +1809,7 @@ function NOTIFS_REDIS($UPDATES_ARRAY):array{
     $tpl                = new template_admin();
     $page               = CurrentPageName();
     $ERR                = array();
-    $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
     if($EnableSoft==0) {return $ERR;}
     if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return $ERR;}
     $APP_REDIS_SERVER_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_REDIS_SERVER_VERSION");

@@ -1487,7 +1487,7 @@ function ntlm_monitor():string{
 // ====================================================================================
 function isrtime_logs():bool{
     $EnableSquidLogger=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidLogger"));
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisServer"));
+    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
     $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
     if($EnableSquidLogger==0){return false;}
     if($EnableRedisServer==0){return false;}
