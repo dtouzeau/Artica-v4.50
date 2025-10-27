@@ -3,7 +3,7 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
-
+if(isset($_GET["enable-js"])){enable_js();exit;}
 if(isset($_GET["main-js"])){main_js();exit;}
 if(isset($_GET["statistics-js"])){statistics_js();exit;}
 if(isset($_GET["update-js"])){update_js();exit;}
@@ -17,7 +17,9 @@ if(isset($_GET["firewall-parameters"])){firewall_parameters();exit;}
 if(isset($_POST["SuricataFirewallPurges"])){firewall_parameters_save();exit;}
 if(isset($_POST["SuricataPurges"])){satistics_parameters_save();exit;}
 if(isset($_POST["SuricataUpdateInterval"])){satistics_parameters_save();exit;}
-
+if(isset($_GET["interface-js"])){interface_js();exit;}
+if(isset($_GET["interface-popup"])){interface_popup();exit;}
+if(isset($_GET["interface-layer"])){interface_layer();exit;}
 
 page();
 
@@ -29,7 +31,93 @@ function main_js():bool{
         $addon="&ndpid=yes";
     }
     return $tpl->js_dialog1("{listen_interfaces}","$page?main=yes$addon",850);
-
+}
+function interface_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $nic=$_GET["interface-js"];
+    return $tpl->js_dialog1("{listen_interfaces} $nic", "$page?interface-popup=$nic");
+}
+function interface_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $iface=$_GET["interface-popup"];
+    $html[]="<div id='div-iface-$iface'></div>";
+    $html[]="<script>LoadAjax('div-iface-$iface','$page?interface-layer=$iface');</script>";
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+function enable_js():bool{
+    $field=$_GET["field"];
+    $iface=$_GET["enable-js"];
+    $tpl=new template_admin();
+    $add=false;
+    $q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_interfaces WHERE interface='$iface'");
+    if(!isset($ligne["interface"])){
+        $add=true;
+    }
+    if(!isset($ligne[$field])){
+        $ligne[$field]=0;
+    }
+    if($ligne[$field]==0) {
+        $upd = "UPDATE suricata_interfaces SET $field=1 WHERE interface='$iface'";
+        $sqladd="INSERT INTO suricata_interfaces (interface, $field,PortsUDP,PortsTCP) VALUES ('$iface', 1,'*','*');";
+    }else{
+        $upd = "UPDATE suricata_interfaces SET $field=0 WHERE interface='$iface'";
+        $sqladd="INSERT INTO suricata_interfaces (interface, $field,PortsUDP,PortsTCP) VALUES ('$iface', 1,'*','*');";
+    }
+    $sql=$upd;
+    if($add){
+        $sql=$sqladd;
+    }
+    //writelogs( "Interface $iface $field $ligne[$field] $sql",__FUNCTION__,__FILE__,__LINE__);
+    $q->QUERY_SQL($sql);
+    if(!$q->ok){
+        echo $tpl->js_error($q->mysql_error);
+        return false;
+    }
+    $page=CurrentPageName();
+    header("content-type: application/x-javascript");
+    echo "LoadAjax('div-iface-$iface','$page?interface-layer=$iface');\n";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/reconfigure");
+    return admin_tracks_post("Save IDS settings for $iface");
+}
+function interface_layer():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $iface=$_GET["interface-layer"];
+    $q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_interfaces WHERE interface='$iface'");
+    if(!isset($ligne["enable"])){
+        $ligne["enable"]=0;
+    }
+    if(!isset($ligne["PortsTCP"])){
+        $ligne["PortsTCP"]="{all}";
+    }
+    if(!isset($ligne["PortsUDP"])){
+        $ligne["PortsUDP"]="{all}";
+    }
+    $tpl->table_form_field_js("Loadjs('$page?enable-js=$iface&field=enable');");
+    $tpl->table_form_field_bool($iface,$ligne["enable"],ico_nic);
+    $tpl->table_form_field_js("Loadjs('$page?enable-js=$iface&field=WantIPv6');");
+    $tpl->table_form_field_bool("{enable_ipv6}",$ligne["WantIPv6"],ico_nic);
+    $tpl->table_form_field_js("Loadjs('$page?enable-js=$iface&field=WhiteInternalNets');");
+    $tpl->table_form_field_bool("{trusted_networks}",$ligne["WhiteInternalNets"],ico_networks);
+    $tpl->table_form_field_js("Loadjs('$page?enable-js=$iface&field=NoBrodcast');");
+    $tpl->table_form_field_bool("{exclude_brodcasts}",$ligne["NoBrodcast"],ico_networks);
+    $tpl->table_form_field_js("Loadjs('$page?enable-js=$iface&field=NoMulticast');");
+    $tpl->table_form_field_bool("{exclude_multicasts}",$ligne["NoMulticast"],ico_networks);
+    $tpl->table_form_field_js("Loadjs('$page?enable-js=$iface&field=NoARP');");
+    $tpl->table_form_field_bool("{exclude_arps}",$ligne["NoARP"],ico_networks);
+    $tpl->table_form_field_js("Loadjs('$page?enable-js=$iface&field=OnlyNewTCP');");
+    $tpl->table_form_field_bool("{only_new_tcp}",$ligne["OnlyNewTCP"],ico_networks);
+    $tpl->table_form_field_js("Loadjs('$page?enable-PortsTCP=$iface');");
+    $tpl->table_form_field_text("{listen_ports} TCP",$ligne["PortsTCP"],ico_networks);
+    $tpl->table_form_field_js("Loadjs('$page?enable-PortsUDP=$iface');");
+    $tpl->table_form_field_text("{listen_ports} UDP",$ligne["PortsUDP"],ico_networks);
+    echo $tpl->table_form_compile();
+    return true;
 }
 function statistics_js():bool{
     $page=CurrentPageName();
@@ -51,7 +139,6 @@ function nic_settings(){
 	$nic->SaveNic();
 	
 }
-
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
@@ -85,7 +172,6 @@ function tabs():bool{
     return true;
 
 }
-
 function updates_parameters(){
 	$tpl=new template_admin();
 	$SuricataUpdateInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataUpdateInterval"));
@@ -104,7 +190,6 @@ function updates_parameters(){
 
 
 }
-
 function statistics_parameters():bool{
 	$tpl=new template_admin();
 	$SuricataPurge=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataPurge"));
@@ -117,7 +202,6 @@ function statistics_parameters():bool{
             "AsFirewallManager",true);
 	return true;
 }
-
 function firewall_parameters(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
@@ -150,7 +234,6 @@ function firewall_parameters(){
 
 	echo "<p>&nbsp;</p>".$tpl->form_outside("{firewall_detection_engines}", @implode("\n", $form),null,"{apply}","Loadjs('fw.ids.dashboard.php?reconfigure-js=yes');","AsFirewallManager");
 }
-
 function firewall_parameters_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
@@ -169,7 +252,6 @@ function firewall_parameters_save(){
 	$sock->getFrameWork("suricata.php?restart-tail=yes");
 	
 }
-
 function satistics_parameters_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
@@ -179,7 +261,6 @@ function satistics_parameters_save(){
 	
 	}
 }
-
 function main(){
 	$tpl=new template_admin();
     $AsNDPI=false;
@@ -273,7 +354,6 @@ function main(){
 			
 						
 }
-
 function Save_nic(){
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
 	$q->QUERY_SQL("DELETE FROM suricata_interfaces WHERE interface='{$_POST["nic-settings"]}'");
@@ -282,7 +362,6 @@ function Save_nic(){
 	$q->QUERY_SQL("INSERT INTO suricata_interfaces (interface,threads,enable) VALUES ('{$_POST["nic-settings"]}','{$_POST["threads"]}',1)");
 	if(!$q->ok){echo $q->mysql_error_html(true);}
 }
-
 function Save_gen(){
 	$sock=new sockets();
 	$sock->SET_INFO("SnortRulesCode", $_POST["SnortRulesCode"]);

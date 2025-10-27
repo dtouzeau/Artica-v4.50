@@ -172,6 +172,36 @@ function CountOfInterfaces():int{
     if(!is_array($results)){return 0;}
     return count($results);
 }
+function widget_flow():string{
+    $tpl=new template_admin();
+    $widget_flow=$tpl->widget_style1("gray-bg",ico_nic,"{scanned_flow}",0);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/stats"));
+
+    if(!$json->Status){
+        return $tpl->widget_style1("red-bg",ico_nic,$json->Error,"{error}");
+    }
+    $kernel_packets=$json->Info->capture->kernel_packets;
+    $bytes=$json->Info->decoder->bytes;
+    if($bytes==0){
+        return $tpl->widget_style1("gray-bg",ico_nic,"{scanned_flow}","{no_data}");
+    }
+    $BytesOrg = FormatBytes($bytes / 1024);
+    $uptime = $json->Info->uptime;
+    $mbPerSecond="";
+    if ($uptime > 0) {
+        $bytesPerSecond = $bytes / $uptime;
+        $unit = "MB";
+        $mbPerSecond = $bytesPerSecond / (1024 * 1024); // 1 MB = 1024 * 1024 bytes
+        if ($mbPerSecond > 1024) {
+            $mbPerSecond = $bytesPerSecond / (1024 * 1024 * 1024); // 1 GB = 1024 * 1024 * 1024 bytes
+            $unit = "GB";
+        }
+        $mbPerSecond = round($mbPerSecond, 2);
+        $mbPerSecond = "<small style='color:white'>($mbPerSecond$unit/s)</small>";
+    }
+    return $tpl->widget_style1("navy-bg", ico_nic, "{scanned_flow}", $BytesOrg . " $mbPerSecond");
+}
+
 function top_widgets():bool{
     $tpl=new template_admin();
     $COUNT_OF_SURICATA=intval(@file_get_contents("/usr/share/artica-postfix/ressources/interface-cache/COUNT_OF_SURICATA"));
@@ -191,35 +221,7 @@ function top_widgets():bool{
         $widget_srcIps=$tpl->widget_style1("navy-bg",ico_computer,"{src_ips}",$tpl->FormatNumber($COUNT_OF_SURICATA_IP_SRC));
     }
 
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/stats"));
-
-    if(!is_null($json->Info)) {
-        $json2=json_decode($json->Info);
-        if(!is_null($json2)) {
-            if (property_exists($json2, "message")) {
-                if (property_exists($json2->message, "decoder")) {
-                    if ($json2->message->decoder->bytes > 1024) {
-                        $BytesOrg = FormatBytes($json2->message->decoder->bytes / 1024);
-                        $uptime = $json2->message->uptime;
-                        if ($uptime > 0) {
-                            $bytesPerSecond = $json2->message->decoder->bytes / $uptime;
-                            $unit = "MB";
-                            $mbPerSecond = $bytesPerSecond / (1024 * 1024); // 1 MB = 1024 * 1024 bytes
-                            if ($mbPerSecond > 1024) {
-                                $mbPerSecond = $bytesPerSecond / (1024 * 1024 * 1024); // 1 GB = 1024 * 1024 * 1024 bytes
-                                $unit = "GB";
-                            }
-                            $mbPerSecond = round($mbPerSecond, 2);
-                            $mbPerSecond = "<small style='color:white'>($mbPerSecond$unit/s)</small>";
-                        }
-                        $widget_flow = $tpl->widget_style1("navy-bg", ico_nic, "{scanned_flow}", $BytesOrg . " $mbPerSecond");
-                    }
-                }
-
-            }
-        }
-    }
-
+    $widget_flow=widget_flow();
     $html[]="<table style='width:100%;margin-top:-5px'><tbody>";
     $html[]="<tr>";
     $html[]="<td style='width:33%'>$widget_threats</td>";
@@ -233,10 +235,11 @@ function top_widgets():bool{
 
 function flat_config():bool{
     $tpl=new template_admin();
+    $page=CurrentPageName();
     $SuricataPurge=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataPurge"));
     if($SuricataPurge==0){$SuricataPurge=15;}
     if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){$SuricataPurge=2;}
-    $SuricataPfRing=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataPfRing"));
+
 
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/pfring"));
     if(!$json->Status){
@@ -244,24 +247,65 @@ function flat_config():bool{
         $html[]=$tpl->div_error("{must_update_system}||$json->Error$btn");
         echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     }
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/pfring-plugin"));
+    if(!$json->Status){
+        $btn="<div style='margin:30px;text-align:right'>".$tpl->button_autnonome("{install}", "Loadjs('fw.system.upgrade-software.php?product=APP_SURICATA')", ico_cd, "AsFirewallManager", 350, "btn-primary", 80)."</div>";
+        $html[]=$tpl->div_error("{must_update_system}||$json->Error$btn");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    }
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/iface/list"));
+    $CountOfIfaces=0;
+    if($json->Status){
+        $json2 = json_decode($json->Info);
+        $CountOfIfaces=$json2->count;
+    }
+    if($CountOfIfaces==0){
+        $html[]=$tpl->div_error("{error_ids_no_nic}");
+    }
 
-    $tpl->table_form_field_bool("{SuricataPfRing}",$SuricataPfRing,ico_performance);
-
+    $tpl->table_form_field_js("Loadjs('$page?pf-ring-infos=yes');");
+    $tpl->table_form_field_bool("{SuricataPfRing}",1,ico_performance);
 
     $q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-    $results=$q->QUERY_SQL("SELECT interface,threads FROM suricata_interfaces WHERE enable=1");
+    $results=$q->QUERY_SQL("SELECT interface,threads,enable FROM suricata_interfaces");
     $c=0;
-    $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?main-js=yes')");
-    if($q->ok){
-        foreach($results as $ligne){
-            $interface=$ligne["interface"];
-            $threads=$ligne["threads"];
+    foreach($results as $ligne) {
+        $interface = $ligne["interface"];
+        $enable = intval($ligne["enable"]);
+        if($enable==1){
             $c++;
-            $tpl->table_form_field_text("{interface}","$interface ({threads} $threads)",ico_nic);
         }
+        $CONF[$interface] = $ligne;
     }
-    if($c==0){
-        $tpl->table_form_field_text("{interface}","{none}",ico_nic);
+
+
+    $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/listnics"));
+    $zPhysicalsInterfaces=unserialize(base64_decode($data->nics));
+
+    foreach ($zPhysicalsInterfaces as $index=>$interface){
+        $threads = 0;
+        $enable =0;
+        $nic=new system_nic($interface);
+        $NicName=$nic->NICNAME;
+        $IPADDR=$nic->IPADDR;
+        if(isset( $CONF[$interface])){
+            $enable=intval($CONF[$interface]["enable"]);
+        }
+        $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?interface-js=$interface')");
+        if($enable==0){
+            $tpl->table_form_field_bool($NicName." (<small>$IPADDR</small>)",0,ico_nic);
+            continue;
+        }
+        $pkts="";$error=false;
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/iface/state/".urlencode($interface)));
+        if ($json->Status) {
+            $json2 = json_decode($json->Info);
+            $pkts="{analyzed_flow} ".$tpl->FormatNumber($json2->pkts)."pkts";
+        }else{
+            $error=true;
+            $pkts=$json->Error;
+        }
+        $tpl->table_form_field_text($NicName." (<small>$IPADDR</small>)", $pkts, ico_nic,$error);
     }
 
     $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?statistics-js=yes')");
@@ -288,7 +332,8 @@ function flat_config():bool{
     $maxtime_array[10080]="1 {week}";
     $tpl->table_form_field_text("{update_each}", $maxtime_array[$SuricataUpdateInterval], ico_clock);
 
-    echo $tpl->table_form_compile();
+    $html[]= $tpl->table_form_compile();
+    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     return true;
 
 }
@@ -299,7 +344,7 @@ function main():bool{
 
 
 
-    $jsReconfigure=$tpl->framework_buildjs("/suricata/reconfigure",
+    $jsReconfigure=$tpl->framework_buildjs("suricata:/suricata/reconfigure",
         "suricata.progress",
         "suricata.progress.txt","progress-suricata-restart",
         ""
@@ -316,9 +361,6 @@ function main():bool{
 	$html[]="<tr>";
 	$html[]="<td style='width:240px;vertical-align: top;'><div id='suricata-status'></div></td>";
 	$html[]="<td style='width:95%;vertical-align: top;padding-left: 10px'>";
-    if(CountOfInterfaces()==0){
-        $html[]=$tpl->div_error("{error_ids_no_nic}");
-    }
     $html[]="<div id='suricata-top'></div>";
     $html[]="<div id='suricata-config'></div>";
 
@@ -332,7 +374,7 @@ function main():bool{
     $topbuttons[]=array($jsUninstall,ico_trash,"{uninstall}");
     $topbuttons[]=array($jsReconfigure,ico_save,"{reconfigure_service}");
     $topbuttons[]=array($jsRestart,ico_retweet,"{restart}");
-    $topbuttons[]=array("Loadjs('$page?pf-ring-infos=yes');",ico_plug,"PF Ring Info");
+
 
     $suricata_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_VERSION");
     $TINY_ARRAY["TITLE"]="{IDS} v$suricata_version";
@@ -356,18 +398,54 @@ function main():bool{
 }
 
 function suricata_status():bool{
-    $tpl=new template_admin();
-    $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/status"));
+    $tpl = new template_admin();
+    $page=currentPageName();
+    $html[]=suricata_artica_status();
+    $html[]=suricata_main_status();
+
+
+    $html[]= "<script>";
+    $html[]= "LoadAjaxSilent('suricata-top','$page?suricata-top=yes')";
+    $html[]= "LoadAjaxSilent('suricata-config','$page?flat-config=yes');";
+    $html[]= "</script>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    return true;
+
+}
+function suricata_artica_status():string{
+    $tpl = new template_admin();
+
+    $jsRestart = $tpl->framework_buildjs("/suricata/restart",
+        "artica-suricata.progress",
+        "artica-suricata.txt",
+        "progress-suricata-restart"
+    );
+
+    $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/status"));
     if (json_last_error() > JSON_ERROR_NONE) {
-        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("Decoding data ".json_last_error()."<br>{$GLOBALS["CLASS_SOCKETS"]->mysql_error}","{error}"));
-        return false;
+        return $tpl->_ENGINE_parse_body($tpl->widget_rouge("Decoding data " . json_last_error() . "<br>{$GLOBALS["CLASS_SOCKETS"]->mysql_error}", "{error}"));
+
     }
 
+    if (!$json->Status) {
+        return $tpl->_ENGINE_parse_body($tpl->widget_rouge("Status = False<br>{$GLOBALS["CLASS_SOCKETS"]->mysql_error}", "{error}"));
 
-        if (!$json->Status) {
-            echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("Status = False<br>{$GLOBALS["CLASS_SOCKETS"]->mysql_error}", "{error}"));
-        return false;
-        }
+    }
+    $ini = new Bs_IniHandler();
+    $ini->loadString($json->Info);
+    return $tpl->_ENGINE_parse_body($tpl->SERVICE_STATUS($ini, "APP_ARTICA_SURICATA", $jsRestart));
+
+}
+function suricata_main_status():string{
+    $tpl=new template_admin();
+
+    $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/status"));
+    if (json_last_error() > JSON_ERROR_NONE) {
+        return $tpl->_ENGINE_parse_body($tpl->widget_rouge("Decoding data ".json_last_error()."<br>{$GLOBALS["CLASS_SOCKETS"]->mysql_error}","{error}"));
+    }
+    if (!$json->Status) {
+        return $tpl->_ENGINE_parse_body($tpl->widget_rouge("Status = False<br>{$GLOBALS["CLASS_SOCKETS"]->mysql_error}","{error}"));
+    }
 
     $jsRestart=$tpl->framework_buildjs("suricata:/suricata/restart",
         "suricata.progress",
@@ -375,20 +453,8 @@ function suricata_status():bool{
         "progress-suricata-restart"
     );
 
-        $ini = new Bs_IniHandler();
-        $ini->loadString($json->Info);
-        echo $tpl->_ENGINE_parse_body($tpl->SERVICE_STATUS($ini, "APP_SURICATA", $jsRestart));
-
-        $page=currentPageName();
-
-        echo "<script>";
-        echo "LoadAjaxSilent('suricata-top','$page?suricata-top=yes')";
-        echo "</script>";
-
-    return true;
-
-	
-	
-	
+    $ini = new Bs_IniHandler();
+    $ini->loadString($json->Info);
+    return $tpl->_ENGINE_parse_body($tpl->SERVICE_STATUS($ini, "APP_SURICATA", $jsRestart));
 }
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}

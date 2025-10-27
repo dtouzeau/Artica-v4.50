@@ -424,7 +424,7 @@ class sockets{
             return json_encode($array);
         }
 
-        $cURLConnection=$this->GENERIC_API_CLIENT("/usr/share/artica-postfix/bin/run/suricata-service.sock",$endpoint);
+        $cURLConnection=$this->GENERIC_API_CLIENT("/run/suricata-service.sock",$endpoint);
         $resp = curl_exec($cURLConnection);
         $curl_error_num=curl_errno($cURLConnection);
         $HTTP_CODE=curl_getinfo($cURLConnection,CURLINFO_HTTP_CODE);

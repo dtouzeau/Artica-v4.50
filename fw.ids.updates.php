@@ -46,7 +46,7 @@ function table(){
     );
 
     $jscompile=  $tpl->framework_buildjs(
-        "/suricata/restart",
+        "suricata:/suricata/restart",
         "suricata.progress",
         "suricata.progress.txt","progress-ids-restart"
     );

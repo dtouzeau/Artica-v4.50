@@ -658,7 +658,11 @@ class mysqlserver{
 		
 		if($this->main_array["max_allowed_packet"]<>null){
 			$mysqld["max_allowed_packet"]=$this->SetUnits($this->main_array["max_allowed_packet"]);
-		}	
+		}
+
+        if(!isset($this->main_array["max_connections"])){
+            $this->main_array["max_connections"]="";
+        }
 		
 		if($this->main_array["max_connections"]<>null){
 			$mysqld["max_connections"]="{$this->main_array["max_connections"]}";

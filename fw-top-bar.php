@@ -414,10 +414,20 @@ function GlobalSearchEngine(e){
 
 
     $EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
+    $EnableActiveDirectoryFeature=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableActiveDirectoryFeature"));
+    $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+    $EnableExternalACLADAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableExternalACLADAgent"));
+    if(!is_array($ActiveDirectoryConnections)){$ActiveDirectoryConnections=array();}
 
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableActiveDirectoryFeature"))==1){
-        $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
-        if(!is_array($ActiveDirectoryConnections)){$ActiveDirectoryConnections=array();}
+    if($EnableActiveDirectoryFeature==0){
+        $ActiveDirectoryConnections=array();
+        $EnableKerbAuth=0;
+        $EnableExternalACLADAgent=0;
+    }
+
+
+
+    if($EnableActiveDirectoryFeature==1){
         if(count($ActiveDirectoryConnections)>0){$EnableKerbAuth=1;}
     }
     if($users->AllowAddUsers OR $users->AllowAddGroup) {
@@ -433,7 +443,7 @@ function GlobalSearchEngine(e){
             $EnableKerbAuth=0;
         }
 
-        $EnableExternalACLADAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableExternalACLADAgent"));
+
 
         if ($EnableKerbAuth == 1 || $EnableExternalACLADAgent==1) {
 

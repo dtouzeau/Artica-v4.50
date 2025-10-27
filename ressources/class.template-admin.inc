@@ -2990,7 +2990,7 @@ $jsb[]="}";
     public function button_ids_reconfigure():string{
 
         $jsrestart=$this->framework_buildjs(
-            "/suricata/restart",
+            "suricata:/suricata/restart",
             "suricata.progress",
             "suricata.progress.txt","reconfigure-service-div"
         );

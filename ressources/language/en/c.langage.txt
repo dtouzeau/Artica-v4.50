@@ -3097,3 +3097,11 @@ Beyond %max, new connections are dropped randomly with a probability (from 0% up
 Once %full unauthenticated connections exist, new ones are always dropped (100% probability).
 </OPenSSHMAxStartup_deal>
 <full2>Full</full2>
+<APP_ARTICA_SURICATA>IDS management service</APP_ARTICA_SURICATA>
+<PFRING_PLUGIN_NOT_FOUND>The PF_RING extension for the IDS engine is missing, which indicates the package installation is not compliant.[br]Please reinstall the IDS engine via the “Software Center” section.</PFRING_PLUGIN_NOT_FOUND>
+<exclude_brodcasts>Exclude broadcasts</exclude_broadcasts>
+<exclude_multicasts>Exclude multicasts</exclude_multicasts>
+<exclude_arps>Ignore ARP frames/traffic</exclude_arps>
+<only_new_tcp>Only new TCP connections</only_new_tcp>
+<SURICATA_ACLS>Your own IDS rules</SURICATA_ACLS>
+<SURICATA_ACLS_EXPLAIN>This section lets you create your own detection rules (ACLs).[br]Rules are organized like a firewall.[br]A top-level rule is built from objects (groups of elements).[br]If all objects match, the rule performs its assigned action.</SURICATA_ACLS_EXPLAIN>

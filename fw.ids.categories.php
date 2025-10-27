@@ -223,7 +223,7 @@ foreach ($results as $index=>$ligne) {
 
 
     $jscompile=  $tpl->framework_buildjs(
-        "/suricata/restart",
+        "suricata:/suricata/restart",
         "suricata.progress",
         "suricata.progress.txt","progress-suricata-restart"
     );

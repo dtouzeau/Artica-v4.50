@@ -226,13 +226,11 @@ function  step1(){
 
 }
 
-function interface_js(){
+function interface_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $nic=$_GET["interface-js"];
-    $tpl->js_dialog1($nic, "$page?interface-popup=$nic");
-
-
+    return $tpl->js_dialog1($nic, "$page?interface-popup=$nic");
 }
 
 function interface_popup(){

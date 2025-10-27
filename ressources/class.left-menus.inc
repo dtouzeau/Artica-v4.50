@@ -1352,10 +1352,16 @@ class left_menus{
                     "TEXT" => "{categories}" )
             );
 
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.suricata.acls.php",
+                    "ICO" => "fas fa-list",
+                    "TEXT" => "Acls" )
+            );
 
 
-            $f[] = "                			<li id='left-menu'>";
-            $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.rules.php');\">
+
+            $f[] = "<li id='left-menu'>";
+            $f[] = "<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.rules.php');\">
 											<i class=\"fas fa-list\"></i> <span class=\"nav-label\">{rules}</span> </a>";
             $f[] = "
 											</li>";
