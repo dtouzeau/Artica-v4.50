@@ -5,6 +5,8 @@ authenticator.php
 artica-filter.redirect.php
 arptable.php
 arkeia.php
+MembersBrowse.php
+MembersBrowseAD.php
 auto-account.php
 auto-compress.php
 artica.update-manu.php
@@ -29,6 +31,17 @@ auth-tail.py
 artica.iso.php
 ldap.py
 BrowseFreeWebs.php
+bandwith.stats.php
+bandwidthd.stats.php
+backuphtml.ou.php
+backup-pc.index.php
+backup.tasks.php
+backup.tasks.old.php
+backup.tasks.events.php
+backup.sources.www.php
+backup.sources.WebGet.php
+backup.sources.tasks.php
+backup.sources.mysqlinst.php
 BrowsePDNS.php
 DomainsBrowse.php
 exec.cron.notifs.php
