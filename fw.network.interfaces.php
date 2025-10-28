@@ -1849,7 +1849,7 @@ function sysctl2_popup():bool{
     if (!file_exists("/etc/artica-postfix/settings/Daemons/netipv4tcp_sack")){
         $netipv4tcp_sack=1;
     }
-
+    $NetIpv4TcpMtuProbing=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetIpv4TcpMtuProbing"));
 
     //https://wwwx.cs.unc.edu/~sparkst/howto/network_tuning.php
     //http://vietlux.blogspot.fr/2012/07/squid-proxy-tuning-for-high-perfomance.html
@@ -1863,7 +1863,8 @@ function sysctl2_popup():bool{
     $form[]=$tpl->field_array_select($NicProfileArray, "NicProfile", "{nic_profile}", $NicProfile,"{nic_profile_explain}","dialogInstance2.close();");
     $form[]=$tpl->field_checkbox("EnableipV6","{enable_ipv6}",$EnableipV6,false,"{enable_ipv6_text}");
     $form[]=$tpl->field_checkbox("EnableArticaAsGateway","{ARTICA_AS_GATEWAY}",$EnableArticaAsGateway,false,"{ip_forward_text}");
-    $form[]=$tpl->field_checkbox("EnableKernelBBR","Bottleneck Bandwidth and RTT","$EnableKernelBBR",false,"{BBR_EXPLAIN}");
+    $form[]=$tpl->field_checkbox("EnableKernelBBR","Bottleneck Bandwidth and RTT",$EnableKernelBBR,false,"{BBR_EXPLAIN}");
+    $form[]=$tpl->field_checkbox("NetIpv4TcpMtuProbing","{NetIpv4TcpMtuProbing}",$NetIpv4TcpMtuProbing,false,"{NetIpv4TcpMtuProbing_explain}");
 
     $form[]=$tpl->field_section("{ChangeKernelTcpTitle}","{ChangeKernelTcpExplain}",true);
 
@@ -1912,7 +1913,7 @@ function sysctl2_popup():bool{
     return true;
 }
 
-function nic_virtuals_js(){
+function nic_virtuals_js():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$eth=$_GET["eth"];
@@ -1922,9 +1923,9 @@ function nic_virtuals_js(){
 	if($nicid==0){$nicid_text="{new_interface}";}
     $function=$_GET["function"];
 	$title="$nicz->netzone: $nicz->NICNAME ($eth) $nicid_text";
-	$tpl->js_dialog2($title, "$page?nic-virtual=$nicid&eth=$eth&function=$function");
+	return $tpl->js_dialog2($title, "$page?nic-virtual=$nicid&eth=$eth&function=$function");
 }
-function nic_vlan_js(){
+function nic_vlan_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $eth=$_GET["eth"];
@@ -1932,7 +1933,7 @@ function nic_vlan_js(){
     $nicz=new system_nic($eth);
     if($nicid==0){$nicid_text="{new_vlan}";}
     $title="VLAN: $nicz->netzone: $nicz->NICNAME ($eth) $nicid_text";
-    $tpl->js_dialog2($title, "$page?nic-vlan=$nicid&eth=$eth");
+    return $tpl->js_dialog2($title, "$page?nic-vlan=$nicid&eth=$eth");
 }
 function nic_virtuals_delete_js(){
 	$nicid=intval($_GET["nic-virtual-delete-js"]);
@@ -1943,15 +1944,14 @@ function nic_virtuals_delete_js(){
 	$tpl->js_confirm_delete("{interface} {$_GET["eth"]}:$nicid ", "delete_nic_virtual", $nicid,
 	"$rf;LoadAjax('nics-virtuals','$page?nic-virtuals-list=$eth');");
 }
-function nic_vlan_delete_js(){
+function nic_vlan_delete_js():bool{
     $nicid=intval($_GET["nic-vlan-delete-js"]);
     $page=CurrentPageName();
     $tpl=new template_admin();
     $md=$_GET["md"];
     $rf=refreshjs();
-    $tpl->js_confirm_delete("{interface} vlan$nicid ", "delete_nic_vlan", $nicid,
+   return $tpl->js_confirm_delete("{interface} vlan$nicid ", "delete_nic_vlan", $nicid,
         "$('#$md').remove();$rf");
-
 }
 
 function nic_vlan_delete(){

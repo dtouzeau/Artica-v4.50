@@ -3106,3 +3106,11 @@ Once %full unauthenticated connections exist, new ones are always dropped (100% 
 <SURICATA_ACLS>Your own IDS rules</SURICATA_ACLS>
 <SURICATA_ACLS_EXPLAIN>This section lets you create your own detection rules (ACLs).[br]Rules are organized like a firewall.[br]A top-level rule is built from objects (groups of elements).[br]If all objects match, the rule performs its assigned action.</SURICATA_ACLS_EXPLAIN>
 <force_http11>Force HTTP/1.1</force_http11>
+<NetIpv4TcpMtuProbing>TCP MTU probing</NetIpv4TcpMtuProbing>
+<NetIpv4TcpMtuProbing_explain>[b]TCP MTU probing - Packetization Layer Path MTU Discovery (PLPMTUD)[/b] is a method that allows the server to detect the MTU of the client.[br]
+This is useful when the client is behind a NAT or firewall, and the server cannot send packets larger than the MTU.[br]
+When enabled, the server will send a small packet to the client and wait for a response.[br]If the response is larger than the MTU, the server will adjust the MTU accordingly.[br]
+If the client does not respond, the server will use the default MTU (1500 bytes).[br]
+If the client responds, the server will use the MTU reported by the client.
+</NetIpv4TcpMtuProbing_explain>
+

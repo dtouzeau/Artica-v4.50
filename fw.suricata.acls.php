@@ -159,9 +159,9 @@ function externalALCLDAPRecursive_popup():bool{
     $html[]=$tpl->div_explain("{externalALCLDAPRecursive}");
     $html[]="<div class=center style='margin:30px'>";
     if($externalALCLDAPRecursive==1) {
-        $html[] = $tpl->button_autnonome("{disable_feature}", "Loadjs('$page?externalALCLDAPRecursive-switch=yes&gprule=$gprule&function=$function')", ico_check, "AsDansGuardianAdministrator", "335");
+        $html[] = $tpl->button_autnonome("{disable_feature}", "Loadjs('$page?externalALCLDAPRecursive-switch=yes&gprule=$gprule&function=$function')", ico_check, "AsFirewallManager", "335");
     }else{
-        $html[] = $tpl->button_autnonome("{enable_feature}", "Loadjs('$page?externalALCLDAPRecursive-switch=yes&gprule=$gprule&function=$function')", ico_check, "AsDansGuardianAdministrator", "335");
+        $html[] = $tpl->button_autnonome("{enable_feature}", "Loadjs('$page?externalALCLDAPRecursive-switch=yes&gprule=$gprule&function=$function')", ico_check, "AsFirewallManager", "335");
     }
     $html[] = "</div>";
     echo $tpl->_ENGINE_parse_body($html);
@@ -304,7 +304,7 @@ function proxy_acls_bugs():bool{
     $tpl=new template_admin();
     $error=$tpl->_ENGINE_parse_body("{acls_check_errors}");
     $error=str_replace("%s",$SQUID_ACLS_BUGS,$error);
-    $bt=$tpl->button_autnonome("{view}", "Loadjs('fw.proxy.acls.bugs.php')", "fas fa-bug","AsDansGuardianAdministrator",100,"btn-danger");
+    $bt=$tpl->button_autnonome("{view}", "Loadjs('fw.proxy.acls.bugs.php')", "fas fa-bug","AsFirewallManager",100,"btn-danger");
     $html[]="<div style='float:right;margin-right:50px;margin-bottom:20px'>$bt</div>";
     $html[]=$error;
     echo $tpl->_ENGINE_parse_body($tpl->div_error(@implode("\n",$html)));
@@ -558,7 +558,7 @@ function rule_settings(){
 
     $tpl->form_add_button("{export}","Loadjs('$page?export-rule-js=$ID')");
 	$html="<div id='export-progress-$ID' style='margin-top:5px'></div>".
-        $tpl->form_outside($ligne["aclname"], @implode("\n", $form),null,"{apply}",$jsafter,"AsDansGuardianAdministrator");
+        $tpl->form_outside($ligne["aclname"], @implode("\n", $form),null,"{apply}",$jsafter,"AsFirewallManager");
 	echo $tpl->_ENGINE_parse_body($html);
 	
 }
@@ -671,7 +671,7 @@ function new_rule_popup(){
 
 	
 	$html=$tpl->form_outside("{new_rule}", @implode("\n", $form),$explain,"{add}",
-        @implode(";",$jsafter),"AsDansGuardianAdministrator");
+        @implode(";",$jsafter),"AsFirewallManager");
 	echo $tpl->_ENGINE_parse_body($html);
 	
 }
@@ -761,32 +761,18 @@ function TINY_PAGE($return=false):string{
     $users=new usersMenus();
     $topbuttons=array();
 
-    if($users->AsDansGuardianAdministrator) {
+    if($users->AsFirewallManager) {
         $topbuttons[] = array($add, ico_plus, "{new_rule}");
         if ($gprule == 0) {
-            $topbuttons[] = array($addgroup, ico_plus, "{new_group_of_rules}");
             if ($function <> null) {
                 $topbuttons[] = array("$function()", ico_refresh, "{reload}");
             }
-            $topbuttons[] = array($jsrestart, ico_save, "{apply_rules}");
+
             $topbuttons[] = array("document.location.href='$page?export-acls=yes'", ico_export, "{export}");
             $topbuttons[] = array($jsimport, ico_import, "{import}");
-
-            if($EnableActiveDirectoryFeature==1){
-                $addon="OFF";
-                if($externalALCLDAPRecursive==1){
-                    $addon="ON";
-                }
-                $topbuttons[] = array("Loadjs('$page?externalALCLDAPRecursive=yes&gprule=$gprule&function=$function')", ico_group, "{recursive_search} ($addon)");
-
-            }
         }
     }
 
-    $acls=new squid_acls();
-    if($acls->IsAuthenticationEnabled()){
-        $topbuttons[] = array("Loadjs('fw.goSquidAuth.php')", ico_group, "{check_groups}");
-    }
 
     if($return){
         return $tpl->th_buttons($topbuttons);
@@ -962,9 +948,9 @@ function table_builder():bool{
 		$html[]="<td style='vertical-align:middle;width:1%'  nowrap>". $tpl->td_href($aclname,"{click_to_edit}",$js)."</td>";
 		$html[]="<td style='vertical-align:middle'>$explain</td>";
         $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_refresh("LoadAjaxTiny
-        ('explain-this-rule-$ID','$page?explain-this-rule=$ID&enabled={$ligne["enabled"]}&aclgroup={$ligne["aclgroup"]}')","AsDansGuardianAdministrator")."</td>";
-        $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_copy("Loadjs('$page?duplicate-js=$ID')","AsDansGuardianAdministrator")."</td>";
-		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsDansGuardianAdministrator")."</td>";
+        ('explain-this-rule-$ID','$page?explain-this-rule=$ID&enabled={$ligne["enabled"]}&aclgroup={$ligne["aclgroup"]}')","AsFirewallManager")."</td>";
+        $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_copy("Loadjs('$page?duplicate-js=$ID')","AsFirewallManager")."</td>";
+		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsFirewallManager")."</td>";
 		$html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
 		$html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$delete</center></td>";
 		$html[]="</tr>";
@@ -982,7 +968,7 @@ function table_builder():bool{
     $html[]="<td style='vertical-align:middle'>{do_nothing}</td>";
     $html[]="<td class='center' style='width:1%' nowrap>$nothing</td>";
     $html[]="<td class='center' style='width:1%' nowrap>$nothing</td>";
-    $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($AclFinishDeny,"Loadjs('$page?SquidAclFinishDeny=yes')",null,"AsDansGuardianAdministrator")."</td>";
+    $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($AclFinishDeny,"Loadjs('$page?SquidAclFinishDeny=yes')",null,"AsFirewallManager")."</td>";
     $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
     $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
     $html[]="</tr>";
@@ -1238,7 +1224,7 @@ function notify_error_page():bool{
     $form[]=$tpl->field_checkbox("FREE_REDIRECT_JAVASCRIPT","{use_javascript}",$zTemplate["FREE_REDIRECT_JAVASCRIPT"]);
 
     $jsafter="LoadAjax('table-acls-rules','$page?table=yes');Loadjs('$page?fill=$ID');";
-    $html[]=$tpl->form_outside("($ID): {enable_NAT_proxy}", $form,"{ufdbguard_redirect_ssl_explain}","{apply}",$jsafter,"AsDansGuardianAdministrator",true);
+    $html[]=$tpl->form_outside("($ID): {enable_NAT_proxy}", $form,"{ufdbguard_redirect_ssl_explain}","{apply}",$jsafter,"AsFirewallManager",true);
 
     echo $tpl->_ENGINE_parse_body($html);
     return true;
@@ -1276,7 +1262,7 @@ function notify_message(){
     $form[]=$tpl->field_textareacode("BODY","{content}",utf8_decode($zTemplate["BODY"]));
     $tpl->form_add_button("{help}", "Loadjs('fw.proxy.templates.error.squid.php?help-js')");
     $jsafter="LoadAjax('table-acls-rules','$page?table=yes');Loadjs('$page?fill=$ID');";
-    echo $tpl->form_outside("($ID): {NotifyMessage}", $form,null,"{apply}",$jsafter,"AsDansGuardianAdministrator",true);
+    echo $tpl->form_outside("($ID): {NotifyMessage}", $form,null,"{apply}",$jsafter,"AsFirewallManager",true);
 }
 
 function notify_message_save():bool{
