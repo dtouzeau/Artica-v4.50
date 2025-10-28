@@ -3105,3 +3105,4 @@ Once %full unauthenticated connections exist, new ones are always dropped (100% 
 <only_new_tcp>Only new TCP connections</only_new_tcp>
 <SURICATA_ACLS>Your own IDS rules</SURICATA_ACLS>
 <SURICATA_ACLS_EXPLAIN>This section lets you create your own detection rules (ACLs).[br]Rules are organized like a firewall.[br]A top-level rule is built from objects (groups of elements).[br]If all objects match, the rule performs its assigned action.</SURICATA_ACLS_EXPLAIN>
+<force_http11>Force HTTP/1.1</force_http11>

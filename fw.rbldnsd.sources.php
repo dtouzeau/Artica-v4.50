@@ -24,10 +24,9 @@ if(isset($_GET["source-events-start"])){source_events_start();exit;}
 
 table();
 
-function table(){
+function table():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$t=time();
 	$html[]="
 
 	</div>
@@ -41,12 +40,12 @@ function table(){
 
 	$html[]=$tpl->search_block($page,"postgres","rbl_sources","rbl_sources","");
 	echo $tpl->_ENGINE_parse_body($html);
-
+	return true;
 }
-function reset_js(){
+function reset_js():bool{
 	$tpl=new template_admin();
 	$function=$_GET["function"];
-	$tpl->js_confirm_delete("{reset} {database}","reset","yes","$function()");
+	return $tpl->js_confirm_delete("{reset} {database}","reset","yes","$function()");
 }
 function reset_perform():bool{
     $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/rbldnsd/reset"));
@@ -60,6 +59,9 @@ function rundown():bool{
     $tpl=new template_admin();
     $function=$_GET["function"];
     $id=intval($_GET["rundown"]);
+	$q=new postgres_sql();
+	$q->QUERY_SQL("UPDATE rbl_sources SET lasterror='' WHERE id=$id");
+
     $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/rbldnsd/database/update/$id"));
     if(!$data->Status){
         return $tpl->js_error($data->Error);
@@ -106,7 +108,6 @@ function source_events_start():bool{
     return true;
 }
 function source_events_search():bool{
-    $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["source-events-search"]);
     $html[]="
@@ -171,47 +172,13 @@ function source_events_search():bool{
     return true;
 
 }
-
-function src_save():bool{
-	$tpl=new template_admin();
-
-	$id=intval($_POST["src"]);
-	$tpl->CLEAN_POST();
-	$q=new postgres_sql();
-	$url=pg_escape_string($_POST["url"]);
-	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM rbl_sources WHERE id='$id'"));
-	$OLDB=$ligne["database"];
-    $resetrecords=intval($_POST["resetrecords"]);
-
-	$descr=pg_escape_string($_POST["description"]);
-	$database=$_POST["database"];
-	$ttl=intval($_POST["ttl"]);
-	if($id==0) {
-		$q->QUERY_SQL("INSERT INTO rbl_sources (url , description,database,ttl,resetrecords) VALUES ('$url' , '$descr','$database',$ttl,$resetrecords)");
-	}else{
-		$q->QUERY_SQL("UPDATE rbl_sources SET description='$descr',url='$url',
-                       database='$database',ttl=$ttl,resetrecords=$resetrecords WHERE id=$id");
-	}
-	if(!$q->ok){
-		echo $tpl->post_error($q->mysql_error);
-		return false;
-	}
-	$sock=new sockets();
-	if($database<>$OLDB){
-		$sock->REST_API("/rbldnsd/movedata/$id/$OLDB/$database");
-	}
-	$sock->REST_API("/rbldnsd/update");
-	return admin_tracks("Edit/add new DNSBL source $url");
-
-}
-
-function delete(){
+function delete():bool{
 	$id=$_GET["delete"];
 	$tpl=new template_admin();
 	$q=new postgres_sql();
 	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT description FROM rbl_sources WHERE id='$id'"));
 	$description=$ligne["description"];
-	$tpl->js_confirm_delete("{delete} {source} #$id $description","delete",$id,"$('#{$_GET["md"]}').remove()");
+	return $tpl->js_confirm_delete("{delete} {source} #$id $description","delete",$id,"$('#{$_GET["md"]}').remove()");
 }
 function delete_perform():bool{
 	$id=$_POST["delete"];
@@ -226,14 +193,12 @@ function delete_perform():bool{
 	}
 	return admin_tracks("Delete DNSBL source $id $description");
 }
-
-
-function src_js(){
+function src_js():bool{
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$id=intval($_GET["src-js"]);
 	if($id==0){$title="{new_entry}";}else{$title="{source} #$id";}
-	$tpl->js_dialog($title, "$page?src-popup=$id&function={$_GET["function"]}");
+	return $tpl->js_dialog($title, "$page?src-popup=$id&function={$_GET["function"]}");
 }
 function ipaddr_import_js(){
     $tpl=new template_admin();
@@ -241,28 +206,25 @@ function ipaddr_import_js(){
     $title="{import}";
     $tpl->js_dialog($title, "$page?ipaddr-import-popup=yes&function={$_GET["function"]}");
 }
-function ipaddr_import_popup(){
+function ipaddr_import_popup():bool{
     $tpl=new template_admin();
-    $page=CurrentPageName();
-    $q=new postgres_sql();
-
-    $uid=$_SESSION["uid"];
-    if($uid==-100){$uid="Manager";}
     $jsafter="BootstrapDialog1.close();{$_GET["function"]}()";
 
     $bt="{add}";
     $title="{new_address}";
     $form[]=$tpl->field_textareacode("import","{address}", null);
     echo $tpl->form_outside($title, $form,null,$bt,$jsafter,"AsDnsAdministrator",true);
+	return true;
 }
-
-function src_popup(){
+function src_popup():bool{
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$q=new postgres_sql();
 	$id=$_GET["src-popup"];
-
-
+	$function=$_GET["function"];
+	$ligne=array();
+	$interval=0;
+	$http11=0;
 	$jsafter="BootstrapDialog1.close();{$_GET["function"]}()";
 	if($id==0){
 		$bt="{add}";
@@ -274,35 +236,111 @@ function src_popup(){
 	}else{
 		$bt="{apply}";
 
-		$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM rbl_sources WHERE id='$id'"));
+		$ligne=$q->mysqli_fetch_array("SELECT * FROM rbl_sources WHERE id='$id'");
 		$description=$ligne["description"];
 		$title=null;
 		$database=$ligne["database"];
+		$interval=intval($ligne["interval"]);
 		$ttl=intval($ligne["ttl"]);
         $resetrecords=intval($ligne["resetrecords"]);
+		$http11=intval($ligne["http11"]);
 	}
+	$DBS=array();
 	$DBZ=TranslateTables();
 	foreach ($DBZ as $key=>$array){
 		$DBS[$key]=$array["title"];
 	}
+	$intervals[0]="{each} 2 {hours}";
+	$intervals[5]="{each} 5 {minutes}";
+	$intervals[10]="{each} 10 {minutes}";
+	$intervals[15]="{each} 15 {minutes}";
+	$intervals[20]="{each} 20 {minutes}";
+	$intervals[25]="{each} 25 {minutes}";
+	$intervals[30]="{each} 30 {minutes}";
+	$intervals[35]="{each} 35 {minutes}";
+	$intervals[40]="{each} 40 {minutes}";
+	$intervals[45]="{each} 45 {minutes}";
+	$intervals[50]="{each} 50 {minutes}";
+	$intervals[55]="{each} 55 {minutes}";
+	$intervals[60]="{each} 1 {hour}";
+	$intervals[180]="{each} 3 {hours}";
+	$intervals[240]="{each} 4 {hours}";
+	$intervals[480]="{each} 8 {hours}";
+
+
 
 	$form[]=$tpl->field_hidden("src",$id);
 	$form[]=$tpl->field_text("url","{url}", $ligne["url"]);
+	$form[]=$tpl->field_checkbox("http11","{force_http11}",$http11);
 	$form[]=$tpl->field_numeric("ttl","{record_lifetime} ({hours})",$ttl);
-    $form[]=$tpl->field_checkbox("resetrecords","{reset_records}",$resetrecords);
+	$form[]=$tpl->field_array_hash($intervals,"definterval","nonull:{interval}", $interval);
+	$form[]=$tpl->field_checkbox("resetrecords","{reset_records}",$resetrecords);
 	$form[]=$tpl->field_array_hash($DBS,"database","nonull:{database}", $database);
 	$form[]=$tpl->field_text("description", "{description}", $description);
+	if($id>0) {
+		$tpl->form_add_button("{launch}", "Loadjs('$page?rundown=$id&function=$function')");
+	}
 	echo $tpl->form_outside($title, $form,null,$bt,$jsafter,"AsDnsAdministrator",true);
+	return true;
 }
+function src_save():bool{
+	$tpl=new template_admin();
 
-function search(){
-	
+	$id=intval($_POST["src"]);
+	$tpl->CLEAN_POST();
+	$q=new postgres_sql();
+	$url=pg_escape_string($_POST["url"]);
+	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM rbl_sources WHERE id='$id'"));
+	$OLDB=$ligne["database"];
+	$resetrecords=intval($_POST["resetrecords"]);
+	$interval=intval($_POST["definterval"]);
+	$http11=intval($_POST["http11"]);
+
+	$descr=pg_escape_string($_POST["description"]);
+	$database=$_POST["database"];
+	$ttl=intval($_POST["ttl"]);
+	if($id==0) {
+		$q->QUERY_SQL("INSERT INTO rbl_sources (url , description,database,ttl,resetrecords,http11,interval,lasterror) VALUES ('$url' , '$descr','$database',$ttl,$resetrecords,$http11,$interval,'')");
+	}else{
+		$q->QUERY_SQL("UPDATE rbl_sources SET description='$descr',url='$url',
+                       database='$database',ttl=$ttl,resetrecords=$resetrecords,
+                       http11=$http11,interval=$interval,lasterror='' WHERE id=$id");
+	}
+	if(!$q->ok){
+		echo $tpl->post_error($q->mysql_error);
+		return false;
+	}
+	$sock=new sockets();
+	if($database<>$OLDB){
+		$sock->REST_API("/rbldnsd/movedata/$id/$OLDB/$database");
+	}
+	$sock->REST_API("/rbldnsd/update");
+	return admin_tracks("Edit/add new DNSBL source $url");
+
+}
+function search():bool{
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$sock=new sockets();
 	$q=new postgres_sql();
 	$function=$_GET["function"];
 	$t=time();
+
+	$intervals[0]="{each} 2 {hours}";
+	$intervals[5]="{each} 5 {minutes}";
+	$intervals[10]="{each} 10 {minutes}";
+	$intervals[15]="{each} 15 {minutes}";
+	$intervals[20]="{each} 20 {minutes}";
+	$intervals[25]="{each} 25 {minutes}";
+	$intervals[30]="{each} 30 {minutes}";
+	$intervals[35]="{each} 35 {minutes}";
+	$intervals[40]="{each} 40 {minutes}";
+	$intervals[45]="{each} 45 {minutes}";
+	$intervals[50]="{each} 50 {minutes}";
+	$intervals[55]="{each} 55 {minutes}";
+	$intervals[60]="{each} 1 {hour}";
+	$intervals[180]="{each} 3 {hours}";
+	$intervals[240]="{each} 4 {hours}";
+	$intervals[480]="{each} 8 {hours}";
 
 	$DBS=TranslateTables();
 	$jsRestart=$tpl->framework_buildjs("/rbldnsd/update","rbldnsd.sources.progress",
@@ -332,13 +370,13 @@ function search(){
 
 
 	$TRCLASS=null;
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:0px'>";
+	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:0'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'></th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{updated}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{checked}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>TTL</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>TTL&nbsp;/&nbsp;{each}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{source}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{records}</th>";
@@ -376,17 +414,19 @@ function search(){
         if($ttl==0){$ttl=2160;}
         $ttltext=convertHoursToDHM($ttl);
         if($resetrecords==1){$ttltext="{reset}";}
-
+		$description=wordwrap($description, 70, "<br />\n");
 		$hostname = parse_url($url, PHP_URL_HOST);
 		$enabled=$tpl->icon_check($enabled,"Loadjs('$page?enable=$ID&function=$function')");
 		$description=$tpl->td_href($description,null,"Loadjs('$page?src-js=$ID&function=$function')");
+		$interval=$intervals[intval($ligne["interval"])];
 
 		if($iserror==1){
 			$class_text="text-danger";
 			$lasterror=str_replace("<br>","\n",$lasterror);
 			$lasterror=strip_tags($lasterror);
 			$lasterror=str_replace("\n","<br>",$lasterror);
-			$lasterror=wordwrap($lasterror, 90, "<br />\n");
+			$lasterror=wordwrap($lasterror, 70, "<br />\n");
+
 			$description="$description<br><small><span class='text-danger'>$lasterror</small></span>";
 		}
         if(is_file("/var/log/reputation.$ID.log")) {
@@ -397,7 +437,7 @@ function search(){
 		$html[]="<td $TD1><i class='".ico_download." $class_text'></i></td>";
 		$html[]="<td $TD1><span class='$class_text'>$time</span></td>";
 		$html[]="<td $TD1><span class='$class_text'>$checked</span></td>";
-        $html[]="<td $TD1><span class='$class_text'>$ttltext</span></td>";
+        $html[]="<td $TD1><span class='$class_text'>$ttltext/$interval</span></td>";
 		$html[]="<td style='width:99%' nowrap><span class='$class_text'>$description</span></td>";
 		$html[]="<td $TD1><span class='$class_text'>$hostname</span></td>";
 		$html[]="<td $TD1><span class='$class_text'>$records</span></td>";
@@ -431,7 +471,7 @@ function search(){
 	<script>
 	$jstiny
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"false\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"false\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) });
 	</script>";
 	
 	echo $tpl->_ENGINE_parse_body($html);

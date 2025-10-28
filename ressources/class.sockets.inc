@@ -478,7 +478,10 @@ class sockets{
             $array["Status"] = false;
             $array["Error"] = "Error curl_init No such function available";
             $array["Info"] ="";
-            return json_encode($array);
+            if(function_exists("json_encode")) {
+                return json_encode($array);
+            }
+            return "";
         }
 
         $cURLConnection=$this->REST_API_CLIENT($endpoint);

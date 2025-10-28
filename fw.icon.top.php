@@ -608,12 +608,7 @@ function notifs(){
 		}
 	}
 
-    if(!$users->AsDockerWeb) {
-        $MIGRATION_STEP = MIGRATION_STEP();
-        if ($MIGRATION_STEP <> null) {
-            $ERR[] = $MIGRATION_STEP;
-        }
-    }
+
     $DEBIAN_VERSION=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DEBIAN_VERSION"));
     if($DEBIAN_VERSION<7) {
         $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/status"));
@@ -1227,6 +1222,7 @@ function _php_error():string{
     $functions[]="json_encode";
     $functions[]="json_decode";
 
+
     foreach ($functions as $function) {
         if (!function_exists($function)) {
             $bad[] = $function;
@@ -1317,12 +1313,7 @@ function update_find_lts($array):int{
         if($key>$keyMain){$keyMain=$key;}}
     return intval($keyMain);
 }
-function MIGRATION_STEP():string{
-    if(!is_file("/usr/share/artica-postfix/fw.license.migration.php")) {return "";}
-    $Migration = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Migration"));
-    if($Migration == 1){return "";}
-    return  "{license_migration_title}||{license_migration_body}||DANGER||js:Loadjs('fw.license.migration.php');";
-}
+
 function NOTIF_HOTFIX_OFF():string{
     $sock=new sockets();
     $sock->REST_API("/system/artica/latestHotfix");
