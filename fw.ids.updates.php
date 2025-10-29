@@ -15,7 +15,7 @@ function page(){
     $distance=distanceOfTimeInWords($xtime,time());
     $date=$tpl->time_to_date($xtime,true);
 
-    $html=$tpl->page_header("{updates}","far fa-cloud-download","<strong>{last_task}: $distance ($date)</strong><br>{ids_updates_explain}","$page?table=yes",
+    $html=$tpl->page_header("{updates}","far fa-cloud-download","{ids_updates_explain2}","$page?table=yes",
         "ids-updates","progress-suricata-update-restart",false,"table-ids-update-loader");
 
 
@@ -65,7 +65,7 @@ function table(){
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{filename}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{family}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{date}</center></th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>diff</th>";
 	$html[]="</tr>";
@@ -79,7 +79,7 @@ function table(){
 	  if($file=='..'){continue;}
 	  if(preg_match("#\.(txt|yaml|map|config|conf)$#", $file)){continue;}
 	  if(preg_match("#(LICENSE|-deleted)#", $file)){continue;}
-	  if(preg_match("#^(rbn|rbn-malvertisers|botcc\.portgrouped|modbus-events|emerging-misc|dyre_sslblacklist|emerging-info|iprep)\.#", $file)){continue;}
+	  if(preg_match("#^(rbn|rbn-malvertisers|botcc\.portgrouped|modbus-events|emerging-misc|dyre_sslblacklist|emerging-info|iprep|emerging-retired|local|whitelist)\.#", $file)){continue;}
 	  if(is_dir("$path/$file")){continue;}
 	 
 	  if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}

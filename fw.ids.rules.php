@@ -5,6 +5,7 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 
 
 if(isset($_GET["table"])){table();exit;}
+if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["enable-signature"])){enable_signature();exit;}
 if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
 if(isset($_GET["rule-popup"])){rule_settings();exit;}
@@ -119,52 +120,62 @@ function page(){
 
 
 }
-
-function table(){
+function table():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    echo $tpl->search_block($page);
+    return true;
+}
+function search(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$rulename=$tpl->_ENGINE_parse_body("{signature}");
 	$enabled=$tpl->_ENGINE_parse_body("{enabled}");
 	$firewall=$tpl->_ENGINE_parse_body("{firewall}");
-	if(!isset($_GET["eth"])){$_GET["eth"]=null;}
+    $function=$_GET["function"];
 
     $html[]="<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>ID</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$rulename</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{signature}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>$enabled</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>$firewall</center></th>";
+	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap>$firewall</center></th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
 	$html[]="<tbody>";
 
-	$jsAfter="LoadAjax('table-loader','$page?table=yes&eth={$_GET["eth"]}');";
-	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
+
+
 
 	
-	$q=new postgres_sql();
-	$sql="SELECT * FROM suricata_sig ORDER BY description";
+	$q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
+	$sql="SELECT * FROM rules ORDER BY sid LIMIT 500";
 	$results=$q->QUERY_SQL($sql);
     if(!$q->ok){
         echo $tpl->div_error($q->mysql_error);
         return false;
     }
+    $td1prc="style='vertical-align:middle;width=1%' class='center' nowrap";
+
 	$TRCLASS=null;
-	while ($ligne = pg_fetch_assoc($results)) {
+	foreach ($results as $index=>$ligne) {
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$text_class=null;
 		$color="black";
-		$id=$ligne["signature"];
+        $classtype=$ligne["classtype"];
+        $description=$ligne["msg"];
+		$id=$ligne["sid"];
 		if($ligne["enabled"]==0){
 			$color="#8a8a8a";
 		}
-	
+        $bold="style='color:$color;font-weight:bold'";
 		$html[]="<tr class='$TRCLASS'>";
-		$html[]="<td class=\"$text_class\"><span style='color:$color;font-weight:bold' id='id-$id'>{$id}</span></td>";
-		$html[]="<td class='$text_class' style='vertical-align:middle'><span style='color:$color;font-weight:bold' id='cat-$id'>{$ligne["description"]}</span></td>";
-		$html[]="<td style='vertical-align:middle'><center>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-signature=$id')","signature-$id")."</center></td>";
-		$html[]="<td style='vertical-align:middle'><center>".$tpl->icon_check($ligne["firewall"],"Loadjs('$page?enable-firewall=$id')","firewall-$id")."</center></td>";
+		$html[]="<td class=\"$text_class\"><span $bold id='id-$id'>$id</span></td>";
+		$html[]="<td class='$text_class' style='vertical-align:middle'><span $bold id='cat-$id'>$description</span></td>";
+        $html[]="<td class='$text_class' style='vertical-align:middle'><span $bold id='class-$id'>$classtype</span></td>";
+		$html[]="<td $td1prc>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-signature=$id')")."</td>";
+		$html[]="<td $td1prc></td>";
 		$html[]="</tr>";
 		
 
@@ -174,7 +185,7 @@ function table(){
 	$html[]="<tfoot>";
 
 	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
+	$html[]="<td colspan='6'>";
 	$html[]="<ul class='pagination pull-right'></ul>";
 	$html[]="</td>";
 	$html[]="</tr>";
@@ -198,10 +209,10 @@ function table(){
 	<script>
 	$headsjs
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+	$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
-			echo @implode("\n", $html);
+			echo $tpl->_ENGINE_parse_body(implode("\n",$html));
 
 }
 function enable(){

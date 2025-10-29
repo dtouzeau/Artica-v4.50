@@ -6,8 +6,14 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 if(isset($_GET["enable-js"])){enable_js();exit;}
 if(isset($_GET["main-js"])){main_js();exit;}
 if(isset($_GET["statistics-js"])){statistics_js();exit;}
+
 if(isset($_GET["update-js"])){update_js();exit;}
 if(isset($_GET["updates-parameters"])){updates_parameters();exit;}
+
+if(isset($_GET["alienvault-js"])){alienvault_js();exit;}
+if(isset($_GET["alienvault-parameters"])){alienvault_parameters();exit;}
+if(isset($_POST["OtxEnabled"])){alienvault_save();exit;}
+
 if(isset($_GET["statistics-parameters"])){statistics_parameters();exit;}
 if(isset($_POST["SnortRulesCode"])){Save_gen();exit;}
 if(isset($_POST["nic-settings"])){Save_nic();exit;}
@@ -129,6 +135,11 @@ function update_js():bool{
     $tpl=new template_admin();
     return $tpl->js_dialog1("{update_settings}","$page?updates-parameters=yes",650);
 }
+function alienvault_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog1("AlienVault","$page?alienvault-parameters=yes",650);
+}
 function nic_settings(){
 	$nic=new system_nic($_POST["nic-settings"]);
 	$nic->firewall_policy=$_POST["firewall_policy"];
@@ -172,7 +183,7 @@ function tabs():bool{
     return true;
 
 }
-function updates_parameters(){
+function updates_parameters():bool{
 	$tpl=new template_admin();
 	$SuricataUpdateInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataUpdateInterval"));
 	if($SuricataUpdateInterval==0){$SuricataUpdateInterval=1440;}
@@ -182,14 +193,51 @@ function updates_parameters(){
 	$maxtime_array[480]="8 {hours}";
 	$maxtime_array[720]="12 {hours}";
 	$maxtime_array[1440]="1 {day}";
-	$maxtime_array[2880]="1 {days}";
+	$maxtime_array[2880]="2 {days}";
 	$maxtime_array[10080]="1 {week}";
 
 	$form[]=$tpl->field_array_hash($maxtime_array, "SuricataUpdateInterval", "{update_each}", $SuricataUpdateInterval);
 	echo $tpl->form_outside("", @implode("\n", $form),null,"{apply}","blur()","AsFirewallManager",false);
-
+    return true;
 
 }
+function alienvault_parameters():bool{
+    $tpl=new template_admin();
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        $html[]=$tpl->div_error("{error} API||$json->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+    $GlobalConfig=$json->Info->Otx;
+    $form[]=$tpl->field_checkbox("OtxEnabled", "{enabled}", $GlobalConfig->Enabled,true);
+    $form[]=$tpl->field_text("ApiKey", "{API_KEY}", $GlobalConfig->ApiKey);
+    $form[]=$tpl->field_numeric("MaxPages", "{max_feeds}", $GlobalConfig->MaxPages,true);
+    echo $tpl->form_outside("", @implode("\n", $form),"{otx_explain}","{apply}","blur()","AsFirewallManager",false);
+    return true;
+
+}
+function alienvault_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    if(strlen($_POST["ApiKey"])<10){
+       echo $tpl->post_error("{error} API||{API_KEY} < 10 characters");
+       return false;
+    }
+    $ApiKey=urlencode($_POST["ApiKey"]);
+    $MaxPages=intval($_POST["MaxPages"]);
+    $OtxEnabled=intval($_POST["OtxEnabled"]);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/otx/save/$ApiKey/$MaxPages/$OtxEnabled"));
+    if(!$json->Status){
+        echo $tpl->post_error("{error}||$json->Error");
+        return false;
+    }
+    return admin_tracks_post("Save IDS AlienVault data feeds settings");
+}
+
+
+
 function statistics_parameters():bool{
 	$tpl=new template_admin();
 	$SuricataPurge=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataPurge"));

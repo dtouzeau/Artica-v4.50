@@ -212,7 +212,7 @@ function top_widgets():bool{
 
     $widget_threats=$tpl->widget_style1("gray-bg",ico_bug,"{detected_threats}",0);
     $widget_srcIps=$tpl->widget_style1("gray-bg",ico_computer,"{src_ips}",0);
-    $widget_flow=$tpl->widget_style1("gray-bg",ico_nic,"{scanned_flow}",0);
+
 
     if($COUNT_OF_SURICATA>0){
         $widget_threats=$tpl->widget_style1("yellow-bg",ico_bug,"{detected_threats}",$tpl->FormatNumber($COUNT_OF_SURICATA));
@@ -240,6 +240,13 @@ function flat_config():bool{
     if($SuricataPurge==0){$SuricataPurge=15;}
     if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){$SuricataPurge=2;}
 
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        $html[]=$tpl->div_error("{error} API||$json->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    }
+    $GlobalConfig=$json->Info;
+
 
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/pfring"));
     if(!$json->Status){
@@ -262,7 +269,16 @@ function flat_config():bool{
     if($CountOfIfaces==0){
         $html[]=$tpl->div_error("{error_ids_no_nic}");
     }
+    $RulesCount_text="";
+    $RulesCount=$GlobalConfig->RulesCount;
+    if($RulesCount>0){
+        $RulesCount=$tpl->FormatNumber($RulesCount);
+        $RulesCount_text=" <small>{rules}: $RulesCount</small>";
+    }
 
+
+
+    $tpl->table_form_field_text("{APP_ARTICA_SURICATA}", "{version} $GlobalConfig->Version$RulesCount_text", ico_server);
     $tpl->table_form_field_js("Loadjs('$page?pf-ring-infos=yes');");
     $tpl->table_form_field_bool("{SuricataPfRing}",1,ico_performance);
 
@@ -328,9 +344,24 @@ function flat_config():bool{
     $maxtime_array[480]="8 {hours}";
     $maxtime_array[720]="12 {hours}";
     $maxtime_array[1440]="1 {day}";
-    $maxtime_array[2880]="1 {days}";
+    $maxtime_array[2880]="2 {days}";
     $maxtime_array[10080]="1 {week}";
-    $tpl->table_form_field_text("{update_each}", $maxtime_array[$SuricataUpdateInterval], ico_clock);
+    $lastUpdateText="";
+    $lastUpdate=$GlobalConfig->LastUpdate;
+    if($lastUpdate>0){
+        $lastUpdateText=" <small>{last_update} ".distanceOfTimeInWords($lastUpdate,time())."</small>";
+    }
+
+    $tpl->table_form_field_text("{update_each}", $maxtime_array[$SuricataUpdateInterval].$lastUpdateText, ico_clock);
+
+    $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?alienvault-js=yes')");
+    if($GlobalConfig->Otx->Enabled==0){
+        $tpl->table_form_field_bool("AlienVault",0,ico_shield);
+    }else{
+        $mpages=$GlobalConfig->Otx->MaxPages;
+        $tpl->table_form_field_text("AlienVault","{active2} {max_feeds} $mpages",ico_shield);
+    }
+
 
     $html[]= $tpl->table_form_compile();
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));

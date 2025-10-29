@@ -3113,4 +3113,16 @@ When enabled, the server will send a small packet to the client and wait for a r
 If the client does not respond, the server will use the default MTU (1500 bytes).[br]
 If the client responds, the server will use the MTU reported by the client.
 </NetIpv4TcpMtuProbing_explain>
+<ApplicationLayerProtocol>Application-layer protocol</ApplicationLayerProtocol>
+<ids_prefix_1>Detects and alerts when network packets match</ids_prefix_1>
+<NumberOfMatches>Number of matches</NumberOfMatches>
+<detections>Detections</detections>
+<OnlyAfter>Only after</OnlyAfter>
+<flow_to_client>Match on packets from server to client</flow_to_client>
+<flow_to_server>Match on packets from client to server</flow_to_server>
+<max_feeds>Max Feeds</max_feeds>
+<otx_explain>Artica uses the OTX DirectConnect API to build IDS detection rules from the indicators in your OTX account (otx.alienvault.com).</otx_explain>
+<emerging-exploit_kit.rules>Identify malicious frameworks that deliver malware via web browsers (drive-by downloads, exploit-based payload delivery).</emerging-exploit_kit.rules>
+<emerging-dyn_dns.rules>Identify requests and connections to known dynamic-DNS providers often abused by malware and C2 infrastructure.</emerging-dyn_dns.rules>
+<ids_updates_explain2>This section displays the IDS engine’s detection families. Each family groups many signatures. The Rules column shows how many signatures belong to each family.</ids_updates_explain2>
 

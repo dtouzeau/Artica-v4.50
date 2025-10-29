@@ -31,6 +31,7 @@ function popup(){
     $Smtp=0;
     $SSLERROR=0;
     $fastacls=intval($_GET["fastacls"]);
+    $IDS=0;
     if(!isset($_GET["DnsDist"])){$DnsDist=0;}else{$DnsDist=intval($_GET["DnsDist"]);}
     if(!isset($_GET["ProxyPac"])){$ProxyPac=0;}else{$ProxyPac=$_GET["ProxyPac"];}
     if(!isset($_GET["firewall"])){$firewall=0;}else{$firewall=intval($_GET["firewall"]);}
@@ -50,6 +51,7 @@ function popup(){
     if($_GET["TableLink"]=="wpad_sources_link"){$ProxyPac=1;}
     if($_GET["TableLink"]=="postfix_sqacllinks"){$Smtp=1;}
     if($_GET["TableLink"]=="sslproxy_cert_error_sqacllinks"){$SSLERROR=1;}
+    if($_GET["TableLink"]=="suricata_sqacllinks"){$IDS=1;}
 
 
     $js=array();
@@ -89,7 +91,12 @@ function popup(){
         foreach ($qProxy->acl_GroupType_SMTP as $num=>$value){
             $qProxy->acl_GroupType[$num]=$value;
         }
-
+    }
+    if($IDS==1){
+        unset($qProxy->acl_GroupType);
+        foreach ($qProxy->acl_GroupType_IDS as $num=>$value){
+            $qProxy->acl_GroupType[$num]=$value;
+        }
     }
 
 

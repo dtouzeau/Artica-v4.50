@@ -93,6 +93,9 @@ function build_page()
     if (!isset($_GET["ProxyPac"])) {
         $_GET["ProxyPac"] = 0;
     }
+    if (!isset($_GET["IDS"])) {
+        $_GET["IDS"] = 0;
+    }
 
     $suffix = build_suffix();
     echo "<div style='margin-top:5px' id='div-proxy-object-id'></div>";
@@ -454,27 +457,20 @@ function link_object(){
 	echo $tpl->form_outside($title,@implode("\n", $form),null,$btname,@implode(";",$js));
 }
 
-function new_object_group(){
-    $page=CurrentPageName();
+function new_object_group():bool{
     $RefreshTable   = $_GET["RefreshTable"];
-    $firewall       = intval($_GET["firewall"]);
     $backjs         = null;
     $TableLink      = $_GET["TableLink"];
-    $fastacls=intval($_GET["fastacls"]);
-    $RefreshFunction= base64_decode($_GET["RefreshFunction"]);
     if($TableLink==null){$TableLink="webfilters_sqacllinks";}
-    $Dialog=0;
-    if(isset($_GET["Dialog"])){$Dialog=intval($_GET["Dialog"]);}
+
+
     VERBOSE("TableLink = [$TableLink]",__LINE__);
     $ID=intval($_GET["ID"]);
-    $direction=intval($_GET["direction"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
     $title="{new_group_of_objects}";
     $btname="{add}";
-    $dnsfw=0;
     if($RefreshTable<>null){$backjs=base64_decode($RefreshTable).";$backjs";}
-    $RefreshFunctionEnc=base64_encode($RefreshFunction);
+
     $tpl->field_hidden("object-group-save", $ID);
     $tpl->field_hidden("TableLink", $TableLink);
     $form[]=$tpl->field_text("GroupName","{groupname}","{groupname}");
@@ -485,6 +481,7 @@ function new_object_group(){
     $html=$tpl->form_outside($title,@implode("\n", $form),null,$btname,$backjs);
     if($GLOBALS["VERBOSE"]){echo __FUNCTION__.".".__LINE__." bytes: ".strlen($html)."<br>\n";}
     echo $html;
+    return true;
 }
 
 function new_object():bool{
@@ -570,13 +567,13 @@ function save_link_object(){
 function save_object_group(){
     $ID=$_POST["object-group-save"];
     writelogs("Adding new object Group [$ID]",__FUNCTION__,__FILE__,__LINE__);
-
+    $tpl=new template_admin();
     if(!isset($_POST["direction"])){$_POST["direction"]=0;}
     $direction=$_POST["direction"];
     $TableLink=$_POST["TableLink"];
     if($TableLink==null){$TableLink="webfilters_sqacllinks";}
     $GroupName=url_decode_special_tool($_POST["GroupName"]);
-    $GroupName=utf8_decode($GroupName);
+    $GroupName=$tpl->utf8_decode($GroupName);
     $GroupName=mysql_escape_string2($GroupName);
     $GroupType="AclsGroup";
     $params=md5("$GroupName$GroupType$ID".time());
@@ -620,13 +617,13 @@ function save_object(){
     include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
 	$ID=$_POST["object-save"];
     writelogs("Adding new object [$ID]",__FUNCTION__,__FILE__,__LINE__);
-
+    $tpl=new template_admin();
 	if(!isset($_POST["direction"])){$_POST["direction"]=0;}
 	$direction=$_POST["direction"];
 	$TableLink=$_POST["TableLink"];
 	if($TableLink==null){$TableLink="webfilters_sqacllinks";}
 	$GroupName=url_decode_special_tool(trim($_POST["GroupName"]));
-	$GroupName=utf8_decode($GroupName);
+	$GroupName=$tpl->utf8_decode($GroupName);
 	$GroupName=mysql_escape_string2($GroupName);
 	$GroupType=$_POST["GroupType"];
 
@@ -705,8 +702,9 @@ function search_table():bool{
     if(!isset($_GET["firewall"])){$_GET["firewall"]=0;}
     if(!isset($_GET["RefreshTable"])){$_GET["RefreshTable"]=null;}
     if(!isset($_GET["ProxyPac"])){$_GET["ProxyPac"]=0;}
+    if(!isset($_GET["IDS"])){$_GET["IDS"]=0;}
     if(!isset($_GET["DnsDist"])){$DnsDist=0;}else{$DnsDist=intval($_GET["DnsDist"]);}
-
+    $IDS=intval($_GET["IDS"]);
     $RefreshFunctionGet=null;
    if(isset($_GET["RefreshFunction"])){
        $RefreshFunctionGet=$_GET["RefreshFunction"];
@@ -722,8 +720,7 @@ function search_table():bool{
 	$tpl                = new template_admin();
 	$page               = CurrentPageName();
     if(isset( $_GET["TableLink"])) {
-        $TableLink = $_GET["TableLink"];
-    }
+        $TableLink = $_GET["TableLink"];}
 	$firewall           = intval($_GET["firewall"]);
 	$RefreshTable       = $_GET["RefreshTable"];
 	$ProxyPac           = intval($_GET["ProxyPac"]);
@@ -785,7 +782,7 @@ function search_table():bool{
 
 	
 	$RefreshTabledeced=base64_decode($_GET["RefreshTable"]);
-    $jsAfter=base64_encode("LoadAjax('fw-objects-table','$page?build-table=yes&ID=$ID&firewall=$firewall&TableLink=$TableLink&RefreshTable=$RefreshTable&ProxyPac=$ProxyPac&acl-build=$ID&fastacls=$fastacls&DnsDist=$DnsDist');$RefreshTabledeced;LoadAjax('table-acls-rules','fw.proxy.acls.php?table=yes');$RefreshFunction");
+    $jsAfter=base64_encode("LoadAjax('fw-objects-table','$page?build-table=yes&ID=$ID&firewall=$firewall&TableLink=$TableLink&RefreshTable=$RefreshTable&ProxyPac=$ProxyPac&acl-build=$ID&fastacls=$fastacls&DnsDist=$DnsDist&IDS=$IDS');$RefreshTabledeced;LoadAjax('table-acls-rules','fw.proxy.acls.php?table=yes');$RefreshFunction");
 	
 	$results = $q->QUERY_SQL($sql);
 	VERBOSE("SQL table $TableLink for group id $ID returns ".count($results)." items",__LINE__);

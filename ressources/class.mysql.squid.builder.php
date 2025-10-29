@@ -69,6 +69,8 @@ class mysql_squid_builder{
     public $acl_GroupType_Firewall_out=array();
     public $acl_GroupType_Firewall_port=array();
     public $acl_GroupType_DNSFW=array();
+    public $acl_GroupType_IDS=array();
+
     public $acl_GroupType_SMTP=array();
 
     public $acl_GroupTypeIcon=array();
@@ -448,6 +450,11 @@ class mysql_squid_builder{
         $this->acl_GroupType_DNSFW["the_shields"]="{KSRN}";
         $this->acl_GroupType_DNSFW["categories"]="{artica_categories}";
         $this->acl_GroupType_DNSFW["reputation"]="{use_reput_service}";
+
+
+        $this->acl_GroupType_IDS["all"]="{all}";
+        $this->acl_GroupType_IDS["src"]="{ipsrc}";
+        $this->acl_GroupType_IDS["dst"]="{dst}";
 
 
         $this->acl_GroupType_SMTP["all"]="{all}";

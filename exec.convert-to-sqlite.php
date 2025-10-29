@@ -744,64 +744,6 @@ function check_hotspot_tables():bool{
     $q->QUERY_SQL($sql);
     return true;
 }
-function suricata():bool{
-    @mkdir("/home/artica/SQLITE", 0755, true);
-    $q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-    @chmod("/home/artica/SQLITE/suricata.db", 0644);
-    @chown("/home/artica/SQLITE/suricata.db", "www-data");
-
-    if ($q->COUNT_ROWS("suricata_rules_packages")==0) {
-        $sql="INSERT OR IGNORE INTO suricata_rules_packages (rulefile,enabled,category) VALUES
-				('botcc.rules',0,'DMZ'),
-				('ciarmy.rules',0,'DMZ'),
-				('compromised.rules','0','DMZ'),
-				('drop.rules',1,'DMZ'),
-				('emerging-activex.rules',1,'WEB'),
-				('emerging-attack_response.rules',1,'ALL'),
-				('emerging-chat.rules',0,'WEB'),
-				('emerging-current_events.rules',0,'ALL'),
-				('emerging-dns.rules',0,'DMZ'),
-				('emerging-dos.rules',0,'DMZ'),
-				('emerging-exploit.rules',0,'DMZ'),
-				('emerging-ftp.rules',0,'DMZ'),
-				('emerging-games.rules',0,'ALL'),
-				('emerging-icmp_info.rules',0,'ALL'),
-				('emerging-icmp.rules',0,'ALL'),
-				('emerging-imap.rules',0,'DMZ'),
-				('emerging-inappropriate.rules',0,'WEB'),
-				('emerging-malware.rules',1,'WEB'),
-				('emerging-mobile_malware.rules',0,'WEB'),
-				('emerging-netbios.rules',0,'ALL'),
-				('emerging-p2p.rules',0,'WEB'),
-				('emerging-policy.rules',1,'WEB'),
-				('emerging-pop3.rules',0,'DMZ'),
-				('emerging-rpc.rules',0,'ALL'),
-				('emerging-scada.rules',0,'ALL'),
-				('emerging-scan.rules',1,'ALL'),
-				('emerging-shellcode.rules',1,'ALL'),
-				('emerging-smtp.rules',0,'DMZ'),
-				('emerging-snmp.rules',0,'ALL'),
-				('emerging-sql.rules',0,'ALL'),
-				('emerging-telnet.rules',0,'ALL'),
-				('emerging-tftp.rules',0,'ALL'),
-				('emerging-trojan.rules',1,'ALL'),
-				('emerging-user_agents.rules',0,'ALL'),
-				('emerging-voip.rules',0,'ALL'),
-				('emerging-web_client.rules',1,'HTTP'),
-				('emerging-web_server.rules',0,'HTTP'),
-				('emerging-web_specific_apps.rules',0,'HTTP'),
-				('emerging-worm.rules',1,'ALL'),
-				('tor.rules',0,'ALL'),
-				('decoder-events.rules',0,'ALL'),
-				('stream-events.rules',0,'ALL'),
-				('http-events.rules',0,'HTTP'),
-				('smtp-events.rules',0,'DMZ'),
-				('dns-events.rules',0,'DMZ'),
-				('tls-events.rules',0,'DMZ')";
-        $q->QUERY_SQL($sql);
-    }
-    return true;
-}
 function caches():bool{
     @mkdir("/home/artica/SQLITE", 0755, true);
     $q=new lib_sqlite("/home/artica/SQLITE/caches.db");
@@ -934,7 +876,6 @@ function migrate_interfaces():bool
 
     sys();
     rpz_database();
-    suricata();
     proxy_tables();
     webfilter_tables();
     haproxy_tables();
