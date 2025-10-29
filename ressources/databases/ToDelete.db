@@ -50,7 +50,9 @@ backup.sources.WebGet.php
 backup.sources.tasks.php
 backup.sources.mysqlinst.php
 KasperskyUpdateUtility.php
+ComputerBrowse.php
 btrfs.devices.php
+smb.browse.php
 btrfs.php
 _updown
 WebAPP.wizard.php
