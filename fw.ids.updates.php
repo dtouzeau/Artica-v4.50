@@ -50,13 +50,12 @@ function table(){
         "suricata.progress",
         "suricata.progress.txt","progress-ids-restart"
     );
-    $xtime=@file_get_contents("/etc/artica-postfix/pids/exec.suricata.updates.php.update.time");
-    $distance=distanceOfTimeInWords($xtime,time());
-    $date=$tpl->time_to_date($xtime,true);
-    $topbuttons[] = array($jscompile,ico_save,"{apply_changes}");
-    $TINY_ARRAY["TITLE"]="<strong>{last_task}: $distance ($date)</strong><br>{ids_updates_explain}";
+
+
+    $topbuttons[] = array();
+    $TINY_ARRAY["TITLE"]="{updates}";
     $TINY_ARRAY["ICO"]="fa fa-list";
-    $TINY_ARRAY["EXPL"]="{ids_updates_explain}";
+    $TINY_ARRAY["EXPL"]="{ids_updates_explain2}";
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 	
@@ -79,7 +78,7 @@ function table(){
 	  if($file=='..'){continue;}
 	  if(preg_match("#\.(txt|yaml|map|config|conf)$#", $file)){continue;}
 	  if(preg_match("#(LICENSE|-deleted)#", $file)){continue;}
-	  if(preg_match("#^(rbn|rbn-malvertisers|botcc\.portgrouped|modbus-events|emerging-misc|dyre_sslblacklist|emerging-info|iprep|emerging-retired|local|whitelist)\.#", $file)){continue;}
+	  if(preg_match("#^(rbn|rbn-malvertisers|botcc\.portgrouped|modbus-events|emerging-misc|dyre_sslblacklist|emerging-info|iprep|emerging-retired|local|whitelist|Production)\.#", $file)){continue;}
 	  if(is_dir("$path/$file")){continue;}
 	 
 	  if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}

@@ -3125,4 +3125,10 @@ If the client responds, the server will use the MTU reported by the client.
 <emerging-exploit_kit.rules>Identify malicious frameworks that deliver malware via web browsers (drive-by downloads, exploit-based payload delivery).</emerging-exploit_kit.rules>
 <emerging-dyn_dns.rules>Identify requests and connections to known dynamic-DNS providers often abused by malware and C2 infrastructure.</emerging-dyn_dns.rules>
 <ids_updates_explain2>This section displays the IDS engine’s detection families. Each family groups many signatures. The Rules column shows how many signatures belong to each family.</ids_updates_explain2>
-
+<use_queue_failed>Use queue</use_queue_failed>
+<queue_path>Queue directory path</queue_path>
+<emerging-info.rules>Contains non-malicious, informational alerts generated when Suricata detects network behavior or protocol activity that is not necessarily an attack, but is useful for visibility, telemetry, or forensic context.</emerging-info.rules>
+<emerging-drop.suricata.rules>Contains IP-based block rules (not payload signatures) that instruct Suricata to drop or reject packets to/from known malicious, spam, or botnet networks.[br]Functions as a global blacklist of IP addresses and subnets associated with observed malicious activity.
+</emerging-drop.suricata.rules>
+<sslblacklist.rules>Contains TLS certificate or JA3/JA3S fingerprint–based detection rules that identify connections to or from hosts using SSL/TLS certificates or fingerprints known to be associated with malware, C2 servers, or malicious infrastructure.</sslblacklist.rules>
+<emerging-misc.rules>Contains a broad mix of security and protocol-anomaly signatures that don’t neatly fit other ET categories (e.g., malware, trojan, scan, or policy).</emerging-misc.rules>

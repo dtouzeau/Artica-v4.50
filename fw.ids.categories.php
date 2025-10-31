@@ -173,7 +173,7 @@ function table(){
 	$html[]="<thead>";
 	$html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$category</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$type}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$type</th>";
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{$enabled}</center></th>";
 	$html[]="</tr>";
 	$html[]="</thead>";

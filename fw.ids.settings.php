@@ -185,6 +185,9 @@ function tabs():bool{
 }
 function updates_parameters():bool{
 	$tpl=new template_admin();
+
+
+
 	$SuricataUpdateInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataUpdateInterval"));
 	if($SuricataUpdateInterval==0){$SuricataUpdateInterval=1440;}
 	
@@ -197,6 +200,8 @@ function updates_parameters():bool{
 	$maxtime_array[10080]="1 {week}";
 
 	$form[]=$tpl->field_array_hash($maxtime_array, "SuricataUpdateInterval", "{update_each}", $SuricataUpdateInterval);
+
+
 	echo $tpl->form_outside("", @implode("\n", $form),null,"{apply}","blur()","AsFirewallManager",false);
     return true;
 
@@ -243,8 +248,20 @@ function statistics_parameters():bool{
 	$SuricataPurge=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataPurge"));
 	if($SuricataPurge==0){$SuricataPurge=15;}
 	if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){$SuricataPurge=2;}
-	
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        $html[]=$tpl->div_error("{error} API||$json->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+    $GlobalConfig=$json->Info;
+
 	$form[]=$tpl->field_numeric("SuricataPurges", "{retention_days}", $SuricataPurge,"{SuricataPurges}");
+
+    $form[]=$tpl->field_checkbox("UseQueueFailed","{use_queue_failed}",$GlobalConfig->UseQueueFailed);
+    $form[]=$tpl->field_browse_directory("QueueFailed","{queue_path}",$GlobalConfig->QueueFailed);
+
 	echo "<p>&nbsp;</p>".$tpl->form_outside("", @implode("\n", $form),null,"{apply}",
             "LoadAjax('suricata-config','fw.ids.dashboard.php?flat-config=yes');",
             "AsFirewallManager",true);
@@ -303,9 +320,16 @@ function firewall_parameters_save(){
 function satistics_parameters_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$sock=new sockets();
+
+    $QueueFailed=urlencode($_POST["QueueFailed"]);
+    $UseQueueFailed=intval($_POST["UseQueueFailed"]);
+
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/queue/$QueueFailed/$UseQueueFailed");
+    unset($_POST["QueueFailed"]);
+    unset($_POST["UseQueueFailed"]);
+
 	foreach ($_POST as $key=>$val){
-		$sock->SET_INFO($key, $val);
+		$GLOBALS["CLASS_SOCKETS"]->SET_INFO($key, $val);
 	
 	}
 }

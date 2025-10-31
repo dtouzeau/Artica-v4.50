@@ -3,68 +3,91 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 //$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+if(isset($_GET["filter-categories-js"])){filter_categories();exit;}
+if(isset($_GET["filter-categories-popup"])){filter_categories_popup();exit;}
+
+if(isset($_GET["filter-classifications-js"])){filter_classifications();exit;}
+if(isset($_GET["filter-classifications-popup"])){filter_classifications_popup();exit;}
+
 
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["enable-signature"])){enable_signature();exit;}
 if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
+if(isset($_GET["rule-js"])){rule_js();exit;}
+if(isset($_GET["rule-popup"])){rule_popup();exit;}
 if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["delete-rule-js"])){delete_js();exit;}
 if(isset($_POST["delete-remove"])){delete_remove();exit;}
+if(isset($_GET["enable-all-rules"])){enable_all_rules();exit;}
+if(isset($_GET["disable-all-rules"])){disable_all_rules();exit;}
+if(isset($_GET["enable-all-family"])){enable_all_family();exit;}
+if(isset($_GET["disable-all-family"])){disable_all_family();exit;}
+
 page();
 
 function rule_js(){
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$tpl=new template_admin();
-	$ruleid=intval($_GET["ruleid-js"]);
-
-	
-	
-	if($ruleid==0){
-		$NAT_TYPE_TEXT="{new_router}";
-	}else{
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM pnic_bridges WHERE ID='$ruleid'");
-		$NAT_TYPE_TEXT="{router} N.$ruleid {$ligne["nic_from"]} -- &raquo; {$ligne["nic_to"]}";
-	}
-	$tpl->js_dialog("$NAT_TYPE_TEXT","$page?rule-popup=$ruleid");
+	$sid=intval($_GET["rule-js"]);
+    return $tpl->js_dialog2("$sid","$page?rule-popup=$sid");
 }
+function rule_popup():bool{
+    $id=$_GET["rule-popup"];
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM rules WHERE sid='$id'");
 
-function enable_signature(){
+    $tpl->table_form_field_text("{signature}",$ligne["sid"],ico_script);
+    $tpl->table_form_field_text("{description}",$ligne["msg"],ico_infoi);
+    $tpl->table_form_field_bool("{enabled}",$ligne["enabled"],ico_check);
+        $tpl->table_form_field_text("{category}",$ligne["classtype"]."/".$ligne["source_file"],ico_books);
+    $tpl->table_form_field_text("{src}",$ligne["src_addr"],ico_networks);
+    $tpl->table_form_field_text("{dst}",$ligne["dst_addr"],ico_networks);
+    $html[]=$tpl->table_form_compile();
+    $html[]="<div style='margin-top:20px'><textarea spellcheck='false' autocomplete='off'
+  style=\"width:100%;min-height:220px;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;outline:none;
+         font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace;
+         font-size:16px;line-height:1.5;color:#111827;background:#ffffff;
+         white-space:pre-wrap;word-wrap:break-word;overflow:auto;resize:vertical;tab-size:4;caret-color:#2563eb;\">{$ligne["raw"]}</textarea></div>";
+
+echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+return true;
+}
+function enable_signature():bool{
 	$t=time();
 	$id=$_GET["enable-signature"];
-	$rulefile=$_GET["cat"];
+    $tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new postgres_sql();
-	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM suricata_sig WHERE signature='$id'"));
-	if(!$q->ok){echo "alert('$q->mysql_error')";return;}
-	$tpl=new template_admin();
-	
-	if($ligne["enabled"]==0){
-		$q->QUERY_SQL("UPDATE suricata_sig SET enabled=1 WHERE signature='$id'");
-		if(!$q->ok){echo "alert('$q->mysql_error')";return;}
-		
-		echo "
-document.getElementById('id-$id').style.color = 'black';
-document.getElementById('cat-$id').style.color = 'black';					
-document.getElementById('signature-$id').className= 'fas fa-check-square-o';				
-				
-";
-return;		
-	}
-	
-	$q->QUERY_SQL("UPDATE suricata_sig SET enabled=0 WHERE signature='$id'");
-	if(!$q->ok){echo "alert('$q->mysql_error')";return;}	
-	echo "
-	document.getElementById('id-$id').style.color = '#8a8a8a';
-	document.getElementById('cat-$id').style.color = '#8a8a8a';
-	document.getElementById('signature-$id').className= 'fa fa-square-o';
-	
-	";	
-}
+    $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
+    $ligne=$q->mysqli_fetch_array("SELECT sid,enabled FROM rules WHERE sid='$id'");
+    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
+    $enabled=intval($ligne["enabled"]);
+    $sid=intval($ligne["sid"]);
+    if($enabled==0){$enabled=1;}else{$enabled=0;}
+    if($sid==0){
+        echo $tpl->js_error("{error} ID $id not found");
+        return false;
+    }
+    $q->QUERY_SQL("UPDATE rules SET enabled='$enabled' WHERE sid='$id'");
 
+
+
+    $q=new postgres_sql();
+    $ligne=pg_fetch_array($q->QUERY_SQL("SELECT sid FROM suricata_rules_conf WHERE sid='$id'"));
+	if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
+	$ssid=intval($ligne["sid"]);
+    if($ssid==0){
+        $q->QUERY_SQL("INSERT INTO suricata_rules_conf(sid,enabled) VALUES('$id','$enabled')");
+    }else{
+        $q->QUERY_SQL("UPDATE suricata_rules_conf SET enabled='$enabled' WHERE sid='$id'");
+    }
+    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+    return admin_tracks("Enable/Disable IDS rule $id enabled=$enabled");
+
+}
 function enable_firewall(){
 	$t=time();
 	$id=$_GET["enable-firewall"];
@@ -95,9 +118,230 @@ function enable_firewall(){
 	
 	
 }
+function filter_categories():bool{
+    $page=CurrentPageName();
+    $function=$_GET["function"];
+    $tpl=new template_admin();
+    return $tpl->js_dialog1("{categories}", "$page?filter-categories-popup=yes&function=$function");
+}
+function filter_classifications():bool{
+    $page=CurrentPageName();
+    $function=$_GET["function"];
+    $tpl=new template_admin();
+    return $tpl->js_dialog1("{categories}", "$page?filter-classifications-popup=yes&function=$function");
+}
+function enable_all_rules():bool{
+    $page=CurrentPageName();
+    $function=$_GET["function"];
+    $tpl=new template_admin();
+    $cat=$_GET["enable-all-rules"];
+    $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
+
+    $q->QUERY_SQL("UPDATE rules SET enabled=1 WHERE classtype='$cat'");
+    if(!$q->ok){
+        echo $tpl->js_error($q->mysql_error);
+        return false;
+    }
+
+    header("content-type: application/x-javascript");
+    echo $function."()\n";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+    return admin_tracks("Enable all IDS rule from category $cat");
+}
+function disable_all_rules():bool{
+    $page=CurrentPageName();
+    $function=$_GET["function"];
+    $tpl=new template_admin();
+    $cat=$_GET["disable-all-rules"];
+    $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
+
+    $q->QUERY_SQL("UPDATE rules SET enabled=0 WHERE classtype='$cat'");
+    if(!$q->ok){
+        echo $tpl->js_error($q->mysql_error);
+        return false;
+    }
+
+    header("content-type: application/x-javascript");
+    echo $function."()\n";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+    return admin_tracks("Disable all IDS rule from category $cat");
+}
+function enable_all_family():bool{
+    $page=CurrentPageName();
+    $function=$_GET["function"];
+    $tpl=new template_admin();
+    $cat=$_GET["enable-all-family"];
+    $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
+
+    $q->QUERY_SQL("UPDATE rules SET enabled=1 WHERE source_file='$cat'");
+    if(!$q->ok){
+        echo $tpl->js_error($q->mysql_error);
+        return false;
+    }
+
+    header("content-type: application/x-javascript");
+    echo $function."()\n";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+    return admin_tracks("Enable all IDS rule from category $cat");
+}
+function disable_all_family():bool{
+    $page=CurrentPageName();
+    $function=$_GET["function"];
+    $tpl=new template_admin();
+    $cat=$_GET["enable-all-family"];
+    $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
+
+    $q->QUERY_SQL("UPDATE rules SET enabled=0 WHERE source_file='$cat'");
+    if(!$q->ok){
+        echo $tpl->js_error($q->mysql_error);
+        return false;
+    }
+
+    header("content-type: application/x-javascript");
+    echo $function."()\n";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+    return admin_tracks("Disable all IDS rule from category $cat");
+}
+
+function filter_categories_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $function=$_GET["function"];
+    $jsonStatus=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$jsonStatus->Status){
+        $html[]=$tpl->div_error("{error} API||$jsonStatus->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+    $GlobalConfig=$jsonStatus->Info;
+    $catz=$GlobalConfig->Categories;
+    $td1prc="style='vertical-align:middle;width=1%;text-align:right' nowrap";
+
+    $TRCLASS=null;
+    $html[]="<table id='table-categories-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<thead>";
+    $html[]="<tr>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='text-align:right'>{records}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'></center></th>";
+    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap></center></th>";
+    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap></center></th>";
+    $html[]="</tr>";
+    $html[]="</thead>";
+    $html[]="<tbody>";
+    foreach ($catz as $cat=>$records){
+        $select="LoadAjaxSilent('main-rules-section','$page?table=yes&category=$cat');dialogInstance1.close();";
+        $enable_all="Loadjs('$page?enable-all-rules=$cat&function=$function');";
+        $disable_all="Loadjs('$page?disable-all-rules=$cat&function=$function');";
+
+
+        $button_select="<button OnClick=\"$select\" class='btn btn-primary btn-xs' type='button'>{search}</button>";
+        $button_enable="<button OnClick=\"$enable_all\" class='btn btn-primary btn-xs' type='button'>{enable_all}</button>";
+        $button_disable="<button OnClick=\"$disable_all\" class='btn btn-danger btn-xs' type='button'>{disable_all}</button>";
+        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $text_class=null;
+
+        $records=$tpl->FormatNumber($records);
+        $html[]="<tr class='$TRCLASS'>";
+        $html[]="<td class=\"$text_class\">$cat</td>";
+        $html[]="<td $td1prc >$records</td>";
+        $html[]="<td style='width: 1%' nowrap>$button_select</td>";
+        $html[]="<td style='width: 1%' nowrap>$button_enable</td>";
+        $html[]="<td style='width: 1%' nowrap>$button_disable</td>";
+        $html[]="</tr>";
+    }
+    $html[]="</tbody>";
+    $html[]="<tfoot>";
+
+    $html[]="<tr>";
+    $html[]="<td colspan='4'>";
+    $html[]="<ul class='pagination pull-right'></ul>";
+    $html[]="</td>";
+    $html[]="</tr>";
+    $html[]="</tfoot>";
+    $html[]="</table>";
+    $html[]="
+	<script>
+	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
+	$(document).ready(function() { $('#table-categories-rules').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+</script>";
+
+    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+
+    return true;
+}
+function filter_classifications_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $function=$_GET["function"];
+    $jsonStatus=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$jsonStatus->Status){
+        $html[]=$tpl->div_error("{error} API||$jsonStatus->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+    $GlobalConfig=$jsonStatus->Info;
+
+    $catz=$GlobalConfig->Families;
+    $td1prc="style='vertical-align:middle;width=1%;text-align:right' nowrap";
+
+    $TRCLASS=null;
+    $html[]="<table id='table-categories-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<thead>";
+    $html[]="<tr>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{group}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='text-align:right'>{records}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'></center></th>";
+    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap></center></th>";
+    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap></center></th>";
+    $html[]="</tr>";
+    $html[]="</thead>";
+    $html[]="<tbody>";
+    foreach ($catz as $cat=>$records){
+        if($cat=="whitelist.rules"){
+            continue;
+        }
+        $select="LoadAjaxSilent('main-rules-section','$page?table=yes&family=$cat');dialogInstance1.close();";
+        $enable_all="Loadjs('$page?enable-all-family=$cat&function=$function');";
+        $disable_all="Loadjs('$page?disable-all-family=$cat&function=$function');";
+        $button_select="<button OnClick=\"$select\" class='btn btn-primary btn-xs' type='button'>{search}</button>";
+        $button_enable="<button OnClick=\"$enable_all\" class='btn btn-primary btn-xs' type='button'>{enable_all}</button>";
+        $button_disable="<button OnClick=\"$disable_all\" class='btn btn-danger btn-xs' type='button'>{disable_all}</button>";
 
 
 
+        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $text_class=null;
+
+        $records=$tpl->FormatNumber($records);
+        $html[]="<tr class='$TRCLASS'>";
+        $html[]="<td class=\"$text_class\"><strong>$cat</strong><br>{{$cat}}</td>";
+        $html[]="<td $td1prc >$records</td>";
+        $html[]="<td style='width: 1%' nowrap>$button_select</td>";
+        $html[]="<td style='width: 1%' nowrap>$button_enable</td>";
+        $html[]="<td style='width: 1%' nowrap>$button_disable</td>";
+        $html[]="</tr>";
+    }
+    $html[]="</tbody>";
+    $html[]="<tfoot>";
+
+    $html[]="<tr>";
+    $html[]="<td colspan='4'>";
+    $html[]="<ul class='pagination pull-right'></ul>";
+    $html[]="</td>";
+    $html[]="</tr>";
+    $html[]="</tfoot>";
+    $html[]="</table>";
+    $html[]="
+	<script>
+	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
+	$(document).ready(function() { $('#table-categories-rules').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+</script>";
+
+    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+
+    return true;
+}
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
@@ -106,7 +350,7 @@ function page(){
         "fa fa-list",
         "{ids_rules_explain}",
         "$page?table=yes",
-        "ids-rules","progress-ids-restart",false);
+        "ids-rules","progress-ids-restart",false,"main-rules-section");
 
 
     if(isset($_GET["main-page"])){
@@ -123,7 +367,14 @@ function page(){
 function table():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    echo $tpl->search_block($page);
+    $category="";$family="";
+    if(isset($_GET["category"])) {
+        $category = $_GET["category"];
+    }
+    if(isset($_GET["family"])) {
+        $family = $_GET["family"];
+    }
+    echo $tpl->search_block($page,null,null,null,"&category-filter=$category&family-filter=$family",null);
     return true;
 }
 function search(){
@@ -132,28 +383,41 @@ function search(){
 	$enabled=$tpl->_ENGINE_parse_body("{enabled}");
 	$firewall=$tpl->_ENGINE_parse_body("{firewall}");
     $function=$_GET["function"];
+    $category=$_GET["category-filter"];
+    $family=$_GET["family-filter"];
 
-    $html[]="<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<table id='table-suricata-all-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>ID</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{signature}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>$enabled</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap>$firewall</center></th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
 	$html[]="<tbody>";
 
-
-
-
+    $searchq="WHERE 1";
+    $search=$_GET["search"];
+    if(strlen($search)>2){
+        $search="*$search*";
+        $search=str_replace("**","*",$search);
+        $search=str_replace("**","*",$search);
+        $search=str_replace("*","%",$search);
+        $searchq="WHERE msg LIKE '$search'";
+    }
 	
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
-	$sql="SELECT * FROM rules ORDER BY sid LIMIT 500";
+	$sql="SELECT * FROM rules $searchq ORDER BY sid LIMIT 500";
+    if(strlen($category)>1){
+        $sql="SELECT * FROM rules $searchq AND classtype='$category' ORDER BY sid LIMIT 500";
+    }
+    if(strlen($family)>1){
+        $sql="SELECT * FROM rules $searchq AND source_file='$family' ORDER BY sid LIMIT 500";
+    }
 	$results=$q->QUERY_SQL($sql);
     if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
+        echo $tpl->div_error($q->mysql_error."<br>$sql");
         return false;
     }
     $td1prc="style='vertical-align:middle;width=1%' class='center' nowrap";
@@ -164,16 +428,18 @@ function search(){
 		$text_class=null;
 		$color="black";
         $classtype=$ligne["classtype"];
+        $source_file=$ligne["source_file"];
         $description=$ligne["msg"];
 		$id=$ligne["sid"];
 		if($ligne["enabled"]==0){
 			$color="#8a8a8a";
 		}
         $bold="style='color:$color;font-weight:bold'";
-		$html[]="<tr class='$TRCLASS'>";
-		$html[]="<td class=\"$text_class\"><span $bold id='id-$id'>$id</span></td>";
-		$html[]="<td class='$text_class' style='vertical-align:middle'><span $bold id='cat-$id'>$description</span></td>";
-        $html[]="<td class='$text_class' style='vertical-align:middle'><span $bold id='class-$id'>$classtype</span></td>";
+        $idF=$tpl->td_href($id,"","Loadjs('$page?rule-js=$id')");
+        $html[]="<tr class='$TRCLASS'>";
+		$html[]="<td class=\"$text_class\">$idF</td>";
+		$html[]="<td class='$text_class' style='vertical-align:middle'>$description</td>";
+        $html[]="<td class='$text_class' style='vertical-align:middle' nowrap>$classtype/$source_file</td>";
 		$html[]="<td $td1prc>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-signature=$id')")."</td>";
 		$html[]="<td $td1prc></td>";
 		$html[]="</tr>";
@@ -193,10 +459,13 @@ function search(){
 	$html[]="</table>";
 
     $jscompile=  $tpl->framework_buildjs(
-        "suricata:/suricata/restart",
-        "suricata.progress",
-        "suricata.progress.txt","progress-ids-restart"
+        "suricata:/build/rules",
+        "dumprules.progress",
+        "dumprules.progress.txt","progress-ids-restart"
     );
+    $topbuttons[] = array("Loadjs('$page?filter-categories-js=yes&function=$function')",ico_books,"{categories}");
+    $topbuttons[] = array("Loadjs('$page?filter-classifications-js=yes&function=$function')",ico_folder,"{categories_groups}");
+
 
     $topbuttons[] = array($jscompile,ico_save,"{apply_changes}");
     $TINY_ARRAY["TITLE"]="{IDS} {rules}";
@@ -209,7 +478,7 @@ function search(){
 	<script>
 	$headsjs
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+	$(document).ready(function() { $('#table-suricata-all-rules').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
 			echo $tpl->_ENGINE_parse_body(implode("\n",$html));

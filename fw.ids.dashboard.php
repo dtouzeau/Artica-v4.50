@@ -202,30 +202,48 @@ function widget_flow():string{
     return $tpl->widget_style1("navy-bg", ico_nic, "{scanned_flow}", $BytesOrg . " $mbPerSecond");
 }
 
+function top_widgets_threads($json):string{
+    $tpl=new template_admin();
+
+
+    if(!$json->Status){
+        return $tpl->widget_style1("red-bg",ico_bug,"{detected_threats}","{error}");
+    }
+    if($json->Alerts==0){
+        return $tpl->widget_style1("gray-bg",ico_sensor,"{detected_threats}","{none}");
+    }
+    return $tpl->widget_style1("yellow-bg","fa-solid fa-sensor-triangle-exclamation","{detected_threats}",$tpl->FormatNumber($json->Alerts));
+
+}
+function top_widgets_rules($json):string{
+    $tpl=new template_admin();
+
+    if(!$json->Status){
+        return $tpl->widget_style1("red-bg",ico_bug,"{rules}","{error}");
+    }
+    if($json->Info->RulesCount==0){
+        return $tpl->widget_style1("gray-bg",ico_script,"{rules}","{none}");
+    }
+    $rules=$tpl->FormatNumber($json->Info->RulesCount);
+    $Cur=$tpl->FormatNumber($json->Info->ActiveRules);
+    return $tpl->widget_style1("green-bg",ico_script,"{rules}","$Cur/$rules");
+
+}
 function top_widgets():bool{
     $tpl=new template_admin();
-    $COUNT_OF_SURICATA=intval(@file_get_contents("/usr/share/artica-postfix/ressources/interface-cache/COUNT_OF_SURICATA"));
-    $COUNT_OF_SURICATA=FormatNumber($COUNT_OF_SURICATA);
 
-    $COUNT_OF_SURICATA_IP_SRC=intval(@file_get_contents("/usr/share/artica-postfix/ressources/interface-cache/COUNT_OF_SURICATA_IP_SRC"));
-    $COUNT_OF_SURICATA_IP_SRC=FormatNumber($COUNT_OF_SURICATA_IP_SRC);
-
-    $widget_threats=$tpl->widget_style1("gray-bg",ico_bug,"{detected_threats}",0);
-    $widget_srcIps=$tpl->widget_style1("gray-bg",ico_computer,"{src_ips}",0);
-
-
-    if($COUNT_OF_SURICATA>0){
-        $widget_threats=$tpl->widget_style1("yellow-bg",ico_bug,"{detected_threats}",$tpl->FormatNumber($COUNT_OF_SURICATA));
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        $html[]=$tpl->div_error("{error} API||$json->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     }
-    if($COUNT_OF_SURICATA_IP_SRC>0){
-        $widget_srcIps=$tpl->widget_style1("navy-bg",ico_computer,"{src_ips}",$tpl->FormatNumber($COUNT_OF_SURICATA_IP_SRC));
-    }
-
+    $top_widgets_rules=top_widgets_rules($json);
+    $widget_threats=top_widgets_threads($json);
     $widget_flow=widget_flow();
     $html[]="<table style='width:100%;margin-top:-5px'><tbody>";
     $html[]="<tr>";
     $html[]="<td style='width:33%'>$widget_threats</td>";
-    $html[]="<td style='width:33%;padding-left:5px'>$widget_srcIps</td>";
+    $html[]="<td style='width:33%;padding-left:5px'>$top_widgets_rules</td>";
     $html[]="<td style='width:33%;padding-left:5px'>$widget_flow</td>";
     $html[]="</tr>";
     $html[]="</tbody></table>";
@@ -240,12 +258,12 @@ function flat_config():bool{
     if($SuricataPurge==0){$SuricataPurge=15;}
     if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){$SuricataPurge=2;}
 
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
-    if(!$json->Status){
-        $html[]=$tpl->div_error("{error} API||$json->Error");
+    $jsonStatus=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$jsonStatus->Status){
+        $html[]=$tpl->div_error("{error} API||$jsonStatus->Error");
         echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     }
-    $GlobalConfig=$json->Info;
+    $GlobalConfig=$jsonStatus->Info;
 
 
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/pfring"));
@@ -333,26 +351,15 @@ function flat_config():bool{
     }else{
         $tpl->table_form_field_text("{retention_days}", 2, ico_hd);
     }
-
-
-    $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?update-js=yes')");
-    $SuricataUpdateInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataUpdateInterval"));
-    if($SuricataUpdateInterval==0){$SuricataUpdateInterval=1440;}
-
-    $maxtime_array[1]="{never}";
-    $maxtime_array[420]="4 {hours}";
-    $maxtime_array[480]="8 {hours}";
-    $maxtime_array[720]="12 {hours}";
-    $maxtime_array[1440]="1 {day}";
-    $maxtime_array[2880]="2 {days}";
-    $maxtime_array[10080]="1 {week}";
-    $lastUpdateText="";
-    $lastUpdate=$GlobalConfig->LastUpdate;
-    if($lastUpdate>0){
-        $lastUpdateText=" <small>{last_update} ".distanceOfTimeInWords($lastUpdate,time())."</small>";
+    if($GlobalConfig->UseQueueFailed==0){
+        $tpl->table_form_field_bool("{use_queue_failed}",0,ico_bug);
     }
 
-    $tpl->table_form_field_text("{update_each}", $maxtime_array[$SuricataUpdateInterval].$lastUpdateText, ico_clock);
+
+
+    $tpl=suricata_field_update($tpl,$jsonStatus);
+
+
 
     $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?alienvault-js=yes')");
     if($GlobalConfig->Otx->Enabled==0){
@@ -366,6 +373,48 @@ function flat_config():bool{
     $html[]= $tpl->table_form_compile();
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     return true;
+
+}
+function suricata_field_update($tpl,$json){
+    $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?update-js=yes')");
+    $SuricataUpdateInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataUpdateInterval"));
+    if($SuricataUpdateInterval==0){$SuricataUpdateInterval=1440;}
+    if($SuricataUpdateInterval>518400){
+        $tpl->table_form_field_bool("{update}", 0, ico_clock);
+        return $tpl;
+
+    }
+    $GlobalConfig=$json->Info;
+    $maxtime_array[420]="4 {hours}";
+    $maxtime_array[480]="8 {hours}";
+    $maxtime_array[720]="12 {hours}";
+    $maxtime_array[1440]="1 {day}";
+    $maxtime_array[2880]="2 {days}";
+    $maxtime_array[10080]="1 {week}";
+    $maxtime_array[43200]="1 {month}";
+    $maxtime_array[518400]="1 {year}";
+    $maxtime_array[518400*10]="{never}";
+    $lastUpdateText="";
+    $nextTime_text="";
+    $lastUpdate=$GlobalConfig->LastUpdate;
+    $UpdateTimeOut=$json->UpdateTimeOut;
+
+    if($UpdateTimeOut>0) {
+        if ($UpdateTimeOut > $SuricataUpdateInterval) {
+            $nextTime_text = " <small>{nextcheck} {now}!</small>";
+        } else {
+            $nextTime = $SuricataUpdateInterval - $UpdateTimeOut;
+            $nextTime_text = " <small>{nextcheck} $nextTime {minutes}</small>";
+        }
+    }
+
+    if($lastUpdate>0){
+        $lastUpdateText=" <small>{last_update} ".distanceOfTimeInWords($lastUpdate,time())."</small>";
+    }
+    $tpl->table_form_field_text("{update_each}", $maxtime_array[$SuricataUpdateInterval].$lastUpdateText.$nextTime_text, ico_clock);
+
+    return $tpl;
+
 
 }
 
