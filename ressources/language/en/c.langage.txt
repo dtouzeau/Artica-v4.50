@@ -3115,6 +3115,7 @@ If the client responds, the server will use the MTU reported by the client.
 </NetIpv4TcpMtuProbing_explain>
 <ApplicationLayerProtocol>Application-layer protocol</ApplicationLayerProtocol>
 <ids_prefix_1>Detects and alerts when network packets match</ids_prefix_1>
+<ids_prefix_2>Stops evaluating traffic against all subsequent rules</ids_prefix_2>
 <NumberOfMatches>Number of matches</NumberOfMatches>
 <detections>Detections</detections>
 <OnlyAfter>Only after</OnlyAfter>
@@ -3132,3 +3133,16 @@ If the client responds, the server will use the MTU reported by the client.
 </emerging-drop.suricata.rules>
 <sslblacklist.rules>Contains TLS certificate or JA3/JA3S fingerprint–based detection rules that identify connections to or from hosts using SSL/TLS certificates or fingerprints known to be associated with malware, C2 servers, or malicious infrastructure.</sslblacklist.rules>
 <emerging-misc.rules>Contains a broad mix of security and protocol-anomaly signatures that don’t neatly fit other ET categories (e.g., malware, trojan, scan, or policy).</emerging-misc.rules>
+<rules_in_production>Production rules</rules_in_production>
+<emerging-adware_pup.rules>Contains signature to detect network traffic associated with Adware (Advertising-Supported Software) and PUPs ( Potentially Unwanted Program )</emerging-adware_pup.rules>
+<emerging-coinminer.rules>Detects network traffic associated with cryptocurrency miners.[br]This activity is a major security red flag known as “cryptojacking”.[br]It indicates an attacker (or unauthorized user) is stealing your resources — electricity, CPU/GPU time, and hardware lifespan — to generate money for themselves.</emerging-coinminer.rules>
+<emerging-hunting.rules>Designed for threat hunting in IDS/IPS-monitored networks.[br]These rules surface indicators of unusual or anomalous activity that may be associated with threats, but are not definitive, high-confidence malicious signatures.</emerging-hunting.rules>
+<ja3_fingerprints.rules>Uses JA3 and JA3S fingerprinting to identify the client and server software involved in TLS/SSL (encrypted) handshakes.[br]JA3 creates a unique client-side fingerprint from a TLS Client Hello’s default cryptographic parameters (TLS version, cipher suites, extensions, etc.).[br]Includes rules that match against a blacklist of known malicious JA3 hashes.</ja3_fingerprints.rules>
+<etn_aggressive.rules>Ruleset provided by Etnetera a.s., designed to identify and alert on traffic originating from aggressively scanning or otherwise hostile IP addresses.[br]Because this list is based on observed behavior, users should review it carefully before deployment.</etn_aggressive.rules>
+<emerging-ja3.rules>Designed to detect malicious activity within encrypted TLS/SSL traffic using JA3 fingerprints.[br]A JA3 fingerprint is an MD5 hash generated from five specific fields in the TLS Client Hello packet.[br]This ruleset is especially useful for threat hunting and monitoring traffic in controlled environments, such as malware detonation sandboxes.</emerging-ja3.rules>
+<ids_prio_1>High / Critical</ids_prio_1>
+<ids_prio_4>Very Low</ids_prio_4>
+<ids_class_in>Classify the rule under</ids_class_in>
+<ids_class_level>With a severity level</ids_class_level>
+<network_traffic_from>Network traffic from</network_traffic_from>
+<to_networks>To networks</to_networks>

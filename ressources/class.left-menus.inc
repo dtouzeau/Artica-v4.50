@@ -1345,20 +1345,11 @@ class left_menus{
                     "ICO" => "fas fa-tachometer-alt",
                     "TEXT" => "{dashboard}" )
             );
-
-            $f[] = $tpl->LeftMenu(
-                array("PAGE" => "fw.ids.categories.php",
-                    "ICO" => "fa fa-sitemap",
-                    "TEXT" => "{categories}" )
-            );
-
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.suricata.acls.php",
                     "ICO" => "fas fa-list",
                     "TEXT" => "Acls" )
             );
-
-
 
             $f[] = "<li id='left-menu'>";
             $f[] = "<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.rules.php');\">

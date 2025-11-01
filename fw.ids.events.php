@@ -104,11 +104,9 @@ function enable_firewall(){
 
 function page(){
     $tpl=new template_admin();
-
-
+    $page=CurrentPageName();
     $html=$tpl->page_header(
-        "{ids_events}",ico_hacker2cols,"{ids_events_explain}",
-        "","ids-threats","ids-threats-progress",true
+        "{ids_events}",ico_hacker2cols,"{ids_events_explain}","$page?tabs=yes","ids-threats","ids-threats-progress",false,"page-ids-stats"
 
     );
 

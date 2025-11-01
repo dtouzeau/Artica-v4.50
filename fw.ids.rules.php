@@ -3,6 +3,7 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 //$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+if(isset($_GET["ids-rules-stats"])){top_rules_stats();exit;}
 if(isset($_GET["filter-categories-js"])){filter_categories();exit;}
 if(isset($_GET["filter-categories-popup"])){filter_categories_popup();exit;}
 
@@ -84,7 +85,7 @@ function enable_signature():bool{
         $q->QUERY_SQL("UPDATE suricata_rules_conf SET enabled='$enabled' WHERE sid='$id'");
     }
     if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+
     return admin_tracks("Enable/Disable IDS rule $id enabled=$enabled");
 
 }
@@ -145,7 +146,7 @@ function enable_all_rules():bool{
 
     header("content-type: application/x-javascript");
     echo $function."()\n";
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+
     return admin_tracks("Enable all IDS rule from category $cat");
 }
 function disable_all_rules():bool{
@@ -163,7 +164,7 @@ function disable_all_rules():bool{
 
     header("content-type: application/x-javascript");
     echo $function."()\n";
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+
     return admin_tracks("Disable all IDS rule from category $cat");
 }
 function enable_all_family():bool{
@@ -181,7 +182,7 @@ function enable_all_family():bool{
 
     header("content-type: application/x-javascript");
     echo $function."()\n";
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+
     return admin_tracks("Enable all IDS rule from category $cat");
 }
 function disable_all_family():bool{
@@ -199,7 +200,7 @@ function disable_all_family():bool{
 
     header("content-type: application/x-javascript");
     echo $function."()\n";
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/rules");
+
     return admin_tracks("Disable all IDS rule from category $cat");
 }
 
@@ -298,7 +299,7 @@ function filter_classifications_popup():bool{
     $html[]="</thead>";
     $html[]="<tbody>";
     foreach ($catz as $cat=>$records){
-        if($cat=="whitelist.rules"){
+        if($cat=="whitelist.rules" OR $cat=="emerging-deleted.rules"){
             continue;
         }
         $select="LoadAjaxSilent('main-rules-section','$page?table=yes&family=$cat');dialogInstance1.close();";
@@ -422,6 +423,12 @@ function search(){
     }
     $td1prc="style='vertical-align:middle;width=1%' class='center' nowrap";
 
+    $prios[0]="<span class='label label-default'>{none}</span>";
+    $prios[1]="<span class='label label-danger'>{ids_prio_1}</span>";
+    $prios[2]="<span class='label label-warning'>{medium}</span>";
+    $prios[3]="<span class='label label-info'>{low}</span>";
+    $prios[4]="<span class='label label-default'>{info}</span>";
+
 	$TRCLASS=null;
 	foreach ($results as $index=>$ligne) {
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
@@ -430,14 +437,16 @@ function search(){
         $classtype=$ligne["classtype"];
         $source_file=$ligne["source_file"];
         $description=$ligne["msg"];
+        $priority=intval($ligne["priority"]);
 		$id=$ligne["sid"];
 		if($ligne["enabled"]==0){
 			$color="#8a8a8a";
 		}
         $bold="style='color:$color;font-weight:bold'";
         $idF=$tpl->td_href($id,"","Loadjs('$page?rule-js=$id')");
+        $label=$prios[$priority];
         $html[]="<tr class='$TRCLASS'>";
-		$html[]="<td class=\"$text_class\">$idF</td>";
+		$html[]="<td class=\"$text_class\">$idF&nbsp;&nbsp;$label</td>";
 		$html[]="<td class='$text_class' style='vertical-align:middle'>$description</td>";
         $html[]="<td class='$text_class' style='vertical-align:middle' nowrap>$classtype/$source_file</td>";
 		$html[]="<td $td1prc>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-signature=$id')")."</td>";
@@ -466,23 +475,42 @@ function search(){
     $topbuttons[] = array("Loadjs('$page?filter-categories-js=yes&function=$function')",ico_books,"{categories}");
     $topbuttons[] = array("Loadjs('$page?filter-classifications-js=yes&function=$function')",ico_folder,"{categories_groups}");
 
-
+    $t=time();
     $topbuttons[] = array($jscompile,ico_save,"{apply_changes}");
-    $TINY_ARRAY["TITLE"]="{IDS} {rules}";
+    $TINY_ARRAY["TITLE"]="{IDS} {rules} <span id='ids-rules-$t'><span class='fa fa-refresh fa-spin'></span></span>";
     $TINY_ARRAY["ICO"]="fa fa-list";
     $TINY_ARRAY["EXPL"]="{ids_rules_explain}";
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
+    $tt=$tpl->RefreshInterval_Loadjs("ids-rules-$t","$page","ids-rules-stats=$t");
+
 	$html[]="
 	<script>
+	$tt
 	$headsjs
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$(document).ready(function() { $('#table-suricata-all-rules').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
 			echo $tpl->_ENGINE_parse_body(implode("\n",$html));
-
+return true;
+}
+function top_rules_stats():bool{
+    $id=$_GET["ids-rules-stats"];
+    $vid="ids-rules-$id";
+    $tpl=new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/rules/stats"));
+    header("content-type: application/x-javascript");
+    if(!$json->Status){
+        $html=base64_encode("<br><span class='text-danger'>$json->Error</span>");
+        echo "document.getElementById('$vid').innerHTML=base64_decode('$html');";
+        return false;
+    }
+   $rules=$tpl->FormatNumber($json->rules_loaded);
+   $html=base64_encode($tpl->_ENGINE_parse_body("<small class='font-bold'>$rules {rules_in_production}</small>"));
+   echo "document.getElementById('$vid').innerHTML=base64_decode('$html');";
+   return true;
 }
 function enable(){
 	

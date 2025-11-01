@@ -7,7 +7,6 @@ include_once(dirname(__FILE__)."/ressources/class.squid.acls.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_POST["AclsUsePages"])){$tpl=new template_admin();$tpl->SAVE_POSTs();exit;}
 if(isset($_GET["search"])){table_builder();exit;}
-if(isset($_GET["explain-this-rule"])){echo EXPLAIN_THIS_RULE($_GET["explain-this-rule"],$_GET["enabled"],$_GET["aclgroup"]);exit;}
 if(isset($_GET["opts"])){opts_js();exit;}
 if(isset($_GET["opts-popup"])){opts_popup();exit;}
 if(isset($_GET["tiny-js"])){TINY_PAGE();exit;}
@@ -330,9 +329,6 @@ function duplicate_rule($ID_SRC,$NewAClGPID=0){
 
     $ligne=$q->mysqli_fetch_array("SELECT ID FROM suricata_sqacllinks WHERE aclname='$TempName'");
     $LASTID=intval($ligne["ID"]);
-    if($LASTID>0) {
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?explain-this-rule=$LASTID");
-    }
 
     $q->QUERY_SQL("UPDATE suricata_sqacllinks SET aclname='$aclname' WHERE ID='$LASTID'");
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return 0;}
@@ -347,7 +343,7 @@ function duplicate_rule($ID_SRC,$NewAClGPID=0){
 
     $acls->DUPLICATE_ACLS_OBJECTS("webfilters_sqacllinks",$ID_SRC,$LASTID);
 
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?explain-this-rule=$LASTID");
+
     admin_tracks("Duplicate $aclname proxy rule");
     return $LASTID;
 
@@ -379,7 +375,7 @@ function duplicate_js(){
         }
 
 
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?explain-this-rule=$DuplicatedID");
+
     }
 
 
@@ -407,9 +403,9 @@ function rule_enable(){
 	if(!$q->ok){echo "alert('".$q->mysql_error."')";return;}
 
     admin_tracks("Change $aclname proxy rule activation to $enabled");
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?explain-this-rule={$_GET["enable-js"]}");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/explains");
 	echo $js;
-	echo "\nLoadjs('$page?fill={$_GET["enable-js"]}');\n";
+
 }
 function rule_js(){
 	$page       = CurrentPageName();
@@ -460,6 +456,49 @@ function rule_tabs():bool{
 function rule_settings(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
+
+    $classification["not-suspicious"]="not-suspicious";
+    $classification["unknown"]="unknown";
+    $classification["bad-unknown"]="bad-unknown";
+    $classification["attempted-recon"]="attempted-recon";
+    $classification["successful-recon-limited"]="successful-recon-limited";
+    $classification["successful-recon-largescale"]="successful-recon-largescale";
+    $classification["attempted-dos"]="attempted-dos";
+    $classification["successful-dos"]="successful-dos";
+    $classification["attempted-user"]="attempted-user";
+    $classification["unsuccessful-user"]="unsuccessful-user";
+    $classification["successful-user"]="successful-user";
+    $classification["attempted-admin"]="attempted-admin";
+    $classification["successful-admin"]="successful-admin";
+    $classification["rpc-portmap-decode"]="rpc-portmap-decode";
+    $classification["shellcode-detect"]="shellcode-detect";
+    $classification["string-detect"]="string-detect";
+    $classification["suspicious-filename-detect"]="suspicious-filename-detect";
+    $classification["suspicious-login"]="suspicious-login";
+    $classification["system-call-detect"]="system-call-detect";
+    $classification["tcp-connection"]="tcp-connection";
+    $classification["trojan-activity"]="trojan-activity";
+    $classification["unusual-client-port-connection"]="unusual-client-port-connection";
+    $classification["network-scan"]="network-scan";
+    $classification["denial-of-service"]="denial-of-service";
+    $classification["non-standard-protocol"]="non-standard-protocol";
+    $classification["protocol-command-decode"]="protocol-command-decode";
+    $classification["web-application-activity"]="web-application-activity";
+    $classification["web-application-attack"]="web-application-attack";
+    $classification["misc-activity"]="misc-activity";
+    $classification["misc-attack"]="misc-attack";
+    $classification["icmp-event"]="icmp-event";
+    $classification["policy-violation"]="policy-violation";
+    $classification["default-login-attempt"]="default-login-attempt";
+    $classification["targeted-activity"]="targeted-activity";
+    $classification["exploit-kit"]="exploit-kit";
+    $classification["external-ip-check"]="external-ip-check";
+    $classification["domain-c2"]="domain-c2";
+    $classification["pup-activity"]="pup-activity";
+    $classification["credential-theft"]="credential-theft";
+    $classification["social-engineering"]="social-engineering";
+    $classification["coin-mining"]="coin-mining";
+    $classification["command-and-control"]="command-and-control";
 
     $f["http"]="http";
     $f["ftp"]="ftp";
@@ -517,6 +556,7 @@ function rule_settings(){
     $ligne["aclname"]=$tpl->utf8_encode($ligne["aclname"]);
 	$form[]=$tpl->field_hidden("rule-save", "$ID");
     $form[]=$tpl->field_text("aclname", "{rule_name}", $ligne["aclname"],true);
+    $form[]=$tpl->field_array_hash($classification, "classtype", "{category}", $ligne["classtype"]);
     $form[]=$tpl->field_array_hash($proto, "proto", "{protocol}", $ligne["proto"]);
     $form[]=$tpl->field_array_hash($flow, "flow", "{flow}", $ligne["flow"]);
     $form[]=$tpl->field_array_hash($f, "ApplayerProtocol", "{ApplicationLayerProtocol}", $ligne["ApplayerProtocol"]);
@@ -532,6 +572,16 @@ function rule_settings(){
 	echo $tpl->_ENGINE_parse_body($html);
 	
 }
+function utf8_decode_switch($value):string{
+    if(is_null($value)){
+        return "";
+    }
+    if(PHP_MAJOR_VERSION>7) {
+        return $value;
+    }
+    $tpl=new template_admin();
+    return $tpl->utf8_decode($value);
+}
 function rule_save(){
 
 	$tpl    = new template_admin();
@@ -540,7 +590,7 @@ function rule_save(){
 	$tpl->CLEAN_POST_XSS();
 	
 
-	$aclname=sqlite_escape_string2(remove_acc($_POST["aclname"]));
+	$aclname=sqlite_escape_string2(utf8_decode_switch($_POST["aclname"]));
 	$description=base64_encode($_POST["description"]);
 
     if(isset($_POST["access"])) {
@@ -559,12 +609,15 @@ function rule_save(){
 				`proto`='{$_POST["proto"]}',
 				`flow`='{$_POST["flow"]}',
 				`target`='{$_POST["target"]}',
+				`action`='{$_POST["action"]}',
+				`classtype`='{$_POST["classtype"]}',
+				`priority`='{$_POST["priority"]}',
 				`description`='$description',
 				`aclname`='$aclname' WHERE ID=$ID";
 
 	$q->QUERY_SQL($sql);
 	if(!$q->ok){echo "js:error:".$tpl->javascript_parse_text($q->mysql_error);return;}
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?explain-this-rule=$ID");
+
 	$c=0;
 	$sql="SELECT ID FROM suricata_sqacls ORDER BY xORDER";
 	$results = $q->QUERY_SQL($sql);
@@ -574,7 +627,7 @@ function rule_save(){
 		if(!$q->ok){echo $q->mysql_error_html(true);return;}
 		$c++;
 	}
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?explain-this-rule={$ligne["ID"]}");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/explains");
     admin_tracks("Modify settings of $aclname proxy rule");
 
 	
@@ -822,8 +875,7 @@ function table_builder():bool{
 	$jsAfter="LoadAjax('table-firewall-rules','$page?table=yes');";
 	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
 	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    if(!$q->FIELD_EXISTS("suricata_sqacls","zExplain")){$q->QUERY_SQL("ALTER TABLE suricata_sqacls ADD zExplain TEXT");}
-    if(!$q->FIELD_EXISTS("suricata_sqacls","description")){$q->QUERY_SQL("ALTER TABLE suricata_sqacls ADD description TEXT");}
+
 
     VERBOSE("search:$search",__LINE__);
     $_SESSION["ACL_SEARCH"]=$search;
@@ -890,7 +942,7 @@ function table_builder():bool{
         if(isset($already_isset[$ID])){continue;}
         $already_isset[$ID]=true;
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $explain = EXPLAIN_THIS_RULE($ligne['ID'], $ligne["enabled"], $ligne["aclgroup"]);
+        $explain = $ligne["zExplain"];
     	$delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')");
 		$js="Loadjs('$page?rule-id-js=$ID')";
 		if($ligne["enabled"]==0){$MUTED=" text-muted";}
@@ -911,7 +963,7 @@ function table_builder():bool{
             }
         }
 
-        $aclname = $ligne["aclname"];
+        $aclname = $tpl->utf8_encode($ligne["aclname"]);
         if(strlen($aclname)>50){
             $aclname=substr($aclname,0,47)."...";
         }
@@ -925,8 +977,7 @@ function table_builder():bool{
         $html[]="<td style='vertical-align:middle;width:1%'  nowrap>$rule_status</td>";
 		$html[]="<td style='vertical-align:middle;width:1%'  nowrap>". $tpl->td_href($aclname,"{click_to_edit}",$js)."</td>";
 		$html[]="<td style='vertical-align:middle'>$explain</td>";
-        $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_refresh("LoadAjaxTiny
-        ('explain-this-rule-$ID','$page?explain-this-rule=$ID&enabled={$ligne["enabled"]}&aclgroup={$ligne["aclgroup"]}')","AsFirewallManager")."</td>";
+        $html[]="<td class='center' style='width:1%' nowrap></td>";
         $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_copy("Loadjs('$page?duplicate-js=$ID')","AsFirewallManager")."</td>";
 		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsFirewallManager")."</td>";
 		$html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
@@ -1049,28 +1100,6 @@ function fillthisRule(){
 
 
 }
-function EXPLAIN_THIS_RULE($ID,$enabled,$aclgroup){
-    $ID=intval($ID);
-    if($ID==0){
-        return "<span style='color:red'>??? wrong ID??</span>";
-    }
-    $acls=new squid_acls_groups();
-    $tpl=new template_admin();
-    $page=CurrentPageName();
-    $FINAL=$acls->ACL_MULTIPLE_EXPLAIN($ID,$enabled,$aclgroup);
-
-    if(isset($_GET["explain-this-rule"])){
-        $explain = base64_encode("<span id='explain-this-rule-$ID' data='$page?explain-this-rule=$ID&enabled=$enabled&aclgroup=$aclgroup'>$FINAL</span>");
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $q->QUERY_SQL("UPDATE suricata_sqacllinks SET zExplain='$explain' WHERE ID=$ID");
-        return $tpl->_ENGINE_parse_body($FINAL);
-    }
-
-    return  $tpl->_ENGINE_parse_body("<span id='explain-this-rule-$ID' data='$page?explain-this-rule=$ID&enabled=$enabled&aclgroup=$aclgroup'>$FINAL</span>");
-
-
-}
-
 function groups_rules_table_start(){
     $ID     = intval($_GET["rules-table-start"]);
     $page   = CurrentPageName();
@@ -1081,7 +1110,7 @@ function new_rule_save():bool{
 	$tpl        = new template_admin();
 	$tpl->CLEAN_POST_XSS();
 	$aclport    = 0;
-	$aclname    =sqlite_escape_string2($_POST["aclname"]);
+	$aclname    =sqlite_escape_string2(utf8_decode_switch($_POST["aclname"]));
 	$TempName   =md5(time());
 	$aclgpid    = 0;
 	$ApplayerProtocol=$_POST["ApplayerProtocol"];
@@ -1105,6 +1134,7 @@ function new_rule_save():bool{
 		if(!$q->ok){echo $q->mysql_error_html(true);return false;}
 		$c++;
 	}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/explains");
     return admin_tracks("Create new IDS ACL rule $aclname");
 }
 function rule_delete($ID):bool{

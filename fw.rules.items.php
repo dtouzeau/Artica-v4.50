@@ -750,7 +750,7 @@ function group_save(){
     $tpl->CLEAN_POST();
     $gpid=$_POST["SaveGroup"];
     $GroupNameSave=$_POST["GroupName"];
-    $GroupNameSave=utf8_decode($GroupNameSave);
+    $GroupNameSave=utf8_decode_switch($GroupNameSave);
 
     $ll=array();
     $ll[]="Object Name: $GroupNameSave";
@@ -799,7 +799,7 @@ function SaveGroupName(){
     $GroupName=$ligneGP["GroupName"];
     $bulkimport=null;
     $GroupNameSave=$_POST["GroupName"];
-    $GroupNameSave=utf8_decode($GroupNameSave);
+    $GroupNameSave=utf8_decode_switch($GroupNameSave);
 
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $GroupNameSave=$q->sqlite_escape_string2($GroupNameSave);
@@ -838,7 +838,7 @@ function item_url_db_save(){
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $GroupName=$tpl->utf8_decode($_POST["GroupName"]);
+    $GroupName=utf8_decode_switch($_POST["GroupName"]);
     $params=base64_encode(serialize($_POST));
     $GroupID=intval($_POST["url_db"]);
     $ligneGP=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$GroupID'");
@@ -1320,7 +1320,7 @@ function time_save(){
 
 
     $GroupNameSave=url_decode_special_tool($_POST["GroupName"]);
-    $GroupNameSave=$tpl->utf8_decode($GroupNameSave);
+    $GroupNameSave=utf8_decode_switch($GroupNameSave);
     $GroupNameSave=sqlite_escape_string2($GroupNameSave);
     $q->QUERY_SQL("UPDATE webfilters_sqgroups SET GroupName='$GroupNameSave' WHERE ID='$ID'");
     if(!$q->ok){echo $q->mysql_error_html(true);}
@@ -1553,7 +1553,7 @@ function ndpi_choose(){
 
 }
 
-function item_save(){
+function item_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $gpid=intval($_POST["groupid"]);
@@ -1563,7 +1563,7 @@ function item_save(){
     $ligne=$q->mysqli_fetch_array("SELECT GroupName,GroupType FROM webfilters_sqgroups WHERE ID='$gpid'");
     $GroupType=$ligne["GroupType"];
     $GroupNameSave=url_decode_special_tool($_POST["GroupName"]);
-    $GroupNameSave=$tpl->utf8_decode($GroupNameSave);
+    $GroupNameSave=utf8_decode_switch($GroupNameSave);
     $GroupNameSave=sqlite_escape_string2($GroupNameSave);
 
     if(isset($_POST["description"])){
@@ -1575,7 +1575,12 @@ function item_save(){
     $q->QUERY_SQL("UPDATE webfilters_sqgroups SET GroupName='$GroupNameSave' WHERE ID='$gpid'");
     if(!$q->ok){echo $q->mysql_error_html(true);}
 
-    if(!isset($_POST["pattern"])){return;}
+    $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
+    if($EnableSuricata==1) {
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/explains");
+    }
+
+    if(!isset($_POST["pattern"])){return false;}
     $pattern=url_decode_special_tool($_POST["pattern"])."\n";
     $f=explode("\n",$pattern);
 
@@ -1628,7 +1633,7 @@ function item_save(){
     $sql="INSERT INTO webfilters_sqitems (gpid,pattern,enabled) VALUES ".@implode(",", $SQ);
     $q->QUERY_SQL($sql);
     if(!$q->ok){echo "{$_POST["pattern"]}<br>".$q->mysql_error_html(false);}
-
+    return true;
 
 }
 
@@ -1956,7 +1961,6 @@ function server_cert_fingerprint_save(){
     admin_tracks("Adding a new SSL fingerprint $Fingerprint ($description) in Proxy Object #$gpid");
     return true;
 }
-
 function new_item_header($gpid,$GroupName):bool{
     $tpl=new template_admin();
     $jsafter=$_GET["js-after"];
@@ -2003,7 +2007,6 @@ function new_item_geoipdest($gpid,$GroupName){
 
 
 }
-
 function new_item_server_cert_fingerprint(){
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
@@ -2030,7 +2033,6 @@ function new_item_server_cert_fingerprint(){
 
     echo $tpl->form_outside($tpl->utf8_encode($ligne["GroupName"]),@implode("\n", $form),$item_explain,$btname,"$backjs");
 }
-
 function new_item_popup():bool{
     //new-item-popup=$groupid&js-after=$jsafter&function=$function
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -2151,12 +2153,20 @@ function item_delete():bool{
     }
     $js[]=$tpl->jsToTry(base64_decode($jsafter));
     echo @implode("\n",$js);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?explain-this-rule=$groupid");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/parse");
     return true;
 
 }
-
+function utf8_decode_switch($value):string{
+    if(is_null($value)){
+        return "";
+    }
+    if(PHP_MAJOR_VERSION>7) {
+        return $value;
+    }
+    $tpl=new template_admin();
+    return $tpl->utf8_decode($value);
+}
 function new_item_header_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
@@ -2190,9 +2200,6 @@ function new_item_save(){
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $ligne=$q->mysqli_fetch_array("SELECT GroupName,GroupType FROM webfilters_sqgroups WHERE ID='$gpid'");
-
-
-
 
     $GroupType=$ligne["GroupType"];
     $GroupName=$ligne["GroupName"];
@@ -2282,7 +2289,6 @@ function new_item_save(){
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/parse");
     return true;
 }
-
 function item_table(){
 
     include_once(dirname(__FILE__)."/ressources/class.geoip-db.inc");
@@ -2452,7 +2458,6 @@ function item_table(){
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 
 }
-
 function item_import_uploaded(){
     header("content-type: application/x-javascript");
     $page=CurrentPageName();
@@ -2479,7 +2484,6 @@ function item_import_uploaded(){
     $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=$mainid')";
     echo $jsrestart;
 }
-
 function ndpi_list(){
     $tpl=new template_admin();
     $page=CurrentPageName();
