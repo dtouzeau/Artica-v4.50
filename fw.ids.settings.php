@@ -166,13 +166,30 @@ function DataShieldIPv4Blocklist_parameters():bool{
 
 
 
-    $html[]=$tpl->BigCircleCheckbox("DataShieldIPv4BlocklistEnabled","Data-Shield IPv4 Blocklist",@implode("",$explain),$GlobalConfig->Enabled);
+    $html[]=$tpl->BigCircleCheckbox("DataShieldIPv4BlocklistEnabled","Data-Shield IPv4 Blocklist",@implode("",$explain),$GlobalConfig);
     $html[]="<div style='margin-top:20px'>";
     $html[]=$tpl->div_explain("notitle:{laurentMinneMoney}");
     $html[]="</div>";
 
     echo $tpl->_ENGINE_parse_body($html);
    return true;
+}
+function DataShieldIPv4Blocklist_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        echo $tpl->post_error("{error} API||$json->Error");
+        return false;
+    }
+
+    $DataShieldIPv4BlocklistEnabled=intval($_POST["DataShieldIPv4BlocklistEnabled"]);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/DataShieldIPv4Blocklist/save/$DataShieldIPv4BlocklistEnabled"));
+    if(!$json->Status){
+        echo $tpl->post_error("{error} API||$json->Error");
+        return false;
+    }
+    return admin_tracks("Set Data-Shield IPv4 Blocklist enable to $DataShieldIPv4BlocklistEnabled");
 }
 
 

@@ -825,6 +825,7 @@ class templates_objects{
     }
 
     private function _imageinline($img_file):string{
+        if(!file_exists($img_file)){return "";}
         $imgData = base64_encode(file_get_contents($img_file));
         return 'data: '.mime_content_type($img_file).';base64,'.$imgData;
 

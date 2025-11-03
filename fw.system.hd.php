@@ -4,7 +4,8 @@ include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.os.system.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 //"{macro_remove_disk}","{macro_remove_disk_explain}"
-
+if(isset($_GET["extend-system-popup"])){extend_system_popup();exit;}
+if(isset($_GET["extend-system-js"])){extend_system_js();exit;}
 if(isset($_GET["extend-partition-js"])){extend_partition_js();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -32,12 +33,17 @@ if(isset($_GET["directories-monitor-path-popup"])){directory_monitor_path_popup(
 if(isset($_GET["directories-monitor-delete"])){directory_monitor_delete();exit;}
 if(isset($_POST["maxtime"])){directory_monitor_path_save();exit;}
 page();
-function extend_partition_js(){
+function extend_partition_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $dev=$_GET["extend-partition-js"];
     $evenc=urlencode($dev);
-    $tpl->js_dialog2("$dev >> {extend_part}", "$page?extend-partition-popup=$evenc",650);
+    return $tpl->js_dialog2("$dev >> {extend_part}", "$page?extend-partition-popup=$evenc",650);
+}
+function extend_system_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog2("{expand_system_partition}", "$page?extend-system-popup=yes",650);
 }
 
 function action_move_to(){
@@ -564,6 +570,13 @@ function hdlist(){
 
     }
 
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/hd/system"));
+
+    if(property_exists($json,"Growstatus")){
+        if($json->Growstatus->CanExtendPartition OR $json->Growstatus->NeedsResize2FS){
+            $topbuttons[] = array("Loadjs('$page?extend-system-js=yes');", ico_hd, "{expand_system_partition}");
+        }
+    }
     $topbuttons[] = array("LoadAjax('disk-systems-table-start','$page?table=yes');", ico_refresh, "{refresh}");
 
     $TINY_ARRAY["TITLE"]="{your_hard_disks}";
@@ -876,3 +889,43 @@ function ParseHDline_clean($data): string{
     return trim($data);
 }
 
+function extend_system_popup():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/hd/system"));
+
+    if(!$json->Status && !property_exists($json,"Growstatus")){
+        echo $tpl->div_error("ERROR||".$tpl->_ENGINE_parse_body($json->mysql_error));
+        return false;
+    }
+
+    $UnpartitionedTailBytes=FormatBytes($json->Growstatus->UnpartitionedTailBytes/1024);
+    $disk=$json->system->RootSource;
+    $Disk2=$json->system->Disk;
+    $expand_system_partition_explain=$tpl->_ENGINE_parse_body("{expand_system_partition_explain}");
+    $expand_system_partition_explain=str_replace("%size","<strong>$UnpartitionedTailBytes</strong>",$expand_system_partition_explain);
+    $expand_system_partition_explain=str_replace("%part","<strong>$disk</strong>",$expand_system_partition_explain);
+
+    if(!$json->Growstatus->CanExtendPartition && $json->Growstatus->NeedsResize2FS){
+        $expand_system_partition_explain=$tpl->_ENGINE_parse_body("{expand_system_partition_explain2}");
+        $expand_system_partition_explain=str_replace("%part","<strong>$disk</strong>",$expand_system_partition_explain);
+    }
+
+
+
+
+    $after[]="LoadAjax('disk-systems-table-start','$page?table=yes');";
+    $after[]="dialogInstance2.close()";
+
+    echo "<div id='expand-progress' style='margin-bottom:10px'></div>";
+    $jsProgr=$tpl->framework_buildjs("/system/hd/expand/system","expand.system.progress","expand.system.log","expand-progress",implode(";",$after));
+
+    $btn=$tpl->button_autnonome("{expand}",$jsProgr,ico_hd,"",256,"btn-primary",512);
+
+
+    echo $tpl->div_explain("{expand} $Disk2||<div style=font-size:16px;'>$expand_system_partition_explain</div><div style='margin-top:50px;text-align:right'>$btn</div>'");
+
+
+
+    return true;
+}

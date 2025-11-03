@@ -3166,4 +3166,6 @@ The goal is to identify network-based evidence of phishing—especially when use
 <laurentMinneIDS>Laurent Minne is a Defensive Cybersecurity Engineer, CISO at Acensi Group, and the author of [b]Data-Shield IPv4 Blocklist[/b].[br]The Data-Shield IPv4 Blocklist provides an additional layer of protection by listing IPv4 addresses whose activity has been identified as malicious.[br]This list is built on the principles of Deceptive Security and relies on intelligent behavioral analysis of malicious activities linked to cybercrime.[br]
 Data-Shield IPv4 Blocklist delivers up-to-date IPv4 threat intelligence to strengthen your IDS with an extra layer of defense.</laurentMinneIDS>
 <laurentMinneMoney>[b]Support Data-Shield IPv4 Blocklist![/b][br]                   Data-Shield IPv4 Blocklist requires time and funding.[br]That’s why donations are important — to keep Laurent Minne’s project sustainable and in the best possible conditions over time.[br][b]Ko-Fi:[/b] https://ko-fi.com/laurentmduggytuxy</laurentMinneMoney>
-
+<expand_system_partition>Expand system partition</expand_system_partition>
+<expand_system_partition_explain>This operation will extend the %part partition to %size.[br]It runs online (“hot”) — no reboot required.</expand_system_partition_explain>
+<expand_system_partition_explain2>The extended space of your %part partition needs to be formatted to complete the resize.</expand_system_partition_explain2>

@@ -101,6 +101,10 @@ class keepalives_primary_nodes
     public $enableDnsResolver=true;
     public $use_vmac =0;
     public $vmac_xmit_base =0;
+    public $isPrimaryNode = 0;
+    public $primaryNodeIP = null;
+    public $primaryNodePort = 0;
+    public $secondaryNodeIsDisconnected=0;
 
 
     function __construct($primary_node_id = null)

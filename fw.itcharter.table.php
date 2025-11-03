@@ -731,7 +731,7 @@ function table(){
 
 }
 
-function itchart_compile(){
+function itchart_compile():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $results=$q->QUERY_SQL("SELECT ID FROM itcharters WHERE enabled=1 ORDER BY ID DESC");
     $icharters=array();
@@ -759,6 +759,7 @@ function itchart_compile(){
     try {
         $redis->connect($redis_server,$redis_port);
     } catch (Exception $e) {
+        $tpl=new template_admin();
         echo $tpl->js_mysql_alert($e->getMessage());
         return false;
     }
@@ -768,5 +769,5 @@ function itchart_compile(){
     } catch (Exception $e) {}
 
     $redis->close();
-
+    return true;
 }

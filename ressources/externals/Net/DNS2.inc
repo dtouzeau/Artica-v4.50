@@ -265,14 +265,20 @@ class Net_DNS2
     /**
      * Constructor - base constructor for the Resolver and Updater
      *
-     * @param mixed $options array of options or null for none
+     * @param array $options array of options or null for none
      *
      * @throws Net_DNS2_Exception
      * @access public
      *
      */
-    public function __construct(array $options = null){
+    public function __construct(array $options = array()){
+        if(is_null($options)){
+            $options = array();
+        }
 
+        if(!is_array($options)){
+            $options=array();
+        }
 
         //
         // check for the sockets extension; we no longer support the sockets library under 

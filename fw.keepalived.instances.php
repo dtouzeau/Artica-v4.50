@@ -51,7 +51,7 @@ if (isset($_GET["new-primary_node-wizard-3"])) {
 if (isset($_POST["SAVE_primary_node_WIZARD"])) {
     primary_node_wizard_session_vals();
     exit;
-};
+}
 if (isset($_POST["new-primary_node-wizard-save"])) {
     create_primary_node_node();
     exit;
@@ -89,7 +89,7 @@ if (isset($_GET["add-primary_node-service"])) {
 if (isset($_POST["save_primary_node_service"])) {
     save_primary_node_service();
     exit;
-};
+}
 if (isset($_GET["primary_node-services-delete-js"])) {
     delete_services_js();
     exit;
@@ -97,7 +97,7 @@ if (isset($_GET["primary_node-services-delete-js"])) {
 if (isset($_POST["delete-service"])) {
     delete_service();
     exit;
-};
+}
 
 //SCRIPT PARAMS
 
@@ -112,7 +112,7 @@ if (isset($_GET["add-primary_node-scripts_params"])) {
 if (isset($_POST["save_primary_node_scripts_params"])) {
     save_primary_node_scripts_params();
     exit;
-};
+}
 
 
 if (isset($_GET["primary_node-virtualip"])) {
@@ -134,7 +134,7 @@ if (isset($_GET["add-primary_node-virtualip"])) {
 if (isset($_POST["save_primary_node_virtualip"])) {
     save_primary_node_virtualip();
     exit;
-};
+}
 if (isset($_GET["primary_node-virtualip-delete-js"])) {
     delete_virtualip_js();
     exit;
@@ -142,7 +142,7 @@ if (isset($_GET["primary_node-virtualip-delete-js"])) {
 if (isset($_POST["delete-virtualip"])) {
     delete_virtualip();
     exit;
-};
+}
 
 if (isset($_GET["secondary_node"])) {
     secondary_node();
@@ -163,7 +163,7 @@ if (isset($_GET["add-secondary_node"])) {
 if (isset($_POST["save_secondary_node"])) {
     save_secondary_node();
     exit;
-};
+}
 if (isset($_GET["secondary_node-delete-js"])) {
     delete_secondary_node_js();
     exit;
@@ -171,7 +171,7 @@ if (isset($_GET["secondary_node-delete-js"])) {
 if (isset($_POST["delete-secondary_node"])) {
     delete_secondary_node();
     exit;
-};
+}
 
 if (isset($_GET["primary_node-trackinterfaces"])) {
     primary_node_trackinterfaces();
@@ -192,7 +192,7 @@ if (isset($_GET["add-primary_node-trackinterfaces"])) {
 if (isset($_POST["save_primary_node_trackinterfaces"])) {
     save_primary_node_trackinterfaces();
     exit;
-};
+}
 if (isset($_GET["primary_node-trackinterfaces-delete-js"])) {
     delete_trackinterfaces_js();
     exit;
@@ -200,7 +200,7 @@ if (isset($_GET["primary_node-trackinterfaces-delete-js"])) {
 if (isset($_POST["delete-trackinterfaces"])) {
     delete_trackinterfaces();
     exit;
-};
+}
 
 
 if (isset($_POST["primary_node_id"])) {
@@ -256,17 +256,16 @@ if (isset($_GET["primary_node-stats"])) {
 page();
 
 
-function page()
-{
+function page(){
     $page = CurrentPageName();
-    $tpl = new template_admin();
+
 
     $html = "
 	<div class=\"row border-bottom white-bg dashboard-header\">
 	<div class=\"col-sm-12\"><h1 class=ng-binding>{APP_KEEPALIVED} &nbsp;&raquo;&nbsp; {services}</h1>
 	<table class='table'>
 	<tr class='d-flex'>
-	<td class='col-xs-7'><p>{APP_KEEPALIVED_INSTANCES}</p></td><td><img style='width: 100%' src='img/ha-diagram-animated.gif' /></td>
+	<td class='col-xs-7'><p>{APP_KEEPALIVED_INSTANCES}</p></td><td><img alt='' style='width: 100%' src='img/ha-diagram-animated.gif' /></td>
 </tr>
 </table>
 	
@@ -314,8 +313,7 @@ function primary_node_enable_js()
     $primary_node_id = $_GET["primary_node-enable-js"];
     $value = "$primary_node_id";
     $keepalived_node = new keepalives_primary_nodes($primary_node_id);
-    $action = "";
-    $action_text = "";
+
     if ($keepalived_node->enable == 1) {
         $action_text = "disable";
         $action = "Disable $keepalived_node->primary_node_name";
@@ -395,13 +393,10 @@ function secondary_node_enable_js()
     $primary_node_id = $_GET["primary_node_id"];
     $value = "$primary_node_id|$secondary_node_id";
     $keepalived_node = new keepalived_secondary_nodes($primary_node_id, $secondary_node_id);
-    $action = "";
-    $action_text = "";
+
     if ($keepalived_node->enable == 1) {
-        $action_text = "disable";
         $action = "Disable secondary_node $keepalived_node->secondary_node_ip";
     } else {
-        $action_text = "enable";
         $action = "Enable secondary_node $keepalived_node->secondary_node_ip";
     }
 
@@ -482,7 +477,7 @@ function primary_node_stats()
     $html[] = "<table id='table-stats' class=\"table table-stripped\"><thead><tr></tr></thead><tbody>";
     $i = 0;
     foreach ($json_stats as $key => $val) {
-        if ($val['data']['iname'] == "VI_{$primary_node_id}") {
+        if ($val['data']['iname'] == "VI_$primary_node_id") {
             foreach ($val['stats'] as $k => $v) {
                 $class = (0 == $i % 2) ? 'even' : 'odd';
                 $html[] = "<tr class='$class'>";
@@ -523,13 +518,11 @@ function primary_node_js()
     $tpl->js_dialog1($title, "$page?edit-instance=$primary_node_id");
 }
 
-function edit_instance()
-{
+function edit_instance():bool{
 
     $page = CurrentPageName();
     $tpl = new template_admin();
     $primary_node_id = $_GET["edit-instance"];
-    $primary_node_info = new keepalives_primary_nodes($primary_node_id);
     $array["{parameters}"] = "$page?primary_node-parameters=$primary_node_id";
     $array["{services}"] = "$page?primary_node-services=$primary_node_id";
     $array["{virtual_ip}"] = "$page?primary_node-virtualip=$primary_node_id";
@@ -546,7 +539,7 @@ function edit_instance()
         echo $tpl->_ENGINE_parse_body($title);
     }
     echo $tpl->tabs_default($array);
-
+    return true;
 }
 
 //ADD INSTANCE Master
@@ -558,9 +551,7 @@ function new_primary_node_wizard_start()
 	";
 }
 
-function new_primary_node_wizard_1()
-{
-    $users = new usersMenus();
+function new_primary_node_wizard_1():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $keepalived_services = new keepalived_services();
@@ -568,7 +559,7 @@ function new_primary_node_wizard_1()
 
     $tpl->field_hidden("SAVE_primary_node_WIZARD", 1);
     $form[] = $tpl->field_text("primary_node_name", "{instance} {hostname} / {ipaddr}", isset($_SESSION["MASTER"]["hostname"]) ? $_SESSION["MASTER"]["hostname"] : $hostname, true);
-    $form[] = $tpl->field_interfaces('interface', "nooloopNoDef:{listen_interface}", $_SESSION["MASTER"]["interface"], null);
+    $form[] = $tpl->field_interfaces('interface', "nooloopNoDef:{listen_interface}", $_SESSION["MASTER"]["interface"]);
     $form[] = $tpl->field_hidden("primary_node_state", "MASTER");
     $form[] = $tpl->field_hidden("virtual_router_id", 30);
     $form[] = $tpl->field_hidden("priority", 200);
@@ -578,18 +569,16 @@ function new_primary_node_wizard_1()
 
     $html = $tpl->form_outside("{lets_get_start}", $form, "{configure_peers_alert}", "{next}", $jsafter, "AsSquidAdministrator", true);
     echo $tpl->_ENGINE_parse_body($html);
-
+return true;
 }
 
-function new_primary_node_wizard_2()
-{
-    $users = new usersMenus();
+function new_primary_node_wizard_2():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $tpl->field_hidden("SAVE_primary_node_WIZARD", 1);
     $form[] = $tpl->field_ipaddr("virtualip", "{ipaddr}", $_SESSION["MASTER"]["virtualip"], true);
     $form[] = $tpl->field_maskcdir('netmask', '{netmask}', isset($_SESSION["MASTER"]["netmask"]) ? $_SESSION["MASTER"]["netmask"] : 24, true);
-    $form[] = $tpl->field_interfaces('dev', "nooloopNoDef:{local_interface_dev}", $_SESSION["MASTER"]["dev"], null);
+    $form[] = $tpl->field_interfaces('dev', "nooloopNoDef:{local_interface_dev}", $_SESSION["MASTER"]["dev"]);
 
     $jsafter = "LoadAjax('wizard-primary_node-for-steps','$page?new-primary_node-wizard-3=yes');";
 
@@ -598,19 +587,17 @@ function new_primary_node_wizard_2()
 
     $html = $tpl->form_outside("{now_lets_configure_the_shared_ip}", $form, "{virtual_ip_explain}", "{next}", $jsafter, "AsSquidAdministrator", true);
     echo $tpl->_ENGINE_parse_body($html);
-
+    return true;
 }
 
-function new_primary_node_wizard_3()
-{
-    $users = new usersMenus();
+function new_primary_node_wizard_3():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
 
     //$tpl->field_hidden("SAVE_primary_node_WIZARD", 1);
     $tpl->field_hidden("new-primary_node-wizard-save", 1);
     $form[] = $tpl->field_ipv4('secondary_node_ip', '{ipaddr}', $_SESSION['MASTER']['secondary_node_ip'], true);
-    $form[] = $tpl->field_numeric('secondary_node_port', '{artica_listen_port}', isset($_SESSION['MASTER']['secondary_node_port']) ? $_SESSION['MASTER']['secondary_node_port'] : 9000, null);
+    $form[] = $tpl->field_numeric('secondary_node_port', '{artica_listen_port}', isset($_SESSION['MASTER']['secondary_node_port']) ? $_SESSION['MASTER']['secondary_node_port'] : 9000);
 
 
     $ARRAY["PROGRESS_FILE"] = PROGRESS_DIR . "/keepalived.progress";
@@ -628,10 +615,10 @@ function new_primary_node_wizard_3()
 
     $html = $tpl->form_outside("{almost_there_secondary_nodes}", $form, "{secondary_nodes_explain}", "{save}", $jsrestart, "AsSquidAdministrator", true);
     echo $tpl->_ENGINE_parse_body($html);
-
+    return true;
 }
 
-function primary_node_wizard_session_vals()
+function primary_node_wizard_session_vals():bool
 {
     $tpl = new template_admin();
     $tpl->CLEAN_POST();
@@ -639,10 +626,10 @@ function primary_node_wizard_session_vals()
     foreach ($_POST as $key => $value) {
         $_SESSION["MASTER"][$key] = $value;
     }
+    return true;
 }
 
-function create_primary_node_node()
-{
+function create_primary_node_node():bool{
     $unix = new unix();
     $tpl = new template_admin();
     $tpl->CLEAN_POST();
@@ -751,7 +738,7 @@ function create_primary_node_node()
     $keepalived_secondary_node->priority = $last_primary_node_info->priority - $last_id - $keepalived_secondary_node->count_secondary_nodes;
     $keepalived_secondary_node->save();
     unset($_SESSION['MASTER']);
-
+    return true;
 }
 
 //END ADD INSTANCE
@@ -810,37 +797,37 @@ function primary_node_parameters_final()
         }
     }
     $form[] = $tpl->form_add_button_title('Expert Mode', 'switchModes()');
-    $form[] = $tpl->field_hidden("enable", "{$keepalived_node->enable}");
-    $form[] = $tpl->field_hidden("primary_node_id", "{$keepalived_node->primary_node_id}");
-    $form[] = $tpl->field_text("primary_node_name", "{instance} {hostname} / {ipaddr}", "{$keepalived_node->primary_node_name}", true);
+    $form[] = $tpl->field_hidden("enable", $keepalived_node->enable);
+    $form[] = $tpl->field_hidden("primary_node_id", $keepalived_node->primary_node_id);
+    $form[] = $tpl->field_text("primary_node_name", "{instance} {hostname} / {ipaddr}", $keepalived_node->primary_node_name, true);
     if ($isDisable) {
-        $form[] = $tpl->field_text("interface", "{listen_interface}", "{$keepalived_node->interface}", true, null, $isDisable, $isDisable);
+        $form[] = $tpl->field_text("interface", "{listen_interface}", $keepalived_node->interface, true, null, $isDisable, $isDisable);
     } else {
-        $form[] = $tpl->field_interfaces('interface', "nooloopNoDef:{listen_interface}", "{$keepalived_node->interface}", null);
+        $form[] = $tpl->field_interfaces('interface', "nooloopNoDef:{listen_interface}", $keepalived_node->interface);
     }
 
 
-    $form[] = $tpl->field_text("primary_node_state", "{state}", "{$keepalived_node->primary_node_state}", true, null, true, true);
+    $form[] = $tpl->field_text("primary_node_state", "{state}", $keepalived_node->primary_node_state, true, null, true, true);
     //EXPERT ONLY
-    $form[] = $tpl->field_numeric("virtual_router_id", '{virtual_router_id}', "{$keepalived_node->virtual_router_id}", '{virtual_router_id_explain}');
-    $form[] = $tpl->field_numeric("priority", '{priority}', "{$keepalived_node->priority}", '{priority_explain}');
-    $form[] = $tpl->field_numeric("advert_int", '{advert_int}', "{$keepalived_node->advert_int}", '{advert_int_explain}');
-    $form[] = $tpl->field_checkbox("no_preempt", "{nopreempt_1}", "{$keepalived_node->nopreempt}", false, "{nopreempt}", $isDisable);
-    $form[] = $tpl->field_checkbox("use_vmac", "{use_vmac}", "{$keepalived_node->use_vmac}", "vmac_xmit_base", "{use_vmac_explain}");
-    $form[] = $tpl->field_checkbox("vmac_xmit_base", "{vmac_xmit_base}", "{$keepalived_node->vmac_xmit_base}", false, "{vmac_xmit_base_explain}");
+    $form[] = $tpl->field_numeric("virtual_router_id", '{virtual_router_id}', $keepalived_node->virtual_router_id, '{virtual_router_id_explain}');
+    $form[] = $tpl->field_numeric("priority", '{priority}', $keepalived_node->priority, '{priority_explain}');
+    $form[] = $tpl->field_numeric("advert_int", '{advert_int}', $keepalived_node->advert_int, '{advert_int_explain}');
+    $form[] = $tpl->field_checkbox("no_preempt", "{nopreempt_1}", $keepalived_node->nopreempt, false, "{nopreempt}", $isDisable);
+    $form[] = $tpl->field_checkbox("use_vmac", "{use_vmac}", $keepalived_node->use_vmac, "vmac_xmit_base", "{use_vmac_explain}");
+    $form[] = $tpl->field_checkbox("vmac_xmit_base", "{vmac_xmit_base}", $keepalived_node->vmac_xmit_base, false, "{vmac_xmit_base_explain}");
 //    if ($primary_node_info->isPrimaryNode == 1) {
 //        $form[] = $tpl->field_hidden("no_preempt", "{$keepalived_node->nopreempt}");
 //    } else {
 //        $form[] = $tpl->field_checkbox("no_preempt", "{nopreempt_1}", "{$keepalived_node->nopreempt}", false, "{nopreempt}", $isDisable);
 //    }
-    $form[] = $tpl->field_checkbox("unicast_src_ip", "{unicast_src_ip}", "{$keepalived_node->unicast_src_ip}", false, "{unicast_src_ip_explain}", $isDisable);
-    $form[] = $tpl->field_checkbox("enable_peers_ttl", "{enable_ttl}", "{$keepalived_node->enable_peers_ttl}", "min_peers_ttl,max_peers_ttl", null, $isDisable);
+    $form[] = $tpl->field_checkbox("unicast_src_ip", "{unicast_src_ip}", $keepalived_node->unicast_src_ip, false, "{unicast_src_ip_explain}", $isDisable);
+    $form[] = $tpl->field_checkbox("enable_peers_ttl", "{enable_ttl}", $keepalived_node->enable_peers_ttl, "min_peers_ttl,max_peers_ttl", null, $isDisable);
     $form[] = $tpl->field_numeric("min_peers_ttl", "{min_ttl}", $keepalived_node->min_peers_ttl);
     $form[] = $tpl->field_numeric("max_peers_ttl", "{max_ttl_1}", $keepalived_node->max_peers_ttl);
-    $form[] = $tpl->field_checkbox("auth_enable", "{authentication}", "{$keepalived_node->auth_enable}", "auth_pass", null, $isDisable);
-    $form[] = $tpl->field_password("auth_pass", "{password}", "{$keepalived_node->auth_pass}");
-    $form[] = $tpl->field_checkbox("notifty_enable", "{enable_notify}", "{$keepalived_node->notifty_enable}", "notifty", null, $isDisable);
-    $form[] = $tpl->field_text("notifty", "{notify_script}", "{$keepalived_node->notifty}", false, "{notify_script_explain}");
+    $form[] = $tpl->field_checkbox("auth_enable", "{authentication}", $keepalived_node->auth_enable, "auth_pass", null, $isDisable);
+    $form[] = $tpl->field_password("auth_pass", "{password}", $keepalived_node->auth_pass);
+    $form[] = $tpl->field_checkbox("notifty_enable", "{enable_notify}", $keepalived_node->notifty_enable, "notifty", null, $isDisable);
+    $form[] = $tpl->field_text("notifty", "{notify_script}", $keepalived_node->notifty, false, "{notify_script_explain}");
 
     $form[] = '<script>';
     if ($isDisable == true) {
@@ -965,9 +952,7 @@ function primary_node_parameters_save()
 //END EDIT INSTANCE
 
 //SERVICES
-function primary_node_services()
-{
-    $page = CurrentPageName();
+function primary_node_services(){
     $primary_node_id = $_GET["primary_node-services"];
     $tpl = new template_admin();
     $page = CurrentPageName();
@@ -1033,7 +1018,7 @@ function primary_node_services_list()
     $html[] = "<tbody>";
 
 
-    $sql = "SELECT * FROM keepalived_services WHERE primary_node_id='{$primary_node_id}' ORDER BY ID"; //
+    $sql = "SELECT * FROM keepalived_services WHERE primary_node_id='$primary_node_id' ORDER BY ID"; //
     $results = $q->QUERY_SQL($sql);
     if (!$q->ok) {
         echo $q->mysql_error_html(true);
@@ -1051,15 +1036,15 @@ function primary_node_services_list()
 
 
         $url = "Loadjs('$page?primary_node-services-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}');";
-        $href = "<a href=\"javascript:blur()\" OnClick=\"javascript:$url\" style='font-weight:bold'>";
+        $href = "<a href=\"javascript:blur()\" OnClick=\"$url\" style='font-weight:bold'>";
         if ($isDisable) {
             $delete = "";
         } else {
-            $delete = $tpl->icon_delete("Loadjs('$page?primary_node-services-delete-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}&md={$md}&service={$ligne["service"]}')", "AsSystemAdministrator");
+            $delete = $tpl->icon_delete("Loadjs('$page?primary_node-services-delete-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}&md=$md&service={$ligne["service"]}')", "AsSystemAdministrator");
         }
         $html[] = "<tr class='$TRCLASS' id='$md'>";
         $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\">$href{$ligne["service"]}</a></td>");
-        $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\"><center>{$delete}</center></td>");
+        $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\" class='center'>$delete</td>");
         $html[] = "</tr>";
     }
 
@@ -1076,7 +1061,7 @@ function primary_node_services_list()
     $html[] = "
 		<script>
 		NoSpinner();\n" . @implode("\n", $tpl->ICON_SCRIPTS) . "
-		$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+		$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) });
 		</script>";
 
     echo @implode("\n", $html);
@@ -1143,10 +1128,10 @@ function add_primary_node_service()
 
     $form[] = $tpl->field_hidden("save_primary_node_service", $primary_node_id);
     $form[] = $tpl->field_hidden("service_id", $service_id);
-    $form[] = $tpl->field_array_hash($primary_node_service_info->service_array, "service", "{monitor_service}", "{$ligne["service"] }", true, "{monitor_service_explain}", null, false, $isDisable);
+    $form[] = $tpl->field_array_hash($primary_node_service_info->service_array, "service", "{monitor_service}", "{$ligne["service"] }", true, "{monitor_service_explain}", null, false);
 
     $form[] = '<script>';
-    if ($isDisable == true) {
+    if ($isDisable) {
         $form[] = '
          $( document ).ready(function() {      
              $("input").attr("readonly", "readonly");
@@ -1217,9 +1202,7 @@ function delete_service()
 
 
 //VIRTUAL IPS
-function primary_node_virtualip()
-{
-    $page = CurrentPageName();
+function primary_node_virtualip():bool{
     $primary_node_id = $_GET["primary_node-virtualip"];
     $tpl = new template_admin();
     $page = CurrentPageName();
@@ -1251,7 +1234,7 @@ function primary_node_virtualip()
 		LoadAjax('primary_node-virtualip','$page?primary_node-virtualip-list=$primary_node_id');
 	</script>	
 	";
-
+return true;
 }
 
 function primary_node_virtualip_list()
@@ -1285,7 +1268,7 @@ function primary_node_virtualip_list()
     $html[] = "<tbody>";
 
 
-    $sql = "SELECT * FROM keepalived_virtual_interfaces WHERE primary_node_id='{$primary_node_id}' ORDER BY ID"; //
+    $sql = "SELECT * FROM keepalived_virtual_interfaces WHERE primary_node_id='$primary_node_id' ORDER BY ID"; //
     $results = $q->QUERY_SQL($sql);
     if (!$q->ok) {
         echo $q->mysql_error_html(true);
@@ -1304,17 +1287,17 @@ function primary_node_virtualip_list()
 
 
         $url = "Loadjs('$page?primary_node-virtualip-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}');";
-        $href = "<a href=\"javascript:blur()\" OnClick=\"javascript:$url\" style='font-weight:bold'>";
+        $href = "<a href=\"javascript:blur()\" OnClick=\"$url\" style='font-weight:bold'>";
         if ($isDisable) {
             $delete = "";
         } else {
-            $delete = $tpl->icon_delete("Loadjs('$page?primary_node-virtualip-delete-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}&md={$md}&virtualip={$ligne["virtual_ip"]}')", "AsSystemAdministrator");
+            $delete = $tpl->icon_delete("Loadjs('$page?primary_node-virtualip-delete-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}&md=$md&virtualip={$ligne["virtual_ip"]}')", "AsSystemAdministrator");
         }
         $html[] = "<tr class='$TRCLASS' id='$md'>";
         $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\">$href{$ligne["virtual_ip"]}/{$ligne["netmask"]}</a></td>");
         $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\">{$ligne["dev"]}</td>");
         $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\">{$ligne["label"]}</td>");
-        $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\"><center>{$delete}</center></td>");
+        $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\" class='center'>$delete</td>");
         $html[] = "</tr>";
     }
 
@@ -1331,7 +1314,7 @@ function primary_node_virtualip_list()
     $html[] = "
 		<script>
 		NoSpinner();\n" . @implode("\n", $tpl->ICON_SCRIPTS) . "
-		$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+		$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) });
 		</script>";
 
     echo @implode("\n", $html);
@@ -1420,7 +1403,7 @@ function add_primary_node_virtualip()
     echo $tpl->_ENGINE_parse_body($html);
 }
 
-function save_primary_node_virtualip()
+function save_primary_node_virtualip():bool
 {
     $tpl = new template_admin();
     $tpl->CLEAN_POST();
@@ -1450,6 +1433,7 @@ function save_primary_node_virtualip()
     $keepalived_node_virtualip->dev = $_POST['interface'];
     $keepalived_node_virtualip->synckey = microtime(true);
     $keepalived_node_virtualip->save();
+    return true;
 }
 
 function delete_virtualip_js()
@@ -1547,7 +1531,7 @@ function primary_node_trackinterfaces_list()
     $html[] = "<tbody>";
 
 
-    $sql = "SELECT * FROM keepalived_track_interfaces WHERE primary_node_id='{$primary_node_id}' ORDER BY ID"; //
+    $sql = "SELECT * FROM keepalived_track_interfaces WHERE primary_node_id='$primary_node_id' ORDER BY ID"; //
     $results = $q->QUERY_SQL($sql);
     if (!$q->ok) {
         echo $q->mysql_error_html(true);
@@ -1565,16 +1549,16 @@ function primary_node_trackinterfaces_list()
 
 
         $url = "Loadjs('$page?primary_node-trackinterfaces-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}');";
-        $href = "<a href=\"javascript:blur()\" OnClick=\"javascript:$url\" style='font-weight:bold'>";
+        $href = "<a href=\"javascript:blur()\" OnClick=\"$url\" style='font-weight:bold'>";
         if ($isDisable) {
             $delete = "";
         } else {
-            $delete = $tpl->icon_delete("Loadjs('$page?primary_node-trackinterfaces-delete-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}&md={$md}&trackinterfaces={$ligne["interface"]}')", "AsSystemAdministrator");
+            $delete = $tpl->icon_delete("Loadjs('$page?primary_node-trackinterfaces-delete-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}&md=$md&trackinterfaces={$ligne["interface"]}')", "AsSystemAdministrator");
         }
         $html[] = "<tr class='$TRCLASS' id='$md'>";
         $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\">$href{$ligne["interface"]}</a></td>");
         $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\">{$ligne["weight"]}</td>");
-        $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\"><center>{$delete}</center></td>");
+        $html[] = $tpl->_ENGINE_parse_body("<td class=\"$text_class\" class='center'>$delete</td>");
         $html[] = "</tr>";
     }
 
@@ -1664,7 +1648,7 @@ function add_primary_node_trackinterfaces()
         $form[] = $tpl->field_text("weight", "{weight}", "{$ligne["weight"]}", false, null, $isDisable, $isDisable);
     } else {
         $form[] = $tpl->field_interfaces('interface', "nooloopNoDef:{local_interface}", "{$ligne["interface"]}", $explain = null);
-        $form[] = $tpl->field_numeric("weight", "{weight}", "{$ligne["weight"]}", false, null);
+        $form[] = $tpl->field_numeric("weight", "{weight}", "{$ligne["weight"]}", false);
     }
 
 
@@ -1778,8 +1762,7 @@ function primary_node_scripts_params_js()
     $tpl->js_dialog2($title, "$page?add-primary_node-scripts_params=$scripts_params_id&primary_node_id=$primary_node_id");
 }
 
-function add_primary_node_scripts_params()
-{
+function add_primary_node_scripts_params():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $primary_node_id = $_GET["primary_node_id"];
@@ -1826,11 +1809,11 @@ function add_primary_node_scripts_params()
     }
 
     $form[] = $tpl->field_hidden("save_primary_node_scripts_params",$primary_node_info->primary_node_id);
-    $form[] = $tpl->field_numeric("interval", '{interval}', "{$primary_node_info->interval}", '{interval_explain}');
-    $form[] = $tpl->field_numeric("fall", '{fall}', "{$primary_node_info->fall}", '{fall_explain}');
-    $form[] = $tpl->field_numeric("rise", '{rise}', "{$primary_node_info->rise}", '{rise_explain}');
-    $form[] = $tpl->field_numeric("weight", '{weight}', "{$primary_node_info->weight}", '{weight_explain}');
-    $form[] = $tpl->field_numeric("timeout", '{timeout}', "{$primary_node_info->timeout}", '{timeout_explain}');
+    $form[] = $tpl->field_numeric("interval", '{interval}', $primary_node_info->interval, '{interval_explain}');
+    $form[] = $tpl->field_numeric("fall", '{fall}', $primary_node_info->fall, '{fall_explain}');
+    $form[] = $tpl->field_numeric("rise", '{rise}', $primary_node_info->rise, '{rise_explain}');
+    $form[] = $tpl->field_numeric("weight", '{weight}', $primary_node_info->weight, '{weight_explain}');
+    $form[] = $tpl->field_numeric("timeout", '{timeout}', $primary_node_info->timeout, '{timeout_explain}');
     $form[] = $tpl->field_text("testDom", '{test} {domain} Proxy', "{$primary_node_info->testDom}", true);
     $form[] = $tpl->field_text("testDomDNS", '{test} {domain} DNS', "{$primary_node_info->testDomDNS}", true);
     $form[] = $tpl->field_checkbox("enableProxyCurl","{enable} curl {test} (Proxy)","{$primary_node_info->enableProxyCurl}",'proxytesttimeout');
@@ -1863,6 +1846,7 @@ function add_primary_node_scripts_params()
     $security = "AsSystemAdministrator";
     $html = "<div id='primary_node_save'></div>" . $tpl->form_outside($title, $form, null, $title_button, $jsafter, $security);
     echo $tpl->_ENGINE_parse_body($html);
+    return true;
 }
 
 function save_primary_node_scripts_params()
@@ -1989,54 +1973,54 @@ function secondary_node_list()
         $status = intval($ligne["status"]);
 
         $ligne_class = "text-danger";
-        $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne['errortext']}</span></button>";
+        $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne['errortext']}</span></button>";
         if ($status == 0) {
-            $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-warning\">{waiting_registration}</span></button>";
+            $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-warning\">{waiting_registration}</span></button>";
             $ligne_class = "text-warning";
         }
 
         if ($status == 1) {
-            $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne["errortext"]}</span></button>";
+            $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne["errortext"]}</span></button>";
             $ligne_class = "text-danger";
         }
         if ($status == 2) {
-            $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-warning\">{waiting_confirmation}</span></button>";
+            $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-warning\">{waiting_confirmation}</span></button>";
             $ligne_class = "text-warning";
         }
 
         if ($status == 120) {
-            $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-warning\">{$ligne["errortext"]}</span></button>";
+            $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-warning\">{$ligne["errortext"]}</span></button>";
             $ligne_class = "text-warning";
         }
 
         if ($status == 110) {
 
-            $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne["errortext"]}</span></button>";
+            $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne["errortext"]}</span></button>";
             $ligne_class = "text-danger";
         }
 
         if ($status == 3) {
 
-            $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne["errortext"]}</span></button>";
+            $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne["errortext"]}</span></button>";
             $ligne_class = "text-danger";
         }
 
         if ($status == 5) {
-            $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #23c6c8 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-info\">Ping OK</span></button>";
+            $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #23c6c8 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-info\">Ping OK</span></button>";
 
         }
 
         if ($status ==100) {
             $ligne_class = "text-danger";
             //$label_secondary_node = "<div style='text-transform: uppercase;' class=\"label label-danger\">{$ligne['service_state']}</div>";
-            $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne['service_state']}</span></button>";
+            $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne['service_state']}</span></button>";
             if ($ligne['service_state'] == "MASTER" || $ligne['service_state'] == "UP") {
                 $ligne_class = "text-success";
-                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #1c84c6 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-success\">{$ligne['service_state']}</span></button>";
+                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #1c84c6 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-success\">{$ligne['service_state']}</span></button>";
             }
             if ($ligne['service_state'] == "BACKUP") {
                 $ligne_class = "text-info";
-                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #23c6c8  !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-info\">{$ligne['service_state']}</span></button>";
+                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #23c6c8  !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$ligne["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-info\">{$ligne['service_state']}</span></button>";
             }
         }
 
@@ -2052,7 +2036,7 @@ function secondary_node_list()
         $html[] = "<td >$label_secondary_node</a></td>";
 
         $html[] = "<td style='width:1%' nowrap>{$ligne["priority"]}</td>";
-        $html[] = "<td style='width:1%' nowrap><center>{$delete}</center></td>";
+        $html[] = "<td style='width:1%' class='center' nowrap>$delete</td>";
         $html[] = "</tr>";
     }
 
@@ -2307,18 +2291,18 @@ function table()
         //$primary_node_name = $tpl->td_href("$primary_node_name", "{$ligne["id"]}", "Loadjs('$page?primary_node-js=$primary_node_id&title={$ligne['primary_node_name']}')");
 
         //$label = "<div style='text-transform: uppercase;' class=\"label label-danger\">$primary_node_name {$ligne['service_state']}</a></div>";
-        $label ="<button class='btn btn-light animated infinite pulse' style='padding: 0px 10px 0px 0px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?primary_node-js=$primary_node_id&title={$ligne['primary_node_name']}')\"><span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne['service_state']}</span> <strong>$primary_node_name</strong></button>";
+        $label ="<button class='btn btn-light animated infinite pulse' style='padding: 0 10px 0 0 !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?primary_node-js=$primary_node_id&title={$ligne['primary_node_name']}')\"><span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$ligne['service_state']}</span> <strong>$primary_node_name</strong></button>";
         $class = "text-danger";
         $class_vip="text-danger";
         if ($ligne['service_state'] == "MASTER" || $ligne['service_state'] == "UP") {
             //$label = "<div style='text-transform: uppercase; border: 1px solid green' >$primary_node_name <span class=\"label label-primary\">{$ligne['service_state']}</span><span class=\"clear\"></span></div>";
             $class = "text-success";
-            $label ="<button class='btn btn-light' style='padding: 0px 10px 0px 0px !important; border:1px solid #1c84c6 !important;' onclick=\"Loadjs('$page?primary_node-js=$primary_node_id&title={$ligne['primary_node_name']}')\"><span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-success\">{$ligne['service_state']}</span> <strong>$primary_node_name</strong></button>";
+            $label ="<button class='btn btn-light' style='padding: 0 10px 0 0 !important; border:1px solid #1c84c6 !important;' onclick=\"Loadjs('$page?primary_node-js=$primary_node_id&title={$ligne['primary_node_name']}')\"><span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-success\">{$ligne['service_state']}</span> <strong>$primary_node_name</strong></button>";
             $class_vip="success";
         }
         if ($ligne['service_state'] == "BACKUP") {
             //$label = "<div style='text-transform: uppercase;' class=\"label label-success\"><strong>$primary_node_name</strong> {$ligne['service_state']}</a></div>";
-            $label ="<button class='btn btn-light' style='padding: 0px 10px 0px 0px !important; border:1px solid #23c6c8 !important;' onclick=\"Loadjs('$page?primary_node-js=$primary_node_id&title={$ligne['primary_node_name']}')\"><span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-info\">{$ligne['service_state']}</span> <strong>$primary_node_name</strong></button>";
+            $label ="<button class='btn btn-light' style='padding: 0 10px 0 0 !important; border:1px solid #23c6c8 !important;' onclick=\"Loadjs('$page?primary_node-js=$primary_node_id&title={$ligne['primary_node_name']}')\"><span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-info\">{$ligne['service_state']}</span> <strong>$primary_node_name</strong></button>";
             $class = "text-info";
 
         }
@@ -2347,6 +2331,7 @@ function table()
         }
         $count=count($secondary_nodes);
         foreach ($secondary_nodes as $index => $secondary_node) {
+            VERBOSE("$index Secondary Node {$secondary_node["secondary_node_ip"]}");
             $md = md5(serialize($secondary_node));
             $secondary_node_name = $secondary_node["secondary_node_ip"];
             if (!empty($secondary_node["hostname"])) {
@@ -2359,57 +2344,57 @@ function table()
             $label_secondary_node = "";
             if ($status == 0) {
                 //$label_secondary_node = "<div class='label label-info' style='text-transform: uppercase;'>{waiting_registration}</div>";
-                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-warning\">{waiting_registration}</span></button>";
+                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-warning\">{waiting_registration}</span></button>";
                 $secondary_node_class = "text-warning";
             }
 
             if ($status == 1) {
                 //$label_secondary_node = "<div class='label label-danger' style='text-transform: uppercase;'>{$secondary_node["errortext"]}</div>";
-                $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$secondary_node["errortext"]}</span></button>";
+                $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$secondary_node["errortext"]}</span></button>";
                 $secondary_node_class = "text-danger";
             }
             if ($status == 2) {
                 //$label_secondary_node = "<div class='label label-warning' style='text-transform: uppercase;'>{waiting_confirmation}</div>";
-                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-warning\">{waiting_confirmation}</span></button>";
+                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-warning\">{waiting_confirmation}</span></button>";
                 $secondary_node_class = "text-warning";
             }
 
             if ($status == 3) {
                 //$label_secondary_node = "<div class='label label-danger' style='text-transform: uppercase;'>{$secondary_node["errortext"]}</div>";
-                $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$secondary_node["errortext"]}</span></button>";
+                $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$secondary_node["errortext"]}</span></button>";
                 $secondary_node_class = "text-danger";
             }
 
             if ($status == 5) {
                 //$label_secondary_node = "<div class='label label-primary' style='text-transform: uppercase;'>PING OK</div>";
-                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #23c6c8 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-info\">Ping OK</span></button>";
+                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #23c6c8 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-info\">Ping OK</span></button>";
             }
 
             if ($status == 120) {
-                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-warning\">{$secondary_node["errortext"]}</span></button>";
+                $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #f8ac59 !important;' onclick=\"Loadjs('$page?secondary_node-js={$ligne["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-warning\">{$secondary_node["errortext"]}</span></button>";
                 $ligne_class = "text-warning";
             }
 
             if ($status == 110) {
 
-                $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$secondary_node["errortext"]}</span></button>";
+                $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$secondary_node["errortext"]}</span></button>";
                 $ligne_class = "text-danger";
             }
 
             if ($status == 100) {
                 $secondary_node_class = "text-danger";
                 //$label_secondary_node = "<div style='text-transform: uppercase;' class=\"label label-danger\">{$secondary_node['service_state']}</div>";
-                $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-danger\">{$secondary_node['service_state']}</span></button>";
+                $label_secondary_node ="<button class='btn btn-light animated infinite pulse' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #ed5565 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-danger\">{$secondary_node['service_state']}</span></button>";
                 if ($secondary_node['service_state'] == "MASTER" || $secondary_node['service_state'] == "UP") {
                     $secondary_node_class = "text-success";
                     //$label_secondary_node = "<div style='text-transform: uppercase;' class=\"label label-info\">{$secondary_node['service_state']}</div>";
-                    $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #1c84c6 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-success\">{$secondary_node['service_state']}</span></button>";
+                    $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #1c84c6 !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-success\">{$secondary_node['service_state']}</span></button>";
                     $class_vip="success";
                 }
                 if ($secondary_node['service_state'] == "BACKUP") {
                     $secondary_node_class = "text-info";
                     //$label_secondary_node = "<div style='text-transform: uppercase;' class=\"label label-success\">{$secondary_node['service_state']}</div>";
-                    $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0px 0px 0px 10px !important; border:1px solid #23c6c8  !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0px !important;top: -1.3px !important;' class=\"label label-info\">{$secondary_node['service_state']}</span></button>";
+                    $label_secondary_node ="<button class='btn btn-light' style=' display: block !important;padding: 0 0 0 10px !important; border:1px solid #23c6c8  !important;' onclick=\"Loadjs('$page?secondary_node-js={$secondary_node["ID"]}&primary_node_id={$secondary_node["primary_node_id"]}')\"><strong>$secondary_node_name</strong> <span style='text-transform: uppercase;padding: 3.3px 10px!important; border-radius: 0 !important;top: -1.3px !important;' class=\"label label-info\">{$secondary_node['service_state']}</span></button>";
 
                 }
 
@@ -2448,7 +2433,7 @@ function table()
     $html[] = "
 	<script>
 	NoSpinner();\n" . @implode("\n", $tpl->ICON_SCRIPTS) . "
-	$(document).ready(function() { $('#table-keepalived-instances').footable( { 	\"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+	$(document).ready(function() { $('#table-keepalived-instances').footable( { 	\"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) });
 	</script>";
 
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
