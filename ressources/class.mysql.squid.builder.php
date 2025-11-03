@@ -452,9 +452,11 @@ class mysql_squid_builder{
         $this->acl_GroupType_DNSFW["reputation"]="{use_reput_service}";
 
 
-        $this->acl_GroupType_IDS["all"]="{all}";
+
         $this->acl_GroupType_IDS["src"]="{ipsrc}";
         $this->acl_GroupType_IDS["dst"]="{dst}";
+        $this->acl_GroupType_IDS["port"]="{destination_port}";
+        $this->acl_GroupType_IDS["dstdomain"]="{dstdomain}";
 
 
         $this->acl_GroupType_SMTP["all"]="{all}";

@@ -51,22 +51,23 @@ function top_buttons():bool{
     $Suffix=build_suffix();
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $TableLink=$_GET["TableLink"];
-    $TABLE_PROXY["webfilters_sqacllinks"]=true;
     $ProxyPac=intval($_GET["ProxyPac"]);
     $fastacls=intval($_GET["fastacls"]);
+    $TableLink="";
+    if(isset($_GET["TableLink"])){
+        $TableLink="&TableLink={$_GET["TableLink"]}";
+    }
     $AS_PROXY=true;
-    //if(!isset($TABLE_PROXY[$TableLink])){$AS_PROXY=false;}
     if($ProxyPac==1){$AS_PROXY=false;}
     if($fastacls==1){$AS_PROXY=false;}
 
     $topbuttons[] = array("document.getElementById('fw-objects-table').innerHTML='&nbsp;';
-		LoadAjax('fw-objects-table','$page?new-object=yes&$Suffix');", ico_plus, "{new_object}");
+		LoadAjax('fw-objects-table','$page?new-object=yes&$Suffix$TableLink');", ico_plus, "{new_object}");
     $topbuttons[] = array("document.getElementById('fw-objects-table').innerHTML='&nbsp;';
-		LoadAjax('fw-objects-table','$page?link-object=yes&$Suffix');", ico_link, "{link_object}");
+		LoadAjax('fw-objects-table','$page?link-object=yes&$Suffix$TableLink');", ico_link, "{link_object}");
     if($AS_PROXY) {
         $topbuttons[] = array("document.getElementById('fw-objects-table').innerHTML='&nbsp;';
-		LoadAjax('fw-objects-table','$page?new-object-group=yes&$Suffix');", "fad fa-layer-group", "{new_group_of_objects}");
+		LoadAjax('fw-objects-table','$page?new-object-group=yes&$Suffix$TableLink');", "fad fa-layer-group", "{new_group_of_objects}");
     }
 
     echo $tpl->_ENGINE_parse_body($tpl->th_buttons($topbuttons));
@@ -782,7 +783,7 @@ function search_table():bool{
 
 	
 	$RefreshTabledeced=base64_decode($_GET["RefreshTable"]);
-    $jsAfter=base64_encode("LoadAjax('fw-objects-table','$page?build-table=yes&ID=$ID&firewall=$firewall&TableLink=$TableLink&RefreshTable=$RefreshTable&ProxyPac=$ProxyPac&acl-build=$ID&fastacls=$fastacls&DnsDist=$DnsDist&IDS=$IDS');$RefreshTabledeced;LoadAjax('table-acls-rules','fw.proxy.acls.php?table=yes');$RefreshFunction");
+    $jsAfter=base64_encode("LoadAjax('fw-objects-table','$page?build-table=yes&ID=$ID&firewall=$firewall&TableLink=$TableLink&RefreshTable=$RefreshTable&ProxyPac=$ProxyPac&acl-build=$ID&fastacls=$fastacls&DnsDist=$DnsDist&IDS=$IDS');$RefreshTabledeced;LoadAjax('table-acls-rules','fw.proxy.acls.php?table=yes&TableLink=$TableLink');$RefreshFunction");
 	
 	$results = $q->QUERY_SQL($sql);
 	VERBOSE("SQL table $TableLink for group id $ID returns ".count($results)." items",__LINE__);
@@ -867,7 +868,7 @@ function search_table():bool{
 
 		//
 
-		$add_item=$tpl->icon_add("Loadjs('fw.rules.items.php?new-item-js={$ligne["ID"]}&js-after=$jsAfter&ProxyPac=$ProxyPac&fastacls=$fastacls')","AsDansGuardianAdministrator");
+		$add_item=$tpl->icon_add("Loadjs('fw.rules.items.php?new-item-js={$ligne["ID"]}&js-after=$jsAfter&ProxyPac=$ProxyPac&fastacls=$fastacls&TableLink=$TableLink')","AsDansGuardianAdministrator");
 
 		if($NOITEMS){
 		    if($ITEMS==0) {
@@ -887,7 +888,7 @@ function search_table():bool{
         if($GroupType=="spamc"){  $add_item="&nbsp;";}
 
         if($GroupType=="AclsGroup"){
-            $add_item=$tpl->icon_add("Loadjs('fw.rules.items.objects.php?js=yes&groupid={$ligne["ID"]}&$suffix')","AsDansGuardianAdministrator");
+            $add_item=$tpl->icon_add("Loadjs('fw.rules.items.objects.php?js=yes&groupid={$ligne["ID"]}&$suffix&TableLink=$TableLink')","AsDansGuardianAdministrator");
         }
         $ZorderKey="zOrder";
         if(!isset($ligne[$ZorderKey])){

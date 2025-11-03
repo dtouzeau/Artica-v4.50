@@ -416,21 +416,25 @@ function new_item_backjs():string{
     return "js-after=$jsafter&function=$function&function_search=$function_search&items-refresh=$items_refresh";
 }
 
-function new_item_js(){
+function new_item_js():bool{
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
     $groupid=intval($_GET["new-item-js"]);
     $new_item_backjs=new_item_backjs();
     $qProxy=new mysql_squid_builder(true);
+
     $ligne=$q->mysqli_fetch_array("SELECT GroupName,GroupType FROM webfilters_sqgroups WHERE ID='$groupid'");
     $groupname=$qProxy->acl_GroupType[$ligne["GroupType"]];
+    $TableLink="";
+    if(isset($_GET["TableLink"])){
+        $TableLink="&TableLink={$_GET["TableLink"]}";
+    }
 
     if($ligne["GroupType"]=="ndpi"){
-        $tpl->js_dialog7("{new_item} - {group}: {$ligne["GroupName"]}","$page?ndpi-list=$groupid&$new_item_backjs");
-        return;
+        return $tpl->js_dialog7("{new_item} - {group}: {$ligne["GroupName"]}","$page?ndpi-list=$groupid&$new_item_backjs");
     }
-    $tpl->js_dialog7("{new_item} - {group}: {$ligne["GroupName"]} $groupname","$page?new-item-popup=$groupid&$new_item_backjs");
+    return $tpl->js_dialog7("{new_item} - {group}: {$ligne["GroupName"]} $groupname","$page?new-item-popup=$groupid&$new_item_backjs$TableLink");
 
 }
 
@@ -2043,26 +2047,32 @@ function new_item_popup():bool{
     $function=$_GET["function"];
     $function_search=$_GET["function-search"];
     $RefreshFunction=$_GET["RefreshFunction"];
+    $filltable="Loadjs('fw.acls.filltable.php')";
+    $TableLink="";
+    if(isset($_GET["TableLink"])){
+        $TableLinkUri="&TableLink={$_GET["TableLink"]}";
+        $TableLink=$_GET["TableLink"];
+    }
     $ligne=$q->mysqli_fetch_array("SELECT GroupName,GroupType FROM webfilters_sqgroups WHERE ID='$gpid'");
 
     VERBOSE("Gpid: $gpid | GroupeType = {$ligne["GroupType"]}",__LINE__);
 
     if($ligne["GroupType"]=="accessrule"){
         echo "<div id='acls-item-choose-main-accessrule-$gpid'></div>";
-        echo "<script>LoadAjax('acls-item-choose-main-accessrule-$gpid','fw.rules.items.accessrules.php?gpid=$gpid&page=yes&function2=$function');</script>";
+        echo "<script>LoadAjax('acls-item-choose-main-accessrule-$gpid','fw.rules.items.accessrules.php?gpid=$gpid&page=yes&function2=$function$TableLinkUri');</script>";
         return true;
     }
 
     if($ligne["GroupType"]=="adfrom"){
         $URLADDON=URL_ADDONS();
         echo "<div id='acls-item-choose-main-ad-$gpid'></div>";
-        echo "<script>LoadAjax('acls-item-choose-main-ad-$gpid','fw.rules.items.activedirectory.php?gpid=$gpid&$URLADDON');</script>";
+        echo "<script>LoadAjax('acls-item-choose-main-ad-$gpid','fw.rules.items.activedirectory.php?gpid=$gpid&$URLADDON$TableLinkUri');</script>";
         return true;
     }
     if($ligne["GroupType"]=="adto"){
         $URLADDON=URL_ADDONS();
         echo "<div id='acls-item-choose-main-ad-$gpid'></div>";
-        echo "<script>LoadAjax('acls-item-choose-main-ad-$gpid','fw.rules.items.activedirectory.php?gpid=$gpid&$URLADDON');</script>";
+        echo "<script>LoadAjax('acls-item-choose-main-ad-$gpid','fw.rules.items.activedirectory.php?gpid=$gpid&$URLADDON$TableLinkUri');</script>";
         return true;
     }
 
@@ -2103,7 +2113,12 @@ function new_item_popup():bool{
         $js[]=base64_decode($RefreshFunction);
     }
 
-    $js[]="Loadjs('fw.acls.filltable.php')";
+    if($TableLink=="suricata_sqacllinks"){
+        $filltable="";
+    }
+    if(strlen($filltable)>1) {
+        $js[] = "Loadjs('fw.acls.filltable.php')";
+    }
     $backjs=@implode(";", $js);
 
     echo $tpl->form_outside($tpl->utf8_encode($ligne["GroupName"]),@implode("\n", $html),$item_explain,$btname,"$backjs");

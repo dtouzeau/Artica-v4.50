@@ -138,7 +138,18 @@ class HeadsBuilder{
         return $starter;
     }
 
+    private function CurrentVersion():string{
+        $version=file_get_contents("/usr/share/artica-postfix/version");
+        if(!is_file("/usr/share/artica-postfix/SP/$version")){
+            return $version;
+        }
+        $SP=file_get_contents("/usr/share/artica-postfix/SP/$version");
+        return "$version.$SP";
+    }
+
     private function Jcode103():array{
+        $version=$this->CurrentVersion();
+
         $pluginRoot=$this->pluginRoot;
         $jsroot=$this->jsroot;
         $jsCode103[]="/mouse.js";
@@ -163,6 +174,7 @@ class HeadsBuilder{
         $jsCode103[]="$jsroot/plugins/daterangepicker/daterangepicker.3.1.min.js";
         $jsCode103[]="/js/jquery.peity.min.js";
         $jsCode103[]="/default.js";
+        $jsCode103[]="/big-circle-checkbox.js";
         return $jsCode103;
     }
 

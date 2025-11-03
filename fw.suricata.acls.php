@@ -16,7 +16,7 @@ if(isset($_GET["import-js"])){import_js();exit;}
 if(isset($_GET["externalALCLDAPRecursive"])){externalALCLDAPRecursive();exit;}
 if(isset($_GET["externalALCLDAPRecursive-popup"])){externalALCLDAPRecursive_popup();exit;}
 if(isset($_GET["externalALCLDAPRecursive-switch"])){externalALCLDAPRecursive_switch();exit;}
-
+if(isset($_GET["rule-code"])){rule_code();exit;}
 if(isset($_GET["proxy-acls-bugs"])){proxy_acls_bugs();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["newrule-js"])){new_rule_js();exit;}
@@ -47,6 +47,8 @@ if(isset($_GET["duplicate-js"])){duplicate_js();exit;}
 if(isset($_GET["change-order"])){change_order_js();exit;}
 if(isset($_POST["NewOrder"])){change_order_save();exit;}
 if(isset($_POST["rule-delete-confirm"])){rule_delete_confirm();exit;}
+if(isset($_GET["rules-scan"])){rules_scan();exit;}
+if(isset($_GET["rules-scan-ids"])){rules_scan_ids();exit;}
 
 page();
 
@@ -385,8 +387,48 @@ function duplicate_js(){
 
 
 }
-function rule_enable(){
+function rules_scan():bool{
     $page=CurrentPageName();
+    header("content-type: application/x-javascript");
+    $js[]="var TheIDS = Array.from(document.querySelectorAll('[id^=\"ids-status-\"]'))";
+    $js[]=" .map(el => {";
+    $js[]=" var match = el.id.match(/^ids-status-(\d+)$/);";
+    $js[]=" return match ? parseInt(match[1], 10) : null;";
+    $js[]=" })";
+    $js[]=" .filter(n => n !== null);";
+    $js[]="var CompiledIDS = TheIDS.join(\"-\");";
+    $js[]="Loadjs('$page?rules-scan-ids='+encodeURIComponent(CompiledIDS));";
+    echo @implode("\n", $js);
+    return true;
+}
+function rules_scan_ids():bool{
+    $tpl=new template_admin();
+    $ids=explode("-",$_GET["rules-scan-ids"]);
+    $f=array();
+    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+    $sql="SELECT * FROM suricata_sqacls WHERE ID IN (".implode(",",$ids).")";
+    $results=$q->QUERY_SQL($sql);
+    if(!$q->ok) {
+        echo "alert('".$q->mysql_error.$sql."');";
+        return false;
+    }
+    
+    foreach ($results as $index=>$ligne){
+        $ID=$ligne["ID"];
+        $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne)));
+        $f[]="// $index -> $ID";
+        $f[]="if (document.getElementById('ids-status-$ID') ){";
+        $f[]="  document.getElementById('ids-status-$ID').innerHTML=base64_decode('$status');";
+        $f[]="}";
+
+    }
+    header("content-type: application/x-javascript");
+    echo @implode("\n", $f);
+    return true;
+}
+
+function rule_enable(){
+
 	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 	header("content-type: application/x-javascript");
 	$ligne=$q->mysqli_fetch_array("SELECT aclname,enabled FROM suricata_sqacls WHERE ID='{$_GET["enable-js"]}'");
@@ -424,15 +466,15 @@ function rule_js(){
 
     if($aclgroup==1){
         $size=1024;
-        $ligne["aclname"]="{group_of_rules}: {$aclname}";
+        $ligne["aclname"]="{group_of_rules}: $aclname";
     }
 
     if($aclgpid>0){
-        $tpl->js_dialog2("{rule}: $ID {$aclname}","$page?rule-tabs=$ID",$size);
+        $tpl->js_dialog2("{rule}: $ID $aclname","$page?rule-tabs=$ID",$size);
         return;
     }
 
-	$tpl->js_dialog1("{rule}: $ID {$aclname}","$page?rule-tabs=$ID",$size);
+	$tpl->js_dialog1("{rule}: $ID $aclname","$page?rule-tabs=$ID",$size);
 }
 function new_rule_group_js(){
     $page       = CurrentPageName();
@@ -449,11 +491,12 @@ function rule_tabs():bool{
 
     $RefreshFunction=base64_encode("Loadjs('$page?fill=$ID')");
 	$array["{rule}"]="$page?rule-settings=$ID";
-    $array["{proxy_objects}"] = "fw.proxy.acls.objects.php?rule-id=$ID&RefreshFunction=$RefreshFunction&IDS=1&TableLink=suricata_sqacllinks";
+    $array["{objects}"] = "fw.proxy.acls.objects.php?rule-id=$ID&RefreshFunction=$RefreshFunction&IDS=1&TableLink=suricata_sqacllinks";
+    $array["{generated_rule}"]="$page?rule-code=$ID";
 	echo $tpl->tabs_default($array);
     return true;
 }
-function rule_settings(){
+function rule_settings():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 
@@ -500,6 +543,9 @@ function rule_settings(){
     $classification["coin-mining"]="coin-mining";
     $classification["command-and-control"]="command-and-control";
 
+    $action["alert"]="{ids_prefix_1}";
+    $action["pass"]="{ids_prefix_2}";
+
     $f["http"]="http";
     $f["ftp"]="ftp";
     $f["smtp"]="smtp";
@@ -539,8 +585,46 @@ function rule_settings(){
     $target["dst"]="{dst}";
 
     $proto["ip"]="{all}";
-    $proto["tcp"]="{tcp}";
-    $proto["udp"]="{udp}";
+    $proto["tcp"]="TCP/IP";
+    $proto["udp"]="UDP";
+    $proto["icmp"]="icmp";
+    $proto["icmpv4"]="icmpv4";
+    $proto["icmpv6"]="icmpv6";
+    $proto["ipv4"]="ipv4";
+    $proto["ipv6"]="ipv6";
+    $proto["http"]="http";
+    $proto["http1"]="http1";
+    $proto["http2"]="http2";
+    $proto["tls"]="tls";
+    $proto["quic"]="quic";
+    $proto["ftp"]="ftp";
+    $proto["ftp-data"]="ftp-data";
+    $proto["smb"]="smb";
+    $proto["dns"]="dns";
+    $proto["doh2"]="doh2";
+    $proto["mdns"]="mdns";
+    $proto["dcerpc"]="dcerpc";
+    $proto["ldap"]="ldap";
+    $proto["dhcp"]="dhcp";
+    $proto["ssh"]="ssh";
+    $proto["smtp"]="smtp";
+    $proto["imap"]="imap";
+    $proto["pop3"]="pop3";
+    $proto["nfs"]="nfs";
+    $proto["ike"]="ike";
+    $proto["krb5"]="krb5";
+    $proto["bittorrent-dht"]="bittorrent-dht";
+    $proto["mqtt"]="mqtt";
+    $proto["ntp"]="ntp";
+    $proto["rfb"]="rfb";
+    $proto["rdp"]="rdp";
+    $proto["snmp"]="snmp";
+    $proto["tftp"]="tftp";
+    $proto["sip"]="sip";
+    $proto["telnet"]="telnet";
+    $proto["websocket"]="websocket";
+    $proto["pgsql"]="pgsql";
+    ksort($proto);
 
 	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     if(!$q->FIELD_EXISTS("suricata_sqacls","description")){
@@ -550,14 +634,19 @@ function rule_settings(){
     $flow["to_client"]="{flow_to_client}";
     $flow["to_server"]="{flow_to_server}";
 
+    $Direction[0] = "{one_direction_only}";
+	$Direction[1] = "{both_stateful}";
+
 
     $ID=intval($_GET["rule-settings"]);
 	$ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_sqacls WHERE ID=$ID");
     $ligne["aclname"]=$tpl->utf8_encode($ligne["aclname"]);
 	$form[]=$tpl->field_hidden("rule-save", "$ID");
     $form[]=$tpl->field_text("aclname", "{rule_name}", $ligne["aclname"],true);
+    $form[]=$tpl->field_array_hash($action, "action", "{action}", $ligne["action"]);
     $form[]=$tpl->field_array_hash($classification, "classtype", "{category}", $ligne["classtype"]);
     $form[]=$tpl->field_array_hash($proto, "proto", "{protocol}", $ligne["proto"]);
+    $form[]=$tpl->field_array_hash($Direction, "direction", "{direction}", $ligne["direction"]);
     $form[]=$tpl->field_array_hash($flow, "flow", "{flow}", $ligne["flow"]);
     $form[]=$tpl->field_array_hash($f, "ApplayerProtocol", "{ApplicationLayerProtocol}", $ligne["ApplayerProtocol"]);
     $form[]=$tpl->field_array_hash($target, "target", "{target}", $ligne["target"]);
@@ -567,10 +656,25 @@ function rule_settings(){
    	$jsafter="Loadjs('$page?fill=$ID');";
 
     $tpl->form_add_button("{export}","Loadjs('$page?export-rule-js=$ID')");
-	$html="<div id='export-progress-$ID' style='margin-top:5px'></div>".
-        $tpl->form_outside($ligne["aclname"], @implode("\n", $form),null,"{apply}",$jsafter,"AsFirewallManager");
+	$html[]="<div id='export-progress-$ID' style='margin-top:5px'></div>";
+    $html[]=$tpl->form_outside($ligne["aclname"], @implode("\n", $form),null,"{apply}",$jsafter,"AsFirewallManager");
 	echo $tpl->_ENGINE_parse_body($html);
+    return true;
 	
+}
+function rule_code():bool{
+    $tpl=new template_admin();
+    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+    $ID=intval($_GET["rule-code"]);
+    $ligne=$q->mysqli_fetch_array("SELECT coded FROM suricata_sqacls WHERE ID=$ID");
+
+    $html[]="<div style='margin-top:20px'><textarea spellcheck='false' autocomplete='off'
+  style=\"width:100%;min-height:220px;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;outline:none;
+         font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace;
+         font-size:16px;line-height:1.5;color:#111827;background:#ffffff;
+         white-space:pre-wrap;word-wrap:break-word;overflow:auto;resize:vertical;tab-size:4;caret-color:#2563eb;\">#ID: $ID\n{$ligne["coded"]}</textarea></div>";
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
 }
 function utf8_decode_switch($value):string{
     if(is_null($value)){
@@ -582,7 +686,7 @@ function utf8_decode_switch($value):string{
     $tpl=new template_admin();
     return $tpl->utf8_decode($value);
 }
-function rule_save(){
+function rule_save():bool{
 
 	$tpl    = new template_admin();
 	$q      = new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -593,16 +697,9 @@ function rule_save(){
 	$aclname=sqlite_escape_string2(utf8_decode_switch($_POST["aclname"]));
 	$description=base64_encode($_POST["description"]);
 
-    if(isset($_POST["access"])) {
-        $acl = new squid_acls_groups();
-        if (!$acl->aclrule_edittype($ID, $_POST["access"], 1)) {
-            echo "js:error:aclrule_edittype($ID,{$_POST["access"]},1)\n";
-            return;
-        }
-    }
-	
-	
+
 	$sql="UPDATE suricata_sqacls SET 
+	            `action`='{$_POST["action"]}',
 				`enabled`='{$_POST["enabled"]}',
 				`seconds`='{$_POST["seconds"]}',
 				`count`='{$_POST["count"]}',
@@ -611,27 +708,27 @@ function rule_save(){
 				`target`='{$_POST["target"]}',
 				`action`='{$_POST["action"]}',
 				`classtype`='{$_POST["classtype"]}',
+				`direction`='{$_POST["direction"]}',
+				`ApplayerProtocol`='{$_POST["ApplayerProtocol"]}',
 				`priority`='{$_POST["priority"]}',
 				`description`='$description',
 				`aclname`='$aclname' WHERE ID=$ID";
 
 	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "js:error:".$tpl->javascript_parse_text($q->mysql_error);return;}
+	if(!$q->ok){echo $tpl->post_error($tpl->javascript_parse_text($q->mysql_error));return false;}
 
 	$c=0;
 	$sql="SELECT ID FROM suricata_sqacls ORDER BY xORDER";
 	$results = $q->QUERY_SQL($sql);
 	
 	foreach($results as $index=>$ligne) {
+        VERBOSE("$index",__LINE__);
 		$q->QUERY_SQL("UPDATE suricata_sqacls SET xORDER=$c WHERE `ID`={$ligne["ID"]}");
-		if(!$q->ok){echo $q->mysql_error_html(true);return;}
+		if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
 		$c++;
 	}
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/explains");
-    admin_tracks("Modify settings of $aclname proxy rule");
-
-	
-	
+   $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/explains");
+   return admin_tracks("Modify settings of $aclname IDS rule");
 }
 function new_rule_js():bool{
 	$page       = CurrentPageName();
@@ -707,6 +804,12 @@ function new_rule_popup():bool{
     }
     $form[]=$tpl->field_hidden("newrule", "yes");
 	$form[]=$tpl->field_text("aclname", "{rule_name}", null,true);
+
+
+    $action["alert"]="{ids_prefix_1}";
+    $action["pass"]="{ids_prefix_2}";
+
+    $form[]=$tpl->field_array_hash($action, "action", "{action}", "alert");
     $form[]=$tpl->field_array_hash($f, "ApplayerProtocol", "{ApplicationLayerProtocol}", "");
 
 
@@ -855,7 +958,7 @@ function table_builder():bool{
         $TableClass="footable ";
     }
 
-    $html[]="<table id='table-webfilter-rules-$t' class=\"{$TableClass}table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<table id='table-ids-rules-$t' class=\"{$TableClass}table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th $data1>$order</th>";
@@ -900,7 +1003,7 @@ function table_builder():bool{
         }
 
     }
-    $results=array();
+
     list($search2,$searchgroups)=search_all_items($search);
 
     VERBOSE($sql,__LINE__);
@@ -949,19 +1052,6 @@ function table_builder():bool{
     	$up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');");
 		$down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');");
 
-        $rule_status="<span class='label label-default'>{inactive}</span>";
-        if(isset($getCurrentRules[$ID])){
-            $rule_status="<span class='label label-primary'>{active2}</span>";
-        }
-        if(count($getCurrentRules)==0){
-            $rule_status="<span class='label label-default'>{unknown}</span>";
-        }
-        if($ligne["aclgroup"]>0){
-            $rule_status="<span class='label label-primary'>{active2}</span>";
-            if($ligne["enabled"]==0){
-                $rule_status="<span class='label label-default'>{inactive}</span>";
-            }
-        }
 
         $aclname = $tpl->utf8_encode($ligne["aclname"]);
         if(strlen($aclname)>50){
@@ -970,13 +1060,14 @@ function table_builder():bool{
 		$row_order=$tpl->td_href(" <span class=\"label label-default\" id='acl-order-$ID'>{$ligne["xORDER"]}</span>",
             null,"Loadjs('$page?change-order=$ID');");
 
-
+        $rule_status=td_status($ligne);
+        $td_name=$tpl->td_href($aclname,"{click_to_edit}",$js);
 
 		$html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
 		$html[]="<td class=\"center\" style='width:1%' nowrap >$row_order</td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  nowrap>$rule_status</td>";
-		$html[]="<td style='vertical-align:middle;width:1%'  nowrap>". $tpl->td_href($aclname,"{click_to_edit}",$js)."</td>";
-		$html[]="<td style='vertical-align:middle'>$explain</td>";
+        $html[]="<td style='vertical-align:middle;width:1%'  nowrap><span id='ids-status-$ID'>$rule_status</span></td>";
+		$html[]="<td style='vertical-align:middle;width:1%'  nowrap>$td_name</td>";
+		$html[]="<td style='vertical-align:middle'><div id='ids-explain-$ID'>$explain</div></td>";
         $html[]="<td class='center' style='width:1%' nowrap></td>";
         $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_copy("Loadjs('$page?duplicate-js=$ID')","AsFirewallManager")."</td>";
 		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsFirewallManager")."</td>";
@@ -1019,14 +1110,15 @@ function table_builder():bool{
     $toTiny="Loadjs('$page?tiny-js=yes&gprule=$gprule&function=$function')";
     if($gprule>0){$toTiny=null;}
 
+    $jsRefesh=$tpl->RefreshInterval_Loadjs("table-ids-rules-$t",$page,"rules-scan=yes");
+
     $html[]="<script>";
     if($AclsUsePages==1){
-$html[]="$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
+$html[]="$(document).ready(function() { $('#table-ids-rules-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
     }
-
+    $html[]="$jsRefesh;";
     $html[]="$toTiny
     NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-    LoadAjax('proxy-acls-bugs','$page?proxy-acls-bugs=yes');
 </script>";
 	
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
@@ -1114,8 +1206,10 @@ function new_rule_save():bool{
 	$TempName   =md5(time());
 	$aclgpid    = 0;
 	$ApplayerProtocol=$_POST["ApplayerProtocol"];
-	$sql="INSERT INTO suricata_sqacls (aclname,enabled,ApplayerProtocol,xORDER,aclport,aclgroup,aclgpid)
-	VALUES ('$TempName',1,'$ApplayerProtocol','0','$aclport','0','$aclgpid')";
+    $action=$_POST["action"];
+    $time=time();
+	$sql="INSERT INTO suricata_sqacls (action,aclname,enabled,ApplayerProtocol,xORDER,aclport,aclgroup,aclgpid,created)
+	VALUES ('$action','$TempName',1,'$ApplayerProtocol','0','$aclport','0','$aclgpid',$time)";
 	$q->QUERY_SQL($sql);
 	if(!$q->ok){
         writelogs($q->mysql_error,__FUNCTION__,__FILE__,__LINE__);
@@ -1149,4 +1243,15 @@ function rule_delete($ID):bool{
 	foreach($results as $index=>$ligne) {rule_delete($ligne["ID"]);}
 	admin_tracks("Remove $aclname ACL IDS rule");
     return true;
+}
+
+function td_status($ligne):string{
+    if($ligne["enabled"]==0){
+        return"<span class='label label-default'>{disabled}</span>";
+    }
+    $isError=intval($ligne["iserror"]);
+    if($ligne["enabled"]==1 && $isError==1){
+        return "<span class='label label-danger'>{error}</span>";
+    }
+    return"<span class='label label-default'>{unknown}</span>";
 }

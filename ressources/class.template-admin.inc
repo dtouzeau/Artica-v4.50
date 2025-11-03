@@ -427,6 +427,47 @@ return implode(', ', $timeParts);
         return $this->_ENGINE_parse_body($html);
     }
 
+    public function BigCircleCheckbox($field,$title,$explain,$value,$after=null):string{
+        $id=time();
+        $page=CurrentPageName();
+        $title=base64_encode($this->_ENGINE_parse_body($title));
+        $explain=base64_encode($this->_ENGINE_parse_body($explain));
+        $SetCheck="true";
+        if($value==0){
+            $SetCheck="false";
+        }
+        return "<div id=\"chkbox-$id\"></div>
+        <script>
+            renderBigCheckboxListSafe('chkbox-$id', [
+            { title: base64_decode('$title'), 
+            descriptionHTML: base64_decode('$explain') 
+            }
+            ]).then(function (ctrls) {
+                    var ctrl = ctrls[0];
+                    if (!ctrl) return;
+                    ctrl.setChecked($SetCheck);     // check it
+                    ctrl.setDisabled(false);   // enable/disable later
+                    ctrl.input.addEventListener('change', function () {
+                        var value = ctrl.input.checked ? 1 : 0;
+                        //console.log('User clicked, new value =', ctrl.input.checked);
+                        $.post('$page', { ['$field']: value })
+                          .done(function (resp, textStatus, jqXHR) {
+                            // success
+                            console.log('OK:', resp);
+                            $after
+                          })
+                          .fail(function (jqXHR, textStatus, errorThrown) {
+                            alert('POST failed:'+errorThrown)
+                          })
+                          .always(function () {
+                            // runs on success OR failure
+                          });
+                    });
+            });
+        </script>";
+    }
+
+
     public function table_form_field_js($js,$privilege=null):bool{
         $this->TABLE_FORM_PRIV=$privilege;
         if($privilege<>null){

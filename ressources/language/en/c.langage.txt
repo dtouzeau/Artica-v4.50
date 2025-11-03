@@ -3146,3 +3146,24 @@ If the client responds, the server will use the MTU reported by the client.
 <ids_class_level>With a severity level</ids_class_level>
 <network_traffic_from>Network traffic from</network_traffic_from>
 <to_networks>To networks</to_networks>
+<one_direction_only>One direction only</one_direction_only>
+<both_stateful>Both directions of the connection (stateful)</both_stateful>
+<generated_rule>Generated rule</generated_rule>
+<suricata_error_proto_not_accepted_domains>Domain detection within traffic is performed only for the following protocols: DNS, TLS, HTTP, SMTP, mDNS, WebSocket, HTTP/2, QUIC, SIP, DoH, DoH/2, SMB, and KRB5.</suricata_error_proto_not_accepted_domains>
+<stamus-lateral.rules>By Stamus Networks, focused on detecting lateral movement in Microsoft Windows environments (SMB/DCERPC traffic).[br]
+Includes nearly 500 detection signatures for SMB/DCERPC-based events.[br]
+Provides a hunting/detection layer for Windows lateral-movement techniques (remote config changes, service creation, share creation, scheduled tasks, etc.), not just brute-force logins.</stamus-lateral.rules>
+<threatfox_suricata.rules>A free community threat-intel platform run by abuse.ch.[br]
+The IDS Ruleset edition is a ready-to-use ruleset where each IOC (or selected IOCs) is converted into a signature.[br]It’s designed to detect (IDS/IPS) network traffic tied to known compromise infrastructure, rather than behavioral anomaly detection.</threatfox_suricata.rules>
+<threatview_CS_c2.rules>
+These rules are derived from Threatview.io research and represent infrastructure hosting Command & Control servers identified during proactive hunts.[br]
+They detect known malicious C2 infrastructure based on IPs (and, in some cases, ports) found by Threatview.io.</threatview_CS_c2.rules>
+<lookUpDomainCategories>Look up domain categories</lookUpDomainCategories>
+<dnsdist_malware_explain>Detect and tag suspicious DNS queries often used by malware or data-exfiltration tools.[br]Includes unusual query types (e.g., NULL/experimental) and domains with very long or encoded sub-labels.</dnsdist_malware_explain>
+<emerging-remote_access.rules>Includes signatures that detect remote-access traffic patterns (legitimate or abused) — e.g., RDP, VNC, remote-desktop tools, VPN portals, and remote-access management services.[br]ET treats this category as often “legitimate” traffic, but alerts are important when behavior deviates from normal, since remote access is a high-risk service.</emerging-remote_access.rules>
+<emerging-phishing.rules>Detects credential phishing activity.[br]Includes both phishing landing pages and successful credential submissions to phishing sites.[br]
+The goal is to identify network-based evidence of phishing—especially when users are directed to fake login pages or when credentials are submitted.[br]These alerts are valuable for incident response and network detection (NDR), and can also be forwarded to your SIEM or threat-hunting pipeline.</emerging-phishing.rules>
+<laurentMinneIDS>Laurent Minne is a Defensive Cybersecurity Engineer, CISO at Acensi Group, and the author of [b]Data-Shield IPv4 Blocklist[/b].[br]The Data-Shield IPv4 Blocklist provides an additional layer of protection by listing IPv4 addresses whose activity has been identified as malicious.[br]This list is built on the principles of Deceptive Security and relies on intelligent behavioral analysis of malicious activities linked to cybercrime.[br]
+Data-Shield IPv4 Blocklist delivers up-to-date IPv4 threat intelligence to strengthen your IDS with an extra layer of defense.</laurentMinneIDS>
+<laurentMinneMoney>[b]Support Data-Shield IPv4 Blocklist![/b][br]                   Data-Shield IPv4 Blocklist requires time and funding.[br]That’s why donations are important — to keep Laurent Minne’s project sustainable and in the best possible conditions over time.[br][b]Ko-Fi:[/b] https://ko-fi.com/laurentmduggytuxy</laurentMinneMoney>
+

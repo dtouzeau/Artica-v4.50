@@ -10,6 +10,8 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 
 if(isset($_POST["DNSDisteDNS"])){dnsdist_edns_save();exit;}
 if(isset($_POST["DNSDistQps"])){save();exit;}
+if(isset($_POST["EnableCategories"])){dnsdist_categories_save();exit;}
+if(isset($_POST["DNSDistBlockMalware"])){dnsdist_malware_save();exit;}
 if(isset($_POST["UnboundMaxLogsize"])){save();exit;}
 if(isset($_POST["PowerDNSListenAddr"])){save();exit;}
 if(isset($_POST["DNSDistCheckInterval"])){save();exit;}
@@ -21,6 +23,11 @@ if(isset($_GET["EnforceUserDNSTTL-js"])){EnforceUserDNSTTL_js();exit;}
 if(isset($_GET["EnforceUserDNSTTL-popup"])){EnforceUserDNSTTL_popup();exit;}
 if(isset($_POST["EnableEnforceUserDNSTTL"])){EnforceUserDNSTTL_save();exit;}
 
+
+if(isset($_GET["dnsdist-malware-js"])){dnsdist_malware_js();exit;}
+if(isset($_GET["dnsdist-malware-popup"])){dnsdist_malware_popup();exit;}
+if(isset($_GET["dnsdist-categories-js"])){dnsdist_categories_js();exit;}
+if(isset($_GET["dnsdist-categories-popup"])){dnsdist_categories_popup();exit;}
 if(isset($_GET["dnsdist-cache-js"])){dnsdist_cache_js();exit;}
 if(isset($_GET["dnsdist-cache-popup"])){dnsdist_cache_popup();exit;}
 if(isset($_GET["dnsdist-monitor-js"])){dnsdist_monitor_js();exit;}
@@ -40,14 +47,7 @@ table();
 function save():bool{
     $tpl=new template_admin();
 
-    if(isset($_POST["EnableCategories"])){
-        if(intval($_POST["EnableCategories"])==0){
-            $_POST["DNSDistDisableCategories"]=1;
-        }else{
-            $_POST["DNSDistDisableCategories"]=0;
-        }
-        unset($_POST["EnableCategories"]);
-    }
+
 
     if(isset($_POST["DNSDistCheckInterval"])){
         if(intval($_POST["DNSDistCheckInterval"])<2){
@@ -121,8 +121,18 @@ function dnsdist_cache_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     return $tpl->js_dialog2("{cache}","$page?dnsdist-cache-popup=yes");
-
 }
+function dnsdist_categories_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog2("{lookUpDomainCategories}","$page?dnsdist-categories-popup=yes",650);
+}
+function dnsdist_malware_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog2("{blks_dns_malware}","$page?dnsdist-malware-popup=yes",650);
+}
+
 function EnforceUserDNSTTL_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -158,6 +168,63 @@ function EnforceUserDNSTTL_popup():bool{
 
     echo $tpl->form_outside(null, $form,null,"{apply}", @implode(";",$jsafter), "AsDnsAdministrator");
     return true;
+}
+function dnsdist_categories_popup():bool{
+    $tpl=new template_admin();
+
+    $EnableCategories=1;
+    $DNSDistDisableCategories=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistDisableCategories"));
+    if($DNSDistDisableCategories==1){$EnableCategories=0;}
+
+    $jsafter[]="LoadAjax('dnsdist-table-start','fw.dns.dnsdist.settings.php');";
+    $jsafter[]="dialogInstance2.close()";
+
+    echo $tpl->BigCircleCheckbox("EnableCategories","{lookUpDomainCategories}","{EnableCategoriesDNSDIST}",$EnableCategories,@implode(";",$jsafter));
+    return true;
+}
+function dnsdist_malware_popup():bool{
+    $tpl=new template_admin();
+
+    $DNSDistBlockMalware=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistBlockMalware"));
+
+    $jsafter[]="LoadAjax('dnsdist-table-start','fw.dns.dnsdist.settings.php');";
+    $jsafter[]="dialogInstance2.close()";
+
+    echo $tpl->BigCircleCheckbox("DNSDistBlockMalware","{blks_dns_malware}","{dnsdist_malware_explain}",$DNSDistBlockMalware,@implode(";",$jsafter));
+    return true;
+}
+function dnsdist_malware_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DNSDistBlockMalware",$_POST["DNSDistBlockMalware"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/service/php/restart");
+
+    $SQUIDEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
+    if($SQUIDEnable==1){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/reload");
+    }
+    return admin_tracks("Set block malwares in DNS Firewall to {$_POST["DNSDistBlockMalware"]}");
+}
+function dnsdist_categories_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $EnableCategories=$_POST["EnableCategories"];
+    echo "EnableCategories: $EnableCategories\n";
+    if($EnableCategories==1){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DNSDistDisableCategories",0);
+    }else{
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DNSDistDisableCategories",1);
+    }
+
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/service/php/restart");
+
+    $SQUIDEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
+    if($SQUIDEnable==1){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/reload");
+    }
+
+    return admin_tracks("Set Lookup categories in DNS Firewall to $EnableCategories");
+
 }
 function dnsdist_cache_popup():bool{
     $page=CurrentPageName();
@@ -329,19 +396,15 @@ function dnsdist_security_popup():bool{
 
     $DNSDistQps=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistQps"));
     $MaxQPSIPRule=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MaxQPSIPRule"));
-    $DNSDistBlockMalware=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistBlockMalware"));
 
-    $EnableCategories=1;
-    $DNSDistDisableCategories=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistDisableCategories"));
-    if($DNSDistDisableCategories==1){$EnableCategories=0;}
+
 
     $jsafter[]="LoadAjax('dnsdist-table-start','fw.dns.dnsdist.settings.php');";
     $jsafter[]="dialogInstance2.close()";
     $jsafter[]=restart_js();
 
 
-    $form[]=$tpl->field_checkbox("EnableCategories","{find_categories}",$EnableCategories,false,"{EnableCategoriesDNSDIST}");
-    $form[]=$tpl->field_checkbox("DNSDistBlockMalware","{blks_dns_malware}",$DNSDistBlockMalware);
+
     $form[]=$tpl->field_numeric("DNSDistQps","{maxqps} (0={unlimited})",$DNSDistQps);
     $form[]=$tpl->field_numeric("MaxQPSIPRule","{MaxQPSIPRule} (0={unlimited})",$MaxQPSIPRule);
 
@@ -469,12 +532,15 @@ function table():bool{
     $tpl->table_form_field_text("{networks_restrictions}",@implode(", ",$ACLREST),ico_shield);
     $tpl->table_form_field_js("Loadjs('$page?dnsdist-security-js=yes')","AsDnsAdministrator");
     $tpl->table_form_field_text("{limits}","<small>{maxqps} $DNSDistQps, {MaxQPSIPRule} $MaxQPSIPRule</small>",ico_max);
+
+    $tpl->table_form_field_js("Loadjs('$page?dnsdist-malware-js=yes')","AsDnsAdministrator");
     $tpl->table_form_field_bool("{blks_dns_malware}",$DNSDistBlockMalware,ico_bug);
 
     $EnableCategories=1;
     $DNSDistDisableCategories=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistDisableCategories"));
     if($DNSDistDisableCategories==1){$EnableCategories=0;}
-    $tpl->table_form_field_bool("{find_categories}",$EnableCategories,ico_books);
+    $tpl->table_form_field_js("Loadjs('$page?dnsdist-categories-js=yes')","AsDnsAdministrator");
+    $tpl->table_form_field_bool("{lookUpDomainCategories}",$EnableCategories,ico_books);
 
 
     $tpl->table_form_field_js("Loadjs('$page?dnsdist-dynblock-js=yes')","AsDnsAdministrator");

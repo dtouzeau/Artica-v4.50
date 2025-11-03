@@ -14,6 +14,12 @@ if(isset($_GET["alienvault-js"])){alienvault_js();exit;}
 if(isset($_GET["alienvault-parameters"])){alienvault_parameters();exit;}
 if(isset($_POST["OtxEnabled"])){alienvault_save();exit;}
 
+if(isset($_GET["DataShieldIPv4Blocklist-js"])){DataShieldIPv4Blocklist_js();exit;}
+if(isset($_GET["DataShieldIPv4Blocklist-parameters"])){DataShieldIPv4Blocklist_parameters();exit;}
+if(isset($_POST["DataShieldIPv4Blocklist"])){DataShieldIPv4Blocklist_save();exit;}
+
+
+
 if(isset($_GET["statistics-parameters"])){statistics_parameters();exit;}
 if(isset($_POST["SnortRulesCode"])){Save_gen();exit;}
 if(isset($_POST["nic-settings"])){Save_nic();exit;}
@@ -140,6 +146,36 @@ function alienvault_js():bool{
     $tpl=new template_admin();
     return $tpl->js_dialog1("AlienVault","$page?alienvault-parameters=yes",650);
 }
+function DataShieldIPv4Blocklist_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog1("Data-Shield IPv4 Blocklist","$page?DataShieldIPv4Blocklist-parameters=yes",850);
+}
+function DataShieldIPv4Blocklist_parameters():bool{
+    $tpl=new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        $html[]=$tpl->div_error("{error} API||$json->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+    $GlobalConfig=$json->Info->DataShieldIPv4Blocklist;
+
+    $explain[]="<table style='width:100%;'>";
+    $explain[]="<tr><td style='width:1%;vertical-align: top;padding:3px' nowrap><img src='img/lminne.png'></td><td style='padding-left:10px'>{laurentMinneIDS}</td></tr></table>";
+
+
+
+    $html[]=$tpl->BigCircleCheckbox("DataShieldIPv4BlocklistEnabled","Data-Shield IPv4 Blocklist",@implode("",$explain),$GlobalConfig->Enabled);
+    $html[]="<div style='margin-top:20px'>";
+    $html[]=$tpl->div_explain("notitle:{laurentMinneMoney}");
+    $html[]="</div>";
+
+    echo $tpl->_ENGINE_parse_body($html);
+   return true;
+}
+
+
 function nic_settings(){
 	$nic=new system_nic($_POST["nic-settings"]);
 	$nic->firewall_policy=$_POST["firewall_policy"];

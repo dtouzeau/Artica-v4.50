@@ -359,7 +359,10 @@ function flat_config():bool{
 
     $tpl=suricata_field_update($tpl,$jsonStatus);
 
-
+    $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?DataShieldIPv4Blocklist-js=yes')");
+    if($GlobalConfig->DataShieldIPv4Blocklist==0){
+        $tpl->table_form_field_bool("Data-Shield IPv4 Blocklist",$GlobalConfig->DataShieldIPv4Blocklist,ico_shield);
+    }
 
     $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?alienvault-js=yes')");
     if($GlobalConfig->Otx->Enabled==0){
