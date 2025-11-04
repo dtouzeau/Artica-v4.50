@@ -85,6 +85,7 @@ class keepalives_primary_nodes
     public $secondary_nodeIsDisconnected = 0;
     public $synckey = null;
     public $lastSync = null;
+    public $force_action=0;
 
     public $testDom=null;
     public $testDomDNS= null;
@@ -951,6 +952,7 @@ class keepalived_secondary_nodes
     public $last_id = null;
     public $nopreempt = 0;
     public $priority;
+    public $hostname=null;
     public $count_secondary_nodes = 0;
     public $lastSync = null;
     public $rewriteInterface=null;
@@ -1013,16 +1015,16 @@ class keepalived_secondary_nodes
         return intval($ligne['tcount']);
     }
 
-    public function save($reload = true)
+    public function save($reload = true):bool
     {
         $q = new lib_sqlite("/home/artica/SQLITE/keepalived.db");
         if ($this->secondary_node_id == 0) {
             $sql = "INSERT INTO keepalived_secondary_nodes (primary_node_id,secondary_node_ip,secondary_node_port,primary_node_ip,secondary_node_can_overwrite_settings,enable,synckey,nopreempt,priority,last_sync,rewriteInterface) 
-			VALUES ('$this->primary_node_id','$this->secondary_node_ip','$this->secondary_node_port','$this->primary_node_ip','$this->secondary_node_can_overwrite_settings','1','$this->synckey','$this->nopreempt','$this->priority',DateTime('now'),$this->rewriteInterface)";
+			VALUES ('$this->primary_node_id','$this->secondary_node_ip','$this->secondary_node_port','$this->primary_node_ip','$this->secondary_node_can_overwrite_settings','1','$this->synckey','$this->nopreempt','$this->priority',DateTime('now'),'$this->rewriteInterface')";
             $q->QUERY_SQL($sql);
             if (!$q->ok) {
                 echo $q->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
-                return;
+                return false;
             }
             $this->last_id = $q->last_id;
 
@@ -1041,7 +1043,7 @@ class keepalived_secondary_nodes
             $q->QUERY_SQL($sql);
             if (!$q->ok) {
                 echo $q->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
-                return;
+                return false;
             }
             $this->last_id = $this->secondary_node_id;
         }
@@ -1053,7 +1055,7 @@ class keepalived_secondary_nodes
         return true;
     }
 
-    public function delete($reload = true)
+    public function delete($reload = true):bool
     {
         $action = new nodeActions($this->primary_node_id, $this->secondary_node_id, 0);
         $action->delete_nodes();
@@ -1063,7 +1065,7 @@ class keepalived_secondary_nodes
         $q->QUERY_SQL($sql);
         if (!$q->ok) {
             echo $q->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
-            return;
+            return false;
         }
 
         $primary_node_info = new keepalives_primary_nodes($this->primary_node_id);

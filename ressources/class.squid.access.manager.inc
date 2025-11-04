@@ -151,107 +151,19 @@ class squid_access_manager{
 		
 	}
 	
-	function deny_ufdb(){
+	function deny_ufdb():bool{
 		$cachefile="/etc/squid3/GlobalAccessManager_url_rewrite.conf";
-        $f=array();
-		if($this->SquidUrgency==1){
-			@file_put_contents($cachefile, "# Emergency mode!\n");
-			return false;
-		}
-		
-		
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT *  FROM `global_whitelist` WHERE enabled=1 and deny_ufdb=1";
-		$results = $q->QUERY_SQL($sql);
-		if(!$q->ok){echo $q->mysql_error."\n";}
-		if(count($results)==0){@file_put_contents($cachefile, "# global_whitelist table have no row\n");return false;}
-		
-		foreach ($results as $ligne){
-			$acls_name="Group{$ligne["groupid"]}";
-			if(!$this->acls->availableGroups[$ligne["groupid"]]){continue;}
-			$f[]="url_rewrite_access deny $acls_name";
-		
-		}
-		@file_put_contents($cachefile, @implode("\n",$f). "\n");
-		return true;
+        if(!is_file($cachefile)){@touch($cachefile);}
+    	return true;
 	}
 	
 
 	
 	private function url_rewrite_access():bool{
-        $anotates=array();
-        if(!class_exists("squid_acls_groups")){include_once(dirname(__FILE__)."/class.squid.acls.groups.inc");}
-        $SquidGuardDenyConnect=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidGuardDenyConnect"));
-        $SquidDisableAllFilters=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableAllFilters"));
-        $HEADERS=array();
-        $HEADERS[]="# Emergency.............: SquidUrgency: ".$this->SquidUrgency;
-        $HEADERS[]="# SquidGuardDenyConnect.: $SquidGuardDenyConnect";
-        $HEADERS[]="# SquidDisableAllFilters: $SquidDisableAllFilters";
-		if($this->SquidUrgency==1){
-            $HEADERS[]="# Emergency Enabled!!!";
-            $HEADERS[]="url_rewrite_access deny all";
-			@file_put_contents("/etc/squid3/url_rewrite_access.conf", @implode("\n", $HEADERS)."\n");
-			return true;
-		}
-
-		
-		if($SquidDisableAllFilters==1){
-            $HEADERS[]="# Disable All Filters Enabled!!!";
-			@file_put_contents("/etc/squid3/url_rewrite_access.conf", @implode("\n", $HEADERS)."\n");
-			return true;
-		}
-		$SquidDebugPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDebugPort"));
-
-		$AllowWindowsUpdates=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AllowWindowsUpdates"));
-	    $SquidGuardApachePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidGuardApachePort"));
-		$SquidGuardApacheSSLPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidGuardApacheSSLPort"));
-		if($SquidGuardApacheSSLPort==0){$SquidGuardApacheSSLPort=9025;}
-		if($SquidGuardApachePort==0){$SquidGuardApachePort=9020;}
-		$conf[]="acl DenyWebPagePorts port $SquidGuardApacheSSLPort $SquidGuardApachePort";
-        $annotate_transaction=null;
-        $annotate_transaction_temp=null;
-
-		
-		$deny_ufdb=$this->deny_ufdb();
-		if($SquidDebugPort==1){$conf[]="url_rewrite_access deny MyTestPort"; }
-		if($deny_ufdb){$conf[]="include /etc/squid3/GlobalAccessManager_url_rewrite.conf";}
-
-        if($this->isSquid5) {
-            $annotate_transaction = " AnnotateFinalUFDB0";
-            $annotate_transaction_temp=" AnnotateFinalUFDBTMP";
-            $anotates[] = "acl AnnotateFinalUFDB0 annotate_transaction webfilterpolicy=0";
-            $anotates[] = "acl AnnotateFinalUFDBTMP annotate_transaction webfilterpolicytemp=1";
-        }
-        if(!is_file("/etc/squid3/url_rewrite_access_temp_regex.db")){
-            @touch("/etc/squid3/url_rewrite_access_temp_regex.db");
-        }
-        $conf[] = "acl urlRewriteAccessDenyTemp dstdom_regex \"/etc/squid3/url_rewrite_access_temp_regex.db\"";
-        $conf[] = "acl DenyICAPDomains dstdomain .artica.center";
-        $conf[] = "acl WindowsUpdates dstdomain .cdp.microsoft.com";
-        $conf[] = "acl whitelisted_mac_computers arp 00:0c:29:df:b5:24";
-
-        $Implodesacls[]="DenyICAPDomains";
-        $Implodesacls[]="MgRDest";
-        $Implodesacls[]="ToArticaWWW";
-        $Implodesacls[]="MgRPort";
-        $Implodesacls[]="MyLocalIpsDest";
-        $Implodesacls[]="whitelisted_mac_computers";
-        $Implodesacls[]="localhost";
-        $Implodesacls[]="squidclient";
-
-		if($AllowWindowsUpdates==1){
-            $Implodesacls[]="WindowsUpdates";
-        }
-
-		if(isset($GLOBALS["HTTP_ACCESS"]["WHITE_COMPUTERS"])){
-            $Implodesacls[]="whitelisted_computers";
-		}
-        $conf[]="acl rewriteAccessDenyGB any-of ".@implode(" ",$Implodesacls);
-        $conf[]="url_rewrite_access deny urlRewriteAccessDenyTemp $annotate_transaction_temp";
-        $conf[]="url_rewrite_access deny rewriteAccessDenyGB $annotate_transaction";
-
         $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
         $results = $q->QUERY_SQL("SELECT * FROM squid_url_rewrite_acls WHERE enabled=1 ORDER BY zorder");
+        $anotates=array();
+        $HEADERS=array();
         $squid_acls_groups = new squid_acls_groups();
         $array_access["url_rewrite_access_deny"] = "url_rewrite_access deny";
         $array_access["url_rewrite_access_allow"] = "url_rewrite_access allow";
@@ -284,10 +196,9 @@ class squid_access_manager{
         $anotates[]=$notates;
         $conf[]="url_rewrite_access allow all";
         $FINAL[]=@implode("\n",$HEADERS);
-
         $FINAL[]=@implode("\n",$anotates);
         $FINAL[]=@implode("\n",$conf);
-        @file_put_contents("/etc/squid3/url_rewrite_access.conf", @implode("\n", $FINAL)."\n");
+        @file_put_contents("/etc/squid3/url_rewrite_access_admin.conf", @implode("\n", $FINAL)."\n");
 		return true;
 	
 	}

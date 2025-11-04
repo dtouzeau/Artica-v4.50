@@ -1859,7 +1859,7 @@ function xstart(){
     @file_put_contents("/etc/squid3/acls_peer.conf", "\n");
     @file_put_contents("/etc/squid3/acls_center.conf", "\n");
     @file_put_contents("/etc/squid3/GlobalAccessManager_url_rewrite.conf", "\n");
-    @file_put_contents("/etc/squid3/url_rewrite_access.conf", "\n");
+    @file_put_contents("/etc/squid3/url_rewrite_access_admin.conf", "\n");
     if(!is_file("/etc/squid3/url_regex_nocache.conf")){@file_put_contents("/etc/squid3/url_regex_nocache.conf", "\n");}
     if(!is_file("/etc/squid3/non_ntlm.access")){@file_put_contents("/etc/squid3/non_ntlm.access", "\n");}
     if(!is_file("/usr/share/squid-langpack/templates/ERR_PROTOCOL_UNKNOWN")){@touch("/usr/share/squid-langpack/templates/ERR_PROTOCOL_UNKNOWN");}

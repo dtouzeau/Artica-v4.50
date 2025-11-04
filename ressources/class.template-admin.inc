@@ -427,7 +427,7 @@ return implode(', ', $timeParts);
         return $this->_ENGINE_parse_body($html);
     }
 
-    public function BigCircleCheckbox($field,$title,$explain,$value,$after=null):string{
+    public function BigCircleCheckbox($field,$title,$explain,$value,$after=null,$Privs=null):string{
         $id=time();
         $page=CurrentPageName();
         $title=base64_encode($this->_ENGINE_parse_body($title));

@@ -349,7 +349,7 @@ function table(){
 
 
     $AIVABLE=array();
-    $f=explode("\n",@file_get_contents("/etc/squid3/url_rewrite_access.conf"));
+    $f=explode("\n",@file_get_contents("/etc/squid3/url_rewrite_access_admin.conf"));
     foreach ($f as $line){
         if(preg_match("#urlRewriteAccessDenyTemp#",$line,$re)){
             $AIVABLE["urlRewriteAccessDenyTemp"]=true;

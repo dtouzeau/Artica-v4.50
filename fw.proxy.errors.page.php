@@ -83,42 +83,52 @@ function form_squid_templates_params_js():bool{
     return $tpl->js_dialog1("{parameters}","$page?form-squid-templates-popup=yes",750);
 
 }
+function SquidGuardDenyConnect_check():int{
+
+    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
+    $results=$q->QUERY_SQL("SELECT * FROM proxy_ports WHERE UseSSL=1 AND enabled=1");
+    $c=0;
+    foreach ($results as $index=>$ligne){
+        $c++;
+    }
+    if($c>0){
+        return $c;
+    }
+    $results = $q->QUERY_SQL("SELECT * FROM transparent_ports WHERE enabled=1");
+
+    foreach ($results as $ligne) {
+        if(srlen($ligne["sslcertificate"])>1) {
+            $c++;
+        }
+    }
+
+    return $c;
+}
+
 function SquidGuardDenyConnect_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $tpl->js_dialog1("{ssl_decrypt_compatibility}","$page?SquidGuardDenyConnect-popup=yes",650);
+    $tpl->js_dialog1("{ssl_decrypt_compatibility}","$page?SquidGuardDenyConnect-popup=yes",750);
     return true;
 }
 function SquidGuardDenyConnect_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $SquidGuardDenyConnect=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidGuardDenyConnect"));
-
-    $form[] = $tpl->field_checkbox("SquidGuardDenyConnect",
-            "{ssl_decrypt_compatibility}",$SquidGuardDenyConnect);
-
     $ssl_decrypt_compatibility_explain=$tpl->_ENGINE_parse_body("{ssl_decrypt_compatibility_explain}");
     $link="<a href=\"/webfiltering-policies\">{web_filter_policies}</a>";
     $ssl_decrypt_compatibility_explain=str_replace("%s",$link,$ssl_decrypt_compatibility_explain);
 
-    $jsrestart=$tpl->framework_buildjs("squid2.php?global-ufdb-client=yes",
-        "squid.access.center.progress",
-        "squid.access.center.progress.log",
-        "SquidGuardDenyConnect-progress",
-        "dialogInstance1.close();"
-    );
+   echo $tpl->BigCircleCheckbox("SquidGuardDenyConnect","{ssl_decrypt_compatibility}",$ssl_decrypt_compatibility_explain,$SquidGuardDenyConnect,"dialogInstance1.close();LoadAjaxSilent('web-error-page-middle-section','$page?web-error-page-middle-section=yes');","AsDansGuardianAdministrator");
 
-    echo "<div id='SquidGuardDenyConnect-progress' style='margin-bottom:30px'></div>".
-        $tpl->form_outside(null,$form,$ssl_decrypt_compatibility_explain,
-        "{apply}","LoadAjaxSilent('web-error-page-middle-section','$page?web-error-page-middle-section=yes');$jsrestart",
-        "AsDansGuardianAdministrator");
     return true;
 }
-function SquidGuardDenyConnect_save(){
+function SquidGuardDenyConnect_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    admin_tracks("Save Proxy MAN-IN-THE-MIDDLE compatibility to {$_POST["SquidGuardDenyConnect"]}");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidGuardDenyConnect",$_POST["SquidGuardDenyConnect"]);
+      $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidGuardDenyConnect",$_POST["SquidGuardDenyConnect"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/url/rewrite/access/nobuild");
+    return   admin_tracks("Save Proxy MAN-IN-THE-MIDDLE compatibility to {$_POST["SquidGuardDenyConnect"]}");
 }
 function form_ssl_popup(){
     $page=CurrentPageName();
@@ -338,13 +348,9 @@ function web_error_page_middle_section():bool{
         }
 
         $tpl->table_form_field_js("Loadjs('$page?form-js=yes')", "AsSquidAdministrator");
-        $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-        $results=$q->QUERY_SQL("SELECT * FROM proxy_ports WHERE UseSSL=1 AND enabled=1");
         $SquidGuardDenyConnect=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidGuardDenyConnect"));
-        $c=0;
-        foreach ($results as $index=>$ligne){
-           $c++;
-        }
+        $c=SquidGuardDenyConnect_check();
+
         if($c==0){
             if($SquidGuardDenyConnect==1){
                 $tpl->table_form_field_js("Loadjs('$page?SquidGuardDenyConnect-js=yes')","AsDansGuardianAdministrator");
