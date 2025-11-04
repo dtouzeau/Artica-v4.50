@@ -15,6 +15,9 @@ if(isset($_GET["extend-partition-js"])){extend_partition_js();exit;}
 if(isset($_GET["extend-partition-popup"])){extend_partition_popup();exit;}
 if(isset($_GET["partitions-js"])){partitions_js();exit;}
 if(isset($_GET["partitions-popup"])){partitions_popup();exit;}
+if(isset($_GET["partitions-start"])){partitions_start();exit;}
+if(isset($_GET["system-swap-partitions-remove"])){partitions_swap_system_remove();exit;}
+if(isset($_POST["system-swap-partitions-remove"])){partitions_swap_system_remove_confirm();exit;}
 if(isset($_GET["disconnect-js"])){disconnect_js();exit;}
 if(isset($_GET["build-js"])){Build_js();exit;}
 if(isset($_GET["build-popup"])){Build_popup();exit;}
@@ -101,7 +104,14 @@ function partitions_js(){
     $page=CurrentPageName();
     $dev=$_GET["partitions-js"];
     $evenc=urlencode($dev);
-    $tpl->js_dialog("$dev >> {partitions}", "$page?partitions-popup=$evenc");
+    $tpl->js_dialog("$dev >> {partitions}", "$page?partitions-start=$evenc");
+}
+function partitions_start(){
+    $dev=$_GET["partitions-start"];
+    $md5=md5($dev);
+    $evenc=urlencode($dev);
+    $page=CurrentPageName();
+    echo "<div id='progress-$md5'></div><div id='partitions-$md5'></div><script>LoadAjax('partitions-$md5','$page?partitions-popup=$evenc')</script>";
 }
 function directory_monitor_js(){
     $tpl=new template_admin();
@@ -623,12 +633,48 @@ function FilesystemState_ico($partarray):string{
     return "<span class='label label-primary'>$FilesystemState</span>";
 
 }
+function partitions_swap_system_remove():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $dev=$_GET["system-swap-partitions-remove"];
+    $evenc=urlencode($dev);
+    $md5=md5($dev);
 
+    $js=$tpl->framework_buildjs("/system/remove-smap/system",
+        "remove.swap.progress","remove.swap.progress.log","progress-$md5","LoadAjax('partitions-$md5','$page?partitions-popup=$evenc')");
+
+    return $tpl->js_confirm_execute("{delete_all_swap_partitions}","system-swap-partitions-remove",$dev,$js);
+}
+function partitions_swap_system_remove_confirm():bool{
+    $dev=$_POST["system-swap-partitions-remove"];
+    return admin_tracks("Remove all swap partitions from $dev");
+}
 function partitions_popup(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $dev=$_GET["partitions-popup"];
+    $evenc=urlencode($dev);
     $sock=new sockets();
+    $topbuttons=array();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/hd/system"));
+
+    if(property_exists($json,"SwapPartitions")){
+        $SystemDisk=$json->system->Disk;
+        $Partitions=$json->SwapPartitions;
+        if($SystemDisk==$dev){
+            if(!is_null($Partitions)) {
+                if (count($Partitions) > 0) {
+                    $js = "Loadjs('$page?system-swap-partitions-remove=$evenc');";
+                    $topbuttons[] = array($js, ico_trash, "{delete_all_swap_partitions}");
+                }
+            }
+        }
+    }
+
+
+    echo $tpl->_ENGINE_parse_body($tpl->th_buttons($topbuttons));
+
+
     $data=$sock->REST_API("/system/harddrives/infos");
     $MasTerJson=json_encode(array());
     $json = json_decode($data);
