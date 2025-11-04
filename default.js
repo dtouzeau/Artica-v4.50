@@ -1394,9 +1394,7 @@ function x_ChangeFetchMailUser(obj) {
         }
 }
 
-function mindTerm() { 
-window.open("index.mindterm.php","","width=1,height=1,resizable=no,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no");
-}
+
 
 
 
