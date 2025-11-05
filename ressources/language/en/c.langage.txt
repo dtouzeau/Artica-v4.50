@@ -3170,3 +3170,9 @@ Data-Shield IPv4 Blocklist delivers up-to-date IPv4 threat intelligence to stren
 <expand_system_partition_explain>This operation will extend the %part partition to %size.[br]It runs online (“hot”) — no reboot required.</expand_system_partition_explain>
 <expand_system_partition_explain2>The extended space of your %part partition needs to be formatted to complete the resize.</expand_system_partition_explain2>
 <delete_all_swap_partitions>Remove all SWAP partitions</delete_all_swap_partitions>
+<CPUNOTAVX_LIBHASAVX>Your CPU doesn’t support AVX (older Xeon/Opteron, or AVX has been disabled in the BIOS).[br] The library installed on your system requires this feature.[br] However, you can install a build compiled for CPUs without AVX.[br] Lacking AVX will use a bit more resources, but you’ll still benefit from network inspection.</CPUNOTAVX_LIBHASAVX>
+<APP_PFRING_AVX>PF_RING library (No AVX)</APP_PFRING_AVX>
+<NOAVX_EXPLAIN>Your CPU did not currently supports AVX.[br] A CPU with AVX support lets PF_RING use wider vector instructions to handle packets in parallel, increasing throughput and efficiency — ideal for 10-40-100 Gbps traffic capture and analytics systems.[br] AVX adds wide (256-bit or more) vector instructions that let the CPU process multiple data elements in one operation — a form of SIMD (Single Instruction, Multiple Data) acceleration.[br] Instead of handling one integer or float at a time, AVX can process 8, 16, or even 32 values in parallel within a single clock cycle.</NOAVX_EXPLAIN>
+<install_this_prog_kernel>We’re looking for the package for kernel %kernelver (%kernelbin).[br]
+If you can’t find it, make sure your package index is up to date.[br]
+If it’s still missing after the update, open a support ticket through the Artica interface %support</install_this_prog_kernel>

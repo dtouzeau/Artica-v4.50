@@ -23,10 +23,10 @@ function uninstall_confirm():bool{
     return admin_tracks("Uninstall IDS service..");
 }
 
-function pf_ring_infos(){
+function pf_ring_infos():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$tpl->js_dialog("PF Ring Info.", "$page?pf-ring-popup=yes");
+	return $tpl->js_dialog("PF Ring Info.", "$page?pf-ring-popup=yes");
 }
 function reconfigure_js(){
 	$page=CurrentPageName();
@@ -59,11 +59,26 @@ function pf_ring_popup(){
 	$tpl=new template_admin();
 	$sock=new sockets();
 
-    $json=json_decode($sock->REST_API_SURICATA("/suricata/pfring"));
+
+    $jsonAVX=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/pfring/audit"));
+    if(!$jsonAVX->Status){
+        echo $tpl->div_error($jsonAVX->Error);
+        return false;
+    }
+
+
+    if(!$jsonAVX->CPUHasAVX){
+        echo $tpl->div_warning("{NOAVX_EXPLAIN}");
+    }
+
+
+
+
+    $json=json_decode($sock->REST_API("/pfring/infos"));
 
     if(!$json->Status){
         echo $tpl->div_error($json->Error);
-        return;
+        return false;
     }
 
 

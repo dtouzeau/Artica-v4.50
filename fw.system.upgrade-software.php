@@ -67,6 +67,8 @@ function popup():bool{
     $product        = "{{$PKEY}}";
     $product        = $tpl->_ENGINE_parse_body("$product");
     $product_text   = $product;
+    $install_this_prog_kernel = "";
+    $KERNEL_PACKAGE = false;
     $uuid="";
     if(isset($_GET["uuid"])) {
         $uuid = $_GET["uuid"];
@@ -84,12 +86,21 @@ function popup():bool{
     if($PKEY=="APP_QAT"){
         $product_text= "Intel QuickAssist";
     }
+    if($PKEY=="APP_XKERNEL" OR $PKEY=="APP_XTABLES" OR $PKEY=="PFRING" OR $PKEY=="APP_PFRING_AVX") {
+        $KERNEL_PACKAGE = true;
+        $kernbin = $tpl->kernel_binary_ver();
+        $kernStr = php_uname("r");
+        $install_this_prog_kernel=$tpl->_ENGINE_parse_body("{install_this_prog_kernel}");
+        $install_this_prog_kernel=str_replace("%kernelver","<strong>$kernStr</strong>",$install_this_prog_kernel);
+        $install_this_prog_kernel=str_replace("%kernelbin","<strong>$kernbin</strong>",$install_this_prog_kernel);
+        $install_this_prog_kernel=str_replace("%support","<span class='label label-info' OnClick=\"document.location.href='/support'\">{support}</span>",$install_this_prog_kernel);
+    }
 
 
     if(strlen($product_text)>122){$product_text=substr($product_text,0,119)."...";}
     $UPDATES_ARRAY  = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("v4softsRepo"));
 
-	$html[]=$tpl->div_explain("$product_text||{install_this_prog}");
+	$html[]=$tpl->div_explain("$product_text||{install_this_prog}<br>$install_this_prog_kernel");
 	$html[]="<table style='width:100%'>";
 	$html[]="<tbody>";
 	$html[]="<tr>";
@@ -114,9 +125,7 @@ function popup():bool{
 
     if(!isset($UPDATES_ARRAY[$PKEY])){$UPDATES_ARRAY[$PKEY]=array();}
 	$ISARRAY    = $UPDATES_ARRAY[$PKEY];
-    if($PKEY=="APP_XKERNEL" OR $PKEY=="APP_XTABLES" OR $PKEY=="PFRING") {
-        $kernbin = $tpl->kernel_binary_ver();
-    }
+
 
 	krsort($ISARRAY);
     $NEWARRAY=array();
@@ -176,8 +185,8 @@ function popup():bool{
         }
 
 		$html[]="<tr id='$md5'>";
-		$html[]="<td width=99% nowrap style='font-weight:bold'><a href=\"$URI\">$product_text</a> $VERSION</td>";
-		$html[]="<td width=1% nowrap>$size</td>";
+		$html[]="<td style='width:99%;font-weight:bold' nowrap><a href=\"$URI\">$product_text</a> $VERSION</td>";
+		$html[]="<td style='width:1%' nowrap>$size</td>";
 
         $jsrestart=$tpl->framework_buildjs("/system/softwares/install/{$_GET["popup"]}/$integ",
         "system.installsoft.progress","system.installsoft.progress.txt",
@@ -198,7 +207,7 @@ function popup():bool{
         $upload=$tpl->button_upload("{upload}",$page,"btn-primary btn-xs","&product={$_GET["popup"]}&key=$integ");
 
 
-        if($PKEY=="APP_XKERNEL" OR $PKEY=="APP_XTABLES" OR $PKEY=="PFRING") {
+        if($KERNEL_PACKAGE) {
             VERBOSE("Check $integ<>$kernbin",__LINE__);
 		    if($integ<>$kernbin){
                 $bton=$tpl->button_autnonome("{install_upgrade}",
@@ -215,8 +224,8 @@ function popup():bool{
         }
 
 		
-		$html[]="<td width=1% nowrap>$bton</td>";
-        $html[]="<td width=1% nowrap>$upload</td>";
+		$html[]="<td style='width:1%' nowrap>$bton</td>";
+        $html[]="<td style='width:1%' nowrap>$upload</td>";
 		$html[]="</tr>";
         $html[]="<tr>";
         $html[]="<td colspan='4'><div style='width:100%;margin:5px' id='{$_GET["popup"]}-$integ-progress-install'></div></td>";

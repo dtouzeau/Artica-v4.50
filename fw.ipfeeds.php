@@ -759,7 +759,25 @@ function parameters():bool{
         //Loadjs('Loadjs('fw.system.upgrade-software.php?product=APP_PROFTPD')')
 
     }
+    $jsonAVX=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/pfring/audit"));
 
+    if(!$jsonAVX->Status){
+        echo $tpl->div_error($jsonAVX->Error);
+        $jsRefresh3=$tpl->RefreshInterval_js("ipfeeds-fixed-params",$page,"fixed-params=yes",5);
+        echo "<script>$jsRefresh3</script>";
+        return false;
+    }
+
+    if(!$jsonAVX->CPUHasAVX && $jsonAVX->LibraryHasAVX){
+        $js="Loadjs('fw.system.upgrade-software.php?product=fw.system')";
+        $button=$tpl->button_autnonome("{APP_PFRING_AVX}",$js, ico_cd, "AsSystemAdministrator",300,"btn-danger");
+
+        echo $tpl->div_error("{incompatible_system}||{CPUNOTAVX_LIBHASAVX}<div style='text-align:right'>$button</div>");
+        $jsRefresh3=$tpl->RefreshInterval_js("ipfeeds-fixed-params",$page,"fixed-params=yes",5);
+        echo "<script>$jsRefresh3</script>";
+        return false;
+
+    }
 
     $html[]="<table style='width:100%;margin-top:10px'>";
     $html[]="<tr>";
@@ -874,6 +892,9 @@ function fixed_params():bool{
             $pp=" &nbsp;-&nbsp;{packets}: ".$tpl->FormatNumber($json->PFRingPackets);
 
         }
+        $tpl->table_form_field_js("Loadjs('fw.ids.dashboard.php?pf-ring-infos=yes')","AsFirewallManager");
+
+
         $tpl->table_form_field_text("{PFRING}","<small>$ver$pp</small>",ico_engine);;
 
         $ll=array();

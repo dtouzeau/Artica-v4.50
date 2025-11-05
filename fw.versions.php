@@ -171,9 +171,9 @@ function table():bool{
     $html[]=APP_AUTOFS($UPDATES_ARRAY);
     $html[]=APP_FIRMWARES($UPDATES_ARRAY);
     $html[]=PFRING($UPDATES_ARRAY);
+    $html[]=APP_PFRING_AVX($UPDATES_ARRAY);
     $html[]=APP_DOCKER($UPDATES_ARRAY);
     $html[]=APP_FIRECRACKER($UPDATES_ARRAY);
-
     $html[]=APP_IWCONFIG($UPDATES_ARRAY);
     $html[]=APP_JAVA($UPDATES_ARRAY);
     $html[]=APP_VMTOOLS($UPDATES_ARRAY);
@@ -1734,39 +1734,70 @@ function APP_TAILON($UPDATES_ARRAY):string{
     $html[]="</tr>";
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
-function APP_PROFTPD($UPDATES_ARRAY):string{
-    $tpl=new template_admin();
-    $warn_ico="";
-    $VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProFTPDInstalled"))==1){
-        $VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProFTPDVersion");
+function APP_PROFTPD($UPDATES_ARRAY):string
+{
+    $tpl = new template_admin();
+    $warn_ico = "";
+    $VERSION = $tpl->icon_nothing();
+    $bton = $tpl->icon_nothing();
+    if (intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProFTPDInstalled")) == 1) {
+        $VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProFTPDVersion");
     }
 
-    if(isset($UPDATES_ARRAY["APP_PROFTPD"])){
-        $bton=$tpl->button_autnonome("{install_upgrade2}",
+    if (isset($UPDATES_ARRAY["APP_PROFTPD"])) {
+        $bton = $tpl->button_autnonome("{install_upgrade2}",
             "Loadjs('fw.system.upgrade-software.php?product=APP_PROFTPD');",
+            "fa-download", "AsSystemAdministrator", 0, "btn-primary btn-xs");
+    }
+
+
+    $RESULTS = $tpl->NOTIF_ARRAY(
+        array("UPDATES_ARRAY" => $UPDATES_ARRAY,
+            "TOKEN_UPDATE_ARRAY" => "APP_PROFTPD",
+            "TOKEN_VER" => "ProFTPDVersion",
+            "TOKEN_ENABLED" => "EnableProFTPD"), false
+    );
+
+    if (isset($RESULTS["NEW_VER"])) {
+        $warn_ico = "&nbsp;<i class='text-warning fa-solid fa-light-emergency-on'></i>";
+    }
+    $html[] = "<tr>";
+    $html[] = "<td style='width:1%;text-align:right' nowrap><strong>{APP_PROFTPD}:</strong></td>";
+    $html[] = "<td style='width:1%'  nowrap>$VERSION$warn_ico</td>";
+    $html[] = "<td style='text-align:left;width:99%' nowrap>$bton</td>";
+    $html[] = "</tr>";
+    if (!is_array($html)) {
+        $html = array();
+    }
+    return @implode("\n", $html);
+}
+
+function APP_PFRING_AVX($UPDATES_ARRAY){
+    $tpl=new template_admin();
+
+    $bton=$tpl->icon_nothing();
+
+
+    if(isset($UPDATES_ARRAY["APP_PFRING_AVX"])){
+        $bton=$tpl->button_autnonome("{install_upgrade2}",
+            "Loadjs('fw.system.upgrade-software.php?product=APP_PFRING_AVX');",
             "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
     }
 
+    $DHCPD_VERSION=php_uname("r");
 
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_PROFTPD",
-            "TOKEN_VER"=>"ProFTPDVersion",
-            "TOKEN_ENABLED"=>"EnableProFTPD"),false
-    );
 
-    if(isset($RESULTS["NEW_VER"])){
-        $warn_ico="&nbsp;<i class='text-warning fa-solid fa-light-emergency-on'></i>";
-    }
     $html[]="<tr>";
-    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_PROFTPD}:</strong></td>";
-    $html[]="<td style='width:1%'  nowrap>$VERSION$warn_ico</td>";
+    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_PFRING_AVX}:</strong></td>";
+    $html[]="<td style='width:1%'  nowrap>$DHCPD_VERSION</td>";
     $html[]="<td style='text-align:left;width:99%' nowrap>$bton</td>";
     $html[]="</tr>";
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
+
+
+
 }
+
 function PFRING($UPDATES_ARRAY):string{
     $tpl=new template_admin();
 
