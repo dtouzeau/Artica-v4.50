@@ -139,7 +139,7 @@ class HeadsBuilder{
     }
 
     private function CurrentVersion():string{
-        $version=file_get_contents("/usr/share/artica-postfix/version");
+        $version=file_get_contents("/usr/share/artica-postfix/VERSION");
         if(!is_file("/usr/share/artica-postfix/SP/$version")){
             return $version;
         }

@@ -429,6 +429,7 @@ return implode(', ', $timeParts);
 
     public function BigCircleCheckbox($field,$title,$explain,$value,$after=null,$Privs=null):string{
         $id=time();
+        $f=array();
         $page=CurrentPageName();
         $title=base64_encode($this->_ENGINE_parse_body($title));
         $explain=base64_encode($this->_ENGINE_parse_body($explain));
@@ -436,6 +437,23 @@ return implode(', ', $timeParts);
         if($value==0){
             $SetCheck="false";
         }
+
+        if(strpos($field,"|")>0){
+            $tb=explode("|",$field);
+            foreach ($tb as $newf){
+                if(strpos($newf,":")>0){
+                $ss=explode(":",$newf);
+                $f[]="['$ss[0]']: '$ss[1]'";
+                }else{
+                    $f[]="['$newf']: value";
+                }
+            }
+        }else{
+            $f[]="['$field']: value";
+        }
+
+        $fftxt=@implode(",",$f);
+
         return "<div id=\"chkbox-$id\"></div>
         <script>
             renderBigCheckboxListSafe('chkbox-$id', [
@@ -450,7 +468,7 @@ return implode(', ', $timeParts);
                     ctrl.input.addEventListener('change', function () {
                         var value = ctrl.input.checked ? 1 : 0;
                         //console.log('User clicked, new value =', ctrl.input.checked);
-                        $.post('$page', { ['$field']: value })
+                        $.post('$page', { $fftxt })
                           .done(function (resp, textStatus, jqXHR) {
                             // success
                             console.log('OK:', resp);

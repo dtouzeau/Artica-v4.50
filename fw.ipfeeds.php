@@ -767,18 +767,19 @@ function parameters():bool{
         echo "<script>$jsRefresh3</script>";
         return false;
     }
+    $DEBIAN_VERSION=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DEBIAN_VERSION"));
+    if($DEBIAN_VERSION>12) {
+        if(!$jsonAVX->CPUHasAVX && $jsonAVX->LibraryHasAVX){
+            $js="Loadjs('fw.system.upgrade-software.php?product=fw.system')";
+            $button=$tpl->button_autnonome("{APP_PFRING_AVX}",$js, ico_cd, "AsSystemAdministrator",300,"btn-danger");
 
-    if(!$jsonAVX->CPUHasAVX && $jsonAVX->LibraryHasAVX){
-        $js="Loadjs('fw.system.upgrade-software.php?product=fw.system')";
-        $button=$tpl->button_autnonome("{APP_PFRING_AVX}",$js, ico_cd, "AsSystemAdministrator",300,"btn-danger");
+            echo $tpl->div_error("{incompatible_system} $DEBIAN_VERSION||{CPUNOTAVX_LIBHASAVX}<div style='text-align:right'>$button</div>");
+            $jsRefresh3=$tpl->RefreshInterval_js("ipfeeds-fixed-params",$page,"fixed-params=yes",5);
+            echo "<script>$jsRefresh3</script>";
+            return false;
 
-        echo $tpl->div_error("{incompatible_system}||{CPUNOTAVX_LIBHASAVX}<div style='text-align:right'>$button</div>");
-        $jsRefresh3=$tpl->RefreshInterval_js("ipfeeds-fixed-params",$page,"fixed-params=yes",5);
-        echo "<script>$jsRefresh3</script>";
-        return false;
-
+        }
     }
-
     $html[]="<table style='width:100%;margin-top:10px'>";
     $html[]="<tr>";
     $html[]="<td style='vertical-align: top' colspan='2'>";

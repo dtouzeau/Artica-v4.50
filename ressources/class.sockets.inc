@@ -1632,24 +1632,10 @@ class sockets{
         return $this->SET_INFO_FILE($key,$value);
     }
     private function SET_INFO_MEMCACHED($key,$value):bool{
-
         $ClassMem=dirname(__FILE__) . "/class.memcached.inc";
         if (!class_exists("lib_memcached")) {include_once($ClassMem);}
         $mem = new lib_memcached();
-        if(!$mem->SetSetting($key, $value)){
-            if(function_exists("VERBOSE")){VERBOSE("$key: Failed -> Memcache...".$mem->mysql_error,__LINE__);}
-            $this->ToSyslog("$key: Failed -> Memcache...".$mem->mysql_error);
-            if(!is_null($mem->mysql_error)) {
-                if (preg_match("#MEMCACHED_SERVER_TEMPORARILY_DISABLED#", $mem->mysql_error)) {
-                    if (!isset($GLOBALS["MEMCACHED_RESTART"])) {
-                        $this->REST_API("/memcached/restart");
-                        $GLOBALS["MEMCACHED_RESTART"] = true;
-                        return false;
-                    }
-                }
-            }
-            return false;
-        }
+        $mem->SetSetting($key, $value);
         return true;
 
     }
@@ -1703,23 +1689,21 @@ class sockets{
         return true;
     }
     function SET_INFO($key,$value):bool{
-
-        if(!$this->SET_INFO_MEMCACHED($key,$value)){
-            writelogs("Error SET_INFO_MEMCACHED($key)", __FUNCTION__, __FILE__, __LINE__);
-        }
-
         $keyenc=urlencode($key);
-        $this->REST_API("/flushinfo/$keyenc");
+       $this->SET_INFO_MEMCACHED($key,$value);
 
         if(!$this->SET_INFO_ROOT($key,$value)) {
             if(!$this->SET_INFO_FILE($key,$value)) {
                 if(!$this->SET_INFO_REST2($key,$value)) {
                     return false;
                 }
+                $this->REST_API("/flushinfo/$keyenc");
                 return true;
             }
+            $this->REST_API("/flushinfo/$keyenc");
             return true;
         }
+        $this->REST_API("/flushinfo/$keyenc");
         return true;
     }
     function file_put_contents($filename, $data):bool {

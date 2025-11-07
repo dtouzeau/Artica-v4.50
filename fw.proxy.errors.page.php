@@ -97,7 +97,7 @@ function SquidGuardDenyConnect_check():int{
     $results = $q->QUERY_SQL("SELECT * FROM transparent_ports WHERE enabled=1");
 
     foreach ($results as $ligne) {
-        if(srlen($ligne["sslcertificate"])>1) {
+        if(strlen($ligne["sslcertificate"])>1) {
             $c++;
         }
     }

@@ -14,6 +14,12 @@ if(isset($_GET["alienvault-js"])){alienvault_js();exit;}
 if(isset($_GET["alienvault-parameters"])){alienvault_parameters();exit;}
 if(isset($_POST["OtxEnabled"])){alienvault_save();exit;}
 
+if(isset($_GET["log-types"])){log_types_js();exit;}
+if(isset($_GET["log-types-parameters"])){log_types_parameters();exit;}
+if(isset($_GET["log-types-tabs"])){log_types_tabs();exit;}
+if(isset($_POST["LogType"])){log_types_save();exit;}
+
+
 if(isset($_GET["DataShieldIPv4Blocklist-js"])){DataShieldIPv4Blocklist_js();exit;}
 if(isset($_GET["DataShieldIPv4Blocklist-parameters"])){DataShieldIPv4Blocklist_parameters();exit;}
 if(isset($_POST["DataShieldIPv4Blocklist"])){DataShieldIPv4Blocklist_save();exit;}
@@ -146,6 +152,50 @@ function alienvault_js():bool{
     $tpl=new template_admin();
     return $tpl->js_dialog1("AlienVault","$page?alienvault-parameters=yes",650);
 }
+function log_types_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog1("{traffic_logging}","$page?log-types-tabs=yes",650);
+}
+function log_types_parameters():bool{
+    $tpl=new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        $html[]=$tpl->div_error("{error} API||$json->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+    $html=array();
+    $GlobalConfig=$json->Info->EveLogsType;
+    foreach($GlobalConfig as $type=>$value){
+        if($type=="alert"){continue;}
+        $field="$type|LogType:1";
+        $html[]=$tpl->BigCircleCheckbox($field,$type,"{{$type}_suricata_eve}",$value);
+    }
+    echo "<div style='margin-top:15px'>".@implode("\n",$html)."</div>";
+    return true;
+}
+function log_types_tabs():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $array["{traffic_logging}"]="$page?log-types-parameters=yes";
+    echo $tpl->tabs_default($array);
+    return true;
+}
+function log_types_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+
+    unset($_POST["LogType"]);
+    foreach($_POST as $field=>$value){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/log-types/$field/$value");
+
+    }
+    return admin_tracks_post("Set IDS log type");
+
+
+}
+
 function DataShieldIPv4Blocklist_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();

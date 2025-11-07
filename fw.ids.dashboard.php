@@ -71,9 +71,6 @@ function pf_ring_popup(){
         echo $tpl->div_warning("{NOAVX_EXPLAIN}");
     }
 
-
-
-
     $json=json_decode($sock->REST_API("/pfring/infos"));
 
     if(!$json->Status){
@@ -360,6 +357,7 @@ function flat_config():bool{
     $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?statistics-js=yes')");
     $CORP_LICENSE=$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE();
 
+    $tpl->table_form_section("{events}");
 
     if($CORP_LICENSE==1) {
         $tpl->table_form_field_text("{retention_days}", $SuricataPurge, ico_hd);
@@ -370,10 +368,11 @@ function flat_config():bool{
         $tpl->table_form_field_bool("{use_queue_failed}",0,ico_bug);
     }
 
+    $tpl=suricata_field_events($tpl,$jsonStatus);
 
 
+    $tpl->table_form_section("{reputation} / {update}");
     $tpl=suricata_field_update($tpl,$jsonStatus);
-
     $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?DataShieldIPv4Blocklist-js=yes')");
     if($GlobalConfig->DataShieldIPv4Blocklist==0){
         $tpl->table_form_field_bool("Data-Shield IPv4 Blocklist",$GlobalConfig->DataShieldIPv4Blocklist,ico_shield);
@@ -393,6 +392,29 @@ function flat_config():bool{
     return true;
 
 }
+
+function suricata_field_events($tpl,$json){
+    $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?log-types=yes')");
+    $GlobalConfig=$json->Info;
+    $tt=array();
+    $tt[]="alert";
+    foreach($GlobalConfig->EveLogsType as $type=>$value){
+        if($type=="alert"){continue;}
+        if($value==0){continue;}
+        $tt[]=$type;
+    }
+    $forwd[]="{to_artica_db}";
+
+    $text=sprintf("<small>%s %s</small>",implode(" {and} ",$tt),implode(" {and} ",$forwd));
+
+    $tpl->table_form_field_text("{traffic_logging}",$text,ico_list);
+    return $tpl;
+
+}
+
+
+
+
 function suricata_field_update($tpl,$json){
     $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?update-js=yes')");
     $SuricataUpdateInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataUpdateInterval"));
@@ -443,8 +465,8 @@ function main():bool{
 
 
     $jsReconfigure=$tpl->framework_buildjs("suricata:/suricata/reconfigure",
-        "suricata.progress",
-        "suricata.progress.txt","progress-suricata-restart",
+        "suricata.reconfigure.progress",
+        "suricata.reconfigure.progress.txt","progress-suricata-restart",
         ""
     );
     $jsRestart=$tpl->framework_buildjs("suricata:/suricata/restart",

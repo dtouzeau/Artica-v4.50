@@ -1,0 +1,517 @@
+<?php
+
+class ValkeyClient
+{
+    private const SOCK   = '/run/redis/redis.sock';
+    private const DB     = 0;             // already selected by connect arg
+    private const PREFIX = 'SET:';        // your convention
+    private const TTL_D  = 172800;        // 2 days default
+    private const HTTP_SOCK = '/usr/share/artica-postfix/bin/run/articarest.sock'; // HTTP fallback
+    /** @var bool|null */
+    private static $unlinkSupported = null;
+    /** @var Redis|null */
+    private static $r = null;
+    /** @var bool */
+    private static $useHttpFallback = false;
+
+    /** Get a persistent, shared Redis instance (UNIX socket).
+     * @return Redis|null
+     */
+    private static function r()
+    {
+        if (self::$r instanceof Redis) {
+            // Check if connection is still alive
+            try {
+                self::$r->ping();
+                return self::$r;
+            } catch (\RedisException $e) {
+                // Connection is broken, reconnect
+                self::$r = null;
+            }
+        }
+
+        try {
+            $r = new Redis();
+
+            // persistent connect over UNIX socket
+            // phpredis: pconnect($host, $port, $timeout, $persistent_id, $retry_interval, $read_timeout, $context)
+            // For UNIX socket, pass host = socket path & port = 0
+            if (!$r->pconnect(self::SOCK, 0, 1.0, 'valkey-unix-sock')) {
+                // Log the error but don't crash
+                if (function_exists('writelogs')) {
+                    writelogs('Valkey connect failed to ' . self::SOCK, __FUNCTION__, __FILE__, __LINE__);
+                }
+                return null;
+            }
+
+            // timeouts
+            $r->setOption(Redis::OPT_READ_TIMEOUT, 1.0);  // seconds
+            $r->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+            // If you need a DB, you can ensure with select() (not needed if server default is 0)
+            if (self::DB !== 0) {
+                $r->select(self::DB);
+            }
+
+            self::$r = $r;
+            return self::$r;
+        } catch (\RedisException $e) {
+            // Socket file doesn't exist or connection failed - log but don't crash
+            if (function_exists('writelogs')) {
+                writelogs('Valkey connection failed: ' . $e->getMessage() . ' (socket: ' . self::SOCK . ')', __FUNCTION__, __FILE__, __LINE__);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * HTTP fallback: Send request to Unix socket HTTP server
+     * @param string $path
+     * @return string|false
+     */
+    private static function httpRequest($path)
+    {
+        if (!file_exists(self::HTTP_SOCK)) {
+            return false;
+        }
+
+        $client = stream_socket_client('unix://' . self::HTTP_SOCK, $errno, $errstr, 5);
+        if (!$client) {
+            if (function_exists('writelogs')) {
+                writelogs("HTTP fallback failed: $errstr ($errno)", __FUNCTION__, __FILE__, __LINE__);
+            }
+            return false;
+        }
+
+        $request = "GET $path HTTP/1.1\r\n";
+        $request .= "Host: localhost\r\n";
+        $request .= "Connection: close\r\n\r\n";
+
+        fwrite($client, $request);
+
+        $response = '';
+        while (!feof($client)) {
+            $response .= fgets($client, 1024);
+        }
+        fclose($client);
+
+        // Extract body from HTTP response
+        $parts = explode("\r\n\r\n", $response, 2);
+        if (count($parts) === 2) {
+            return $parts[1];
+        }
+
+        return false;
+    }
+
+    /**
+     * HTTP fallback: Get key value from HTTP server
+     * @param string $key
+     * @return string
+     */
+    private static function httpGetInfo($key)
+    {
+        $encodedKey = urlencode($key);
+        $response = self::httpRequest("/getinfo/$encodedKey");
+
+        if ($response === false) {
+            return '';
+        }
+
+        $data = json_decode($response, true);
+        if (isset($data['Status']) && $data['Status'] === true && isset($data['Data'])) {
+            if (isset($data['Encoded']) && $data['Encoded'] === true) {
+                return base64_decode($data['Data']);
+            }
+            return $data['Data'];
+        }
+
+        return '';
+    }
+
+    /**
+     * HTTP fallback: Set key value via HTTP server
+     * @param string $key
+     * @param string $value
+     * @return bool
+     */
+    private static function httpSetInfo($key, $value)
+    {
+        $encodedKey = urlencode(base64_encode($key));
+        $encodedValue = urlencode(base64_encode($value));
+        $response = self::httpRequest("/setinfo/$encodedKey/$encodedValue");
+
+        if ($response === false) {
+            return false;
+        }
+
+        $data = json_decode($response, true);
+        return isset($data['Status']) && $data['Status'] === true;
+    }
+
+    /** Normalize key with SET: prefix once. */
+    private static function norm(string $key): string
+    {
+        if (strpos($key, self::PREFIX) === 0) return $key;
+        return self::PREFIX . $key;
+    }
+    private static function unlinkOrDel(\Redis $r, string $key): bool
+    {
+        // If we don't yet know, or we think UNLINK is supported, try it.
+        if (self::$unlinkSupported !== false) {
+            try {
+                $res = $r->rawCommand('UNLINK', $key); // returns int(0/1) on success, or false on error
+                if ($res !== false) {
+                    self::$unlinkSupported = true;
+                    return (bool)$res;
+                }
+                // Error path (no exception): check last error for "unknown command"
+                $err = method_exists($r, 'getLastError') ? (string)$r->getLastError() : '';
+                if (stripos($err, 'unknown') !== false) {
+                    self::$unlinkSupported = false; // remember: UNLINK not supported
+                } else {
+                    // Some other error: propagate as failure
+                    return false;
+                }
+            } catch (\RedisException $e) {
+                if (stripos($e->getMessage(), 'unknown') !== false) {
+                    self::$unlinkSupported = false; // not supported
+                } else {
+                    // Real runtime error
+                    return false;
+                }
+            }
+        }
+
+        // Fallback (or known unsupported): use DEL
+        return (bool)$r->del($key);
+    }
+
+    /** SET string with TTL (seconds). Empty value => delete. */
+    public static function setSetting(string $key, string $value, int $ttl = self::TTL_D): bool{
+        $OrgKey=$key;
+        $key = self::norm($key);
+        $r   = self::r();
+
+        if ($r === null) {
+            // Connection failed, try HTTP fallback
+            return self::httpSetInfo($OrgKey, $value);
+        }
+
+        if ($value === '') {
+            return self::unlinkOrDel($r, $key);
+        }
+
+        if ($ttl <= 0) {
+            $val=$r->set($key, $value);
+            self::httpSetInfo($OrgKey, $value);
+            return $val;
+        }
+        // Use SET with EX for atomic TTL
+        return $r->set($key, $value, ['ex' => $ttl]);
+    }
+
+
+    private static function Getfile($key):string{
+
+        $FileKeyPath="/etc/artica-postfix/settings/Daemons/$key";
+        if(!is_file($FileKeyPath)){return "";}
+
+        if(!is_readable($FileKeyPath)) {
+            return "";
+        }
+
+        $fp = fopen($FileKeyPath, "rb");//open file in read mode
+        if(!$fp){
+            return "";
+        }
+
+        $str = stream_get_contents($fp);
+        fclose($fp);
+        return trim((string) $str);
+
+    }
+
+    /** GET string; returns "" when key is missing (no extra EXISTS round trip). */
+    public static function getSetting(string $key): string{
+        $OrgKey = $key;
+        $key = self::norm($key);
+
+        $r   = self::r();
+
+        if ($r === null) {
+            // Connection failed, try HTTP fallback
+            return self::httpGetInfo($OrgKey);
+        }
+
+        $val = $r->get($key);
+        if ($val === false) {
+            return self::Getfile($OrgKey);
+        }
+        return is_string($val) ? $val : (string)$val;
+    }
+
+    /** Delete key (async). */
+    public static function delKey(string $key): bool
+    {
+        $key = self::norm($key);
+        $r   = self::r();
+
+        if ($r === null) {
+            return false; // Connection failed
+        }
+
+        return (bool)$r->rawCommand('UNLINK', $key);
+    }
+
+    /** Scan all keys matching a pattern, efficiently. Returns array of keys. */
+    public static function listKeys(string $pattern = '*'): array
+    {
+        $r = self::r();
+
+        if ($r === null) {
+            return []; // Connection failed, return empty array
+        }
+
+        $it = null;
+        $out = [];
+        while (true) {
+            $chunk = $r->scan($it, $pattern, 1000);
+            if ($chunk === false) break;
+            // $chunk is an array of keys
+            foreach ($chunk as $k) {
+                $out[] = $k;
+            }
+        }
+        return $out;
+    }
+
+    /** Count keys by pattern without materializing the full list. */
+    public static function countKeys(string $pattern = '*'): int
+    {
+        $r = self::r();
+
+        if ($r === null) {
+            return 0; // Connection failed, return 0
+        }
+
+        $it = null;
+        $count = 0;
+        while (true) {
+            $chunk = $r->scan($it, $pattern, 2000);
+            if ($chunk === false) break;
+            $count += count($chunk);
+        }
+        return $count;
+    }
+
+    /** Bulk delete by pattern using SCAN + UNLINK in batches. */
+    public static function unlinkByPattern(string $pattern, int $batch = 1000): int
+    {
+        $r = self::r();
+
+        if ($r === null) {
+            return 0; // Connection failed, return 0
+        }
+
+        $it = null;
+        $buf = [];
+        $deleted = 0;
+
+        while (true) {
+            $chunk = $r->scan($it, $pattern, 2000);
+            if ($chunk === false) break;
+
+            foreach ($chunk as $k) {
+                // Skip your PHPREDIS* keys if needed
+                if (strpos($k, 'PHPREDIS') === 0) continue;
+
+                $buf[] = $k;
+                if (count($buf) >= $batch) {
+                    $deleted += self::unlinkBatch($r, $buf);
+                    $buf = [];
+                }
+            }
+        }
+        if ($buf) {
+            $deleted += self::unlinkBatch($r, $buf);
+        }
+        return $deleted;
+    }
+
+    private static function unlinkBatch(Redis $r, array $keys): int
+    {
+        // pipeline UNLINK for lower RTT
+        $r->multi(Redis::PIPELINE);
+        foreach ($keys as $k) {
+            $r->rawCommand('UNLINK', $k);
+        }
+        $res = $r->exec();
+        // each entry is int removed (0/1)
+        return array_sum(array_map('intval', $res));
+    }
+
+    /** TTL helper (returns seconds, -1=no expiry, -2=missing). */
+    public static function ttl(string $key): int
+    {
+        $key = self::norm($key);
+        $r = self::r();
+
+        if ($r === null) {
+            return -2; // Connection failed, return -2 (missing)
+        }
+
+        return (int) $r->ttl($key);
+    }
+
+    /** Optional: get INFO stats as array (phpredis has no getStats for Redis). */
+    public static function info(string $section = 'all'): array
+    {
+        $r = self::r();
+
+        if ($r === null) {
+            return []; // Connection failed, return empty array
+        }
+
+        return $r->info($section) ?: [];
+    }
+
+    public static function Statistics(): array
+    {
+        try {
+            $r = self::r();
+
+            if ($r === null) {
+                return []; // Connection failed, return empty array
+            }
+
+            // You can fetch a specific section or 'all'
+            $server  = $r->info('server')   ?: [];
+            $clients = $r->info('clients')  ?: [];
+            $memory  = $r->info('memory')   ?: [];
+            $persistence = $r->info('persistence') ?: [];
+            $stats   = $r->info('stats')    ?: [];
+            $cpu     = $r->info('cpu')      ?: [];
+            $replica = $r->info('replication') ?: [];
+            $keyspace = $r->info('keyspace') ?: [];
+
+            // Optionally include commandstats (expensive on very old servers)
+            $commandstats = $r->info('commandstats') ?: [];
+
+            return [
+                'server'       => $server,
+                'clients'      => $clients,
+                'memory'       => $memory,
+                'persistence'  => $persistence,
+                'stats'        => $stats,
+                'cpu'          => $cpu,
+                'replication'  => $replica,
+                'keyspace'     => $keyspace,
+                'commandstats' => $commandstats,
+            ];
+        } catch (\Throwable $e) {
+            // Return empty array on failure (keeps old contract)
+            return [];
+        }
+    }
+    public static function getKey(string $key): string
+    {
+        try {
+            $r = self::r();
+
+            if ($r === null) {
+                // Connection failed, try HTTP fallback
+                $key = self::norm($key);
+                return self::httpGetInfo($key);
+            }
+
+            // Keep your SET: prefix convention
+            if (strpos($key, self::PREFIX) !== 0) {
+                $key = self::PREFIX . $key;
+            }
+
+            // Fast GET; missing key returns false in phpredis
+            $val = $r->get($key);
+            if ($val === false) {
+                // treat as "not found" -> empty string (no logging spam, no EXISTS)
+                return '';
+            }
+
+            if (is_array($val)) {
+                // Shouldn't normally happen (GET returns string), but stay defensive
+                return serialize($val);
+            }
+
+            $value = is_string($val) ? trim($val) : (string)$val;
+
+            // Preserve your special marker semantics
+            if ($value === '!nil') {
+                return '';
+            }
+            return $value;
+
+        } catch (\Throwable $e) {
+            if (function_exists('writelogs')) {
+                writelogs("Fatal ".$e->getMessage(), __FUNCTION__, __FILE__, __LINE__);
+            }
+            // On any error, behave like old code: mark as not found
+            return '';
+        }
+    }
+    public static function saveKey(string $key, $object, int $ttl = 0): bool
+    {
+        try {
+            $r = self::r();
+
+            // Normalize to SET: prefix once
+            if (strpos($key, self::PREFIX) !== 0) {
+                $key = self::PREFIX . $key;
+            }
+
+            // Do not accept arrays (matches old behavior)
+            if (is_array($object)) {
+                // your logger:
+                if (function_exists('writelogs')) {
+                    writelogs("Fatal \"$key\" try to save an Array??", __FUNCTION__, __FILE__, __LINE__);
+                }
+                return false;
+            }
+
+            if ($r === null) {
+                // Connection failed, try HTTP fallback
+                $value = ($object === '' || $object === null) ? '' : trim((string)$object);
+                return self::httpSetInfo($key, $value);
+            }
+
+            // Default TTL like your old code
+            if ($ttl === 0) {
+                $ttl = self::TTL_D; // 172800
+            }
+
+            // Empty value => delete key (async to avoid blocking)
+            if ($object === '' || $object === null || strlen((string)$object) === 0) {
+                // Prefer UNLINK; fallback to DEL if needed
+                // return (bool)$r->rawCommand('UNLINK', $key);
+                $r->rawCommand('UNLINK', $key);
+                return true;
+            }
+
+            $value = trim((string)$object);
+
+            // Atomic set with TTL
+            if ($ttl > 0) {
+                // phpredis: set($key, $value, ['ex' => $seconds])
+                return $r->set($key, $value, ['ex' => $ttl]);
+            } else {
+                // (Shouldn't happen with our default, but keep for completeness)
+                return $r->set($key, $value);
+            }
+
+        } catch (\Throwable $e) {
+            if (function_exists('writelogs')) {
+                writelogs("Fatal ".$e->getMessage(), __FUNCTION__, __FILE__, __LINE__);
+            }
+            return false;
+        }
+    }
+}

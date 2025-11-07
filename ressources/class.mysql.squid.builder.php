@@ -457,6 +457,9 @@ class mysql_squid_builder{
         $this->acl_GroupType_IDS["dst"]="{dst}";
         $this->acl_GroupType_IDS["port"]="{destination_port}";
         $this->acl_GroupType_IDS["dstdomain"]="{dstdomain}";
+        $this->acl_GroupType_IDS["geoipsrc"]="{geoipsrc}";
+        $this->acl_GroupType_IDS["geoipdest"]="{geoipdest}";
+
 
 
         $this->acl_GroupType_SMTP["all"]="{all}";
@@ -469,7 +472,6 @@ class mysql_squid_builder{
         $this->acl_GroupType_SMTP["adto"]="{active_directory_group} {recipients}";
         $this->acl_GroupType_SMTP["attachs"]="{attachments}";
         $this->acl_GroupType_SMTP["url_regex"]="{url_regex_acl2}";
-        $this->acl_GroupType_SMTP["articablackreputation"]="{articablackreputation}";
         $this->acl_GroupType_SMTP["articablackreputation"]="{articablackreputation}";
         $this->acl_GroupType_SMTP["dmarc"]="{check} DMARC";
         //$this->acl_GroupType_SMTP["dkimverify"]="{verify} DKIM";

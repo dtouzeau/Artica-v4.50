@@ -36,54 +36,10 @@ function ARTICAREST_VERSION():string{
 }
 
 
-function SAFEGUARD_AUTH():string{
-    if(isset($GLOBALS["SAFEGUARD_AUTH"])){return strval($GLOBALS["SAFEGUARD_AUTH"]);}
 
-    $opendkim="/opt/quest/sbin/vasd";
 
-    exec("$opendkim -v 2>&1",$results);
-    foreach ($results as $line){
-        if(!preg_match("#SAS Version\s+([0-9\.]+)#", $line,$re)){
-            if($GLOBALS["VERBOSE"]){echo "SAFEGUARD_AUTH: VERSION NO MATCH: \"$line\"\n";}
-            continue;}
-        $GLOBALS["SAFEGUARD_AUTH"]=$re[1];
-        return $GLOBALS["SAFEGUARD_AUTH"];
 
-    }
-    return "";
-}
-function APP_RUSTDESK_VERSION():string{
-    if(isset($GLOBALS["APP_RUSTDESK_VERSION"])){return $GLOBALS["APP_RUSTDESK_VERSION"];}
-    if(!is_file("/usr/local/bin/hbbr")){return "0.0";}
-    exec("/usr/local/bin/hbbr -V 2>&1",$results);
-    foreach ($results as $index=>$line){
-        if(!preg_match("#hbbr\s+([0-9\.]+)$#", $line,$re)){
-            if($GLOBALS["VERBOSE"]){echo "VERSION NO MATCH: \"$line\"\n";}
-            continue;
-        }
-        $GLOBALS["APP_RUSTDESK_VERSION"]=$re[1];
-        return $GLOBALS["APP_RUSTDESK_VERSION"];
 
-    }
-    return "0.0";
-
-}
-
-function APP_POSTGRES_VERSION(){
-    if(isset($GLOBALS["APP_POSTGRES_VERSION"])){return $GLOBALS["APP_POSTGRES_VERSION"];}
-    if(!is_file("/usr/local/ArticaStats/bin/pg_config")){return "0.0";}
-    exec("/usr/local/ArticaStats/bin/pg_config --version 2>&1",$results);
-    foreach ($results as $index=>$line){
-        if(!preg_match("#PostgreSQL\s+([0-9\.]+)$#", $line,$re)){
-            if($GLOBALS["VERBOSE"]){echo "VERSION NO MATCH: \"$line\"\n";}
-            continue;
-        }
-        $GLOBALS["APP_POSTGRES_VERSION"]=$re[1];
-        return $GLOBALS["APP_POSTGRES_VERSION"];
-
-    }
-    return "0.0";
-}
 function GEOIPUPDATE_VERSION(){
 	if(isset($GLOBALS["GEOIPUPDATE_VERSION"])){return $GLOBALS["GEOIPUPDATE_VERSION"];}
 
@@ -193,29 +149,7 @@ function APP_FILEBEAT_VERSION(){
 	}
 	return null;
 }
-function APP_SSHPORTAL_VERSION(){
-	if(isset($GLOBALS["APP_SSHPORTAL_VERSION"])){return $GLOBALS["APP_SSHPORTAL_VERSION"];}
-	$bin=$GLOBALS["CLASS_UNIX"]->find_program("sshportal");
-	exec("$bin -v 2>&1",$results);
-	foreach ($results as $num=>$line){
-		$line=trim($line);
-		if($line==null){continue;}
-		if(!preg_match("#^version\s+([0-9\.]+)#i",$line,$re)){continue;}
-		$GLOBALS["APP_SSHPORTAL_VERSION"]=$re[1];
-		return $GLOBALS["APP_SSHPORTAL_VERSION"];
-	}
-    $sum=md5_file($bin);
-    if($sum=="271bb583eed291f794b8add709cacdc5"){
-        $GLOBALS["APP_SSHPORTAL_VERSION"]="2.0.1";
-        return $GLOBALS["APP_SSHPORTAL_VERSION"];
-    }
-    if($sum=="548b7fec10ee730bf4c434c7eb798f18"){
-        $GLOBALS["APP_SSHPORTAL_VERSION"]="2.0.2";
-        return $GLOBALS["APP_SSHPORTAL_VERSION"];
-    }
 
-	return null;
-}
 
 
 
@@ -236,19 +170,7 @@ function APP_DOCKER_VERSION():string{
 }
 
 //
-function APP_ZABBIX_AGENT_VERSION():string{
-	if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
-	$bin=$GLOBALS["CLASS_UNIX"]->find_program("zabbix_agentd");
-	exec("$bin -V 2>&1",$results);
-	foreach ($results as $line){
-		$line=trim($line);
-		if($line==null){continue;}
-		if(!preg_match("#^zabbix_agentd.*?([0-9\.]+)#i",$line,$re)){continue;}
-		$GLOBALS[__FUNCTION__]=$re[1];
-		return strval($GLOBALS[__FUNCTION__]);
-	}
-	return "";
-}
+
 function APP_TAILSCALE_VERSION():string{
     if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
     $bin="/usr/sbin/tailscaled";
@@ -590,26 +512,7 @@ function GLANCES_VERSION(){
 }
 
 
-function APP_KEEPALIVED_VERSION(): string
-{
-    if (isset($GLOBALS[__FUNCTION__])) {
-        return $GLOBALS[__FUNCTION__];
-    }
-    $binary = $GLOBALS["CLASS_UNIX"]->find_program("keepalived");
-    exec("$binary --version 2>&1", $results);
-    foreach ($results as $line) {
-        $line = trim($line);
-        if (preg_match("#(?:Keepalived V|v)\s*((?:[0-9]+\.?)+)#", trim($line), $re)) {
-            $GLOBALS[__FUNCTION__] = $re[1];
-            if ($GLOBALS["VERBOSE"]) {
-                echo "[" . __FUNCTION__ . "]: Found '$re[1]'\n";
-            }
-            return $re[1];
-        }
-        if($GLOBALS["VERBOSE"]){echo "[".__FUNCTION__."]: Not Found '$line'\n";}
-    }
-    return "";
-}
+
 
 function APP_SAMHAIN_VERSION(){
 	if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
@@ -650,24 +553,7 @@ function SMOKEPING_VERSION():string{
 
 
 
-function APP_SASLAUTHD_VERSION():string{
-    $results=array();
-    if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
-    $binary = $GLOBALS["CLASS_UNIX"]->find_program("saslauthd");
-    if($binary==null){ $GLOBALS[__FUNCTION__]="";return  $GLOBALS[__FUNCTION__];}
-    exec("$binary -v 2>&1",$results);
-    foreach ($results as $line){
-        $line=trim($line);
-        if(preg_match("#^saslauthd\s+.*?([0-9\.]+)#", trim($line),$re)){
-            $GLOBALS[__FUNCTION__]=$re[1];
-            if($GLOBALS["VERBOSE"]){echo "[".__FUNCTION__."]: Found '$re[1]'\n";}
-            return $re[1];
-        }
-        if($GLOBALS["VERBOSE"]){echo "[".__FUNCTION__."]: Not Found '$line'\n";}
-    }
-    return "";
 
-}
 
 
 
@@ -909,20 +795,7 @@ function TC_VERSION(){
 	}
 	return null;}
 
-function curlftpfs_version(){
-	if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
-	$masterbin=$GLOBALS["CLASS_UNIX"]->find_program("curlftpfs");
-	if(!is_file($masterbin)){return "0.0.0";}
-	exec("$masterbin --version 2>&1",$results);
-	foreach ($results as $num=>$val){
-		if($GLOBALS["VERBOSE"]){echo "curlftpfs_version(): $val\n";}
-		if(preg_match("#curlftpfs\s+([0-9\.\-]+)#", $val,$re)){
-			$GLOBALS[__FUNCTION__]=trim($re[1]);
-			if($GLOBALS["VERBOSE"]){echo "curlftpfs_version(): ----> '{$GLOBALS[__FUNCTION__]}'\n";}
-			return $GLOBALS[__FUNCTION__];
-		}
-	}
-	return null;}
+
 
 function kibana_version(){
 	if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
@@ -969,20 +842,7 @@ function ntopng_version(){
 	}
 	return null;}
 
-function fping_version(){
-	if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
-	$masterbin=$GLOBALS["CLASS_UNIX"]->find_program("fping");
-	if(!is_file($masterbin)){return "0.0.0";}
-	exec("$masterbin -v 2>&1",$results);
-	foreach ($results as $ligne){
-		$ligne=trim($ligne);
-		if($ligne==null){continue;}
-		if(!preg_match("#Version\s+([0-9\.]+)#", $ligne,$re)){if($GLOBALS["VERBOSE"]){echo "fping_version():: FAILED {$ligne}\n";}continue;}
-		$GLOBALS[__FUNCTION__]=trim($re[1]);
-		if($GLOBALS["VERBOSE"]){echo "fping_version():: SUCCESS {$re[1]}\n";}
-		return $GLOBALS[__FUNCTION__];
-	}
-	return null;}
+
 
 
 
@@ -1246,16 +1106,7 @@ function nmap_version(){
 
 
 
-function __MSKTUTIL_VERSION(){
-	if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
-	$msktutil=$GLOBALS["CLASS_UNIX"]->find_program("msktutil");
-	$t=exec("$msktutil --version 2>&1");
-	if($GLOBALS["VERBOSE"]){echo "$msktutil -> $t\n";}
-	if(preg_match("#msktutil version\s+([0-9\.]+)#", $t,$re)){
-		$GLOBALS[__FUNCTION__]=$re[1];
-		return $GLOBALS[__FUNCTION__];
-	}
-	return null;}
+
 function dnsfilterd_version(){
 	if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
 	$ufdbguardd_path="/opt/dnsfilterd/bin/dnsfilterd";
@@ -1722,8 +1573,6 @@ function Build_default_values(){
 	$fireqos=$GLOBALS["CLASS_UNIX"]->find_program("fireqos");
 	$mountcifs=$GLOBALS["CLASS_UNIX"]->find_program("mount.cifs");
 	$java=$GLOBALS["CLASS_UNIX"]->find_program("java");
-	$fping=$GLOBALS["CLASS_UNIX"]->find_program("fping");
-	$curlftpfs=$GLOBALS["CLASS_UNIX"]->find_program("curlftpfs");
 	$iptaccount=$GLOBALS["CLASS_UNIX"]->find_program("iptaccount");
 	$ipsec=$GLOBALS["CLASS_UNIX"]->find_program("ipsec");
 	$pptpd=$GLOBALS["CLASS_UNIX"]->find_program("pptpd");
@@ -1764,19 +1613,18 @@ function Build_default_values(){
 	$php_geoip="$php5ExtensionDir/maxminddb.so";
 	$geoipupdate=$GLOBALS["CLASS_UNIX"]->find_program("geoipupdate");
 	$qemu_ga=$GLOBALS["CLASS_UNIX"]->find_program("qemu-ga");
-	$zabbix_agentd=$GLOBALS["CLASS_UNIX"]->find_program("zabbix_agentd");
 
-	$sshportal=$GLOBALS["CLASS_UNIX"]->find_program("sshportal");
+
+
 	$pdnssec=$GLOBALS["CLASS_UNIX"]->find_program("pdnssec");
-	$cgrulesengd=$GLOBALS["CLASS_UNIX"]->find_program("cgrulesengd");
 	$samhain=$GLOBALS["CLASS_UNIX"]->find_program("samhain");
 	$dsc=$GLOBALS["CLASS_UNIX"]->find_program("dsc");
-	$keepalived=$GLOBALS["CLASS_UNIX"]->find_program("keepalived");
+
     $httrack=$GLOBALS["CLASS_UNIX"]->find_program("httrack");
     $smokeping=$GLOBALS["CLASS_UNIX"]->find_program("smokeping");
-    $saslauthd = $GLOBALS["CLASS_UNIX"]->find_program("saslauthd");
-    $aha = $GLOBALS["CLASS_UNIX"]->find_program("aha");
-    $sshfs = $GLOBALS["CLASS_UNIX"]->find_program("sshfs");
+
+
+
     $dockerd = $GLOBALS["CLASS_UNIX"]->find_program("dockerd");
 
 	$greensql=null;
@@ -1833,8 +1681,6 @@ function Build_default_values(){
 	if($GLOBALS["VERBOSE"]){echo "FireQOS		: $fireqos\n";}
 	if($GLOBALS["VERBOSE"]){echo "mount.cifs	: $mountcifs\n";}
 	if($GLOBALS["VERBOSE"]){echo "java            : $java\n";}
-	if($GLOBALS["VERBOSE"]){echo "fping           : $fping\n";}
-	if($GLOBALS["VERBOSE"]){echo "curlftpfs       : $curlftpfs\n";}
 	if($GLOBALS["VERBOSE"]){echo "ziproxy         : $ziproxy\n";}
 	if($GLOBALS["VERBOSE"]){echo "php5            : $php5\n";}
 	if($GLOBALS["VERBOSE"]){echo "nohup           : $nohup\n";}
@@ -1853,16 +1699,13 @@ function Build_default_values(){
 	if($GLOBALS["VERBOSE"]){echo "PHP ExtensionDir: $php5ExtensionDir\n";}
 	if($GLOBALS["VERBOSE"]){echo "PHP GeoIP2      : $php_geoip\n";}
 	if($GLOBALS["VERBOSE"]){echo "geoipupdate     : $geoipupdate\n";}
-	if($GLOBALS["VERBOSE"]){echo "zabbix_agentd   : $zabbix_agentd\n";}
-	if($GLOBALS["VERBOSE"]){echo "sshportal       : $sshportal\n";}
 	if($GLOBALS["VERBOSE"]){echo "pdnssec         : $pdnssec\n";}
-	if($GLOBALS["VERBOSE"]){echo "cgrulesengd     : $cgrulesengd\n";}
 	if($GLOBALS["VERBOSE"]){echo "samhain         : $samhain\n";}
 	if($GLOBALS["VERBOSE"]){echo "dnsc            : $dsc\n";}
     if($GLOBALS["VERBOSE"]){echo "httrack         : $httrack\n";}
     if($GLOBALS["VERBOSE"]){echo "smokeping       : $smokeping\n";}
-    if($GLOBALS["VERBOSE"]){echo "saslauthd       : $saslauthd\n";}
-    if($GLOBALS["VERBOSE"]){echo "aha             : $aha\n";}
+
+
 
 	if(!is_file("/usr/sbin/wp-cli.phar")){
 		if(is_file("$BArticaP/bin/install/wp-cli.phar.tar.gz")){
@@ -2010,40 +1853,6 @@ function Build_default_values(){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_WAZHU_INSTALLED", 0);
     }
 
-
-	$ndpi_path="/lib/modules/$KERNEL_VERSION/extra/xt_ndpi.ko";
-	if($GLOBALS["VERBOSE"]){echo "[NDPI]: KERNEL VERSION:$KERNEL_VERSION\n";}
-	if($GLOBALS["VERBOSE"]){echo "[NDPI]: xt_ndpi.ko....:$ndpi_path\n";}
-
-	if(is_file($ndpi_path)){
-		if($GLOBALS["VERBOSE"]){echo "[NDPI]: xt_ndpi.ko....:$ndpi_path SUCCESS\n";}
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_NDPI_INSTALLED", 1);
-		if(is_file("/usr/share/nDPI/VERSION")){
-			$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_NDPI_VERSION", trim(@file_get_contents("/usr/share/nDPI/VERSION")));}
-
-	}else{
-		if($GLOBALS["VERBOSE"]){echo "[NDPI]: xt_ndpi.ko....:$ndpi_path NO SUCH FILE\n";}
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_NDPI_INSTALLED", 0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_NDPI_VERSION", 0);
-	}
-
-
-
-	if(is_file($sshportal)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SSHPORTAL_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SSHPORTAL_VERSION", APP_SSHPORTAL_VERSION());
-
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SSHPORTAL_INSTALLED", 0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSSHPortal", 0);
-
-	}
-
-	if(is_file("/opt/imapbox/imapbox.py")){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_IMAPBOX_INSTALLED", 1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_IMAPBOX_INSTALLED", 0);
-	}
     
     if(is_file($httrack)){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HTTRACK_INSTALLED", 1);
@@ -2063,57 +1872,8 @@ function Build_default_values(){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("CCENCRYPT_INSTALLED", 0);
     }
 
-    if(is_file($sshfs)){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SSHFS_INSTALLED", 1);
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SSHFS_INSTALLED", 0);
-    }
-
-    if(is_file("/usr/bin/urbackupsrv")){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_URBACKUP_INSTALLED", 1);
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_URBACKUP_INSTALLED", 0);
-    }
-
-
-    if(is_file($saslauthd)){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SASLAUTHD_INSTALLED", 1);
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SASLAUTHD_VERSION", APP_SASLAUTHD_VERSION());
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SASLAUTHD_INSTALLED", 0);
-    }
-
-    if(is_file($aha)){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_AHA_INSTALLED", 1);
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_AHA_INSTALLED", 0);
-    }
-
-    $lua_geoip_found=false;
-    $lua_geoip[]="/usr/lib/x86_64-linux-gnu/lua/5.1/geoip.so";
-    foreach ($lua_geoip as $fpath){
-        if(is_file($fpath)){
-            $lua_geoip_found=true;
-            break;
-        }
-    }
-    if($lua_geoip_found){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LUA_GEOIP_INSTALLED", 1);
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LUA_GEOIP_INSTALLED", 0);
-    }
-
-
 
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ARTICAREST_VERSION",ARTICAREST_VERSION());
-
-    if(is_file("/opt/quest/sbin/vasd")){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SAFEGUARD_AUTH_INSTALLED", 1);
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SAFEGUARD_AUTH_VERSION", SAFEGUARD_AUTH());
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SAFEGUARD_AUTH_INSTALLED", 0);
-    }
-
 
 	if(is_file($samhain)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SAMHAIN_VERSION", APP_SAMHAIN_VERSION());
@@ -2121,32 +1881,11 @@ function Build_default_values(){
 	}else{
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SAMHAIN_INSTALLED", 0);
 	}
-
-	if(is_file($keepalived)){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_KEEPALIVED_VERSION", APP_KEEPALIVED_VERSION());
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_KEEPALIVED_INSTALLED", 1);
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_KEEPALIVED_INSTALLED", 0);
-    }
-
-
-
-	if(is_file($cgrulesengd)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CGROUPS_INSTALLED", 1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CGROUPS_INSTALLED", 0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("cgroupsEnabled", 0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("cgroupsEnabled", 0);
-	}
-
 	if(is_file("/usr/sbin/hv_kvp_daemon")){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HYPERV_DAEMONS_INSTALLED", 1);
     }else{
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HYPERV_DAEMONS_INSTALLED", 0);
     }
-
-
-
 	if(is_file("/usr/sbin/update-ipsets")){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UPDATE_IPSETS_INSTALLED", 1);
 
@@ -2175,21 +1914,6 @@ function Build_default_values(){
 
 
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_UFDBCAT_VERSION",APP_UFDBCAT_VERSION());
-
-    if(is_file("/usr/local/ArticaStats/bin/postgres")){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_POSTGRES_INSTALLED", 1);
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_POSTGRES_VERSION", APP_POSTGRES_VERSION());
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_POSTGRES_INSTALLED", 0);
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_POSTGRES_VERSION", "0.0");
-    }
-
-
-
-
-
-
-
 	if(is_file($msmtp)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSMTP_INSTALLED", 1);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSMTP_VERSION", MSMTP_VERSION());
@@ -2291,10 +2015,6 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_MILTER_GREYLIST_INSTALLED", 0);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_MILTER_GREYLIST_VERSION",0);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MilterGreyListEnabled",0);
-	}
-
-	if(is_file($zabbix_agentd)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_ZABBIX_AGENT_VERSION", APP_ZABBIX_AGENT_VERSION());
 	}
     if(is_file($dockerd)){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_DOCKER_INSTALLED", 1);
@@ -2631,26 +2351,6 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ELASTICSEARCH_INSTALLED", 1);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ELASTICSEARCH_VERSION", elasticsearch_version());
 	}
-
-	if(is_file($fping)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FPING_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FPING_VERSION", fping_version());
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FPING_INSTALLED", 0);
-	}
-
-	if(is_file($curlftpfs)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CURLFTPFS_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CURLFTPFS_VERSION", curlftpfs_version());
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CURLFTPFS_INSTALLED", 0);
-	}
-
-
-
-
-
-
 	$XAPIAN_INSTALLED=false;
 	if(is_file("/usr/lib/php/extensions/no-debug-non-zts-20160303/xapian.so")){
 		file_put_contents("$SetDaemons/XAPIAN_PHP_INSTALLED",1);
@@ -2789,17 +2489,6 @@ function Build_default_values(){
 		if($GLOBALS["VERBOSE"]){echo "APP_XTABLES_INSTALLED: FALSE\n";}
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_XTABLES_INSTALLED",0);
 	}
-
-    if(is_file("/usr/local/bin/hbbr")){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_RUSTDESK_INSTALLED",1);
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_RUSTDESK_VERSION",APP_RUSTDESK_VERSION());
-
-
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_RUSTDESK_INSTALLED",0);
-    }
-
-
 	if(is_file("/usr/local/lib/openvpn-python.so")){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_OPENVPN_PYTHON",1);
 	}else{
@@ -2953,13 +2642,6 @@ function Build_default_values(){
 	}else{
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ASPELL_INSTALLED",0);
 	}
-	if(is_file($curlftpfs)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CURLFTPFS_INSTALLED",1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CURLFTPFS_INSTALLED",0);
-	}
-
-
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_ARTICAPCAP_VERSION",APP_ARTICAPCAP_VERSION());
 
 
@@ -3081,11 +2763,7 @@ function Build_default_values(){
 	}else{
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ARPD_INSTALLED",0);
 	}
-	if(is_file($cgrulesengd)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CGROUPS_INSTALLED",1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CGROUPS_INSTALLED",0);
-	}
+
 	if(is_file($hostapd)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("HOSTAPD_INSTALLED",1);
 	}else{
@@ -3155,22 +2833,7 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("IPSetInstalled",0);
 	}
 
-//******************************************************************************************************
-	if(is_file($msktutil)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSKTUTIL_INSTALLED",1);
-		if($GLOBALS["VERBOSE"]){echo "MSKTUTIL_VERSION -> ...\n";}
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSKTUTIL_VERSION",__MSKTUTIL_VERSION());
-	}else{
-		if($GLOBALS["VERBOSE"]){echo "MSKTUTIL_VERSION -> NOT INSTALLED...\n";}
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSKTUTIL_INSTALLED",0);
-	}
 
-//******************************************************************************************************
-	if(is_file("/lib/modules/$KERNEL_VERSION/extra/xt_ndpi.ko")){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("iptablesNDPI",1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("iptablesNDPI",0);
-	}
 //**************************************************************************************************
 
 //**************************************************************************************************
@@ -3182,11 +2845,8 @@ function Build_default_values(){
 	}
 //**************************************************************************************************
 
-	if(!is_file($cgrulesengd)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CGROUPS_INSTALLED", 0);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CGROUPS_INSTALLED", 1);
-	}
+
+
 
 	if(!is_file("/usr/lib/apache2/modules/mod_cband.so")){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ApacheModCbandInstalled", 0);

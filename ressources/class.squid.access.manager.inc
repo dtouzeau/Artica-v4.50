@@ -191,9 +191,6 @@ class squid_access_manager{
             $HEADERS[]="# ENABLED_RULE=$aclid";
             $conf[] = "$array_access[$ztype]$PortGroup " . @implode(" ", $acls_array)." $annotate_transaction";
         }
-        list($rules,$notates)=$this->SpecificsDenies();
-        $conf[]=$rules;
-        $anotates[]=$notates;
         $conf[]="url_rewrite_access allow all";
         $FINAL[]=@implode("\n",$HEADERS);
         $FINAL[]=@implode("\n",$anotates);
@@ -204,37 +201,7 @@ class squid_access_manager{
 	}
 
 
-    private function SpecificsDenies():array{
-        $SquidGuardDenyConnect=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidGuardDenyConnect"));
-        $conf=array();
-        $anotates=array();
-        $annotate_transaction="";
 
-        if($SquidGuardDenyConnect==1){
-            if($this->isSquid5) {
-                $annotate_transaction = " AnnotateFinalUFDBCONNECT";
-                $anotates[] = "acl AnnotateFinalUFDBCONNECT annotate_transaction webfilterpolicy=connect";
-            }
-            $conf[]="url_rewrite_access deny CONNECT$annotate_transaction";
-            $annotate_transaction="";
-        }else{
-            $conf[]="# SSL Compatibilities OFF";
-        }
-        $EnableWebFTPFilter=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWebFTPFilter"));
-        if($EnableWebFTPFilter==0){
-            if($this->isSquid5) {
-                $annotate_transaction = " AnnotateFinalUFDBFTP";
-                $anotates[] = "acl AnnotateFinalUFDBFTP annotate_transaction webfilterpolicy=ftp";
-            }
-            $conf[]="acl WebFFTP proto FTP";
-            $conf[]="url_rewrite_access deny WebFFTP$annotate_transaction";
-
-        }else{
-            $conf[]="# Disable FTP in urls filtering OFF";
-        }
-
-        return array(@implode("\n",$conf),@implode("\n",$anotates));
-    }
 
 	function allow_auth(){
 

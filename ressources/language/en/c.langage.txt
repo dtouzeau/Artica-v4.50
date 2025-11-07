@@ -3176,3 +3176,33 @@ Data-Shield IPv4 Blocklist delivers up-to-date IPv4 threat intelligence to stren
 <install_this_prog_kernel>We’re looking for the package for kernel %kernelver (%kernelbin).[br]
 If you can’t find it, make sure your package index is up to date.[br]
 If it’s still missing after the update, open a support ticket through the Artica interface %support</install_this_prog_kernel>
+<anomaly_suricata_eve>Logs protocol anomalies and malformed packets</anomaly_suricata_eve>
+<http_suricata_eve>Logs HTTP transactions including URLs, methods, and headers</http_suricata_eve>
+<dns_suricata_eve>Logs DNS queries and responses with domain information</dns_suricata_eve>
+<tls_suricata_eve>Logs TLS/SSL handshakes, certificates, and encryption details</tls_suricata_eve>
+<files_suricata_eve>Logs file transfers with metadata, hashes, and MIME types</files_suricata_eve>
+<smtp_suricata_eve>Logs SMTP email transactions and message details</smtp_suricata_eve>
+<ssh_suricata_eve>Logs SSH connections and protocol version information</ssh_suricata_eve>
+<flow_suricata_eve>Logs network flow sessions with traffic statistics</flow_suricata_eve>
+<netflow_suricata_eve>Logs NetFlow-compatible flow records for analysis tools</netflow_suricata_eve>
+<stats_suricata_eve>Logs Suricata performance statistics and resource usage</stats_suricata_eve>
+<dhcp_suricata_eve>Logs DHCP transactions and IP address assignments</dhcp_suricata_eve>
+<tftp_suricata_eve>Logs TFTP file transfer operations and details</tftp_suricata_eve>
+<smb_suricata_eve>Logs SMB/CIFS file sharing and Windows network operations</smb_suricata_eve>
+<nfs_suricata_eve>Logs NFS file system operations and access requests</nfs_suricata_eve>
+<ftp_suricata_eve>Logs FTP commands, responses, and file transfer activity</ftp_suricata_eve>
+<rdp_suricata_eve>Logs Remote Desktop Protocol connections and session details</rdp_suricata_eve>
+<sip_suricata_eve>Logs SIP VoIP protocol calls and session initiation</sip_suricata_eve>
+<ikev2_suricata_eve>Logs IKEv2 VPN tunnel negotiations and establishment</ikev2_suricata_eve>
+<krb5_suricata_eve>Logs Kerberos authentication requests and ticket operations</krb5_suricata_eve>
+<snmp_suricata_eve>Logs SNMP network management protocol operations</snmp_suricata_eve>
+<rfb_suricata_eve>Logs RFB/VNC remote desktop access and control sessions</rfb_suricata_eve>
+<mqtt_suricata_eve>Logs MQTT IoT messaging protocol publish/subscribe activity</mqtt_suricata_eve>
+<dcerpc_suricata_eve>Logs DCERPC Windows remote procedure call operations</dcerpc_suricata_eve>
+<metadata_suricata_eve>Logs additional event metadata and contextual information</metadata_suricata_eve>
+<dnp3_suricata_eve>Logs DNP3 SCADA industrial control system protocol operations</dnp3_suricata_eve>
+<modbus_suricata_eve>Logs Modbus industrial automation protocol communications</modbus_suricata_eve>
+<drop_suricata_eve>Logs dropped packets and blocked traffic with reasons</drop_suricata_eve>
+<geo_not_mix_srcdst>You can’t mix source countries and destination countries at the same time.</geo_not_mix_srcdst>
+<traffic_logging>Traffic logging</traffic_logging>
+<to_artica_db>To the Artica database (PostgreSQL)</to_artica_db>
