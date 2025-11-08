@@ -3206,3 +3206,15 @@ If it’s still missing after the update, open a support ticket through the Arti
 <geo_not_mix_srcdst>You can’t mix source countries and destination countries at the same time.</geo_not_mix_srcdst>
 <traffic_logging>Traffic logging</traffic_logging>
 <to_artica_db>To the Artica database (PostgreSQL)</to_artica_db>
+<dns_display_version>Prevents the DNS server from disclosing its hostname and software version in query responses</dns_display_version>
+<access_control>Access Control</access_control>
+<access_control_dns_explain>Controls who can query your DNS server.[br]
+permit your trusted networks while blocking everyone else - minimal effort for maximum protection</access_control_dns_explain>
+<UnboundEnableQNAMEMini_explain>Reduces information sent to upstream DNS servers.[br]Instead of sending the full domain name (e.g., "mail.internal.company.com") to every DNS server in the resolution chain, only sends the minimum necessary at each step.</UnboundEnableQNAMEMini_explain>
+<DNSRebindingPrevention_explain>Internal (RFC 1918) addresses on your private network must not be returned for public Internet names.[br]Any such addresses are stripped from DNS answers.[br]This option is enabled automatically when Access Control is active.</DNSRebindingPrevention_explain>
+<new_trusted_network_explain>To create a new trusted network, enter the network address here.[br]You can use formats like:[br]                             192.168.1.1[br]192.168.1.0/24[br]192.168.1.0/255.255.255.0[br]</new_trusted_network_explain>
+<can_be_analyzed_explain>Allows Artica to run port and vulnerability scans on this network address (if the network-scanning feature is installed and enabled).</can_be_analyzed_explain>
+<trusted_network_explain>A trusted network is allowed to access the network-controlled services you configure on this server — including firewall rules, DNS services, IP reputation services, and HTTP proxy access.</trusted_network_explain>
+<allow_query_dns>Allow incoming DNS queries</allow_query_dns>
+<publish_in_vpn_network_explain>Allows the VPN server to route network packets to this address.[br]VPN clients will also receive a route to this network in their routing table.</publish_in_vpn_network_explain>
+<allow_query_dns_explain>Allow this address to query the DNS service installed on this machine.[br]Only applicable if Access Control restrictions are enabled.[br]If this address is already marked as a trusted network, this option is unnecessary because trusted addresses already have full access.</allow_query_dns_explain>

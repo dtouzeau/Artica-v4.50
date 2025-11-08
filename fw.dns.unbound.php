@@ -11,6 +11,8 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 if(isset($_GET["unbound-performance-redis-js"])){unbound_performance_redis_js();exit;}
 if(isset($_GET["unbound-performance-redis-popup"])){unbound_performance_redis_popup();exit;}
 if(isset($_POST["UnboundRedisEnabled"])){save();exit;}
+if(isset($_POST["SaveSecurity"])){save();exit;}
+
 if(isset($_GET["unbound-status-recursors"])){unbound_status_recursors();exit;}
 if(isset($_GET["unbound-security-js"])){unbound_security_js();exit;}
 
@@ -1012,7 +1014,7 @@ function unbound_dnssec_save():bool{
     return admin_tracks("Enable DNSSEC for DNS Cache={$_POST["UnBoundDNSSEC"]}");
 }
 
-function unbound_security_popup(){
+function unbound_security_popup():bool{
     $EnableUnboundBlackLists=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnboundBlackLists"));
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -1025,29 +1027,32 @@ function unbound_security_popup(){
     $UnBoundUnwantedReplyThreshold=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundUnwantedReplyThreshold"));
     if($UnBoundUnwantedReplyThreshold==0){$UnBoundUnwantedReplyThreshold="500000";}
 
-
-    $form[] = $tpl->field_checkbox("UnboundDisplayVersion", "{display_servername_version}", $UnboundDisplayVersion, false, null);
-
-
-    $form[] = $tpl->field_checkbox("UnboundEnableQNAMEMini", "{UnboundEnableQNAMEMini}", $UnboundEnableQNAMEMini);
-    $form[] = $tpl->field_checkbox("EnableUseCapsForID", "{EnableUseCapsForID}", $EnableUseCapsForID,false,"{EnableUseCapsForID_explain}");
-
-
-    $form[] = $tpl->field_checkbox("EnableDNSRebindingAttacks",
-        "DNS Rebinding Prevention", $EnableDNSRebindingAttacks, false);
-
-
-
-    $form[] = $tpl->field_numeric("UnBoundUnwantedReplyThreshold",
-        "{UnBoundUnwantedReplyThreshold}", $UnBoundUnwantedReplyThreshold,  "{UnBoundUnwantedReplyThreshold_explain}");
-
-    $form[] = $tpl->field_checkbox("EnableUnboundBlackLists", "{activate_dns_blacklists}", $EnableUnboundBlackLists, false, "{activate_dns_blacklists_explain}");
-
     $jsafter[]="LoadAjax('unbound-table-start','$page?table=yes')";
-    $jsafter[]="dialogInstance2.close()";
+    //$jsafter[]="dialogInstance2.close()";
     $jsafter[]="";
+    $jjafter=@implode(";",$jsafter);
 
-    echo $tpl->form_outside(null, $form,null,"{apply}", @implode(";",$jsafter), "AsDnsAdministrator");
+
+    $html[]=$tpl->BigCircleCheckbox("UnboundDisplayVersion|SaveSecurity:yes","{display_servername_version}","{dns_display_version}",$UnboundDisplayVersion,$jjafter);
+
+
+    $UnboundAccessControl=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundAccessControl"));
+
+
+    $html[]=$tpl->BigCircleCheckbox("UnboundAccessControl|SaveSecurity:yes","{access_control}","{access_control_dns_explain}",$UnboundAccessControl,$jjafter);
+
+    $html[]=$tpl->BigCircleCheckbox("UnboundEnableQNAMEMini|SaveSecurity:yes","{UnboundEnableQNAMEMini}","{UnboundEnableQNAMEMini_explain}",$UnboundEnableQNAMEMini,$jjafter);
+
+    $html[]=$tpl->BigCircleCheckbox("EnableUseCapsForID|SaveSecurity:yes","{EnableUseCapsForID}","{EnableUseCapsForID_explain}",$EnableUseCapsForID,$jjafter);
+
+    $html[]=$tpl->BigCircleCheckbox("EnableDNSRebindingAttacks|SaveSecurity:yes","DNS Rebinding Prevention","{DNSRebindingPrevention_explain}",$EnableDNSRebindingAttacks,$jjafter);
+
+    $html[]=$tpl->BigCircleCheckbox("EnableUnboundBlackLists|SaveSecurity:yes","{activate_dns_blacklists}","{activate_dns_blacklists_explain}",$EnableUnboundBlackLists,$jjafter);
+
+    $html[]=$tpl->BigFieldIntegerCheckbox("UnBoundUnwantedReplyThreshold|SaveSecurity:yes","{UnBoundUnwantedReplyThreshold}","{UnBoundUnwantedReplyThreshold_explain}",$UnBoundUnwantedReplyThreshold,null,null,$jjafter);
+
+    echo $tpl->_ENGINE_parse_body($html);
+
     return true;
 
 }
@@ -1334,6 +1339,8 @@ function table():bool{
 
     $UnboundRedisEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundRedisEnabled"));
 
+    $UnboundAccessControl=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundAccessControl"));
+
 
     if(!is_file("/etc/artica-postfix/settings/Daemons/UnBoundCacheMinTTL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMinTTL", 3600);}
     if(!is_file("/etc/artica-postfix/settings/Daemons/UnBoundCacheMAXTTL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMAXTTL", 172800);}
@@ -1422,8 +1429,12 @@ function table():bool{
 
     $UnboundEDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEDNS"));
 
-    $tpl->table_form_field_js("Loadjs('$page?unbound-security-js=yes')","AsDnsAdministrator");
+
     $tpl->table_form_section("{security}");
+    $tpl->table_form_field_js("Loadjs('$page?unbound-security-js=yes')","AsDnsAdministrator");
+
+    $tpl->table_form_field_bool("{access_control}",$UnboundAccessControl,ico_networks);
+
     $tpl->table_form_field_bool("{display_servername_version}",$UnboundDisplayVersion,ico_shield);
     $tpl->table_form_field_bool("{UnboundEnableQNAMEMini}",$UnboundEnableQNAMEMini,ico_shield);
     $tpl->table_form_field_bool("{EnableUseCapsForID}",$EnableUseCapsForID,ico_shield);
@@ -1584,6 +1595,11 @@ function unbound_status_recursors(){
 function save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
+
+    if(isset($_POST["SaveSecurity"])){
+        unset($_POST["SaveSecurity"]);
+    }
+
     $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
     if(is_file($_POST["EnableUnboundBlackLists"])) {
         if ($UnboundEnabled == 0) {

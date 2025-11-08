@@ -428,10 +428,10 @@ return implode(', ', $timeParts);
     }
 
     public function BigCircleCheckbox($field,$title,$explain,$value,$after=null,$Privs=null):string{
-        $id=time();
+        $id=md5($field.time().rand(100,999));
         $f=array();
         $page=CurrentPageName();
-        $title=base64_encode($this->_ENGINE_parse_body($title));
+        $title=base64_encode(html_entity_decode($this->_ENGINE_parse_body($title)));
         $explain=base64_encode($this->_ENGINE_parse_body($explain));
         $SetCheck="true";
         if($value==0){
@@ -482,6 +482,154 @@ return implode(', ', $timeParts);
                           });
                     });
             });
+        </script>";
+    }
+
+    public function BigFieldIntegerCheckbox($field,$title,$explain,$value,$min=null,$max=null,$after=null,$Privs=null):string{
+        $id=time().rand(100,999);
+        $f=array();
+        $page=CurrentPageName();
+        $title=base64_encode(html_entity_decode($this->_ENGINE_parse_body($title)));
+        $explain=base64_encode($this->_ENGINE_parse_body($explain));
+
+        $minAttr = ($min !== null) ? "min: $min," : "";
+        $maxAttr = ($max !== null) ? "max: $max," : "";
+
+        if(strpos($field,"|")>0){
+            $tb=explode("|",$field);
+            foreach ($tb as $newf){
+                if(strpos($newf,":")>0){
+                    $ss=explode(":",$newf);
+                    $f[]="['$ss[0]']: '$ss[1]'";
+                }else{
+                    $f[]="['$newf']: value";
+                }
+            }
+        }else{
+            $f[]="['$field']: value";
+        }
+
+        $fftxt=@implode(",",$f);
+
+        return "<div id=\"intbox-$id\"></div>
+        <script>
+            renderBigIntegerListSafe('intbox-$id', [
+            {
+                title: base64_decode('$title'),
+                descriptionHTML: base64_decode('$explain'),
+                defaultValue: $value,
+                $minAttr
+                $maxAttr
+                onSave: function(value) {
+                    // POST on save (Enter key or blur if value changed)
+                    $.post('$page', { $fftxt })
+                      .done(function (resp, textStatus, jqXHR) {
+                        console.log('Integer saved:', value, 'Response:', resp);
+                        $after
+                      })
+                      .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('POST failed: ' + errorThrown);
+                      });
+                }
+            }
+            ]).then(function (ctrls) {
+                var ctrl = ctrls[0];
+                if (!ctrl) return;
+                ctrl.setDisabled(false);
+            });
+        </script>";
+    }
+
+    public function BigNetworkField($field,$title,$explain,$value,$placeholder='192.168.1.0/24',$after=null,$Privs=null):string{
+        $id=time().rand(100,999);
+        $f=array();
+        $page=CurrentPageName();
+        $title=base64_encode(html_entity_decode($this->_ENGINE_parse_body($title)));
+        $explain=base64_encode($this->_ENGINE_parse_body($explain));
+
+        if(strpos($field,"|")>0){
+            $tb=explode("|",$field);
+            foreach ($tb as $newf){
+                if(strpos($newf,":")>0){
+                    $ss=explode(":",$newf);
+                    $f[]="['$ss[0]']: '$ss[1]'";
+                }else{
+                    $f[]="['$newf']: value";
+                }
+            }
+        }else{
+            $f[]="['$field']: value";
+        }
+
+        $fftxt=@implode(",",$f);
+
+        return "<div id=\"netbox-$id\"></div>
+        <script>
+            renderBigNetworkListSafe('netbox-$id', [
+            {
+                title: base64_decode('$title'),
+                descriptionHTML: base64_decode('$explain'),
+                defaultValue: '$value',
+                placeholder: '$placeholder',
+                onSave: function(value) {
+                    // POST on save (Enter key or blur if value changed and valid)
+                    $.post('$page', { $fftxt })
+                      .done(function (resp, textStatus, jqXHR) {
+                        console.log('Network saved:', value, 'Response:', resp);
+                        $after
+                      })
+                      .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('POST failed: ' + errorThrown);
+                      });
+                }
+            }
+            ]).then(function (ctrls) {
+                var ctrl = ctrls[0];
+                if (!ctrl) return;
+                ctrl.setDisabled(false);
+            });
+        </script>";
+    }
+
+    public function BigExplainCheckbox($field,$title,$explain,$after=null,$Privs=null):string{
+        $id=time().rand(1000,9999);
+        $page=CurrentPageName();
+        $title=base64_encode($this->_ENGINE_parse_body($title));
+        $explain=base64_encode($this->_ENGINE_parse_body($explain));
+
+        if(strpos($field,"|")>0){
+            $tb=explode("|",$field);
+            foreach ($tb as $newf){
+                if(strpos($newf,":")>0){
+                    $ss=explode(":",$newf);
+                    $f[]="['$ss[0]']: '$ss[1]'";
+                }else{
+                    $f[]="['$newf']: description";
+                }
+            }
+        }else{
+            $f[]="['$field']: description";
+        }
+        $fftxt=@implode(",",$f);
+        return "<div id=\"explbox-$id\"></div>
+        <script>
+            renderBigExplainCheckboxListSafe('explbox-$id', [
+            {
+                title: base64_decode('$title'),
+                descriptionHTML: base64_decode('$explain'),
+                onDescriptionSave: function (description) {
+                    // Post description change
+                    $.post('$page', { $fftxt })
+                      .done(function (resp, textStatus, jqXHR) {
+                        console.log('Description saved:', description);
+                        $after
+                      })
+                      .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('POST failed: ' + errorThrown);
+                      });
+                }
+            }
+            ]);
         </script>";
     }
 

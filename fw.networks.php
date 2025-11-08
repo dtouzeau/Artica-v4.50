@@ -10,6 +10,8 @@ if(isset($_GET["tinyjs"])){Tinyjs();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_POST["ip_addr"])){net_save();exit;}
 if(isset($_GET["net-js"])){net_js();exit;}
+if(isset($_GET["net-new-popup"])){net_new_popup();exit;}
+if(isset($_POST["new-network"])){net_new_save();exit;}
 if(isset($_GET["net-popup"])){net_popup();exit;}
 if(isset($_GET["netmask-unlink"])){net_del();exit;}
 if(isset($_GET["report-js"])){report_js();exit;}
@@ -118,10 +120,16 @@ function net_compile():bool{
 function net_js():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$net_title=$_GET["net-js"];
+	$net_title=trim($_GET["net-js"]);
+    $function=$_GET["function"];
+    if( $net_title=="" ){
+        $title="{new_network}";
+        return $tpl->js_dialog($title, "$page?net-new-popup=yes&function=$function");
+    }
+
 	$net=urlencode($net_title);
-	if($net==null){$title="{new_network}";}else{$title=$net_title;}
-	return $tpl->js_dialog($title, "$page?net-popup=$net");
+	$title=$net_title;
+    return $tpl->js_dialog($title, "$page?net-popup=$net");
 }
 
 function report_js():bool{
@@ -202,6 +210,11 @@ function reload_services():bool{
     if($EnableTailScaleService==1){$GLOBALS["CLASS_SOCKETS"]->getFrameWork("tailscale.php?connect=yes");}
     if($NTPDEnabled==1){$GLOBALS["CLASS_SOCKETS"]->REST_API("/ntpd/reconfigure");}
 
+    $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
+    if($UnboundEnabled==1) {
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/unbound/reconfig");
+    }
+
 
     $EnableCrowdSec=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableCrowdSec"));
     if($EnableCrowdSec==1){
@@ -217,7 +230,15 @@ function reload_services():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/officenets");
     return true;
 }
+function net_new_popup():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $js[]="BootstrapDialog1.close()";
+    $js[]="LoadAjax('table-loader-network-service','$page?table=yes');";
 
+    echo $tpl->BigNetworkField("new-network","{new_network}","{new_trusted_network_explain}","","192.168.1.0/24",implode(";",$js));
+    return true;
+}
 
 function net_popup():bool{
 	$page=CurrentPageName();
@@ -230,41 +251,68 @@ function net_popup():bool{
 	$scannable=1;
     $ligne["enabled"]=1;
     $pinginterval=0;
-	if($network<>null){
+    if($network==""){
+        echo $tpl->div_error("{no_network_defined}");
+        return true;
+    }
+
+
+
 		$net=explode("/",$network);
 		$sql="SELECT * FROM networks_infos WHERE ipaddr='$network'";
 		$q_interface=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
 		$ligne=$q_interface->mysqli_fetch_array($sql);
-		$netinfos=$ligne["netinfos"];
 		$scannable=intval($ligne["scannable"]);
 		$pingable=intval($ligne["pingable"]);
 		$pinginterval=intval($ligne["pinginterval"]);
+        $enabled=intval($ligne["enabled"]);
+        $trusted=intval($ligne["trusted"]);
+        $dns=intval($ligne["dns"]);
+        if($trusted==1){
+            $dns=1;
+        }
         $netmask="";
-		$title=$network;
-		$bt="{apply}";
 		if(intval($net[1])>0){
 			$ipv=new ipv4($net[0],$net[1]);
 			$net[0]=$ipv->address();
 			$netmask=$ipv->netmask();
 			$safter=null;
 		} 	
-	}
 
-    $form[]=$tpl->field_checkbox("enabled","{enabled}",$ligne["enabled"],true);
-	if($network==null){
-		$form[]=$tpl->field_ipaddr("ip_addr", "{ip_address}", null);
-		$form[]=$tpl->field_maskcdir("netmask", "nonull:{netmask}", null);
-		
-	}else{
-		$form[]=$tpl->field_info("ip_addr", "{ip_address}", $net[0]);
-		$form[]=$tpl->field_info("netmask", "{netmask}", $netmask);
-		$form[]=$tpl->field_info("netmaskcdir", "{cdir}", $network);
-	}
-	
-	
-	$form[]=$tpl->field_checkbox("scannable","{can_be_analyzed}",$scannable);
-	$FPING_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FPING_INSTALLED"));
-	
+    $explain[]="{ip_address}: <strong>$net[0]</strong>";
+    $explain[]="{netmask}: <strong>$netmask</strong>";
+    $explain[]="{cdir}: <strong>$network</strong>";
+
+
+
+    $after="LoadAjax('table-loader-network-service','$page?table=yes');";
+
+    $html[]=$tpl->BigCircleCheckbox("ip_addr:$network|enabled","{enabled}",@implode("<br>",$explain),$enabled,$after);
+
+    $html[]=$tpl->BigExplainCheckbox("ip_addr:$network|netinfos","{description}",base64_decode($ligne["netinfos"]),$after);
+
+    $html[]=$tpl->BigCircleCheckbox("ip_addr:$network|trusted","{trusted_network}","{trusted_network_explain}",$trusted,$after);
+
+    $html[]=$tpl->BigCircleCheckbox("ip_addr:$network|dns","{allow_query_dns}","{allow_query_dns_explain}",$dns,$after);
+
+    if($SHOW_VPN){
+        $html[]=$tpl->BigCircleCheckbox("ip_addr:$network|vpn","{publish_in_vpn_network}","{publish_in_vpn_network_explain}",intval($ligne["vpn"]),$after);
+    }
+
+    $html[]=$tpl->BigCircleCheckbox("ip_addr:$network|scannable","{can_be_analyzed}","{can_be_analyzed_explain}",$scannable,$after);
+
+    $FPING_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FPING_INSTALLED"));
+    if($FPING_INSTALLED==1){
+        if($pinginterval<5){$pinginterval=15;}
+
+        $html[]=$tpl->BigCircleCheckbox("ip_addr:$network|pingable","{can_use_ping}","{can_use_ping_explain}",$pingable,$after);
+
+        $html[]=$tpl->BigFieldIntegerCheckbox("ip_addr:$network|pinginterval",
+        "{scan_interval} (ping - {minutes})","{scan_interval}",intval($pinginterval),null,null,$after);
+
+
+    }
+
 	if($FPING_INSTALLED==1){
 		if($pinginterval<5){$pinginterval=15;}
 		$durations[15]="15 {minutes}";
@@ -281,29 +329,12 @@ function net_popup():bool{
 		$durations[10080]="1 {week}";
 		$durations[20160]="2 {weeks}";
 		$durations[43200]="1 {month}";
-		
 
 
 
-		$form[]=$tpl->field_hidden("noping", intval($ligne["noping"]));
-		$form[]=$tpl->field_hidden("yesping", intval($ligne["yesping"]));
-		$form[]=$tpl->field_hidden("prcping", floatval($ligne["prcping"]));
-
-        $VPN_DISABLED=true;
-        if($SHOW_VPN){$VPN_DISABLED=false;}
-        $form[]=$tpl->field_checkbox("trusted","{trusted_network}",$ligne["trusted"],false);
-        $form[]=$tpl->field_checkbox("vpn","{publish_in_vpn_network}",$ligne["vpn"],false,null,$VPN_DISABLED);
-        $form[]=$tpl->field_checkbox("pingable","{can_use_ping}",$pingable,false,"{can_use_ping_explain}");
-		$form[]=$tpl->field_array_hash($durations, "pinginterval", "{scan_interval} (ping)", $pinginterval);
 		
 	}
-	
-	
-	
-	
-	
-	$form[]=$tpl->field_text("netinfos", "{description}", base64_decode($netinfos));
-	$html=$tpl->form_outside($title, @implode("\n", $form),"",$bt,"LoadAjax('table-loader-network-service','$page?table=yes');$safter","AsSystemAdministrator");
+
 	echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
@@ -400,43 +431,42 @@ function page():bool{
 	echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
+function net_new_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $netinfos=$tpl->CLEAN_BAD_XSS($_POST["new-network"]);
+    $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
+    $NetworkMasks=new NetworkMasks();
+    $cdir=$NetworkMasks->networkToCIDR($netinfos);
 
+    $netinfosBase64=base64_encode($netinfos);
+    $sql="DELETE FROM networks_infos WHERE ipaddr='$cdir'";
+    $q->QUERY_SQL($sql);
+    $sql="DELETE FROM networks_infos WHERE ipaddr='$netinfos'";
+    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL("INSERT INTO networks_infos (enabled,scannable,netinfos,ipaddr,pingable,pinginterval,noping,yesping,prcping,trusted,vpn) 
+			VALUES('1','0','$netinfosBase64','$cdir','0','0','1','0','0','1','0')");
+    if(!$q->ok){echo $q->mysql_error;return false;}
+    reload_services();
+    return admin_tracks_post("Add new trusetd Network $cdir");
+}
 function net_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-	$netinfos=$tpl->CLEAN_BAD_XSS($_POST["netinfos"]);
-	
-	if(!isset($_POST["netmaskcdir"])){
-		$ipaddr=$tpl->CLEAN_BAD_CHARSNET($_POST["ip_addr"]);
-		$netmask=intval($_POST["netmask"]);
-        $newipaddr=$ipaddr;
-		if($netmask<32) {
-            $ttr = explode(".", $ipaddr);
-            $newipaddr = $ttr[0] . "." . $ttr[1] . "." . $ttr[2] . ".0";
+    $Net=$_POST["ip_addr"];
+    unset($_POST["ip_addr"]);
+    $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
+    foreach ($_POST as $key=>$value){
+        if($key=="netinfos"){
+            $value=base64_encode($value);
         }
-		$cdir=$newipaddr."/".$_POST["netmask"];
-		$net=new networkscanner();
-		$net->networklist[]=$cdir;
-		$net->save();
-	}else{
-		$cdir=$_POST["netmaskcdir"];
-	}
-	$netinfos=base64_encode($netinfos);
 
-	
-	if(!isset($_POST["pingable"])){$_POST["pingable"]=0;}
-	if(!isset($_POST["pinginterval"])){$_POST["pinginterval"]=0;}
-	
-	//noping,yesping,prcping
-	$q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
+        $value=$q->sqlite_escape_string2($value);
+        $sql="UPDATE networks_infos SET $key='$value' WHERE ipaddr='$Net'";
+        if(!$q->QUERY_SQL($sql)){echo $q->mysql_error;return false;}
 
-	$sql="DELETE FROM networks_infos WHERE ipaddr='$cdir'";
-    $q->QUERY_SQL($sql);
-    $q->QUERY_SQL("INSERT INTO networks_infos (enabled,scannable,netinfos,ipaddr,pingable,pinginterval,noping,yesping,prcping,trusted,vpn) 
-			VALUES('{$_POST["enabled"]}','{$_POST["scannable"]}','$netinfos','$cdir','{$_POST["pingable"]}','{$_POST["pinginterval"]}','{$_POST["noping"]}','{$_POST["yesping"]}','{$_POST["prcping"]}','{$_POST["trusted"]}','{$_POST["vpn"]}')");
-	if(!$q->ok){echo $q->mysql_error;return false;}
+    }
 
-    admin_tracks_post("My Network: Create a new local network $cdir - $netinfos");
     $memcached=new lib_memcached();
     $memcached->saveKey("WebConsoleTrustedNet","");
 	
@@ -446,10 +476,10 @@ function net_save():bool{
 		$NET_PINGABLE[$ligne["ipaddr"]]=$ligne["pinginterval"];
 		
 	}
-	$sock=new sockets();
-	$sock->SaveConfigFile(serialize($NET_PINGABLE), "NET_PINGABLE");
+
+	$GLOBALS["CLASS_SOCKETS"]->SaveConfigFile(serialize($NET_PINGABLE), "NET_PINGABLE");
 	reload_services();
-    return admin_tracks_post("Save Networks Informations");
+    return admin_tracks_post("Save $Net Network Informations");
 }
 
 
@@ -644,7 +674,7 @@ function isVPN():bool{
 function table():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-    $isFw=IsFw();
+    $function=$_GET["function"];
 	$q=new lib_sqlite("/home/artica/SQLITE/nmapping.db");
 	$items=$q->COUNT_ROWS("nmapping");
 	$FPING_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FPING_INSTALLED"));
@@ -655,6 +685,7 @@ function table():bool{
 	<th style='width:1%'  nowrap>{enabled}</th>
 	<th>{networks}</th>
 	<th style='width:1%'  nowrap>{trusted_network}</th>
+	<th style='width:1%'  nowrap>DNS</th>
 	<th style='width:1%'  nowrap>{vpn_allowed}</th>
 	<th style='width:1%'  nowrap>% {used}</th>
 	<th style='width:1%'  nowrap>Ping</th>
@@ -734,6 +765,8 @@ function table():bool{
         $prcping=intval($ligne["prcping"]);
         $trusted=intval($ligne["trusted"]);
         $enabled=intval($ligne["enabled"]);
+        $dns=intval($ligne["dns"]);
+        $dns_icon="&nbsp;";
         $vpn=intval($ligne["vpn"]);
         $trusted_network_fw=null;
 
@@ -742,6 +775,12 @@ function table():bool{
                 $trusted=1;
                 unset($zNet[$maks]);
             }
+        }
+        if($trusted==1){
+            $dns=1;
+        }
+        if($dns==1){
+            $dns_icon="<i class='fas fa-check'></i>";
         }
 
         if(!$q->ok){echo $q->mysql_error_html(true);}
@@ -830,14 +869,15 @@ function table():bool{
 
 	$table[]="<tr id='$id'>";
 	$table[]="<td $td1>$enabled_ico</td>";
-	$table[]="<td>". $tpl->td_href($maks,"{click_to_edit}","Loadjs('$page?net-js={$maks_encoded}');","AsFirewallManager")."$AMXTXT</td>";
+	$table[]="<td>". $tpl->td_href($maks,"{click_to_edit}","Loadjs('$page?net-js=$maks_encoded');","AsFirewallManager")."$AMXTXT</td>";
     $table[]="<td $td1>$trusted_icon</td>";
+    $table[]="<td $td1>$dns_icon</td>";
     $table[]="<td $td1>$vpn_ico</td>";
 	$table[]="<td $td1>$ping_prc</td>";
 	$table[]="<td $td1>$pingable_icon</td>";
 	$table[]="<td $td1>$scannable_icon</td>";
 	$table[]="<td>$report_button</td>";
-	$table[]="<td>". $tpl->icon_delete("Loadjs('$page?netmask-unlink={$maks_encoded}&md=$id')","AsFirewallManager")."</td>";
+	$table[]="<td>". $tpl->icon_delete("Loadjs('$page?netmask-unlink=$maks_encoded&md=$id')","AsFirewallManager")."</td>";
 	$table[]="</tr>";
 	
 	}
@@ -846,6 +886,7 @@ function table():bool{
         foreach ($zNet as $maks=>$none){
             $trusted_icon=$tpl->icon_check(1,"",null,"AsFirewallManager");
             $enabled_ico=$tpl->icon_check(1,"",null,"AsFirewallManager");
+            $dns_icon="<i class='fas fa-check'></i>";
             $vpn_ico=$tpl->icon_nothing();
             $ping_prc=$tpl->icon_nothing();
             $pingable_icon=$tpl->icon_nothing();
@@ -855,6 +896,7 @@ function table():bool{
             $table[]="<td $td1>$enabled_ico</td>";
             $table[]="<td>$maks</td>";
             $table[]="<td $td1>$trusted_icon</td>";
+            $table[]="<td $td1>$dns_icon</td>";
             $table[]="<td $td1>$vpn_ico</td>";
             $table[]="<td $td1>$ping_prc</td>";
             $table[]="<td $td1>$pingable_icon</td>";
@@ -867,7 +909,7 @@ function table():bool{
 
 	$table[]="</tbody></table>";
     $table[]="<script>";
-    $table[]="Loadjs('$page?tinyjs=yes');";
+    $table[]="Loadjs('$page?tinyjs=yes&function=$function');";
     $table[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $table));
     return true;

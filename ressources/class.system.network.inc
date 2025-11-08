@@ -4,6 +4,7 @@ if(function_exists("posix_getuid")){
     }
 }
 include_once(dirname(__FILE__)."/class.resolv.conf.inc");
+include_once(dirname(__FILE__)."/class.net-cdir.inc");
 
 class networking{
 	public $array_conf;

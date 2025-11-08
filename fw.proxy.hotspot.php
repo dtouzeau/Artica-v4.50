@@ -727,6 +727,7 @@ function Save():bool{
 
 
 	$tpl->SAVE_POSTs();
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/unbound/build/zones");
 	return true;
 }
 function top_satus():bool{

@@ -236,6 +236,809 @@
 
     window.BigCircleCheckbox = API;
     window.BigCircleCheckbox.__version__ = REQUIRED_VERSION;
+
+    // Build a Big Rectangle Integer Input card
+    function createIntegerCard({
+                                   title,
+                                   titleHTML,
+                                   description,
+                                   descriptionHTML,
+                                   defaultValue = 0,
+                                   min = null,
+                                   max = null,
+                                   disabled = false,
+                                   onChange,
+                                   onSave
+                               } = {}) {
+        const styles = {
+            card: {
+                position: "relative",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "16px",
+                background: COLORS.card,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: "16px",
+                padding: "18px",
+                userSelect: "none",
+                transition: "box-shadow .2s ease, border-color .2s ease"
+            },
+            rectangle: {
+                flex: "0 0 auto",
+                width: "164px",
+                height: "64px",
+                borderRadius: "12px",
+                display: "grid",
+                placeItems: "center",
+                border: `2px solid ${COLORS.border}`,
+                background: COLORS.grey,
+                boxShadow: "none",
+                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease"
+            },
+            inputField: {
+                width: "100%",
+                height: "100%",
+                border: "none",
+                background: "transparent",
+                color: "#ffffff",
+                fontSize: "20px",
+                fontWeight: "700",
+                textAlign: "center",
+                outline: "none",
+                padding: "0 12px"
+            },
+            content: { display: "grid", gap: "6px", minWidth: "0", flex: "1" },
+            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
+            desc: { fontSize: "16px", color: COLORS.muted }
+        };
+
+        const wrap = el("div", styles.card);
+        const rectangle = el("div", styles.rectangle);
+
+        const input = el("input", styles.inputField, {
+            type: "number",
+            value: String(defaultValue || 0),
+            "aria-label": "Integer value",
+            "aria-disabled": String(!!disabled)
+        });
+
+        if (min !== null) input.setAttribute("min", String(min));
+        if (max !== null) input.setAttribute("max", String(max));
+        input.disabled = !!disabled;
+
+        const content = el("span", styles.content);
+
+        const titleEl = (titleHTML != null)
+            ? el("span", styles.title, { html: titleHTML })
+            : el("span", styles.title, { text: title || "Title" });
+
+        const descEl = (descriptionHTML != null)
+            ? el("span", styles.desc, { html: descriptionHTML })
+            : el("span", styles.desc, { text: description || "Enter an integer value." });
+
+        content.append(titleEl, descEl);
+        rectangle.appendChild(input);
+        wrap.append(rectangle, content);
+
+        let lastSavedValue = defaultValue || 0;
+
+        function validateInput() {
+            let val = parseInt(input.value, 10);
+            if (isNaN(val)) {
+                val = defaultValue || 0;
+                input.value = val;
+            }
+            if (min !== null && val < min) {
+                val = min;
+                input.value = val;
+            }
+            if (max !== null && val > max) {
+                val = max;
+                input.value = val;
+            }
+            return val;
+        }
+
+        function applyState() {
+            if (input.disabled) {
+                rectangle.style.background = COLORS.greyLight;
+                rectangle.style.borderColor = COLORS.greyLight;
+                rectangle.style.boxShadow = "none";
+                titleEl.style.color = COLORS.muted;
+                descEl.style.color = COLORS.muted;
+                input.style.color = COLORS.muted;
+            } else {
+                const val = parseInt(input.value, 10);
+                const hasValue = !isNaN(val) && val !== 0;
+                rectangle.style.background = hasValue ? COLORS.ok : COLORS.grey;
+                rectangle.style.borderColor = hasValue ? COLORS.ok : COLORS.border;
+                rectangle.style.boxShadow = hasValue ? "0 10px 22px -10px rgba(26,179,148,0.5)" : "none";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            }
+        }
+
+        function saveValue() {
+            const val = validateInput();
+            applyState();
+
+            // Only save if value changed
+            if (val !== lastSavedValue) {
+                lastSavedValue = val;
+                if (typeof onSave === "function") onSave(val);
+            }
+        }
+
+        // Focus ring
+        input.addEventListener("focus", () => {
+            if (!input.disabled) wrap.style.boxShadow = `0 0 0 4px ${COLORS.ring}`;
+        });
+
+        // Blur - save if changed
+        input.addEventListener("blur", () => {
+            wrap.style.boxShadow = "none";
+            saveValue();
+        });
+
+        // Enter key - save if changed
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                e.preventDefault();
+                input.blur(); // This will trigger blur event which saves
+            }
+        });
+
+        // Input change - update visual state only
+        input.addEventListener("input", () => {
+            applyState();
+            const val = parseInt(input.value, 10);
+            if (!isNaN(val) && typeof onChange === "function") {
+                onChange(val);
+            }
+        });
+
+        // Prevent mouse wheel scrolling from changing value
+        input.addEventListener("wheel", (e) => {
+            e.preventDefault();
+        });
+
+        applyState();
+
+        return {
+            root: wrap,
+            input,
+            getValue() {
+                return parseInt(input.value, 10) || 0;
+            },
+            setValue(val) {
+                input.value = String(val || 0);
+                lastSavedValue = val || 0;
+                validateInput();
+                applyState();
+            },
+            setDisabled(flag) {
+                input.disabled = !!flag;
+                input.setAttribute("aria-disabled", String(!!flag));
+                applyState();
+            }
+        };
+    }
+
+    // Public API for Integer Input
+    const IntegerAPI = {
+        renderList(containerId, items = []) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return []; }
+            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            host.appendChild(grid);
+            const ctrls = [];
+            for (const cfg of items) {
+                const card = createIntegerCard(cfg || {});
+                grid.appendChild(card.root);
+                ctrls.push(card);
+            }
+            return ctrls;
+        },
+
+        add(containerId, item = {}) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return null; }
+            let grid = host.lastElementChild;
+            const isGrid = grid && grid.style && grid.style.display === "grid";
+            if (!isGrid) {
+                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                host.appendChild(grid);
+            }
+            const card = createIntegerCard(item);
+            grid.appendChild(card.root);
+            return card;
+        },
+
+        clear(containerId) {
+            const host = document.getElementById(containerId);
+            if (host) host.innerHTML = "";
+        }
+    };
+
+    window.BigCircleInteger = IntegerAPI;
+    window.BigCircleInteger.__version__ = REQUIRED_VERSION;
+
+    // Build a Network Address Input card (no left indicator, field below description)
+    function createNetworkCard({
+                                   title,
+                                   titleHTML,
+                                   description,
+                                   descriptionHTML,
+                                   defaultValue = '',
+                                   placeholder = '192.168.1.0/24',
+                                   disabled = false,
+                                   onChange,
+                                   onSave
+                               } = {}) {
+        const styles = {
+            card: {
+                position: "relative",
+                display: "grid",
+                gap: "12px",
+                background: COLORS.card,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: "16px",
+                padding: "18px",
+                userSelect: "none",
+                transition: "box-shadow .2s ease, border-color .2s ease"
+            },
+            header: { display: "grid", gap: "6px" },
+            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
+            desc: { fontSize: "16px", color: COLORS.muted },
+            inputWrapper: {
+                width: "100%",
+                borderRadius: "12px",
+                border: `2px solid ${COLORS.border}`,
+                background: COLORS.grey,
+                boxShadow: "none",
+                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
+                overflow: "hidden"
+            },
+            inputField: {
+                width: "100%",
+                border: "none",
+                background: "transparent",
+                color: "#ffffff",
+                fontSize: "18px",
+                fontWeight: "600",
+                outline: "none",
+                padding: "14px 16px",
+                fontFamily: "monospace"
+            }
+        };
+
+        const wrap = el("div", styles.card);
+        const header = el("div", styles.header);
+
+        const titleEl = (titleHTML != null)
+            ? el("div", styles.title, { html: titleHTML })
+            : el("div", styles.title, { text: title || "Network Address" });
+
+        const descEl = (descriptionHTML != null)
+            ? el("div", styles.desc, { html: descriptionHTML })
+            : el("div", styles.desc, { text: description || "Enter IP address or CIDR notation" });
+
+        header.append(titleEl, descEl);
+
+        const inputWrapper = el("div", styles.inputWrapper);
+        const input = el("input", styles.inputField, {
+            type: "text",
+            value: String(defaultValue || ''),
+            placeholder: placeholder,
+            "aria-label": "Network address",
+            "aria-disabled": String(!!disabled)
+        });
+        input.disabled = !!disabled;
+
+        inputWrapper.appendChild(input);
+        wrap.append(header, inputWrapper);
+
+        let lastSavedValue = defaultValue || '';
+
+        // Validate network address format
+        function validateNetwork(value) {
+            const trimmed = value.trim();
+            if (!trimmed) return { valid: false, error: 'Empty value' };
+
+            // Pattern 1: IP address (192.168.1.1)
+            const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+
+            // Pattern 2: CIDR notation (192.168.1.0/24)
+            const cidrPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/;
+
+            // Pattern 3: IP with subnet mask (192.168.1.0/255.255.255.0)
+            const subnetPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+
+            let match;
+
+            // Check CIDR first
+            if ((match = trimmed.match(cidrPattern))) {
+                const [, oct1, oct2, oct3, oct4, cidr] = match;
+                if (!isValidOctet(oct1) || !isValidOctet(oct2) || !isValidOctet(oct3) || !isValidOctet(oct4)) {
+                    return { valid: false, error: 'Invalid IP octets (must be 0-255)' };
+                }
+                const cidrNum = parseInt(cidr, 10);
+                if (cidrNum < 0 || cidrNum > 32) {
+                    return { valid: false, error: 'Invalid CIDR (must be 0-32)' };
+                }
+                return { valid: true, value: trimmed };
+            }
+
+            // Check subnet mask notation
+            if ((match = trimmed.match(subnetPattern))) {
+                const [, oct1, oct2, oct3, oct4, mask1, mask2, mask3, mask4] = match;
+                if (!isValidOctet(oct1) || !isValidOctet(oct2) || !isValidOctet(oct3) || !isValidOctet(oct4)) {
+                    return { valid: false, error: 'Invalid IP octets' };
+                }
+                if (!isValidOctet(mask1) || !isValidOctet(mask2) || !isValidOctet(mask3) || !isValidOctet(mask4)) {
+                    return { valid: false, error: 'Invalid subnet mask octets' };
+                }
+                if (!isValidSubnetMask(mask1, mask2, mask3, mask4)) {
+                    return { valid: false, error: 'Invalid subnet mask format' };
+                }
+                return { valid: true, value: trimmed };
+            }
+
+            // Check plain IP
+            if ((match = trimmed.match(ipPattern))) {
+                const [, oct1, oct2, oct3, oct4] = match;
+                if (!isValidOctet(oct1) || !isValidOctet(oct2) || !isValidOctet(oct3) || !isValidOctet(oct4)) {
+                    return { valid: false, error: 'Invalid IP octets (must be 0-255)' };
+                }
+                return { valid: true, value: trimmed };
+            }
+
+            return { valid: false, error: 'Invalid format (use IP, CIDR, or subnet mask)' };
+        }
+
+        function isValidOctet(octet) {
+            const num = parseInt(octet, 10);
+            return num >= 0 && num <= 255;
+        }
+
+        function isValidSubnetMask(oct1, oct2, oct3, oct4) {
+            // Convert to binary and check it's contiguous 1s followed by 0s
+            const mask = (parseInt(oct1) << 24) | (parseInt(oct2) << 16) | (parseInt(oct3) << 8) | parseInt(oct4);
+            // Check if it's a valid subnet mask (contiguous bits)
+            const binary = mask.toString(2).padStart(32, '0');
+            return /^1*0*$/.test(binary);
+        }
+
+        function applyState(isValid = null) {
+            if (input.disabled) {
+                inputWrapper.style.background = COLORS.greyLight;
+                inputWrapper.style.borderColor = COLORS.greyLight;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.muted;
+                descEl.style.color = COLORS.muted;
+                input.style.color = COLORS.muted;
+            } else if (isValid === true) {
+                // Valid network
+                inputWrapper.style.background = COLORS.ok;
+                inputWrapper.style.borderColor = COLORS.ok;
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else if (isValid === false) {
+                // Invalid network
+                inputWrapper.style.background = "#8B2E2E";
+                inputWrapper.style.borderColor = "#C74444";
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else {
+                // Neutral (empty or typing)
+                inputWrapper.style.background = COLORS.grey;
+                inputWrapper.style.borderColor = COLORS.border;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            }
+        }
+
+        function saveValue() {
+            const result = validateNetwork(input.value);
+
+            if (!result.valid) {
+                applyState(false);
+                return;
+            }
+
+            applyState(true);
+            const cleanValue = result.value;
+
+            // Only save if value changed
+            if (cleanValue !== lastSavedValue) {
+                lastSavedValue = cleanValue;
+                if (typeof onSave === "function") onSave(cleanValue);
+            }
+        }
+
+        // Focus ring
+        input.addEventListener("focus", () => {
+            if (!input.disabled) wrap.style.boxShadow = `0 0 0 4px ${COLORS.ring}`;
+        });
+
+        // Blur - validate and save if changed
+        input.addEventListener("blur", () => {
+            wrap.style.boxShadow = "none";
+            saveValue();
+        });
+
+        // Enter key - save if valid
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                e.preventDefault();
+                input.blur(); // This will trigger blur event which saves
+            }
+        });
+
+        // Input change - update visual state in real-time
+        input.addEventListener("input", () => {
+            const result = validateNetwork(input.value);
+            applyState(input.value.trim() ? result.valid : null);
+
+            if (typeof onChange === "function") {
+                onChange(input.value, result.valid);
+            }
+        });
+
+        applyState(defaultValue ? validateNetwork(defaultValue).valid : null);
+
+        return {
+            root: wrap,
+            input,
+            getValue() {
+                return input.value.trim();
+            },
+            setValue(val) {
+                input.value = String(val || '');
+                lastSavedValue = val || '';
+                const result = validateNetwork(input.value);
+                applyState(result.valid);
+            },
+            isValid() {
+                return validateNetwork(input.value).valid;
+            },
+            setDisabled(flag) {
+                input.disabled = !!flag;
+                input.setAttribute("aria-disabled", String(!!flag));
+                applyState(input.disabled ? null : validateNetwork(input.value).valid);
+            }
+        };
+    }
+
+    // Public API for Network Input
+    const NetworkAPI = {
+        renderList(containerId, items = []) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return []; }
+            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            host.appendChild(grid);
+            const ctrls = [];
+            for (const cfg of items) {
+                const card = createNetworkCard(cfg || {});
+                grid.appendChild(card.root);
+                ctrls.push(card);
+            }
+            return ctrls;
+        },
+
+        add(containerId, item = {}) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return null; }
+            let grid = host.lastElementChild;
+            const isGrid = grid && grid.style && grid.style.display === "grid";
+            if (!isGrid) {
+                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                host.appendChild(grid);
+            }
+            const card = createNetworkCard(item);
+            grid.appendChild(card.root);
+            return card;
+        },
+
+        clear(containerId) {
+            const host = document.getElementById(containerId);
+            if (host) host.innerHTML = "";
+        }
+    };
+
+    window.BigNetworkField = NetworkAPI;
+    window.BigNetworkField.__version__ = REQUIRED_VERSION;
+
+    // Build an Explain Checkbox card (icon indicator, editable description)
+    function createExplainCheckboxCard({
+                                           title,
+                                           titleHTML,
+                                           description,
+                                           descriptionHTML,
+                                           disabled = false,
+                                           onDescriptionSave
+                                       } = {}) {
+        const styles = {
+            card: {
+                position: "relative",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "16px",
+                background: COLORS.card,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: "16px",
+                padding: "18px",
+                marginBottom: "6px",
+                cursor: "pointer",
+                userSelect: "none",
+                transition: "box-shadow .2s ease, transform .02s ease, border-color .2s ease"
+            },
+            hiddenInput: {
+                position: "absolute",
+                opacity: "0",
+                width: "1px",
+                height: "1px",
+                pointerEvents: "none"
+            },
+            iconContainer: {
+                flex: "0 0 auto",
+                width: "64px",
+                height: "64px",
+                display: "grid",
+                placeItems: "center",
+                transition: "transform .02s ease"
+            },
+            icon: {
+                fontSize: "42px",
+                color: COLORS.grey,
+                transition: "color .2s ease, text-shadow .2s ease",
+                textShadow: "none"
+            },
+            content: { display: "grid", gap: "6px", minWidth: "0", flex: "1" },
+            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
+            descWrapper: {
+                position: "relative"
+            },
+            descDisplay: {
+                fontSize: "16px",
+                color: COLORS.muted,
+                cursor: "text",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                transition: "background-color .2s ease"
+            },
+            descEdit: {
+                fontSize: "16px",
+                color: COLORS.text,
+                background: COLORS.card,
+                border: `2px solid ${COLORS.ok}`,
+                borderRadius: "4px",
+                padding: "6px 10px",
+                outline: "none",
+                width: "100%",
+                minHeight: "40px",
+                fontFamily: "inherit",
+                resize: "vertical",
+                boxShadow: `0 0 0 4px ${COLORS.ring}`,
+                display: "none"
+            }
+        };
+
+        const wrap = el("div", styles.card);
+
+        const iconContainer = el("span", styles.iconContainer, { "aria-hidden": "true" });
+        const icon = el("i", styles.icon);
+        icon.className = "fas fa-comment-alt";
+
+        const content = el("span", styles.content);
+
+        const titleEl = (titleHTML != null)
+            ? el("span", styles.title, { html: titleHTML })
+            : el("span", styles.title, { text: title || "Title" });
+
+        // Description wrapper with display and edit modes
+        const descWrapper = el("div", styles.descWrapper);
+
+        const descDisplay = el("div", styles.descDisplay);
+        const initialDesc = descriptionHTML != null ? descriptionHTML : (description || "Click to edit explanation...");
+        if (descriptionHTML != null) {
+            descDisplay.innerHTML = initialDesc;
+        } else {
+            descDisplay.textContent = initialDesc;
+        }
+
+        const descEdit = el("textarea", styles.descEdit);
+        descEdit.value = descDisplay.textContent || descDisplay.innerText || '';
+
+        descWrapper.append(descDisplay, descEdit);
+        content.append(titleEl, descWrapper);
+
+        iconContainer.appendChild(icon);
+        wrap.append(iconContainer, content);
+
+        let isEditing = false;
+        let hasBeenEdited = false;  // Track if user has ever entered edit mode
+        let lastSavedDescription = descEdit.value;
+
+        function applyState() {
+            if (disabled) {
+                icon.style.color = COLORS.greyLight;
+                icon.style.textShadow = "none";
+                titleEl.style.color = COLORS.muted;
+                descDisplay.style.color = COLORS.muted;
+            } else if (isEditing) {
+                // Green when editing
+                icon.style.color = COLORS.ok;
+                icon.style.textShadow = "0 10px 22px rgba(26,179,148,0.5)";
+                titleEl.style.color = COLORS.text;
+                descDisplay.style.color = COLORS.muted;
+            } else if (hasBeenEdited) {
+                // Green after editing
+                icon.style.color = COLORS.ok;
+                icon.style.textShadow = "0 10px 22px rgba(26,179,148,0.5)";
+                titleEl.style.color = COLORS.text;
+                descDisplay.style.color = COLORS.muted;
+            } else {
+                // Grey initially (before any editing)
+                icon.style.color = COLORS.grey;
+                icon.style.textShadow = "none";
+                titleEl.style.color = COLORS.text;
+                descDisplay.style.color = COLORS.muted;
+            }
+            wrap.style.cursor = disabled ? "not-allowed" : "pointer";
+        }
+
+        function enterEditMode() {
+            if (disabled || isEditing) return;
+
+            isEditing = true;
+            wrap.style.cursor = "default";
+            descDisplay.style.display = "none";
+            descEdit.style.display = "block";
+            descEdit.focus();
+            descEdit.setSelectionRange(descEdit.value.length, descEdit.value.length);
+            applyState();  // Update icon color to green
+        }
+
+        function exitEditMode(save = true) {
+            if (!isEditing) return;
+
+            isEditing = false;
+            hasBeenEdited = true;  // Mark that user has edited at least once
+            wrap.style.cursor = disabled ? "not-allowed" : "pointer";
+            descEdit.style.display = "none";
+            descDisplay.style.display = "block";
+
+            const newValue = descEdit.value.trim();
+
+            if (save && newValue !== lastSavedDescription) {
+                // Update display
+                descDisplay.textContent = newValue || "Click to edit explanation...";
+                lastSavedDescription = newValue;
+
+                // Fire callback
+                if (typeof onDescriptionSave === "function") {
+                    onDescriptionSave(newValue);
+                }
+            } else {
+                // Restore previous value if not saving
+                descEdit.value = lastSavedDescription;
+            }
+
+            applyState();  // Update icon color back to grey/green based on hasBeenEdited
+        }
+
+        // Click on description to edit
+        descDisplay.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            enterEditMode();
+        });
+
+        // Click on title to edit
+        titleEl.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            enterEditMode();
+        });
+
+        // Click on icon to edit
+        icon.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            enterEditMode();
+        });
+
+        descDisplay.addEventListener("mouseenter", () => {
+            if (!disabled && !isEditing) {
+                descDisplay.style.background = "rgba(255,255,255,0.05)";
+            }
+        });
+
+        descDisplay.addEventListener("mouseleave", () => {
+            descDisplay.style.background = "transparent";
+        });
+
+        // Blur on textarea to exit edit mode
+        descEdit.addEventListener("blur", () => {
+            exitEditMode(true);
+        });
+
+        // Escape to cancel, Enter (without Shift) to save
+        descEdit.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                e.preventDefault();
+                exitEditMode(false); // Cancel
+            }
+            // Allow Shift+Enter for newlines in textarea
+        });
+
+        // Prevent clicks on textarea from bubbling
+        descEdit.addEventListener("click", (e) => {
+            e.stopPropagation();
+        });
+
+        applyState();
+
+        return {
+            root: wrap,
+            descriptionTextarea: descEdit,
+            getDescription() {
+                return descEdit.value;
+            },
+            setDescription(text) {
+                descEdit.value = text || '';
+                descDisplay.textContent = text || "Click to edit explanation...";
+                lastSavedDescription = text || '';
+            }
+        };
+    }
+
+    // Public API for Explain Checkbox
+    const ExplainCheckboxAPI = {
+        renderList(containerId, items = []) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return []; }
+            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            host.appendChild(grid);
+            const ctrls = [];
+            for (const cfg of items) {
+                const card = createExplainCheckboxCard(cfg || {});
+                grid.appendChild(card.root);
+                ctrls.push(card);
+            }
+            return ctrls;
+        },
+
+        add(containerId, item = {}) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return null; }
+            let grid = host.lastElementChild;
+            const isGrid = grid && grid.style && grid.style.display === "grid";
+            if (!isGrid) {
+                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                host.appendChild(grid);
+            }
+            const card = createExplainCheckboxCard(item);
+            grid.appendChild(card.root);
+            return card;
+        },
+
+        clear(containerId) {
+            const host = document.getElementById(containerId);
+            if (host) host.innerHTML = "";
+        }
+    };
+
+    window.BigExplainCheckbox = ExplainCheckboxAPI;
+    window.BigExplainCheckbox.__version__ = REQUIRED_VERSION;
 })();
 
 /* ---------- Safe helpers to wait for container and render ---------- */
@@ -317,6 +1120,78 @@ function addBigCheckboxSafe(idOrSelector, item, root = document) {
                 ? idOrSelector.id
                 : String(idOrSelector).replace(/^#/, '');
             return BigCircleCheckbox.add(cid, item);
+        })
+        .catch(function (err) { console.warn(err.message); return null; });
+}
+
+/** Render integer input list safely once the container exists. */
+function renderBigIntegerListSafe(idOrSelector, items, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigCircleInteger.renderList(cid, items);
+        })
+        .catch(function (err) { console.warn(err.message); return []; });
+}
+
+/** Add a single integer input safely once the container exists. */
+function addBigIntegerSafe(idOrSelector, item, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigCircleInteger.add(cid, item);
+        })
+        .catch(function (err) { console.warn(err.message); return null; });
+}
+
+/** Render network input list safely once the container exists. */
+function renderBigNetworkListSafe(idOrSelector, items, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigNetworkField.renderList(cid, items);
+        })
+        .catch(function (err) { console.warn(err.message); return []; });
+}
+
+/** Add a single network input safely once the container exists. */
+function addBigNetworkSafe(idOrSelector, item, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigNetworkField.add(cid, item);
+        })
+        .catch(function (err) { console.warn(err.message); return null; });
+}
+
+/** Render explain checkbox list safely once the container exists. */
+function renderBigExplainCheckboxListSafe(idOrSelector, items, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigExplainCheckbox.renderList(cid, items);
+        })
+        .catch(function (err) { console.warn(err.message); return []; });
+}
+
+/** Add a single explain checkbox safely once the container exists. */
+function addBigExplainCheckboxSafe(idOrSelector, item, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigExplainCheckbox.add(cid, item);
         })
         .catch(function (err) { console.warn(err.message); return null; });
 }

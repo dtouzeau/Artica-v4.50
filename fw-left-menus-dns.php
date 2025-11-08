@@ -51,6 +51,7 @@ function xgen(){
             array("PAGE" => "fw.dns.unbound.domains.php",
                 "ICO" => "fab fab fa-soundcloud", "TEXT" => "{local_domains}",
             ));
+
         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.unbound.redis.php", "ICO" => ico_database, "TEXT" => "{memory_database}"));
 
         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.unbound.records.php", "ICO" => "fa fa-list-ol", "TEXT" => "{DNS_RECORDS}"));
