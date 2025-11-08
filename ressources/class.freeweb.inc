@@ -2587,7 +2587,6 @@
 			}
 			
 			if($this->AS_ROOT){echo "$this->PrefixOutput [CLASS/".__LINE__."] ". count($GLOBALS["ARTICA_FILES_BAN"]). " files\n";}
-			unset($GLOBALS["ARTICA_FILES_BAN"]["Inotify.php"]);
 			unset($GLOBALS["ARTICA_FILES_BAN"]["admin.top.menus.php"]);
 			unset($GLOBALS["ARTICA_FILES_BAN"]["CacheOff.php"]);
 			return $GLOBALS["ARTICA_FILES_BAN"];

@@ -299,7 +299,9 @@ class system_nic{
 			if(!isset($ligne["ROUTES"])){$ligne["ROUTES"]=null;}
 			$this->ROUTES=$ligne["ROUTES"];
 			if(($ligne["BOOTPROTO"]=='dhcp') OR ($ligne["BOOTPROTO"]==null)){$this->dhcp=1;}
-            $this->MACADDR=$ligne["MAC"];
+            if(isset($ligne["MAC"])) {
+                $this->MACADDR = $ligne["MAC"];
+            }
 			$ligne["enabled"]=1;
 		
 		}else{
@@ -984,7 +986,8 @@ class NetStatus{
         }
 
         $this->InterfaceRunning=false;
-        $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/interface/info/$Interface"));
+        $InterfaceEnc=urlencode($Interface);
+        $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/interface/info/$InterfaceEnc"));
 
 
         if(!$data->Status){

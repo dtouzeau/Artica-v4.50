@@ -33,7 +33,6 @@ if(isset($_GET["stop-transparent"])){stop_transparent();exit;}
 if(isset($_GET["start-transparent"])){start_transparent();exit;}
 if(isset($_GET["keytabexists"])){keytabexists();exit;}
 if(isset($_GET["install-keytab"])){install_keytab();exit;}
-if(isset($_GET["connect-nodes"])){connect_nodes();exit;}
 if(isset($_GET["setup-client"])){setup_clients();exit;}
 
 
@@ -165,16 +164,7 @@ function keytabexists(){
     return false;
 }
 
-function connect_nodes(){
-    $unix=new unix();
 
-    $unix->framework_exec("exec.hacluster.php --rebuildif");
-
-    $filename=$_GET["filename"];
-    $unix->framework_execute("exec.hacluster.connect.php --connect \"$filename\"",
-        "hacluster.connect.progress",
-        "hacluster.connect.txt");
-}
 
 function service_cmds(){
 	$unix=new unix();

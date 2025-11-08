@@ -542,7 +542,6 @@ if(!is_dir('/usr/share/artica-postfix/ressources/logs/web')){@mkdir('/usr/share/
 		$NOOUT["system.internal.disks.php"]=true;
 		$NOOUT["system.mysql.php"]=true;
 		$NOOUT["admin.left.php"]=true;
-		$NOOUT["Inotify.php"]=true;
 		$NOOUT["SambaBrowse.php"]=true;
 		if(isset($NOOUT[$currentpage])){return;}
 		echo $text;

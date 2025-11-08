@@ -1090,51 +1090,6 @@ function table(){
 
 
     if(!isset($LicenseInfos["X-API-KEY"])){$LicenseInfos["X-API-KEY"]=null;}
-    $Migration = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Migration"));
-
-    if ($GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()) {
-        VERBOSE("CORP_LICENSE = TRUE",__LINE__);
-        $ppclas="alert-success";
-        VERBOSE("Migration === $Migration",__LINE__);
-        if($Migration==0){
-            if ($FINAL_TIME>0) {
-                $ExpiresSoon=intval(time_between_day_Web($FINAL_TIME));
-                $distanceOfTimeInWords="(".distanceOfTimeInWords(time(), $FINAL_TIME).")";
-                if ($ExpiresSoon<7) {
-                    $ExpiresSoon_text="{ExpiresSoon}";
-                    $ppclas="alert-warning";
-                }
-
-                if ($FINAL_TIME<time()) {
-                    $head_error="{license_expired_explain}";
-                    $ExpiresSoon_text="<strong>&laquo;{expired}&raquo;</strong></span>";
-                    $distanceOfTimeInWords=null;
-                    $ppclas="alert-danger";
-                }
-
-                $expire="{expiredate}: ".$tpl->time_to_date($FINAL_TIME)."&nbsp;$distanceOfTimeInWords$ExpiresSoon_text <br><small>({last_update} ".$tpl->time_to_date($TIME,true).") <br><strong>{uuid}: $uuid_text</strong></small>";
-            }else{
-                $expire="{expiredate}: {unlimited} <small>({last_update} ".$tpl->time_to_date($TIME,true).") <br><strong>{uuid}: $uuid_text</strong></small>";
-
-            }
-
-            $license_migration_explain2=$tpl->_ENGINE_parse_body("{license_migration_explain2}");
-            $license_migration_explain2=str_replace("%LICENSEINFOS%","<br>$expire",$license_migration_explain2);
-            $html[]="<div class='passwordBox animated fadeInDown' style='max-width:800px'>";
-            $html[]="<H2>{license_migration_title}</H2>";
-            $html[]="<div class='alert $ppclas'>$license_migration_explain2</div>";
-            $html[]="<div class='alert alert-danger'>{license_migration_body}";
-            $button=$tpl->button_autnonome("{run_migration_tool}","Loadjs('fw.license.migration.php')","fas fa-file-certificate","AsSystemAdministrator");
-            $html[]="<div style='text-align: right'>$button</div></div>";
-            $html[]="</div>";
-            echo $tpl->_ENGINE_parse_body($html);
-            VERBOSE("END SECTION",__LINE__);
-            return null;
-
-
-        }
-    }
-
     if(!isset($LicenseInfos["REQUEST_BY"])){$LicenseInfos["REQUEST_BY"]=null;}
     if(!isset($LicenseInfos["ABOUT_PP"])){$LicenseInfos["ABOUT_PP"]=null;}
     if(!isset($LicenseInfos["X-API-KEY"])){$LicenseInfos["X-API-KEY"]=null;}

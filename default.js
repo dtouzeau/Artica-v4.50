@@ -3451,7 +3451,6 @@ function Loadjs(src,lock){
 		
 		})
 		.fail(function( jqxhr, settings, exception ) {
-			 if(src==='Inotify.php'){return;}
 
 			if(! exception){
     				var t=setTimeout(function(){ $.getScript(src,true); },800);
@@ -3516,7 +3515,7 @@ function Loadjs(src,lock){
 	
 	})
 	.fail(function( jqxhr, settings, exception ) {
-		if(src=='Inotify.php'){return;}
+
 
 		if(!exception){
 		  var t=setTimeout(function(){ $.getScript(src,true); },800);

@@ -38,10 +38,6 @@ if(isset($_GET["form-register-popup"])){form_register_popup();exit;}
 if(isset($_GET["form-wifi4eu-js"])){form_wifi4eu_js();exit;}
 if(isset($_GET["form-wifi4eu-popup"])){form_wifi4eu_popup();exit;}
 
-
-
-
-
 page();
 
 function page(){

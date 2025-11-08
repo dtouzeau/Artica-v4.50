@@ -4,12 +4,32 @@ if [[ "$1" != "notty" ]]; then
   exec </dev/tty1 >/dev/tty1 2>&1
   NOCHECK=1
 fi
+set -u  # (avoid -e here so errors inside called tools don't kill the wrapper)
+ORIG_ARGS=("$@")
 
+if [ ${#ORIG_ARGS[@]} -eq 0 ]; then
+  ORIG_ARGS=("root")
+fi
 
 clear
+
 INPUT=/tmp/menu.sh.$$
 OUTPUT=/tmp/output.sh.$$
-trap "rm -f $OUTPUT >/dev/null 2>&1; rm -f $INPUT >/dev/null 2>&1; exit" SIGHUP SIGINT SIGTERM
+
+cleanup_files() {
+  rm -f "$OUTPUT" "$INPUT" >/dev/null 2>&1 || true
+}
+
+exit_to_login() {
+  cleanup_files
+  # make sure the TTY is usable for login
+  stty sane 2>/dev/null || true
+  exec /bin/login "${ORIG_ARGS[@]}"
+}
+
+
+trap 'exit_to_login' SIGHUP SIGINT SIGTERM
+
 DIALOG=${DIALOG=dialog}
 mkdir -p /home/artica/tmp
 
@@ -198,7 +218,7 @@ case $menuitem in
 	KeyBoard) KeyBoard;;
 	License) License;;
 	Shutdown) init 0;;
-	Exit) /bin/login.old;;
+	 Exit|"") exit_to_login ;;
 esac
 
 }

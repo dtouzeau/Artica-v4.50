@@ -22,9 +22,12 @@ function table(){
         $tpl=new template_admin();
         $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
 
-    $jsrestart=$tpl->framework_buildjs("hacluster.php?connect-nodes=yes",
+
+
+    $jsrestart=$tpl->framework_buildjs("/hacluster/server/notify/all",
         "hacluster.connect.progress","hacluster.connect.txt",
         "connect-$t","LoadAjaxSilent('hacluster-central-config','$page?table=yes');");
+
 
     $HaClusterDisableProxyProtocol=intval($HaClusterGBConfig["HaClusterDisableProxyProtocol"]);
     $HaClusterRemoveRealtimeLogs=intval($HaClusterGBConfig["HaClusterRemoveRealtimeLogs"]);

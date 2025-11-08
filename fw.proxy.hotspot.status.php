@@ -208,7 +208,7 @@ function Save(){
 function wizard_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    return  $tpl->js_dialog4("{START_WIZARD}","$page?wizard-popup=yes",550);
+    return  $tpl->js_dialog4("{START_WIZARD}","$page?wizard-popup=yes",850);
 }
 function  wizard_popup():bool{
     $tpl=new template_admin();
@@ -273,7 +273,7 @@ function wizard_popup2():bool{
 
     $form[]=$tpl->field_ipv4("guest_network","{from_ip}",$json->guest_network);
     $form[]=$tpl->field_numeric("guest_netmask","{netmask}",$json->guest_netmask);
-    $html[]=$tpl->form_outside("{guest_network}",$form,"","{build}",$jsafter);
+    $html[]=$tpl->form_outside("{guest_network}",$form,"","{next}",$jsafter);
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }

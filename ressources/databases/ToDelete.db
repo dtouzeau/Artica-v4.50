@@ -13,6 +13,8 @@ auto-compress.php
 artica.update-manu.php
 artica.backup.php
 artica.update.manu.progress.php
+public.categories.personnal.php
+Inotify.php
 artica.verify.updates.php
 artica.cluster.php'
 artica.instantLdapRestore.php

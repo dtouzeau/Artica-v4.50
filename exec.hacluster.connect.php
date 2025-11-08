@@ -65,60 +65,6 @@ function client_renew(){
 }
 
 function client_disconnect(){
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    build_disconnect_progress("{disconnecting}...",20);
-    client_report(500,null);
-
-
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterTproxy",0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterTproxyEnabled",0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UseNativeKerberosAuth",0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableKerbAuth",0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("kerberosActiveDirectoryLBEnable",0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableActiveDirectoryFeature",0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UseNativeKerberosAuth",0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerberosUsername",null);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("kerberosRealm",null);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerberosSPN",null);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerberosPassword",null);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("kerberosActiveDirectoryHost",null);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterID",0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterIP",null);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterClient",0);
-
-
-    $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
-    $PowerDNSEnableClusterMaster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterMaster"));
-
-    if($PowerDNSEnableClusterSlave==1) {
-        $GLOBALS["CLASS_SOCKETS"]->REST_API("/cluster/client/uninstall");
-    }
-
-    if($PowerDNSEnableClusterMaster==1) {
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("system.php?uninstall-cluster-master=yes");
-    }
-    hacluster_syslog("{disconnecting} From the HaCluster Pool");
-    build_disconnect_progress("{disconnecting}...",30);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $q->QUERY_SQL("DELETE FROM proxy_ports WHERE ProxyProtocol=1");
-    system("$php /usr/share/artica-postfix/exec.squid.global.access.php --ports");
-
-
-    build_disconnect_progress("{disconnecting}...",50);
-    system("$php /usr/share/artica-postfix/exec.squid.global.access.php --logging");
-    build_disconnect_progress("{disconnecting}...",80);
-    system("/usr/sbin/artica-phpfpm-service -haclient-uninstall-keytab");
-
-
-    build_disconnect_progress("{disconnecting}...",90);
-    $sock=new sockets();
-    $sock->REST_API("/reload");
-    build_disconnect_progress("{disconnecting}...",91);
-    build_disconnect_progress("{disconnecting}...",92);
-    shell_exec("/usr/sbin/artica-phpfpm-service -proxy-snmpd");
-    build_disconnect_progress("{disconnecting} {success}",100);
-
 
 }
 

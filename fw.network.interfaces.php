@@ -2768,10 +2768,11 @@ function nic_checksum_offloading():bool{
     $eth=$_GET["nic-checksum-offloading"];
     $md=$_GET["md"];
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
+    $ligne=$q->mysqli_fetch_array("SELECT Interface,checksum_offloading FROM nics WHERE Interface='$eth'");
+    if(!$q->ok){
+        return $tpl->js_error("L.".__LINE__.": ".$q->mysql_error);
+    }
 
-
-
-    $ligne=$q->mysqli_fetch_array("SELECT Interface,checksum_offloading WHERE Interface='$eth");
     if(!isset($ligne["Interface"])){
         $ligne["Interface"]="";
     }
@@ -2788,8 +2789,7 @@ function nic_checksum_offloading():bool{
 
     $q->QUERY_SQL($sql);
     if(!$q->ok){
-        echo  $tpl->post_error($q->mysql_error);
-        return false;
+        return $tpl->js_error("L.".__LINE__.": ".$q->mysql_error);
     }
     header("content-type: application/x-javascript");
     echo "LoadAjaxSilent('div-works-$eth','$page?nic-config2=$eth&md=$md');";
@@ -2802,7 +2802,14 @@ function nic_internet_check_save():bool{
     $md=$_GET["md"];
     $eth=$_GET["nic-internet-check"];
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-    $ligne=$q->mysqli_fetch_array("SELECT NoInternetCheck,Interface WHERE Interface='$eth");
+    if(!$q->FIELD_EXISTS("nics","NoInternetCheck")){
+        $q->QUERY_SQL("ALTER TABLE nics ADD COLUMN NoInternetCheck INTEGER NOT NULL DEFAULT 0");
+    }
+    $ligne=$q->mysqli_fetch_array("SELECT NoInternetCheck,Interface FROM nics WHERE Interface='$eth'");
+    if(!$q->ok){
+        return $tpl->js_error("L.".__LINE__.": ".$q->mysql_error);
+    }
+
     if(!isset($ligne["Interface"])){
         $ligne["Interface"]="";
     }
@@ -2819,7 +2826,7 @@ function nic_internet_check_save():bool{
     }
     $q->QUERY_SQL($sql);
     if(!$q->ok){
-        return   $tpl->js_error($q->mysql_error);
+        return   $tpl->js_error("L.".__LINE__." :".$q->mysql_error);
 
     }
     header("content-type: application/x-javascript");
@@ -2965,7 +2972,32 @@ function nic_config2():bool{
     $md=$_GET["md"];
     $eth=$_GET["nic-config2"];
     $nic=new system_nic($eth,true);
+    $tcp_addr=null;
+    $mac_addr=null;
+    $netmask=null;
+    $gateway=null;
     if($nic->NoInternetCheck==0){$InternetCheck=1;}else{$InternetCheck=0;}
+
+    $InterfaceNameEnc=urlencode($eth);
+    $content=$GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/interface/info/$InterfaceNameEnc");
+    $json=json_decode($content);
+    if (json_last_error()> JSON_ERROR_NONE) {
+        writelogs("/system/network/interface/info/$InterfaceNameEnc Error:".json_last_error_msg(),__FUNCTION__,__FILE__,__LINE__);
+        echo $tpl->div_error($tpl->_ENGINE_parse_body(json_last_error_msg()));
+
+    }else {
+        if ($json->Status) {
+            writelogs("/system/network/interface/info/$InterfaceNameEnc Error:FALSE", __FUNCTION__, __FILE__, __LINE__);
+            $tcp_addr=$json->IpAddr;
+            $mac_addr=$json->MacAddr;
+            $netmask=$json->NetMask;
+            $gateway=$json->Gateway;
+        }
+    }
+
+
+
+
 
     if($nic->NotSaved){
         if(preg_match("#^veth#",$eth)){
@@ -3003,6 +3035,9 @@ function nic_config2():bool{
     $tpl->table_form_field_js("Loadjs('$page?nic-name-interface=$eth&md=$md');",$security);
     $tpl->table_form_field_text("{name}","$nic->NICNAME - $nic->netzone",ico_nic);
 
+    $tpl->table_form_field_js("");
+    $tpl->table_form_field_text("{ComputerMacAddress}",$mac_addr,ico_nic);
+
 
     if($nic->UseSPAN==1){
         $tpl->table_form_field_js("Loadjs('$page?nic-use-span-disable=$eth&md=$md');",$security);
@@ -3010,8 +3045,10 @@ function nic_config2():bool{
         echo $tpl->table_form_compile();
         return true;
     }
+
     $tpl->table_form_field_js("Loadjs('$page?nic-use-span-enable=$eth&md=$md');",$security);
     $tpl->table_form_field_bool("{free_mode} (SPAN)",0,ico_check);
+
 
 
     if($nic->dhcp==1) {
@@ -3024,16 +3061,32 @@ function nic_config2():bool{
         echo $tpl->table_form_compile();
         return true;
     }
-    $tpl->table_form_field_js("Loadjs('$page?nic-enable-dhcp=$eth&md=$md');",$security);
-    $tpl->table_form_field_bool("{use_dhcp}",0,ico_check);
-    $tpl->table_form_field_js("Loadjs('$page?nic-checksum-offloading=$eth&md=$md');",$security);
-    $tpl->table_form_field_bool("TCP/IP Checksum Offloading",$nic->checksum_offloading,ico_check);
-    $tpl->table_form_field_js("Loadjs('$page?nic-internet-check=$eth&md=$md');",$security);
-    $tpl->table_form_field_bool("{internet_access}",$InternetCheck,ico_check);
+
 
     $mtu="";
     $txqueuelen="";
-    $nic->IPADDR=trim($nic->IPADDR);
+    if(!is_null($nic->IPADDR)) {
+        $nic->IPADDR = trim($nic->IPADDR);
+    }
+    if($nic->GATEWAY=="0.0.0.0"){
+        $nic->GATEWAY="";
+    }
+    if(is_null($nic->IPADDR)){
+        if(!is_null($tcp_addr)){
+            $nic->IPADDR=$tcp_addr;
+        }
+    }
+    if(is_null($nic->NETMASK)){
+        if(!is_null($netmask)){
+            $nic->NETMASK=$netmask;
+        }
+    }
+    if(is_null($nic->GATEWAY)){
+        if(!is_null($gateway)){
+            $nic->GATEWAY=$gateway;
+        }
+    }
+
     if($nic->mtu>900){
         $mtu="&nbsp;&nbsp;&nbsp;<span class='label label-success' style='font-size:14px'>MTU $nic->mtu</span>";
     }
@@ -3060,9 +3113,7 @@ function nic_config2():bool{
 
 
 
-    if($nic->GATEWAY=="0.0.0.0"){
-        $nic->GATEWAY="";
-    }
+
     $IP=new IP();
     if(!$IP->isValid($nic->GATEWAY)){
         $nic->GATEWAY="";
@@ -3082,6 +3133,14 @@ function nic_config2():bool{
         }
         $tpl->table_form_field_text("{gateway}","$nic->GATEWAY$def$etric",ico_sensor);
     }
+
+    $tpl->table_form_field_js("Loadjs('$page?nic-enable-dhcp=$eth&md=$md');",$security);
+    $tpl->table_form_field_bool("{use_dhcp}",0,ico_check);
+    $tpl->table_form_field_js("Loadjs('$page?nic-checksum-offloading=$eth&md=$md');",$security);
+    $tpl->table_form_field_bool("TCP/IP Checksum Offloading",$nic->checksum_offloading,ico_check);
+    $tpl->table_form_field_js("Loadjs('$page?nic-internet-check=$eth&md=$md');",$security);
+    $tpl->table_form_field_bool("{internet_access}",$InternetCheck,ico_check);
+
 
     $tpl->table_form_button("{apply}","Loadjs('$page?nic-apply=$eth&md=$md');",$security);
     echo $tpl->table_form_compile();

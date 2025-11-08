@@ -3,6 +3,8 @@
 class ValkeyClient
 {
     private const SOCK   = '/run/redis/redis.sock';
+    private const TCP_HOST = '127.0.0.1';  // TCP fallback host
+    private const TCP_PORT = 6379;          // TCP fallback port
     private const DB     = 0;             // already selected by connect arg
     private const PREFIX = 'SET:';        // your convention
     private const TTL_D  = 172800;        // 2 days default
@@ -14,7 +16,7 @@ class ValkeyClient
     /** @var bool */
     private static $useHttpFallback = false;
 
-    /** Get a persistent, shared Redis instance (UNIX socket).
+    /** Get a persistent, shared Redis instance (UNIX socket or TCP fallback).
      * @return Redis|null
      */
     private static function r()
@@ -30,35 +32,67 @@ class ValkeyClient
             }
         }
 
+        // Try Unix socket first
         try {
             $r = new Redis();
 
             // persistent connect over UNIX socket
             // phpredis: pconnect($host, $port, $timeout, $persistent_id, $retry_interval, $read_timeout, $context)
             // For UNIX socket, pass host = socket path & port = 0
-            if (!$r->pconnect(self::SOCK, 0, 1.0, 'valkey-unix-sock')) {
-                // Log the error but don't crash
+            if ($r->pconnect(self::SOCK, 0, 1.0, 'valkey-unix-sock')) {
+                // timeouts
+                $r->setOption(Redis::OPT_READ_TIMEOUT, 1.0);  // seconds
+                $r->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+                // If you need a DB, you can ensure with select() (not needed if server default is 0)
+                if (self::DB !== 0) {
+                    $r->select(self::DB);
+                }
+
+                self::$r = $r;
+                return self::$r;
+            }
+        } catch (\RedisException $e) {
+            // Unix socket failed, will try TCP fallback
+            if (function_exists('writelogs')) {
+                writelogs('Unix socket failed: ' . $e->getMessage() . ', trying TCP fallback', __FUNCTION__, __FILE__, __LINE__);
+            }
+        }
+
+        // Try TCP connection as fallback
+        try {
+            $r = new Redis();
+
+            if (function_exists('writelogs')) {
+                writelogs('Attempting TCP connection to ' . self::TCP_HOST . ':' . self::TCP_PORT, __FUNCTION__, __FILE__, __LINE__);
+            }
+
+            if (!$r->pconnect(self::TCP_HOST, self::TCP_PORT, 1.0, 'valkey-tcp')) {
                 if (function_exists('writelogs')) {
-                    writelogs('Valkey connect failed to ' . self::SOCK, __FUNCTION__, __FILE__, __LINE__);
+                    writelogs('TCP connection failed to ' . self::TCP_HOST . ':' . self::TCP_PORT, __FUNCTION__, __FILE__, __LINE__);
                 }
                 return null;
             }
 
             // timeouts
-            $r->setOption(Redis::OPT_READ_TIMEOUT, 1.0);  // seconds
+            $r->setOption(Redis::OPT_READ_TIMEOUT, 1.0);
             $r->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 
-            // If you need a DB, you can ensure with select() (not needed if server default is 0)
+            // Select database
             if (self::DB !== 0) {
                 $r->select(self::DB);
+            }
+
+            if (function_exists('writelogs')) {
+                writelogs('TCP connection successful to ' . self::TCP_HOST . ':' . self::TCP_PORT, __FUNCTION__, __FILE__, __LINE__);
             }
 
             self::$r = $r;
             return self::$r;
         } catch (\RedisException $e) {
-            // Socket file doesn't exist or connection failed - log but don't crash
+            // TCP connection also failed - log but don't crash
             if (function_exists('writelogs')) {
-                writelogs('Valkey connection failed: ' . $e->getMessage() . ' (socket: ' . self::SOCK . ')', __FUNCTION__, __FILE__, __LINE__);
+                writelogs('TCP connection failed: ' . $e->getMessage(), __FUNCTION__, __FILE__, __LINE__);
             }
             return null;
         }
@@ -188,14 +222,14 @@ class ValkeyClient
     }
 
     /** SET string with TTL (seconds). Empty value => delete. */
-    public static function setSetting(string $key, string $value, int $ttl = self::TTL_D): bool{
-        $OrgKey=$key;
+    public static function setSetting(string $key, string $value, int $ttl = self::TTL_D): bool
+    {
         $key = self::norm($key);
         $r   = self::r();
 
         if ($r === null) {
             // Connection failed, try HTTP fallback
-            return self::httpSetInfo($OrgKey, $value);
+            return self::httpSetInfo($key, $value);
         }
 
         if ($value === '') {
@@ -203,50 +237,27 @@ class ValkeyClient
         }
 
         if ($ttl <= 0) {
-            $val=$r->set($key, $value);
-            self::httpSetInfo($OrgKey, $value);
-            return $val;
+            return $r->set($key, $value);
         }
         // Use SET with EX for atomic TTL
         return $r->set($key, $value, ['ex' => $ttl]);
     }
 
-
-    private static function Getfile($key):string{
-
-        $FileKeyPath="/etc/artica-postfix/settings/Daemons/$key";
-        if(!is_file($FileKeyPath)){return "";}
-
-        if(!is_readable($FileKeyPath)) {
-            return "";
-        }
-
-        $fp = fopen($FileKeyPath, "rb");//open file in read mode
-        if(!$fp){
-            return "";
-        }
-
-        $str = stream_get_contents($fp);
-        fclose($fp);
-        return trim((string) $str);
-
-    }
-
     /** GET string; returns "" when key is missing (no extra EXISTS round trip). */
-    public static function getSetting(string $key): string{
-        $OrgKey = $key;
+    public static function getSetting(string $key): string
+    {
         $key = self::norm($key);
-
         $r   = self::r();
 
         if ($r === null) {
             // Connection failed, try HTTP fallback
-            return self::httpGetInfo($OrgKey);
+            return self::httpGetInfo($key);
         }
 
         $val = $r->get($key);
         if ($val === false) {
-            return self::Getfile($OrgKey);
+            // key missing → return empty string (don't log spam)
+            return '';
         }
         return is_string($val) ? $val : (string)$val;
     }

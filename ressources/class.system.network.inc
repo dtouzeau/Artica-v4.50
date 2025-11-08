@@ -254,8 +254,8 @@ class networking{
             $GLOBALS["CLASS_SOCKETS"]=new sockets();
             $sock=$GLOBALS["CLASS_SOCKETS"];
         }
-
-        $content=$sock->REST_API("/system/network/interface/info/$InterfaceName");
+        $InterfaceNameEnc=urlencode($InterfaceName);
+        $content=$sock->REST_API("/system/network/interface/info/$InterfaceNameEnc");
         $json=json_decode($content);
         if (json_last_error()> JSON_ERROR_NONE) {
             writelogs("/system/network/interface/info/$InterfaceName Error:".json_last_error_msg(),__FUNCTION__,__FILE__,__LINE__);
@@ -335,10 +335,8 @@ class networking{
 			return $datas;
 		}
     function NicInfosFromAPI($nic):string{
-
-        $sock=new sockets();
-        $data=$sock->REST_API("/system/network/interface/info/$nic");
-        $json=json_decode($data);
+        $NicEnc=urlencode($nic);
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/interface/info/$NicEnc"));
         if (json_last_error()> JSON_ERROR_NONE) {
             return "";
         }
@@ -354,7 +352,7 @@ class networking{
 	function GetNicInfos($nic):array{
 
 			VERBOSE("*** GetNicInfos($nic) ***",__LINE__);
-			if($nic==null){return false;}
+			if($nic==null){return array();}
 			include_once(dirname(__FILE__) . '/class.sockets.inc');
 
 			if(!isset($GLOBALS["NIC_INFOS_$nic"])){
