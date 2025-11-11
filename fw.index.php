@@ -120,7 +120,7 @@ function widget_category_service():bool{
 
     $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
     if($EnableLocalUfdbCatService==0){
-        return widget_Firewall();
+        return widget_Suricata();
     }
     $DnscatzDomain=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("fw.haclDnscatzDomain");
     if(strlen($DnscatzDomain)<3){
@@ -1410,6 +1410,60 @@ function widget_vpn_client():bool{
     return true;
 
 }
+
+function widget_Suricata():bool{
+    $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
+    if($EnableSuricata==0){
+        return widget_Firewall();
+    }
+    $tpl=new template_admin();
+    $bg="white-bg";
+    $title_icon=ico_sensor;
+    $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    $VERSION=$data->Version;
+    if(!$data->Status OR !$data->Running){
+        $bg = "red-bg";
+        $DISPLAY[]="<li><span class=\"fas fa-exclamation-circle m-r-xs\"></span>{IDS}: {stopped}</label> </li>";
+    }else{
+
+        $Stats=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/stats"));
+        $stats2=json_decode($Stats->Stats);
+        $kernel_packets=$tpl->FormatNumber($stats2->message->capture->kernel_packets);
+        $ico_time=ico_clock;
+        $ico=ico_engine_warning;
+        $Since=time()-$data->Uptime;
+        $since=distanceOfTimeInWords($Since,time());
+        $DISPLAY[]="<li><span class=\"$ico_time m-r-xs\"></span>{running}:</label> {since} $since</li>";
+        $CountOfRules=intval($data->Alerts);
+        $icor=ico_list_opt;
+        $icoz=ico_list;
+        $Activerule=$tpl->FormatNumber($data->Info->ActiveRules);
+        $DISPLAY[]="<li><span class=\"$ico m-r-xs\"></span>{detected_threats}:</label> $CountOfRules</li>";
+        $DISPLAY[]="<li><span class=\"$icoz m-r-xs\"></span>{packets}:</label> $kernel_packets</li>";
+        $DISPLAY[]="<li><span class=\"$icor m-r-xs\"></span>{rules}:</label> $Activerule</li>";
+    }
+    $widget1="<div class=\"widget $bg p-xl\" style='padding-top:5px;padding-bottom:2px;min-height: 197px'>
+<div class='row'>
+    <table style='width:100%'>
+    <tr>
+    <td style='vertical-align:top;width:1%' nowrap><i class='$title_icon fa-7x' style='margin-top:10px'></i></td>
+    <td style='vertical-align:top;'>
+        <div class='col-xs-8 text-left'>
+        <h2>{IDS} v.$VERSION</h2>
+        <ul class=\"list-unstyled m-t-md\" style='margin-top:5px'>
+                            ".@implode(" ",$DISPLAY)."
+                        </ul>
+        </div>
+     </td>
+     </tr>
+     </table>
+</div>
+</div>";
+
+    echo $tpl->_ENGINE_parse_body($widget1);
+    return true;
+}
+
 function widget_Firewall():bool{
     $tpl=new template_admin();
 
@@ -1418,9 +1472,6 @@ function widget_Firewall():bool{
     if($FireHolEnable==0){
         return widget_nothing();
     }
-
-    
-
     $bg="white-bg";
     $title_icon=ico_firewall;
     $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/isactive"));
@@ -1429,7 +1480,6 @@ function widget_Firewall():bool{
     if(!$data->Status){
         $bg = "red-bg";
         $DISPLAY[]="<li><span class=\"fas fa-exclamation-circle m-r-xs\"></span>{firewall_status}: {stopped}</label> </li>";
-
     }else{
         $ico=ico_clock;
         $since=distanceOfTimeInWords($data->Since,time());

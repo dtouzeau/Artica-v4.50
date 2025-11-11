@@ -78,7 +78,7 @@ function search(){
     $LEVELS["debug"]="<span class='label label-default'>DEBUG</span>";
     $LEVELS["trace"]="<span class='label label-default'>TRACE</span>";
 
-    $FONTS["warning"]="text-marning";
+    $FONTS["warning"]="text-warning";
     $FONTS["info"]="text-muted";
     $FONTS["error"]="text-danger";
     $Peers=ListPeers();

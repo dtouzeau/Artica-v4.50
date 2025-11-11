@@ -115,7 +115,7 @@ function step_network():bool{
 
     foreach ($Local_interfaces as $nic=>$none) {
         $MAIN=array();
-        if(!isset($wiz->savedsettings["NET_INTERFACES"][$nic])) {
+        if(isset($wiz->savedsettings["NET_INTERFACES"][$nic])) {
             $MAIN = $wiz->savedsettings["NET_INTERFACES"][$nic];
         }
         if(preg_match("#^wlp#",$nic)){
@@ -127,11 +127,23 @@ function step_network():bool{
 
         $tbl = explode(";", $nicinfos);
         $MAC=$tbl[1];
-        $IPADDR = $MAIN["IPADDR"];
-        $NETMASK = $MAIN["NETMASK"];
-        $GATEWAY = $MAIN["GATEWAY"];
-        $metric = $MAIN["metric"];
-        $BROADCAST = $MAIN["BROADCAST"];
+        $IPADDR=null;$NETMASK=null;$GATEWAY=null;$metric=null;$BROADCAST=null;$KEEPNET=null;$VPS_COMPATIBLE=null;
+        if(isset($MAIN["IPADDR"])) {
+            $IPADDR = $MAIN["IPADDR"];
+        }
+        if(isset($MAIN["NETMASK"])) {
+            $NETMASK = $MAIN["NETMASK"];
+        }
+        if(isset($MAIN["GATEWAY"])) {
+            $GATEWAY = $MAIN["GATEWAY"];
+        }
+        if(isset($MAIN["metric"])) {
+            $metric = $MAIN["metric"];
+        }
+        if(isset($MAIN["BROADCAST"])) {
+            $BROADCAST = $MAIN["BROADCAST"];
+        }
+
         $KEEPNET = $MAIN["KEEPNET"];
         $VPS_COMPATIBLE = $MAIN["VPS_COMPATIBLE"];
         $system_nic=new system_nic($nic);

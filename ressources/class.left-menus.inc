@@ -1364,10 +1364,10 @@ class left_menus{
             $f[] = "							</li>";
 
 
-            $f[] = "                			<li id='left-menu'>";
-            $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.firewall.php');\">
-											<i class=\"fab fa-free-code-camp\"></i> <span class=\"nav-label\">{firewall_rules}</span> </a>";
-            $f[] = "							</li>";
+//            $f[] = "                			<li id='left-menu'>";
+//            $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.firewall.php');\">
+//											<i class=\"fab fa-free-code-camp\"></i> <span class=\"nav-label\">{firewall_rules}</span> </a>";
+//            $f[] = "							</li>";
 
             $f[] = "                			<li id='left-menu'>";
             $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.events.php');\">

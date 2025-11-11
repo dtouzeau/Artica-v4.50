@@ -44,18 +44,13 @@ if(isset($_GET["debugcredentials"])){debugcredentials();exit;}
 
 header("Content-Security-Policy","default-src 'self';script-src 'self' 'unsafe-inline';font-src 'self' data: fonts.gstatic.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com");
 
-$WizardSavedSettings=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardSavedSettings")));
-if(!isset($WizardSavedSettings["smtp_domainname"])){$WizardSavedSettings["smtp_domainname"]=null;}
-if(!is_null($WizardSavedSettings["smtp_domainname"])){
-    $WizardSavedSettings["smtp_domainname"]=trim($WizardSavedSettings["smtp_domainname"]);
-}
-$smtp_domainname=$WizardSavedSettings["smtp_domainname"];
 
+$smtp_domainname = SMTPDomain();
 VERBOSE("smtp domain name: $smtp_domainname",__LINE__);
 
 if(!is_file("/etc/artica-postfix/AS_DOCKER_SERVICE")) {
     if (!is_file("/etc/artica-postfix/WIZARD_INSTALL_EXECUTED")) {
-        if ($smtp_domainname == null) {
+        if ($smtp_domainname == "") {
             header('location:fw.wizard.intro.php');
             exit;
         }
@@ -67,6 +62,32 @@ $ArticaWebOldLogin=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaWebOldLogin
 if($ArticaWebOldLogin==1){
     login();
     exit;
+}
+function SMTPDomain():string{
+    $WizardSavedSettingsData=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardSavedSettings");
+    if(strlen($WizardSavedSettingsData)<10){
+        return "";
+    }
+    $WizardSavedSettings=unserialize(base64_decode($WizardSavedSettingsData));
+    if(!$WizardSavedSettings){
+        return "";
+    }
+    if (!isset($WizardSavedSettings["smtp_domainname"])) {
+        return "";
+    }
+    if (!is_null($WizardSavedSettings["smtp_domainname"])) {
+        $WizardSavedSettings["smtp_domainname"] = trim($WizardSavedSettings["smtp_domainname"]);
+    }
+
+    $smtp_domainname = trim($WizardSavedSettings["smtp_domainname"]);
+    if(is_null($smtp_domainname)){
+        return "";
+    }
+    if(strlen($smtp_domainname) < 2) {
+       return "";
+    }
+    return trim($smtp_domainname);
+
 }
 
 new_login();

@@ -5544,13 +5544,13 @@ if(typeof dialogInstance == 'object'){
         }
         echo "
 	//size=$size dialog number $number;
-	if(typeof dialogInstance{$number} == 'object'){ dialogInstance$number.close();}
-	dialogInstance{$number} = new BootstrapDialog({
+	if(typeof dialogInstance$number == 'object'){ dialogInstance$number.close();}
+	dialogInstance$number = new BootstrapDialog({
 		$draggable
 		$closable
 		$cssClass
 		title: '$title',
-		type: BootstrapDialog.{$array[$type]},
+		type: BootstrapDialog.$array[$type],
 		autodestroy:true,
 		closeByBackdrop: false,
 		message: function(dialog) {

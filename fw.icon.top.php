@@ -469,6 +469,9 @@ function notifs(){
     $NOTIF_APP_GO_SHIELD_VERSION=NOTIF_APP_GO_SHIELD_VERSION($UPDATES_ARRAY);
     if($NOTIF_APP_GO_SHIELD_VERSION<>null){$ERR[]=$NOTIF_APP_GO_SHIELD_VERSION;}
 
+    $NOTIF_APP_SURICATA_VERSION=NOTIF_APP_SURICATA_VERSION($UPDATES_ARRAY);
+    if($NOTIF_APP_SURICATA_VERSION<>null){$ERR[]=$NOTIF_APP_SURICATA_VERSION;}
+
     $NOTIF_ADREST_VERSION=NOTIF_ADREST_VERSION($UPDATES_ARRAY);
     if($NOTIF_ADREST_VERSION<>null){$ERR[]=$NOTIF_ADREST_VERSION;}
 
@@ -2159,6 +2162,29 @@ function NOTIF_APP_GO_SHIELD_VERSION($UPDATES_ARRAY):string{
     $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
     $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
     return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_GO_SHIELD_SERVER')||WARN||||js:Loadjs('$page?SetToken=$Token');";
+
+}
+function NOTIF_APP_SURICATA_VERSION($UPDATES_ARRAY):string{
+    $tpl                = new template_admin();
+    $page               = CurrentPageName();
+    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
+
+    $RESULTS=$tpl->NOTIF_ARRAY(
+        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
+            "TOKEN_UPDATE_ARRAY"=>"APP_SURICATA",
+            "TOKEN_VER"=>"SURICATA_VERSION",
+            "TOKEN_ENABLED"=>"EnableSuricata")
+    );
+
+    if(!isset($RESULTS["NEW_VER"])){
+        return "";
+    }
+    $Token=$RESULTS["HIDE_TOKEN"];
+    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
+    $STEXT = str_replace("%product", "{APP_SURICATA}", $STEXT);
+    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
+    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
+    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_SURICATA')||WARN||||js:Loadjs('$page?SetToken=$Token');";
 
 }
 

@@ -54,6 +54,10 @@ class sidentity{
         if(is_array($val)){$val=serialize($val);}
         $val=base64_encode($val);
         $ligne=$q->mysqli_fetch_array("SELECT ID FROM sidentity WHERE `skey`='$key'");
+        if(!isset($ligne["ID"])){
+            $ligne["ID"]=0;
+        }
+
         if(intval($ligne["ID"])>0){
             $ID=$ligne["ID"];
             $q->QUERY_SQL("UPDATE sidentity SET svalue='$val' WHERE ID='$ID'");

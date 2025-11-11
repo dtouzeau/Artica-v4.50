@@ -15,12 +15,42 @@ if(isset($_GET["reconfigure-js"])){reconfigure_js();exit;}
 if(isset($_GET["restart-js"])){restart_js();exit;}
 if(isset($_GET["reconfigure-popup"])){reconfigure_popup();exit;}
 if(isset($_GET["restart-popup"])){restart_popup();exit;}
-
+if(isset($_GET["ndpi-js"])){ndpi_js();exit;}
+if(isset($_GET["ndpi-popup"])){ndpi_popup();exit;}
+if(isset($_POST["NDPIEnabled"])){ndpi_save();exit;}
+if(isset($_GET["memory-infos-js"])){memory_info_js();exit;}
+if(isset($_GET["memory-info-popup"])){memory_info_popup();exit;}
 page();
 
 
 function uninstall_confirm():bool{
     return admin_tracks("Uninstall IDS service..");
+}
+function ndpi_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog6("{APP_NDPI}","$page?ndpi-popup=yes",750);
+}
+function ndpi_popup():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+
+
+    $jsonStatus=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$jsonStatus->Status){
+        $html[]=$tpl->div_error("{error} API||$jsonStatus->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+    echo $tpl->BigCircleCheckbox("NDPIEnabled","{APP_NDPI}","{SURINDPI}",$jsonStatus->Info->NDPIEnabled,"dialogInstance6.close();");
+    return true;
+}
+function ndpi_save():bool{
+    $jsonStatus=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$jsonStatus->Status){return false;}
+    if(intval($jsonStatus->Info->NDPIEnabled)==intval($_POST["NDPIEnabled"])){return true;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/ndpi-enable/".$_POST["NDPIEnabled"]);
+    return admin_tracks("IDS: turn ndpi feature to {$_POST["NDPIEnabled"]}");
 }
 
 function pf_ring_infos():bool{
@@ -28,13 +58,45 @@ function pf_ring_infos():bool{
 	$tpl=new template_admin();
 	return $tpl->js_dialog("PF Ring Info.", "$page?pf-ring-popup=yes");
 }
-function reconfigure_js(){
+function reconfigure_js():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$users=new usersMenus();
 	if(!$users->AsFirewallManager){$tpl->popup_no_privs();}
-	$tpl->js_dialog6("{reconfigure_service}", "$page?reconfigure-popup=yes",650);
-	
+	return $tpl->js_dialog6("{reconfigure_service}", "$page?reconfigure-popup=yes",650);
+}
+function memory_info_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsFirewallManager){$tpl->popup_no_privs();}
+    return $tpl->js_dialog6("{memory_risk}", "$page?memory-info-popup=yes",750);
+}
+function memory_info_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+
+    $jsonMem=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/report/memory"));
+    if(!$jsonMem->Status){
+        $html[]=$tpl->div_error("{error} API||$jsonMem->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+    $ids_mem_risk=$tpl->_ENGINE_parse_body("{ids_mem_risk}");
+    $recommended_server_memory_mb=intval($jsonMem->MemInfo->recommended_server_memory_mb)*1024;
+    $optimal_server_memory_mb=intval($jsonMem->MemInfo->optimal_server_memory_mb)*1024;
+    $ids_mem_risk=str_replace("%minreco","<strong>".FormatBytes($recommended_server_memory_mb)."</strong>",$ids_mem_risk);
+    $ids_mem_risk=str_replace("%optimal","<strong>".FormatBytes($optimal_server_memory_mb)."</strong>",$ids_mem_risk);
+    $MinimumMemoryMB=intval($jsonMem->MemInfo->report->MinimumMemoryMB)*1024;
+    $OptimalMemoryMB=intval($jsonMem->MemInfo->report->OptimalMemoryMB)*1024;
+    $ids_mem_risk=str_replace("%idsmin","<strong>".FormatBytes($MinimumMemoryMB)."</strong>",$ids_mem_risk);
+    $ids_mem_risk=str_replace("%idsmax","<strong>".FormatBytes($OptimalMemoryMB)."</strong>",$ids_mem_risk);
+    echo $tpl->div_error("{server_memory_consumption}||<div style='font-size:18px'>$ids_mem_risk</div>");
+
+
+
+    return true;
+
 }
 
 function uninstall_js():bool{
@@ -94,7 +156,7 @@ function pf_ring_popup(){
 			}
 			
 			$html[]="<tr>";
-			$html[]="<td width=1% nowrap><strong>". trim($re[1])."</strong></td>";
+			$html[]="<td style='width:1%' nowrap><strong>". trim($re[1])."</strong></td>";
 			$html[]="<td>$value</td>";
 			$html[]="</tr>";
 		}
@@ -236,9 +298,11 @@ function top_widgets_rules($json):string{
     if($json->Info->RulesCount==0){
         return $tpl->widget_style1("gray-bg",ico_script,"{rules}","{none}");
     }
+
+    $prc=round(($json->Info->ActiveRules/$json->Info->RulesCount)*100,2);
     $rules=$tpl->FormatNumber($json->Info->RulesCount);
     $Cur=$tpl->FormatNumber($json->Info->ActiveRules);
-    return $tpl->widget_style1("green-bg",ico_script,"{rules}","$Cur/$rules");
+    return $tpl->widget_style1("green-bg",ico_script,"{rules} $Cur/$rules","$prc%");
 
 }
 function top_widgets():bool{
@@ -276,29 +340,40 @@ function flat_config():bool{
         echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     }
     $GlobalConfig=$jsonStatus->Info;
-
+    $error="";
 
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/pfring"));
     if(!$json->Status){
         $btn="<div style='margin:30px;text-align:right'>".$tpl->button_autnonome("{install}", "Loadjs('fw.system.upgrade-software.php?product=APP_XTABLES')", ico_cd, "AsFirewallManager", 350, "btn-primary", 80)."</div>";
-        $html[]=$tpl->div_error("{must_update_system}||$json->Error$btn");
-        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        $error=$tpl->div_error("{must_update_system}||ERR.".__LINE__."<br>$json->Error$btn");
+
     }
+
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/pfring-plugin"));
     if(!$json->Status){
-        $btn="<div style='margin:30px;text-align:right'>".$tpl->button_autnonome("{install}", "Loadjs('fw.system.upgrade-software.php?product=APP_SURICATA')", ico_cd, "AsFirewallManager", 350, "btn-primary", 80)."</div>";
-        $html[]=$tpl->div_error("{must_update_system}||$json->Error$btn");
-        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        $btn="<div style='margin:30px;text-align:right'>".$tpl->button_autnonome("{install}", "Loadjs('fw.system.upgrade-software.php?product=PFRING')", ico_cd, "AsFirewallManager", 350, "btn-primary", 80)."</div>";
+        $error=$tpl->div_error("{must_update_system}||ERR.".__LINE__."<br>$json->Error$btn");
+
     }
+    if(strlen($error)>1){
+        echo $tpl->_ENGINE_parse_body($error);
+    }
+
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/iface/list"));
-    $CountOfIfaces=0;
-    if($json->Status){
+    if(!$json->Status){
+        if($json->Error=="SOCKET_NOT_FOUND"){
+            $html[]=$tpl->div_error("{error_ids_no_socket}");
+        }
+    }else{
         $json2 = json_decode($json->Info);
         $CountOfIfaces=$json2->count;
+        if($CountOfIfaces==0){
+            $html[]=$tpl->div_error("{error_ids_no_nic}");
+        }
     }
-    if($CountOfIfaces==0){
-        $html[]=$tpl->div_error("{error_ids_no_nic}");
-    }
+
+
+
     $RulesCount_text="";
     $RulesCount=$GlobalConfig->RulesCount;
     if($RulesCount>0){
@@ -307,20 +382,38 @@ function flat_config():bool{
     }
 
 
+    $memIssue="";
+    $jsonMem=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/report/memory"));
+    if($jsonMem->MemInfo->has_risk){
+        $tpl->table_form_field_js("Loadjs('$page?memory-infos-js=yes');");
+        $zrisks["critical"]="<span class='label label-danger'>{memory_risk}: {critical}</span>";
+        $zrisks["high"]="<span class='label label-danger'>{memory_risk}: {very_high}</span>";
+        $zrisks["medium"]="<span class='label label-warning'>{memory_risk}: {medium}</span>";
+        $memIssue="&nbsp;&nbsp;".$zrisks[$jsonMem->MemInfo->report->OOMRiskLevel];
+    }
 
-    $tpl->table_form_field_text("{APP_ARTICA_SURICATA}", "{version} $GlobalConfig->Version$RulesCount_text", ico_server);
+
+
+    $tpl->table_form_field_text("{APP_ARTICA_SURICATA}", "{version} $GlobalConfig->Version$RulesCount_text$memIssue", ico_server);
+
+
     $tpl->table_form_field_js("Loadjs('$page?pf-ring-infos=yes');");
     $tpl->table_form_field_bool("{SuricataPfRing}",1,ico_performance);
 
+
+    if (!$jsonStatus->Info->NDPIOK) {
+        $tpl->table_form_field_text("{APP_NDPI}","{incompatible_feature}",ico_sensor,true);
+    } else {
+        $tpl->table_form_field_js("Loadjs('$page?ndpi-js=yes');");
+        $tpl->table_form_field_bool("{APP_NDPI}",$jsonStatus->Info->NDPIEnabled,ico_sensor);
+    }
+
+
     $q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
     $results=$q->QUERY_SQL("SELECT interface,threads,enable FROM suricata_interfaces");
-    $c=0;
+
     foreach($results as $ligne) {
         $interface = $ligne["interface"];
-        $enable = intval($ligne["enable"]);
-        if($enable==1){
-            $c++;
-        }
         $CONF[$interface] = $ligne;
     }
 
@@ -329,14 +422,24 @@ function flat_config():bool{
     $zPhysicalsInterfaces=unserialize(base64_decode($data->nics));
 
     foreach ($zPhysicalsInterfaces as $index=>$interface){
-        $threads = 0;
         $enable =0;
         $nic=new system_nic($interface);
+        $InterfaceInfo=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/interface/info/$interface"));
+        $State=$InterfaceInfo->State;
+        VERBOSE("($index): Interface $interface State $State");
+
+
         $NicName=$nic->NICNAME;
         $IPADDR=$nic->IPADDR;
         if(isset( $CONF[$interface])){
             $enable=intval($CONF[$interface]["enable"]);
         }
+        if($State=="down"){
+            $tpl->table_form_field_js("");
+            $tpl->table_form_field_bool($NicName,0,ico_nic);
+            continue;
+        }
+
         $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?interface-js=$interface')");
         if($enable==0){
             $tpl->table_form_field_bool($NicName." (<small>$IPADDR</small>)",0,ico_nic);
@@ -353,6 +456,10 @@ function flat_config():bool{
         }
         $tpl->table_form_field_text($NicName." (<small>$IPADDR</small>)", $pkts, ico_nic,$error);
     }
+
+    $tpl=suricata_home_nets($tpl,$jsonStatus);
+
+
 
     $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?statistics-js=yes')");
     $CORP_LICENSE=$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE();
@@ -410,6 +517,22 @@ function suricata_field_events($tpl,$json){
     $tpl->table_form_field_text("{traffic_logging}",$text,ico_list);
     return $tpl;
 
+}
+function suricata_home_nets($tpl,$json){
+    $GlobalConfig=$json->Info;
+    $f=array();
+    $HomeNets=$GlobalConfig->HomeNets;
+    foreach ($HomeNets as $net=>$main){
+        if($main->Enabled==0){continue;}
+        if($main->Negative==1){
+            $net="{not} $net";
+        }
+        $f[]=$net;
+    }
+    $tpl->table_form_field_js("Loadjs('fw.ids.homes.php')");
+    $text=sprintf("<small>%s</small>",implode(" {and} ",$f));
+    $tpl->table_form_field_text("{HOME_NET}",$text,ico_networks);
+    return $tpl;
 }
 
 
@@ -483,7 +606,6 @@ function main():bool{
 	$html[]="<td style='width:95%;vertical-align: top;padding-left: 10px'>";
     $html[]="<div id='suricata-top'></div>";
     $html[]="<div id='suricata-config'></div>";
-
 
     $EnableNetMonix=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNetMonix"));
     if($EnableNetMonix==1){

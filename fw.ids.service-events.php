@@ -47,10 +47,20 @@ function search(){
 	$max=0;$date=null;$c=0;
 	
 	$MAIN=$tpl->format_search_protocol($_GET["search"]);
-	
-	$line=base64_encode(serialize($MAIN));
-	$sock->getFrameWork("suricata.php?service-events=$line");
-	$filename=PROGRESS_DIR."/suricata.syslog";
+    $sock=new sockets();
+    $rp=intval($MAIN["MAX"]);
+    $search=trim($MAIN["TERM"]);
+    if(strlen($search)<3){$search="NONE";}
+
+    $data=$sock->REST_API("/suricata/events/$rp/$search");
+
+    $json=json_decode($data);
+    if (json_last_error()> JSON_ERROR_NONE) {
+        echo $tpl->div_error("{error}<hr>".json_last_error_msg());
+    }
+    if(!$json->Status){
+        echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
+    }
 	$date_text=$tpl->_ENGINE_parse_body("{date}");
 	$events=$tpl->_ENGINE_parse_body("{events}");
 	$html[]="
@@ -59,63 +69,56 @@ function search(){
     	<tr>
         	<th>$date_text</th>
         	<th>&nbsp;</th>
-        	<th width='1%'>PID</th>
+        	<th nowrap=''>{interface}</th>
+        	<th style='width:1%'>PID</th>
+        	<th>&nbsp;</th>
         	<th>$events</th>
         </tr>
   	</thead>
 	<tbody>
 ";
 	
-	$data=explode("\n",@file_get_contents($filename));
-    rsort($data);
-
-    $LEVELS["info"]="<span class='label label-default'>INFO</span>";
-    $LEVELS["warning"]="<span class='label label-warning'>WARN.</span>";
-    $LEVELS["error"]="<span class='label label-danger'>ERROR</span>";
-    $LEVELS["fatal"]="<span class='label label-danger'>ERROR</span>";
-    $LEVELS["debug"]="<span class='label label-default'>DEBUG</span>";
-    $LEVELS["trace"]="<span class='label label-default'>TRACE</span>";
-    $LEVELS["success"]="<span class='label label-primary'>Success</span>";
+    $LEVELS["INFO"]="<span class='label label-default'>INFO</span>";
+    $LEVELS["WARNING"]="<span class='label label-warning'>WARN.</span>";
+    $LEVELS["ERROR"]="<span class='label label-danger'>ERROR</span>";
+    $LEVELS["FATAL"]="<span class='label label-danger'>ERROR</span>";
+    $LEVELS["DEBUG"]="<span class='label label-default'>DEBUG</span>";
+    $LEVELS["NOTICE"]="<span class='label label-default'>INFO</span>";
+    $LEVELS["TRACE"]="<span class='label label-default'>TRACE</span>";
+    $LEVELS["SUCCESS"]="<span class='label label-primary'>Success</span>";
 
     $LEVELS[1]="<span class='label label-danger'>Prio 1</span>";
     $LEVELS[2]="<span class='label label-warning'>Prio 2</span>";
     $LEVELS[3]="<span class='label label-warning'>Prio 3</span>";
     $LEVELS[4]="<span class='label label-warning'>Prio 4</span>";
 
-    $FONTS["warning"]="text-marning";
-    $FONTS["info"]="text-muted";
-    $FONTS["error"]="text-danger";
-	
-	foreach ($data as $line){
+    $FONTS["WARNING"]="text-warning";
+    $FONTS["NOTICE"]="text-muted";
+    $FONTS["ERROR"]="text-danger";
+    $FONTS["INFO"]="text-muted";
+
+
+    foreach ($json->Logs as $line){
 		$line=trim($line);
 		$color="text-muted";
-		if(!preg_match('#^([A-Z-a-z]+)\s+([0-9]+)\s+([0-9:]+).*?\[([0-9]+)\]:(.+)#', $line,$re)){
-			echo "<strong style='color:red'>$line</strong><br>"; 
-			continue;}
+        $array=parseit($line);
 
-        $level=$LEVELS["info"];
-        $date=$re[1]." {$re[2]} {$re[3]}";
-        $pid=$re[4];
-        $content=$re[5];
-
-        if(preg_match("#\[Priority:\s+([0-9]+)#",$content,$ri)){
-            if(isset( $LEVELS[$ri[1]])){
-                $level=$LEVELS[$ri[1]];
-            }
-
-        }
-        if(preg_match("#ERR#",$content,$ri)){
-                $level=$LEVELS["fatal"];
-        }
-        if(preg_match("#Success#",$content,$ri)){
-            $level=$LEVELS["success"];
-        }
-
+        $pid=$array["PID"];
+        $interface=$array["INTERFACE"];
+        $date=$array["DATE"];
+        $dLevel=$array["LEVEL"];
+        $function=$array["FUNCTION"];
+        $level=$LEVELS[$dLevel];
+        $color=$FONTS[$dLevel];
+        $content=$array["CONTENT"];
+        $ss="style='width:1%' class='$color' nowrap";
 
 		$html[]="<tr>
-				<td width=1% nowrap>$date</td>
-				<td width=1% nowrap>$level</td>
-				<td width=1% nowrap>$pid</td>
+				<td $ss>$date</td>
+				<td $ss>$level</td>
+				<td $ss>$interface</td>
+				<td $ss>$pid</td>
+				<td $ss>$function</td>
 				<td><span class='$color'>$content</span></td>
 				</tr>";
 		
@@ -136,17 +139,25 @@ function search(){
     $html[]="$jstiny";
     $html[]="</script>";
 
-    echo @implode("\n", $html);
-	
-	
-	
+    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+}
+function parseit($line):array{
+    if(preg_match('#^\[([0-9]+)\s+.*?[0-9]+-(.+?)\] (.+?) ([0-9:]+) (.+?): (.+?): (.+)#', $line,$re)) {
+     return array("PID" => $re[1],  "INTERFACE" => $re[2],  "DATE" =>"$re[3] $re[4]",  "LEVEL" => strtoupper($re[5]),  "FUNCTION" => $re[6],  "CONTENT" => $re[7] );
+    }
+
+    if(preg_match("#^\[([0-9]+)\s+.*?\] (.+?) ([0-9:]+) (.+?): (.+?): (.+)#",$line,$re)) {
+        return array("PID" => $re[1],  "INTERFACE" => "-",  "DATE" =>"$re[2] $re[3]",  "LEVEL" => strtoupper($re[4]),  "FUNCTION" => $re[5],  "CONTENT" => $re[6] );
+    }
+    echo "<strong style='color:red'>$line</strong><br>";
+    return array("PID" => "0",  "INTERFACE" => "",  "DATE" =>"",  "LEVEL" => "ERROR",  "FUNCTION" => "NONE",  "CONTENT" => $line );
 }
 function download():bool{
-    $FinalPath = "/var/log/suricata/suricata-service.log";
+    $FinalPath = "/var/log/suricata.log";
     $size = filesize($FinalPath);
     if (!$GLOBALS["VERBOSE"]) {
         header("Content-Type:  text/plain");
-        header("Content-Disposition: attachment; filename=\"ids-service.log\"");
+        header("Content-Disposition: attachment; filename=\"suricata.log\"");
         header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
         header("Pragma: no-cache"); // HTTP 1.0
         header("Expires: 0"); // Proxies
@@ -154,7 +165,7 @@ function download():bool{
         header("Content-Length: $size");
         ob_clean();
         flush();
-        readfile("/var/log/suricata/suricata-service.log");
+        readfile("/var/log/suricata.log");
     } else {
         echo "Filename: $FinalPath\n<br>";
         echo "Content-Type:  \n<br>";

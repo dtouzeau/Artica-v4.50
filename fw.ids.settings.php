@@ -98,7 +98,7 @@ function enable_js():bool{
     $page=CurrentPageName();
     header("content-type: application/x-javascript");
     echo "LoadAjax('div-iface-$iface','$page?interface-layer=$iface');\n";
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/reconfigure");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/reconrestart");
     return admin_tracks_post("Save IDS settings for $iface");
 }
 function interface_layer():bool{
@@ -529,11 +529,11 @@ function main(){
 			
 						
 }
-function Save_nic(){
+function Save_nic():bool{
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
 	$q->QUERY_SQL("DELETE FROM suricata_interfaces WHERE interface='{$_POST["nic-settings"]}'");
-	if(!$q->ok){echo $q->mysql_error_html(true);return;}
-	if($_POST["enable"]==0){return;}
+	if(!$q->ok){echo $q->mysql_error_html(true);return false;}
+	if($_POST["enable"]==0){return false;}
 	$q->QUERY_SQL("INSERT INTO suricata_interfaces (interface,threads,enable) VALUES ('{$_POST["nic-settings"]}','{$_POST["threads"]}',1)");
 	if(!$q->ok){echo $q->mysql_error_html(true);}
 }

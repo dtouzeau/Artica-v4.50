@@ -525,6 +525,11 @@ function doughnut_ps_mem():bool{
         $proc=str_replace("php8.2",$tpl->_ENGINE_parse_body("{APP_PHP5}"),$proc);
         $proc=str_replace("slapd",$tpl->_ENGINE_parse_body("{APP_OPENLDAP}"),$proc);
         $proc=str_replace("unbound",$tpl->_ENGINE_parse_body("{APP_UNBOUND}"),$proc);
+        $proc=str_replace("Suricata-Main",$tpl->_ENGINE_parse_body("IDS Service"),$proc);
+        $proc=str_replace("artica-suricata",$tpl->_ENGINE_parse_body("IDS Artica"),$proc);
+        $proc=str_replace("artwatch",$tpl->_ENGINE_parse_body("Artica Watchdog"),$proc);
+        $proc=str_replace("systemd-journald",$tpl->_ENGINE_parse_body("Systemd Journal"),$proc);
+
         $proc=str_replace("crowdsec-firewall-bouncer",$tpl->_ENGINE_parse_body("{APP_IPTABLES_BOUNCER}"),$proc);
         $proc=str_replace("proxy-pac",$tpl->_ENGINE_parse_body("{APP_PROXY_PAC}"),$proc);
         $proc=str_replace("go-shield-server",$tpl->_ENGINE_parse_body("{APP_GO_SHIELD_SERVER}"),$proc);

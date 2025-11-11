@@ -1,5 +1,8 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+$GLOBALS["CLASS_SOCKETS"]=new sockets();
+
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");

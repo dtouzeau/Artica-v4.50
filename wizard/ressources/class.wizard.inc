@@ -127,6 +127,9 @@ class artica_wizard{
             $this->DNS2 = $this->savedsettings["DNS2"];
         }
        $this->GetHostname();
+        if(is_null($this->DNS1)){
+            $this->DNS1="";
+        }
         if(strlen($this->DNS1)<3){
             list($this->DNS1,$this->DNS2)=$this->GetNamesServers();
         }
@@ -281,6 +284,9 @@ class artica_wizard{
         }
 
         if(preg_match("#[A-Za-z]+\s+[A-Za-z]+#", $this->netbiosname)){$this->netbiosname="";}
+        if(is_null($this->domainname)){
+            $this->domainname="domain.tld";
+        }
         if(strlen($this->domainname)<3){$this->domainname="domain.tld";}
         return $this->netbiosname;
 

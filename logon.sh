@@ -173,6 +173,9 @@ function KeyBoard(){
  php /usr/share/artica-postfix/exec.menu.keyboard.php
 /tmp/bash_keyboard_menu.sh
 }
+function ShutdownNow(){
+ shutdown -h now
+}
 function Metap(){
   php /usr/share/artica-postfix/exec.menu.meta.php --menu
 /tmp/bash_meta_menu.sh
@@ -217,7 +220,7 @@ case $menuitem in
 	Reboot) UnixReboot;;
 	KeyBoard) KeyBoard;;
 	License) License;;
-	Shutdown) init 0;;
+	Shutdown)  ShutdownNow;;
 	 Exit|"") exit_to_login ;;
 esac
 

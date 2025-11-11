@@ -562,6 +562,8 @@ class templates{
 
         $text=str_ireplace('<b>','<strong>',$text);
         $text=str_ireplace('</b>','</strong>',$text);
+        $text=str_replace("%C3§","&ccedil;",$text);
+        $text = str_replace("%C3&sect;", "&ccedil;", $text);
         return $text;
     }
 
@@ -577,36 +579,44 @@ class templates{
         $FixedLanguage=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FixedLanguage"));
 
         $key=md5($content);
-        if(strlen($content)<500){if(isset($GLOBALS["_ENGINE_parse_body"][$key])){
-            return $GLOBALS["_ENGINE_parse_body"][$key];}}
+        if(strlen($content)<500) {
+            if (isset($GLOBALS["_ENGINE_parse_body"][$key])) {
+                $t = $GLOBALS["_ENGINE_parse_body"][$key];
+                $t = str_replace("%C3§", "ç", $t);
+                $t = str_replace("%C3&sect;", "ç", $t);
+                return $t;
+            }
+        }
 
         if(isset($_COOKIE["artica-language"])){
             $this->language=$_COOKIE["artica-language"];
             $GLOBALS["FIXED_LANGUAGE"]=$this->language;
         }
-        if($FixedLanguage<>null){
-            $this->language=$FixedLanguage;
-            $GLOBALS["FIXED_LANGUAGE"]=$FixedLanguage;
-        }
 
-        if(isset($_GET["articalang"])){
-            if($_GET["articalang"]<>null){$GLOBALS["FIXED_LANGUAGE"]=$_GET["articalang"];}
-            $this->language=$_GET["articalang"];
-        }
+            if($FixedLanguage<>null){
+                $this->language=$FixedLanguage;
+                $GLOBALS["FIXED_LANGUAGE"]=$FixedLanguage;
+            }
 
-        $content=str_replace("javascript:blur()", "javascript:Blurz()", $content);
+            if(isset($_GET["articalang"])){
+                if($_GET["articalang"]<>null){$GLOBALS["FIXED_LANGUAGE"]=$_GET["articalang"];}
+                $this->language=$_GET["articalang"];
+            }
 
-        if($GLOBALS["posix_getuid"]==0){
-            if($GLOBALS["VERBOSE"]){echo "[DEBUG: ".__LINE__."] posix_getuid = 0 -> abort\n" ;}
-            return $content;}
+            $content=str_replace("javascript:blur()", "javascript:Blurz()", $content);
 
-        if($this->language==null){
-            if($GLOBALS["FIXED_LANGUAGE"]<>null){$this->language=$GLOBALS["FIXED_LANGUAGE"];}
-        }
+            if($GLOBALS["posix_getuid"]==0){
+                if($GLOBALS["VERBOSE"]){echo "[DEBUG: ".__LINE__."] posix_getuid = 0 -> abort\n" ;}
+                return $content;
+            }
 
-        if($this->language==null){
-            if($GLOBALS["DEBUG_TEMPLATE"]){writelogs("Language is null...",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);}
-        }
+            if($this->language==null){
+                if($GLOBALS["FIXED_LANGUAGE"]<>null){$this->language=$GLOBALS["FIXED_LANGUAGE"];}
+            }
+
+            if($this->language==null){
+                if($GLOBALS["DEBUG_TEMPLATE"]){writelogs("Language is null...",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);}
+            }
 
         if(is_array($content)){$content=implode(" ",$content);}
 
@@ -644,21 +654,12 @@ class templates{
                 }
             }}
 
-
-
-
         if(preg_match_all('#\[url\](.+?)\[\/url\]#is',$content,$regs)){
             foreach ($regs[1] as $num=>$val){
                 $content=str_replace($regs[0][$num],"<a href=\"$val\">$val</a>",$content);
             }
 
         }
-
-
-
-
-        
-        //$content=str_replace("Loadjs(",'$.getScript(',$content);
         if(strlen($content)<500){$GLOBALS["_ENGINE_parse_body"][$key]=$content;}
         return $content;
     }
