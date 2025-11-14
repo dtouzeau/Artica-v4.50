@@ -228,10 +228,11 @@ function CheckSessions(){
         }}
     ExecTBtime($start,"smartsieve block",__LINE__);
 }
-
 function safe_session_start():bool{
     static $hasLoggedRedisError = false;
     static $hasLoggedTcpFallback = false;
+    static $hasLoggedMemcacheTcpFallback = false;
+
     if (session_status() == PHP_SESSION_ACTIVE) {
         return true;
     }
@@ -240,6 +241,66 @@ function safe_session_start():bool{
 
     $sessionOptions = ['cookie_httponly' => 1, 'use_only_cookies' => 1, 'cookie_lifetime' => $cookie_lifetime];
 
+    // Check if using Memcached protocol
+    if (isset($GLOBALS["UseMemCacheClient"]) && $GLOBALS["UseMemCacheClient"] == 1) {
+        // Try Memcached Unix socket first
+        try {
+            // Disable session locking BEFORE setting handler (order matters!)
+            ini_set("memcached.sess_locking", "0");
+            ini_set("memcached.sess_lock_wait_min", "1000");
+            ini_set("memcached.sess_lock_wait_max", "2000");
+            ini_set("memcached.sess_lock_retries", "5");
+
+            ini_set("session.save_handler", "memcached");
+            ini_set("session.gc_probability", 1);
+            ini_set("session.gc_divisor", 1000); // avoid frequent GC
+            ini_set("session.gc_maxlifetime", 1440);
+            ini_set("session.save_path", "/run/artmem.sock");
+
+            if (!session_start($sessionOptions)) {
+                throw new Exception("Memcached Unix socket session start failed");
+            }
+            return true;
+        } catch (Throwable $e) {
+            // Unix socket failed, try TCP fallback
+            if (!$hasLoggedMemcacheTcpFallback) {
+                error_log("Memcached Unix socket failed, attempting TCP fallback: " . $e->getMessage());
+                $hasLoggedMemcacheTcpFallback = true;
+            }
+
+            try {
+                // Disable session locking BEFORE setting handler (order matters!)
+                ini_set("memcached.sess_locking", "0");
+                ini_set("memcached.sess_lock_wait_min", "1000");
+                ini_set("memcached.sess_lock_wait_max", "2000");
+                ini_set("memcached.sess_lock_retries", "5");
+
+                ini_set("session.save_handler", "memcached");
+                ini_set("session.gc_probability", 1);
+                ini_set("session.gc_divisor", 1000);
+                ini_set("session.gc_maxlifetime", 1440);
+                ini_set("session.save_path", "127.0.0.1:11155");
+
+                if (!session_start($sessionOptions)) {
+                    throw new Exception("Memcached TCP session start failed");
+                }
+                error_log("Successfully connected to Memcached via TCP: 127.0.0.1:11155");
+                return true;
+            } catch (Throwable $e2) {
+                // Both Memcached methods failed, fallback to file sessions
+                ini_set("session.save_handler", "files");
+                ini_set("session.save_path", "/var/lib/php5");
+                session_start($sessionOptions);
+                if (!$hasLoggedRedisError) {
+                    error_log("Both Memcached connections failed, fallback to file sessions. Unix: " . $e->getMessage() . ", TCP: " . $e2->getMessage());
+                    $hasLoggedRedisError = true;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Use Redis protocol (default)
     // Try Unix socket first
     try {
         ini_set("session.save_handler", "redis");

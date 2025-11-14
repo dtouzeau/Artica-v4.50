@@ -540,6 +540,113 @@ return implode(', ', $timeParts);
         </script>";
     }
 
+
+    public function BigUriField($field,$title,$explain,$value,$after=null,$Privs=null):string{
+        $id=md5(time().rand(100,999).$field);
+        $placeholder='http://example.com or domain.tld';
+        $f=array();
+        $page=CurrentPageName();
+        $title=base64_encode($this->_ENGINE_parse_body($title));
+        $explain=base64_encode($this->_ENGINE_parse_body($explain));
+
+        if(strpos($field,"|")>0){
+            $tb=explode("|",$field);
+            foreach ($tb as $newf){
+                if(strpos($newf,":")>0){
+                    $ss=explode(":",$newf);
+                    $f[]="['$ss[0]']: '$ss[1]'";
+                }else{
+                    $f[]="['$newf']: value";
+                }
+            }
+        }else{
+            $f[]="['$field']: value";
+        }
+
+        $fftxt=@implode(",",$f);
+
+        return "<div id=\"uribox-$id\"></div>
+        <script>
+            renderBigUriListSafe('uribox-$id', [
+            {
+                title: base64_decode('$title'),
+                descriptionHTML: base64_decode('$explain'),
+                defaultValue: '$value',
+                placeholder: '$placeholder',
+                onSave: function(value) {
+                    // POST on save (Enter key or blur if value changed and valid)
+                    $.post('$page', { $fftxt })
+                      .done(function (resp, textStatus, jqXHR) {
+                        console.log('URI saved:', value, 'Response:', resp);
+                        $after
+                      })
+                      .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('POST failed: ' + errorThrown);
+                      });
+                }
+            }
+            ]).then(function (ctrls) {
+                var ctrl = ctrls[0];
+                if (!ctrl) return;
+                ctrl.setDisabled(false);
+            });
+        </script>";
+    }
+
+
+    public function BigDomainField($field,$title,$explain,$value,$after=null,$Privs=null):string{
+        $id=md5(time().rand(100,999).$field);
+        $this->id_temp=$id;
+        $placeholder='example.com';
+        $f=array();
+        $page=CurrentPageName();
+        $title=base64_encode($this->_ENGINE_parse_body($title));
+        $explain=base64_encode($this->_ENGINE_parse_body($explain));
+
+        if(strpos($field,"|")>0){
+            $tb=explode("|",$field);
+            foreach ($tb as $newf){
+                if(strpos($newf,":")>0){
+                    $ss=explode(":",$newf);
+                    $f[]="['$ss[0]']: '$ss[1]'";
+                }else{
+                    $f[]="['$newf']: value";
+                }
+            }
+        }else{
+            $f[]="['$field']: value";
+        }
+
+        $fftxt=@implode(",",$f);
+
+        return "<div id=\"domainbox-$id\"></div>
+        <script>
+            renderBigDomainListSafe('domainbox-$id', [
+            {
+                title: base64_decode('$title'),
+                descriptionHTML: base64_decode('$explain'),
+                defaultValue: '$value',
+                placeholder: '$placeholder',
+                onSave: function(value) {
+                    // POST on save (Enter key or blur if value changed and valid)
+                    $.post('$page', { $fftxt })
+                      .done(function (resp, textStatus, jqXHR) {
+                        console.log('Domain saved:', value, 'Response:', resp);
+                        $after
+                      })
+                      .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('POST failed: ' + errorThrown);
+                      });
+                }
+            }
+            ]).then(function (ctrls) {
+                var ctrl = ctrls[0];
+                if (!ctrl) return;
+                ctrl.setDisabled(false);
+            });
+        </script>";
+    }
+
     public function BigNetworkField($field,$title,$explain,$value,$placeholder='192.168.1.0/24',$after=null,$Privs=null):string{
         $id=time().rand(100,999);
         $f=array();

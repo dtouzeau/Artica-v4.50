@@ -20,6 +20,11 @@ if(isset($_GET["hotspot-tokey-enabled"])){set_info_restart();exit;}
 if(isset($_GET["hotspot-ad-repair"])){reconfigure();exit;}
 if(isset($_GET["last-config"])){last_config();exit;}
 
+if(isset($_GET["browser-redirect-js"])){form_browsers_redirect_js();exit;}
+if(isset($_GET["browser-redirect-popup"])){form_browsers_redirect_popup();exit;}
+if(isset($_POST["EnableHotSpotBrowsersRedirects"])){form_browsers_redirect_save();exit;}
+
+
 if(isset($_GET["form-timeout-popup"])){form_timeout_popup();exit;}
 if(isset($_GET["form-timeouts-js"])){form_timeout_js();exit;}
 
@@ -109,8 +114,19 @@ function tabs(){
 }
 function table_start():bool{
     $page=CurrentPageName();
-    echo "<div id='hotspot-main-status'></div>
-    <script>LoadAjaxSilent('hotspot-main-status','$page?table=yes');</script>";
+    $html[]="<div id='hotspot-top-status'>&nbsp;</div>";
+    $html[]="<table style='width:100%;'>";
+    $html[]="<tr>";
+    $html[]="<td style='width:240px;vertical-align: top'>";
+    $html[]="<div id='hotspot-service-status'></div>";
+    $html[]="</td>";
+    $html[]="<td style='width:100%;vertical-align: top;padding-left: 10px'>";
+    $html[]="<div id='hotspot-main-status' style='margin-top: 10px'></div>";
+    $html[]="</td>";
+    $html[]="</tr>";
+    $html[]="</table>";
+    $html[]="<script>LoadAjaxSilent('hotspot-main-status','$page?table=yes');</script>";
+    echo implode("\n",$html);
     return true;
 }
 
@@ -257,6 +273,13 @@ function form_timeout_js():bool{
     $tpl->js_dialog2("{timeouts} {sessions}","$page?form-timeout-popup=yes");
     return true;
 }
+function form_browsers_redirect_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $tpl->js_dialog2("{CaptivePortalDetectionURLs}","$page?browser-redirect-popup=yes");
+    return true;
+}
+
 function form_service_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -379,6 +402,36 @@ function form_service_popup():bool{
     echo $tpl->form_outside("{last_config}:&nbsp;<span id='last-config'>$last_config</span>", $form,null,"{apply}",@implode("\n",$jsrestart),"AsSquidAdministrator");
     return true;
 
+}
+
+function form_browsers_redirect_popup():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/80port"));
+    $EnableHotSpotBrowsersRedirects=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableHotSpotBrowsersRedirects"));
+
+    if($EnableHotSpotBrowsersRedirects==0)
+    if(strlen($json->ServiceListens)>1){
+        $CaptivePortalDetectionURLs_ERR=$tpl->_ENGINE_parse_body("{CaptivePortalDetectionURLs_ERR}");
+        $CaptivePortalDetectionURLs_ERR=str_replace("%addr",$json->HotSpotIP,$CaptivePortalDetectionURLs_ERR);
+        $CaptivePortalDetectionURLs_ERR=str_replace("%service",$json->ServiceListens,$CaptivePortalDetectionURLs_ERR);
+        $CaptivePortalDetectionURLs_ERR=str_replace("%expl","<hr>{CaptivePortalDetectionURLs_explain}",$CaptivePortalDetectionURLs_ERR);
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{CaptivePortalDetectionURLs}||<div style='font-size:18px'>$CaptivePortalDetectionURLs_ERR</div>"));
+        return true;
+    }
+
+    $EnableHotSpotBrowsersRedirects=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableHotSpotBrowsersRedirects"));
+    $jsrestart[]="LoadAjaxSilent('hotspot-main-status','$page?table=yes');";
+    $jsrestart[]="dialogInstance2.close()";
+
+    echo $tpl->BigCircleCheckbox("EnableHotSpotBrowsersRedirects", "{CaptivePortalDetectionURLs}",  "{CaptivePortalDetectionURLs_explain}",$EnableHotSpotBrowsersRedirects,implode(";",$jsrestart),"AsSquidAdministrator");
+    return true;
+}
+function form_browsers_redirect_save():bool{
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableHotSpotBrowsersRedirects",intval($_POST["EnableHotSpotBrowsersRedirects"]));
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/browsers-redirects");
+    return admin_tracks("Save Hotspot Captive Portal Detection URLs to {$_POST["EnableHotSpotBrowsersRedirects"]}");
 }
 function form_timeout_popup():bool{
     $tpl=new template_admin();
@@ -503,6 +556,7 @@ function table():bool{
     $HotSpotListenEnableSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotListenEnableSSL"));
     $HotSpotListenSSLPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotListenSSLPort"));
     $HotSpotTermsConditions=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotTermsConditions"));
+    $EnableHotSpotBrowsersRedirects=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableHotSpotBrowsersRedirects"));
 
     $HotSpotListenSSLCertificate=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotListenSSLCertificate"));
     if($HotSpotListenSSLPort==0){$HotSpotListenSSLPort=8026;}
@@ -513,8 +567,6 @@ function table():bool{
     $tpl->table_form_field_js("Loadjs('$page?form-service-js=yes')");
     if($EnableNginx==1) {
         $tpl->table_form_field_text("{listen_interface}","{UfdbUseInternalService_nginx_explain}",ico_nic);
-
-
     }else{
         if($HotSpotBindInterface==null){$HotSpotBindInterface="{all}";}
         if($HotSpotListenSSLCertificate==null){$HotSpotListenSSLCertificate="{all}";}
@@ -525,6 +577,10 @@ function table():bool{
             $tpl->table_form_field_text("{UseSSL}","$HotSpotBindInterface:$HotSpotListenSSLPort <small style='text-transform:none'>($HotSpotListenSSLCertificate)</small>",ico_ssl);
         }
     }
+    $tpl->table_form_field_js("Loadjs('$page?browser-redirect-js=yes')");
+    $tpl->table_form_field_bool("{CaptivePortalDetectionURLs}",$EnableHotSpotBrowsersRedirects,ico_ie);
+
+
     $tpl->table_form_field_text("{authentication_method}",$zHotSpotHardwareIdent[$HotSpotHardwareIdent],ico_computer_down);
     $tpl->table_form_field_bool("{debug}",$HotSpotDebug,ico_bug);
 
@@ -639,7 +695,7 @@ if($HOTSPOTWEB_VERSION==null){$HOTSPOTWEB_VERSION="4.x";}
         $last_config=distanceOfTimeInWords($lasttime,time());
     }
 
-    echo "<div style='margin-top:10px' id='hotspot-top-status'>&nbsp;</div>";
+
 	echo $tpl->table_form_compile();
     echo "<script>";
     echo "LoadAjaxSilent('hotspot-top-status','$page?hotspot-top-status=yes');\n";

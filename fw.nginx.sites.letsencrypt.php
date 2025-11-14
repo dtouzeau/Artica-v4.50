@@ -15,11 +15,12 @@ function js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $serviceid=intval($_GET["service-id"]);
+    $function=$_GET["function"];
     if($serviceid==0){
         return $tpl->js_error("Service ID is 0 ??");
     }
     $servicename=get_servicename($serviceid);
-    return $tpl->js_dialog5($servicename. " > {certificate} > Let's Encrypt", "$page?certificate-popup=true&service-id=$serviceid",650);
+    return $tpl->js_dialog5($servicename. " > {certificate} > Let's Encrypt", "$page?certificate-popup=true&service-id=$serviceid&function=$function",650);
 }
 function get_servicename($ID):string{
     $ID=intval($ID);
@@ -39,15 +40,17 @@ function NginxGetDB():string{
 function certificate_wizard0():bool{
     $tpl=new template_admin();
     $serviceid=intval($_GET["service-id"]);
+    $function=$_GET["function"];
     $page=CurrentPageName();
     echo "<div id='certificate-wizard-$serviceid'></div>";
-    echo "<script>LoadAjax('certificate-wizard-$serviceid','$page?certificate-wiz1=true&service-id=$serviceid')</script>";
+    echo "<script>LoadAjax('certificate-wizard-$serviceid','$page?certificate-wiz1=true&service-id=$serviceid&function=$function')</script>";
     return true;
 }
 
 function certificate_wizard1():bool{
     $tpl=new template_admin();
     $serviceid=intval($_GET["service-id"]);
+    $function=$_GET["function"];
     $page=CurrentPageName();
     $Hosts=ExtractHost($serviceid);
     if(count($Hosts)==0){
@@ -71,7 +74,7 @@ function certificate_wizard1():bool{
         echo $tpl->div_error($tpl->_ENGINE_parse_body("{no_domain_valid}"));
         return false;
     }
-    $tpl->table_form_button("{next}","LoadAjax('certificate-wizard-$serviceid','$page?certificate-wiz2=true&service-id=$serviceid')","",ico_arrow_right);
+    $tpl->table_form_button("{next}","LoadAjax('certificate-wizard-$serviceid','$page?certificate-wiz2=true&service-id=$serviceid&function=$function')","",ico_arrow_right);
 
 
     echo $tpl->table_form_compile();
@@ -147,11 +150,12 @@ function isHarmpID():bool{
 function certificate_wizard2():bool{
     $tpl=new template_admin();
     $serviceid=intval($_GET["service-id"]);
+    $function=$_GET["function"];
     $page=CurrentPageName();
     $html[]="<div id='certificate-progress-$serviceid'></div>";
     $form[]=$tpl->field_hidden("service-id",$serviceid);
     $form[]=$tpl->field_email("email","{email}","",true);
-    $html[]= $tpl->form_outside("",$form,"{letsencryptval2}","{create_certificate}","Loadjs('$page?certificate-wiz3=true&service-id=$serviceid')");
+    $html[]= $tpl->form_outside("",$form,"{letsencryptval2}","{create_certificate}","Loadjs('$page?certificate-wiz3=true&service-id=$serviceid&function=$function')");
     echo $tpl->_ENGINE_parse_body(implode("\n",$html));
     return true;
 }
@@ -160,14 +164,15 @@ function certificate_wizard3():bool{
     $tpl=new template_admin();
     $encoded=$_SESSION["AUTOLETSENCRYPT"];
     $serviceid=intval($_GET["service-id"]);
-
-
+    $function=$_GET["function"];
+    $sfunc="";
+    if(strlen($function)>0){$sfunc="$function();";}
 
     $js=$tpl->framework_buildjs("/reverse-proxy/letsencrypt/$encoded",
     "reverseProxyCreateLetsEncrypt.progress",
         "reverseProxyCreateLetsEncrypt.log",
         "certificate-progress-$serviceid",
-        "dialogInstance5.close();");
+        "dialogInstance5.close();$sfunc");
 
     header("content-type: application/x-javascript");
     echo $js;

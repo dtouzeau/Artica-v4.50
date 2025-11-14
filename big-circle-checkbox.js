@@ -11,7 +11,6 @@
         grey: "#9aa4b2",    // unchecked
         greyLight: "#e6e8ee"// disabled
     };
-
     // Utility: create element with inline styles + attributes (supports { text, html })
     function el(tag, styleObj = {}, attrs = {}) {
         const node = document.createElement(tag);
@@ -756,6 +755,818 @@
     window.BigNetworkField = NetworkAPI;
     window.BigNetworkField.__version__ = REQUIRED_VERSION;
 
+    // Build a Domain/Hostname Input card (no left indicator, field below description)
+    function createDomainCard({
+                                  title,
+                                  titleHTML,
+                                  description,
+                                  descriptionHTML,
+                                  defaultValue = '',
+                                  placeholder = 'example.com',
+                                  disabled = false,
+                                  onChange,
+                                  onSave
+                              } = {}) {
+        const styles = {
+            card: {
+                position: "relative",
+                display: "grid",
+                gap: "12px",
+                background: COLORS.card,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: "16px",
+                padding: "18px",
+                marginTop: "10px",
+                userSelect: "none",
+                transition: "box-shadow .2s ease, border-color .2s ease"
+            },
+            header: { display: "grid", gap: "6px" },
+            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
+            desc: { fontSize: "16px", color: COLORS.muted, position: "relative" },
+            descContent: { display: "inline" },
+            expandBtn: {
+                display: "inline",
+                marginLeft: "6px",
+                color: COLORS.ok,
+                cursor: "pointer",
+                fontWeight: "600",
+                textDecoration: "underline",
+                transition: "color .2s ease"
+            },
+            inputWrapper: {
+                width: "100%",
+                borderRadius: "12px",
+                border: `2px solid ${COLORS.border}`,
+                background: COLORS.grey,
+                boxShadow: "none",
+                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
+                overflow: "hidden"
+            },
+            inputField: {
+                width: "100%",
+                border: "none",
+                background: "transparent",
+                color: "#ffffff",
+                fontSize: "18px",
+                fontWeight: "600",
+                outline: "none",
+                padding: "14px 16px",
+                fontFamily: "monospace"
+            }
+        };
+
+        const wrap = el("div", styles.card);
+        const header = el("div", styles.header);
+
+        const titleEl = (titleHTML != null)
+            ? el("div", styles.title, { html: titleHTML })
+            : el("div", styles.title, { text: title || "Domain Name" });
+
+        // Handle description with expand/collapse for long text
+        const descText = descriptionHTML != null ? descriptionHTML : (description || "Enter a valid hostname or domain");
+        const descEl = el("div", styles.desc);
+        const descContentSpan = el("span", styles.descContent);
+
+        let isExpanded = false;
+        let expandBtn = null;
+        const shouldTruncate = descText.length > 90;
+
+        if (shouldTruncate) {
+            const truncatedText = descText.substring(0, 90) + "...";
+
+            if (descriptionHTML != null) {
+                descContentSpan.innerHTML = truncatedText;
+            } else {
+                descContentSpan.textContent = truncatedText;
+            }
+
+            expandBtn = el("span", styles.expandBtn, { text: "more" });
+            expandBtn.addEventListener("mouseenter", () => {
+                expandBtn.style.color = "#ffffff";
+            });
+            expandBtn.addEventListener("mouseleave", () => {
+                expandBtn.style.color = COLORS.ok;
+            });
+
+            expandBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (isExpanded) {
+                    // Collapse
+                    if (descriptionHTML != null) {
+                        descContentSpan.innerHTML = truncatedText;
+                    } else {
+                        descContentSpan.textContent = truncatedText;
+                    }
+                    expandBtn.textContent = "more";
+                    isExpanded = false;
+                } else {
+                    // Expand
+                    if (descriptionHTML != null) {
+                        descContentSpan.innerHTML = descText;
+                    } else {
+                        descContentSpan.textContent = descText;
+                    }
+                    expandBtn.textContent = "less";
+                    isExpanded = true;
+                }
+            });
+
+            descEl.appendChild(descContentSpan);
+            descEl.appendChild(expandBtn);
+        } else {
+            // No truncation needed
+            if (descriptionHTML != null) {
+                descContentSpan.innerHTML = descText;
+            } else {
+                descContentSpan.textContent = descText;
+            }
+            descEl.appendChild(descContentSpan);
+        }
+
+        header.append(titleEl, descEl);
+
+        const inputWrapper = el("div", styles.inputWrapper);
+        const input = el("input", styles.inputField, {
+            type: "text",
+            value: String(defaultValue || ''),
+            placeholder: placeholder,
+            "aria-label": "Domain name",
+            "aria-disabled": String(!!disabled)
+        });
+        input.disabled = !!disabled;
+
+        inputWrapper.appendChild(input);
+        wrap.append(header, inputWrapper);
+
+        let lastSavedValue = defaultValue || '';
+
+        // Validate hostname/domain format
+        function validateDomain(value) {
+            const trimmed = value.trim();
+            if (!trimmed) return { valid: true, value: '' };
+
+            // Pattern 1: Regex pattern (starts with ~)
+            // Example: ~^(?.+)\.example\.net$
+            if (trimmed.startsWith('~')) {
+                try {
+                    // Remove the leading ~
+                    const pattern = trimmed.substring(1);
+                    // Try to create a regex to validate syntax
+                    new RegExp(pattern);
+                    return { valid: true, value: trimmed };
+                } catch (e) {
+                    return { valid: false, error: 'Invalid regex pattern: ' + e.message };
+                }
+            }
+
+            // Pattern 2: IP address (192.168.1.1)
+            const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+            const ipMatch = trimmed.match(ipPattern);
+            if (ipMatch) {
+                const [, oct1, oct2, oct3, oct4] = ipMatch;
+                const octets = [oct1, oct2, oct3, oct4];
+                for (const octet of octets) {
+                    const num = parseInt(octet, 10);
+                    if (num < 0 || num > 255) {
+                        return { valid: false, error: 'Invalid IP address (octets must be 0-255)' };
+                    }
+                }
+                return { valid: true, value: trimmed };
+            }
+
+            // Pattern 3: Wildcard patterns (* can appear in labels)
+            // Examples: *.example.org, mail.*, www.*.example.com
+            const hasWildcard = trimmed.includes('*');
+
+            // Check total length (excluding wildcards for length check)
+            if (trimmed.length > 253) {
+                return { valid: false, error: 'Hostname too long (max 253 characters)' };
+            }
+
+            // Check for invalid start/end (but allow * at start/end of labels)
+            if (trimmed.startsWith('.') || trimmed.endsWith('.')) {
+                return { valid: false, error: 'Hostname cannot start or end with a dot' };
+            }
+
+            // Split into labels and validate each
+            const labels = trimmed.split('.');
+
+            // Must have at least one label
+            if (labels.length === 0) {
+                return { valid: false, error: 'Invalid hostname format' };
+            }
+
+            // Validate each label
+            for (let i = 0; i < labels.length; i++) {
+                const label = labels[i];
+
+                // Label cannot be empty (unless it's part of a wildcard pattern edge case)
+                if (label.length === 0) {
+                    return { valid: false, error: 'Empty label in hostname' };
+                }
+
+                // Label length check (1-63 characters)
+                if (label.length > 63) {
+                    return { valid: false, error: 'Label too long (max 63 characters)' };
+                }
+
+                // Special handling for wildcard labels
+                if (label === '*') {
+                    // Pure wildcard is valid
+                    continue;
+                }
+
+                if (label.includes('*')) {
+                    // Partial wildcard (e.g., www*, *mail, w*w)
+                    // Allow alphanumeric, hyphen, and asterisk
+                    if (!/^[a-zA-Z0-9*-]+$/.test(label)) {
+                        return { valid: false, error: 'Invalid characters in wildcard label' };
+                    }
+                    // Don't allow hyphen at start/end (but * is ok)
+                    if (label.startsWith('-') || label.endsWith('-')) {
+                        return { valid: false, error: 'Label cannot start or end with hyphen' };
+                    }
+                    continue;
+                }
+
+                // Regular label validation (no wildcards)
+                // Label cannot start or end with hyphen
+                if (label.startsWith('-') || label.endsWith('-')) {
+                    return { valid: false, error: 'Label cannot start or end with hyphen' };
+                }
+
+                // Label can only contain alphanumeric and hyphen
+                if (!/^[a-zA-Z0-9-]+$/.test(label)) {
+                    return { valid: false, error: 'Invalid characters in hostname (only a-z, A-Z, 0-9, hyphen, * allowed)' };
+                }
+            }
+
+            // If no wildcards, check TLD (last label) should not be all numeric
+            if (!hasWildcard) {
+                const tld = labels[labels.length - 1];
+                if (/^\d+$/.test(tld)) {
+                    return { valid: false, error: 'Top-level domain cannot be all numeric' };
+                }
+            }
+
+            return { valid: true, value: trimmed.toLowerCase() };
+        }
+
+        function applyState(isValid = null) {
+            if (input.disabled) {
+                inputWrapper.style.background = COLORS.greyLight;
+                inputWrapper.style.borderColor = COLORS.greyLight;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.muted;
+                descEl.style.color = COLORS.muted;
+                input.style.color = COLORS.muted;
+            } else if (isValid === true) {
+                // Valid domain
+                inputWrapper.style.background = COLORS.ok;
+                inputWrapper.style.borderColor = COLORS.ok;
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else if (isValid === false) {
+                // Invalid domain
+                inputWrapper.style.background = "#8B2E2E";
+                inputWrapper.style.borderColor = "#C74444";
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else {
+                // Neutral (empty or typing)
+                inputWrapper.style.background = COLORS.grey;
+                inputWrapper.style.borderColor = COLORS.border;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            }
+        }
+
+        function saveValue() {
+            const result = validateDomain(input.value);
+
+            if (!result.valid) {
+                applyState(false);
+                return;
+            }
+
+            applyState(true);
+            const cleanValue = result.value;
+
+            // Only save if value changed
+            if (cleanValue !== lastSavedValue) {
+                lastSavedValue = cleanValue;
+                if (typeof onSave === "function") onSave(cleanValue);
+            }
+        }
+
+        // Focus ring
+        input.addEventListener("focus", () => {
+            if (!input.disabled) wrap.style.boxShadow = `0 0 0 4px ${COLORS.ring}`;
+        });
+
+        // Blur - validate and save if changed
+        input.addEventListener("blur", () => {
+            wrap.style.boxShadow = "none";
+            saveValue();
+        });
+
+        // Enter key - save if valid
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                e.preventDefault();
+                input.blur(); // This will trigger blur event which saves
+            }
+        });
+
+        // Input change - update visual state in real-time
+        input.addEventListener("input", () => {
+            const result = validateDomain(input.value);
+            applyState(input.value.trim() ? result.valid : null);
+
+            if (typeof onChange === "function") {
+                onChange(input.value, result.valid);
+            }
+        });
+
+        applyState(defaultValue ? validateDomain(defaultValue).valid : null);
+
+        return {
+            root: wrap,
+            input,
+            getValue() {
+                return input.value.trim();
+            },
+            setValue(val) {
+                input.value = String(val || '');
+                lastSavedValue = val || '';
+                const result = validateDomain(input.value);
+                applyState(result.valid);
+            },
+            isValid() {
+                return validateDomain(input.value).valid;
+            },
+            setDisabled(flag) {
+                input.disabled = !!flag;
+                input.setAttribute("aria-disabled", String(!!flag));
+                applyState(input.disabled ? null : validateDomain(input.value).valid);
+            }
+        };
+    }
+
+    // Public API for Domain Input
+    const DomainAPI = {
+        renderList(containerId, items = []) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return []; }
+            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            host.appendChild(grid);
+            const ctrls = [];
+            for (const cfg of items) {
+                const card = createDomainCard(cfg || {});
+                grid.appendChild(card.root);
+                ctrls.push(card);
+            }
+            return ctrls;
+        },
+
+        add(containerId, item = {}) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return null; }
+            let grid = host.lastElementChild;
+            const isGrid = grid && grid.style && grid.style.display === "grid";
+            if (!isGrid) {
+                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                host.appendChild(grid);
+            }
+            const card = createDomainCard(item);
+            grid.appendChild(card.root);
+            return card;
+        },
+
+        clear(containerId) {
+            const host = document.getElementById(containerId);
+            if (host) host.innerHTML = "";
+        }
+    };
+
+    window.BigDomainField = DomainAPI;
+    window.BigDomainField.__version__ = REQUIRED_VERSION;
+
+    // Build a URI input card (accepts URLs, hostnames, or null)
+    function createUriCard({
+                               title,
+                               titleHTML,
+                               description,
+                               descriptionHTML,
+                               defaultValue = '',
+                               placeholder = 'http://example.com or domain.tld',
+                               disabled = false,
+                               onChange,
+                               onSave
+                           } = {}) {
+        const styles = {
+            card: {
+                position: "relative",
+                display: "grid",
+                gap: "12px",
+                background: COLORS.card,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: "16px",
+                padding: "18px",
+                marginTop: "10px",
+                userSelect: "none",
+                transition: "box-shadow .2s ease, border-color .2s ease"
+            },
+            header: { display: "grid", gap: "6px" },
+            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
+            desc: { fontSize: "16px", color: COLORS.muted, position: "relative" },
+            descContent: { display: "inline" },
+            expandBtn: {
+                display: "inline",
+                marginLeft: "6px",
+                color: COLORS.ok,
+                cursor: "pointer",
+                fontWeight: "600",
+                textDecoration: "underline",
+                transition: "color .2s ease"
+            },
+            inputWrapper: {
+                width: "100%",
+                borderRadius: "12px",
+                border: `2px solid ${COLORS.border}`,
+                background: COLORS.grey,
+                boxShadow: "none",
+                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
+                overflow: "hidden"
+            },
+            inputField: {
+                width: "100%",
+                border: "none",
+                background: "transparent",
+                color: "#ffffff",
+                fontSize: "18px",
+                fontWeight: "600",
+                outline: "none",
+                padding: "14px 16px",
+                fontFamily: "monospace"
+            }
+        };
+
+        const wrap = el("div", styles.card);
+        const header = el("div", styles.header);
+
+        const titleEl = (titleHTML != null)
+            ? el("div", styles.title, { html: titleHTML })
+            : el("div", styles.title, { text: title || "URI / Hostname" });
+
+        // Handle description with expand/collapse for long text
+        const descText = descriptionHTML != null ? descriptionHTML : (description || "Enter a URL, hostname, or leave empty");
+        const descEl = el("div", styles.desc);
+        const descContentSpan = el("span", styles.descContent);
+
+        let isExpanded = false;
+        let expandBtn = null;
+        const shouldTruncate = descText.length > 90;
+
+        if (shouldTruncate) {
+            const truncatedText = descText.substring(0, 90) + "...";
+
+            if (descriptionHTML != null) {
+                descContentSpan.innerHTML = truncatedText;
+            } else {
+                descContentSpan.textContent = truncatedText;
+            }
+
+            expandBtn = el("span", styles.expandBtn, { text: "more" });
+            expandBtn.addEventListener("mouseenter", () => {
+                expandBtn.style.color = "#ffffff";
+            });
+            expandBtn.addEventListener("mouseleave", () => {
+                expandBtn.style.color = COLORS.ok;
+            });
+
+            expandBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (isExpanded) {
+                    // Collapse
+                    if (descriptionHTML != null) {
+                        descContentSpan.innerHTML = truncatedText;
+                    } else {
+                        descContentSpan.textContent = truncatedText;
+                    }
+                    expandBtn.textContent = "more";
+                    isExpanded = false;
+                } else {
+                    // Expand
+                    if (descriptionHTML != null) {
+                        descContentSpan.innerHTML = descText;
+                    } else {
+                        descContentSpan.textContent = descText;
+                    }
+                    expandBtn.textContent = "less";
+                    isExpanded = true;
+                }
+            });
+
+            descEl.appendChild(descContentSpan);
+            descEl.appendChild(expandBtn);
+        } else {
+            // No truncation needed
+            if (descriptionHTML != null) {
+                descContentSpan.innerHTML = descText;
+            } else {
+                descContentSpan.textContent = descText;
+            }
+            descEl.appendChild(descContentSpan);
+        }
+
+        header.append(titleEl, descEl);
+
+        const inputWrapper = el("div", styles.inputWrapper);
+        const input = el("input", styles.inputField, {
+            type: "text",
+            value: String(defaultValue || ''),
+            placeholder: placeholder,
+            "aria-label": "URI or hostname",
+            "aria-disabled": String(!!disabled)
+        });
+        input.disabled = !!disabled;
+
+        inputWrapper.appendChild(input);
+        wrap.append(header, inputWrapper);
+
+        let lastSavedValue = defaultValue || '';
+
+        // Validate URI format (URL or hostname)
+        function validateUri(value) {
+            const trimmed = value.trim();
+
+            // Empty/null is valid
+            if (!trimmed) return { valid: true, value: '' };
+
+            // Try to parse as URL first
+            try {
+                const url = new URL(trimmed);
+                // Valid URL with protocol
+                if (url.protocol === 'http:' || url.protocol === 'https:' ||
+                    url.protocol === 'ftp:' || url.protocol === 'ftps:') {
+                    return { valid: true, value: trimmed };
+                }
+            } catch (e) {
+                // Not a valid URL, try as hostname
+            }
+
+            // Validate as hostname/domain (same logic as BigDomainField)
+            // Pattern 1: Regex pattern (starts with ~)
+            if (trimmed.startsWith('~')) {
+                try {
+                    const pattern = trimmed.substring(1);
+                    new RegExp(pattern);
+                    return { valid: true, value: trimmed };
+                } catch (e) {
+                    return { valid: false, error: 'Invalid regex pattern: ' + e.message };
+                }
+            }
+
+            // Pattern 2: IP address (192.168.1.1)
+            const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+            const ipMatch = trimmed.match(ipPattern);
+            if (ipMatch) {
+                const [, oct1, oct2, oct3, oct4] = ipMatch;
+                const octets = [oct1, oct2, oct3, oct4];
+                for (const octet of octets) {
+                    const num = parseInt(octet, 10);
+                    if (num < 0 || num > 255) {
+                        return { valid: false, error: 'Invalid IP address (octets must be 0-255)' };
+                    }
+                }
+                return { valid: true, value: trimmed };
+            }
+
+            // Pattern 3: Hostname/domain validation
+            // Check for invalid start/end
+            if (trimmed.startsWith('.') || trimmed.endsWith('.')) {
+                return { valid: false, error: 'Hostname cannot start or end with a dot' };
+            }
+
+            // Check total length
+            if (trimmed.length > 253) {
+                return { valid: false, error: 'Hostname too long (max 253 characters)' };
+            }
+
+            // Split into labels and validate each
+            const labels = trimmed.split('.');
+
+            // Must have at least one label
+            if (labels.length === 0) {
+                return { valid: false, error: 'Invalid hostname format' };
+            }
+
+            // Validate each label
+            for (let i = 0; i < labels.length; i++) {
+                const label = labels[i];
+
+                if (label.length === 0) {
+                    return { valid: false, error: 'Empty label in hostname' };
+                }
+
+                if (label.length > 63) {
+                    return { valid: false, error: 'Label too long (max 63 characters)' };
+                }
+
+                // Special handling for wildcard labels
+                if (label === '*') {
+                    continue;
+                }
+
+                if (label.includes('*')) {
+                    if (!/^[a-zA-Z0-9*-]+$/.test(label)) {
+                        return { valid: false, error: 'Invalid characters in wildcard label' };
+                    }
+                    if (label.startsWith('-') || label.endsWith('-')) {
+                        return { valid: false, error: 'Label cannot start or end with hyphen' };
+                    }
+                    continue;
+                }
+
+                // Regular label validation
+                if (label.startsWith('-') || label.endsWith('-')) {
+                    return { valid: false, error: 'Label cannot start or end with hyphen' };
+                }
+
+                if (!/^[a-zA-Z0-9-]+$/.test(label)) {
+                    return { valid: false, error: 'Invalid characters in hostname (only a-z, A-Z, 0-9, hyphen, * allowed)' };
+                }
+            }
+
+            // Check TLD not all numeric (unless it's an IP which we already handled)
+            const hasWildcard = trimmed.includes('*');
+            if (!hasWildcard) {
+                const tld = labels[labels.length - 1];
+                if (/^\d+$/.test(tld)) {
+                    return { valid: false, error: 'Top-level domain cannot be all numeric' };
+                }
+            }
+
+            return { valid: true, value: trimmed.toLowerCase() };
+        }
+
+        function applyState(isValid = null) {
+            if (input.disabled) {
+                inputWrapper.style.background = COLORS.greyLight;
+                inputWrapper.style.borderColor = COLORS.greyLight;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.muted;
+                descEl.style.color = COLORS.muted;
+                input.style.color = COLORS.muted;
+            } else if (isValid === true) {
+                // Valid URI
+                inputWrapper.style.background = COLORS.ok;
+                inputWrapper.style.borderColor = COLORS.ok;
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else if (isValid === false) {
+                // Invalid URI
+                inputWrapper.style.background = "#8B2E2E";
+                inputWrapper.style.borderColor = "#C74444";
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else {
+                // Neutral (empty or typing)
+                inputWrapper.style.background = COLORS.grey;
+                inputWrapper.style.borderColor = COLORS.border;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            }
+        }
+
+        function saveValue() {
+            const result = validateUri(input.value);
+
+            if (!result.valid) {
+                applyState(false);
+                return;
+            }
+
+            applyState(true);
+            const cleanValue = result.value;
+
+            // Only save if value changed
+            if (cleanValue !== lastSavedValue) {
+                lastSavedValue = cleanValue;
+                if (typeof onSave === "function") onSave(cleanValue);
+            }
+        }
+
+        // Focus ring
+        input.addEventListener("focus", () => {
+            if (!input.disabled) wrap.style.boxShadow = `0 0 0 4px ${COLORS.ring}`;
+        });
+
+        // Blur - validate and save if changed
+        input.addEventListener("blur", () => {
+            wrap.style.boxShadow = "none";
+            saveValue();
+        });
+
+        // Enter key - save if valid
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                e.preventDefault();
+                input.blur(); // This will trigger blur event which saves
+            }
+        });
+
+        // Input change - update visual state in real-time
+        input.addEventListener("input", () => {
+            const result = validateUri(input.value);
+            applyState(input.value.trim() ? result.valid : null);
+
+            if (typeof onChange === "function") {
+                onChange(input.value, result.valid);
+            }
+        });
+
+        applyState(defaultValue ? validateUri(defaultValue).valid : null);
+
+        return {
+            root: wrap,
+            input,
+            getValue() {
+                return input.value.trim();
+            },
+            setValue(val) {
+                input.value = String(val || '');
+                lastSavedValue = val || '';
+                const result = validateUri(input.value);
+                applyState(result.valid);
+            },
+            isValid() {
+                return validateUri(input.value).valid;
+            },
+            setDisabled(flag) {
+                input.disabled = !!flag;
+                input.setAttribute("aria-disabled", String(!!flag));
+                applyState(input.disabled ? null : validateUri(input.value).valid);
+            }
+        };
+    }
+
+    // Public API for URI Input
+    const UriAPI = {
+        renderList(containerId, items = []) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return []; }
+            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            host.appendChild(grid);
+            const ctrls = [];
+            for (const cfg of items) {
+                const card = createUriCard(cfg || {});
+                grid.appendChild(card.root);
+                ctrls.push(card);
+            }
+            return ctrls;
+        },
+
+        add(containerId, item = {}) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return null; }
+            let grid = host.lastElementChild;
+            const isGrid = grid && grid.style && grid.style.display === "grid";
+            if (!isGrid) {
+                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                host.appendChild(grid);
+            }
+            const card = createUriCard(item);
+            grid.appendChild(card.root);
+            return card;
+        },
+
+        clear(containerId) {
+            const host = document.getElementById(containerId);
+            if (host) host.innerHTML = "";
+        }
+    };
+
+    window.BigUriField = UriAPI;
+    window.BigUriField.__version__ = REQUIRED_VERSION;
+
     // Build an Explain Checkbox card (icon indicator, editable description)
     function createExplainCheckboxCard({
                                            title,
@@ -1168,6 +1979,54 @@ function addBigNetworkSafe(idOrSelector, item, root = document) {
                 ? idOrSelector.id
                 : String(idOrSelector).replace(/^#/, '');
             return BigNetworkField.add(cid, item);
+        })
+        .catch(function (err) { console.warn(err.message); return null; });
+}
+
+/** Render domain input list safely once the container exists. */
+function renderBigDomainListSafe(idOrSelector, items, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigDomainField.renderList(cid, items);
+        })
+        .catch(function (err) { console.warn(err.message); return []; });
+}
+
+/** Add a single domain input safely once the container exists. */
+function addBigDomainSafe(idOrSelector, item, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigDomainField.add(cid, item);
+        })
+        .catch(function (err) { console.warn(err.message); return null; });
+}
+
+/** Render URI input list safely once the container exists. */
+function renderBigUriListSafe(idOrSelector, items, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigUriField.renderList(cid, items);
+        })
+        .catch(function (err) { console.warn(err.message); return []; });
+}
+
+/** Add a single URI input safely once the container exists. */
+function addBigUriSafe(idOrSelector, item, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigUriField.add(cid, item);
         })
         .catch(function (err) { console.warn(err.message); return null; });
 }

@@ -5,12 +5,12 @@ define("OSPF_PID_PATH","/var/run/quagga/ospfd.pid");
 define("ZEBRA_PID_PATH","/run/quagga/zebra.pid");
 define("OSPF_CONF","/etc/quagga/ospfd.conf");
 define("FPDF_FONTPATH",dirname(__FILE__).'/externals/fpdf/font');
-
 if(!defined("ARTICA_ROOT")){define('ARTICA_ROOT', "/usr/share/artica-postfix");}
 if(!defined("PROGRESS_DIR")){define("PROGRESS_DIR","/usr/share/artica-postfix/ressources/logs/web");}
 if(!defined("UPLOAD_DIR")){define("UPLOAD_DIR","/usr/share/artica-postfix/ressources/conf/upload");}
 ini_set("memory_limit", "1024M");
 if(!isset($GLOBALS["VERBOSE"])){$GLOBALS["VERBOSE"]=false;}
+
 
 if(!isset($GLOBALS["DISABLE_MEMCACHE_SETTINGS"])){$GLOBALS["DISABLE_MEMCACHE_SETTINGS"]=intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/DisableMemCacheSettings"));}
 if(isset($_SESSION["TIMEZONES"])){if(function_exists("getLocalTimezone")){@date_default_timezone_set($_SESSION["TIMEZONES"]);}}
@@ -22,7 +22,10 @@ include_once(dirname(__FILE__)."/class.memcached.inc");
 include_once(dirname(__FILE__)."/logs.inc");
 include_once(dirname(__FILE__)."/class.stats-appliance.inc");
 include_once(dirname(__FILE__)."/class.sqlite.inc");
+CheckMemCached();
 if(function_exists("debug_mem")){debug_mem();}
+
+
 
 class sockets{
     var $remote_ip;

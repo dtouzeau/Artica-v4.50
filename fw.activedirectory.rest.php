@@ -18,6 +18,11 @@ if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["config-file-js"])){config_file_js();exit;}
 if(isset($_GET["config-file-popup"])){config_file_popup();exit;}
 
+
+if(isset($_GET["section-memcache-js"])){section_memcache_js();exit;}
+if(isset($_GET["section-memcache-popup"])){section_memcache_popup();exit;}
+if(isset($_POST["UseMemCacheClient"])){section_memcache_save();exit;}
+
 if(isset($_GET["section-service-js"])){section_service_js();exit;}
 if(isset($_GET["section-service-popup"])){section_service_popup();exit;}
 
@@ -69,6 +74,38 @@ function section_service_js():bool{
     $page=CurrentPageName();
     return $tpl->js_dialog("{parameters}","$page?section-service-popup=yes");
 }
+
+function section_memcache_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog("{use_memory_cache_service}","$page?section-memcache-popup=yes");
+}
+function section_memcache_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $ENabled=intval(ValkeyClient::httpGetInfo("UseMemCacheClient"));
+    echo $tpl->BigCircleCheckbox("UseMemCacheClient","{use_memory_cache_service}","{use_memory_cache_service_explain}",$ENabled,"BootstrapDialog1.close();LoadAjaxSilent('progress-webapi-start','$page?table1=yes');");
+    return true;
+}
+function section_memcache_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $UseMemCacheClient=$_POST=intval($_POST["UseMemCacheClient"]);
+    $ENabled=intval(ValkeyClient::httpGetInfo("UseMemCacheClient"));
+    writelogs("$ENabled === $UseMemCacheClient",__FUNCTION__,__FILE__,__LINE__);
+    if($ENabled==$UseMemCacheClient){
+        return false;
+    }
+    if($UseMemCacheClient==1){
+        writelogs("Install Memcache service for Artica REST API service",__FUNCTION__,__FILE__,__LINE__);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/artmem/install");
+        return admin_tracks("Memcache service installed for Artica REST API service");
+    }
+    writelogs("uninstall Memcache service for Artica REST API service",__FUNCTION__,__FILE__,__LINE__);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/artmem/uninstall");
+    return admin_tracks("Memcache service uninstalled for Artica REST API service");
+}
+
 function section_features_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -213,6 +250,19 @@ function webunix_status():string{
     $bsini->loadString($json->Info);
     return $tpl->SERVICE_STATUS($bsini, "APP_SHELLINABOX",$htopwebrestart);
 }
+
+
+function artmem_status():string{
+    $tpl    = new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/artmem/status"));
+    $ini=new Bs_IniHandler();
+    $ini->loadString($json->Info);
+    $jsrestart=$tpl->framework_buildjs(
+        "/artmem/restart","artmem.progress","artmem.progress.logs",
+        "progress-redis-restart");
+
+    return $tpl->SERVICE_STATUS($ini, "APP_ARTMEM",$jsrestart);
+}
 function redis_status():string{
     $tpl    = new template_admin();
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/redis/status"));
@@ -226,7 +276,10 @@ function redis_status():string{
 }
 
 function pogocache_status():string{
-
+    $UseMemCacheClient=intval(ValkeyClient::httpGetInfo("UseMemCacheClient"));
+    if($UseMemCacheClient==1){
+        return artmem_status();
+    }
     $PogoCacheEnabled=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("PogoCacheEnabled");
     if($PogoCacheEnabled==0){
         return redis_status();
@@ -327,11 +380,14 @@ function table1(){
     $ActiveDirectoryRestLetsEncrypt    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryRestLetsEncrypt"));
     $ActiveDirectoryRestLetsEncryptIface    = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryRestLetsEncryptIface"));
 
+    $UseMemCacheClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseMemCacheClient"));
 
     $tpl->table_form_field_js("Loadjs('$page?section-service-js=yes')");
     if($ActiveDirectoryRestInterface==null){$ActiveDirectoryRestInterface="127.0.0.1";}
     $tpl->table_form_field_bool("{debug}",$ActiveDirectoryRestDebug,ico_bug);
 
+
+    $tpl->table_form_field_js("Loadjs('$page?section-service-js=yes')");
     if($ActiveDirectoryRestInterface=="127.0.0.1"){
         $ActiveDirectoryRestSSL=0;
         $tpl->table_form_field_text("{listen_interfaces}","unix:articarest.sock",ico_interface);
@@ -356,6 +412,10 @@ function table1(){
 
 
     $tpl->table_form_section("{features}");
+
+    $tpl->table_form_field_js("Loadjs('$page?section-memcache-js=yes')");
+    $tpl->table_form_field_bool("{use_memory_cache_service}",$UseMemCacheClient,ico_memory);
+
     $tpl->table_form_field_js("Loadjs('$page?section-features-js=yes')");
 
     $ActiveDirectoryRestShellPass=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryRestShellPass"));

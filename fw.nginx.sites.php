@@ -79,18 +79,13 @@ if(isset($_GET["restart-needed"])){restart_needed_js();exit;}
 if(isset($_POST["restart-needed"])){restart_needed_perform();exit;}
 
 if(isset($_GET["doh-params"])){doh_parameters();exit;}
-if(isset($_GET["www-hosts"])){www_hosts();exit;}
-if(isset($_GET["www-hosts2"])){www_hosts2();exit;}
-if(isset($_GET["www-host-edit"])){www_hosts_edit_js();exit;}
-if(isset($_GET["www-host-edit-popup"])){www_hosts_edit_popup();exit;}
-if(isset($_GET["www-host-delete"])){www_hosts_delete();exit;}
-if(isset($_POST["hosts-delete"])){www_hosts_delete_perform();exit;}
+
 if(isset($_GET["duplicate-js"])){duplicate_js();exit;}
 if(isset($_POST["duplicate-from"])){duplicate_perform();exit;}
 
 if(isset($_POST["ID"])){www_save();exit;}
 if(isset($_POST["doh-params"])){doh_parameters_save();exit;}
-if(isset($_POST["hosts-id"])){www_hosts_save();exit;}
+
 if(isset($_POST["none"])){exit;}
 if(isset($_GET["compile"])){compile_js();exit;}
 if(isset($_POST["compile-confirm"])){compile_confirm();exit;}
@@ -1128,7 +1123,7 @@ function www_tabs(){
 
     $array["<i class='$icoParam'></i> {general_settings}"]="$page?www-parameters=$ID";
     if(!isset($Limited[$type])) {
-        $array["<i class='$ico_hearth'></i> {servernames}"] = "$page?www-hosts=$ID";
+        $array["<i class='$ico_hearth'></i> {servernames}"] = "fw.nginx.servicenames.php?start=$ID";
         $array["<i class='$ico_net'></i> {ports}"] = "fw.nginx.ports.php?service=$ID";
         $array["<i class='$ico_fw'></i> {access_rules}"] = "fw.nginx.ngx_stream_access_module.php?service=$ID";
     }
@@ -2493,32 +2488,9 @@ function www_parameters_uris($ID,$tpl){
     return $tpl;
 
 }
-function www_hosts():bool{
-    $page=CurrentPageName();
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["www-hosts"];
-
-    $html[]="<div id='nginx-hosts-$ID'></div>";
-    $html[]="<script>LoadAjaxSilent('nginx-hosts-$ID','$page?www-hosts2=$ID')</script>";
-    echo $tpl->_ENGINE_parse_body($html);
-    return true;
 
 
-}
-function www_hosts_edit_js():bool{
-    $page=CurrentPageName();
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=intval($_GET["service-id"]);
-    $servicename=get_servicename($ID);
-    $domain=$_GET["www-host-edit"];
-    if($domain==null){
-        $title="$servicename {new_domain}";
-    }else{
-        $title="$servicename ".base64_decode($domain);
-    }
-    $domain=urlencode($domain);
-    return $tpl->js_dialog2($title,"$page?www-host-edit-popup=$domain&service-id=$ID");
-}
+
 
 function proxy_ssl_server_name_js(){
     $page=CurrentPageName();
@@ -2557,298 +2529,12 @@ function proxy_ssl_server_name_save():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
     return admin_tracks("Save Reverse-Proxy SNI enforce domain for $servicename to enabled=$proxy_ssl_server_name, domain=$proxy_ssl_name");
 }
-function www_hosts_edit_popup():bool{
-    $page=CurrentPageName();
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=intval($_GET["service-id"]);
-    $servicename=get_servicename($ID);
-    $Type=get_ServiceType($ID);
-    $domain=base64_decode($_GET["www-host-edit-popup"]);
-    $redirect=null;
-
-    $Noredirect=false;
-    if($Type==13){
-        $Noredirect=true;
-    }
-    if(preg_match("#(.+)>(.+)#",$domain,$re)){
-        $domain=$re[1];
-        $redirect=$re[2];
-    }
-    $form[]=$tpl->field_hidden("hosts-id", $ID);
-    $form[]=$tpl->field_text("hosts","{domain}", $domain,true);
-    if(!$Noredirect) {
-        $form[] = $tpl->field_text("redirect", "{redirect_uri} ({domain} - {optional})", $redirect);
-    }
-    echo $tpl->form_outside("$servicename: {servernames}", $form,"{servernames_explain}","{apply}",
-        "dialogInstance2.close();LoadAjaxSilent('nginx-hosts-$ID','$page?www-hosts2=$ID');Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$ID');","AsSystemWebMaster");
-    return true;
-}
-function www_hosts2():bool{
-    $page       = CurrentPageName();
-    $tpl        = new template_admin();$tpl->CLUSTER_CLI=true;
-    $q          = new lib_sqlite(NginxGetDB());
-    $ID         = intval($_GET["www-hosts2"]);
-    $socksngix  = new socksngix($ID);
-
-    if(!$q->FIELD_EXISTS("nginx_services","ResolvErrDetail")){
-        $q->QUERY_SQL("ALTER TABLE nginx_services ADD ResolvErrDetail TEXT NOT NULL DEFAULT ''");
-    }
-    $ligne      = $q->mysqli_fetch_array("SELECT servicename,hosts,ResolvErrDetail FROM nginx_services WHERE ID=$ID");
-
-    $html[]="<div style='margin-top:20px;width=80%'>";
-    $ExpireCert="";
-    $Zhosts=explode("||",$ligne["hosts"]);
-    $ResolvErrDetail=unserialize($ligne["ResolvErrDetail"]);
-    $ssl_certificate = $socksngix->GET_INFO("ssl_certificate");
-    $ssl_certificates = array();
-    if(strlen($ssl_certificate)>3){
-        $sock=new sockets();
-        $json=json_decode($sock->REST_API_NGINX("/reverse-proxy/certinfo/$ID"));
-        if(!$json->Status){
-            $html[]=$tpl->div_error($json->Error);
-        }
-
-        if(is_array($json->data->DNSNames)) {
-            foreach ($json->data->DNSNames as $index => $domain) {
-                $ssl_certificates[$domain] = true;
-            }
-        }
-        $ExpireCert=distanceOfTimeInWords($json->data->ExpireDate,time());
-    }
-
-    $topbuttons[]=array("Loadjs('$page?www-host-edit=&service-id=$ID');", ico_plus,"{new_domain}");
-    $topbuttons[]=array("Loadjs('fw.nginx.sites.dynamics.php?service-id=$ID')",ico_routes,"{APP_OSPF}");
-
-    $topbuttons[]=array("Loadjs('fw.nginx.sites.letsencrypt.php?service-id=$ID')",ico_certificate,"{certificate} Let's Encrypt");
-
-    $StyleRow="font-size:18px";
-
-
-    $btns=$tpl->th_buttons($topbuttons);
-
-    $html[]=$btns;
-    $html[]="<table class=\"table table-stripped\" style='margin-top:20px'>";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th colspan='2'>{domains}</th>";
-    $html[]="<th>{certificate}</th>";
-    $html[]="<th>{RESOLVED}</th>";
-    $html[]="<th>{available}</th>";
-
-
-    $html[]="<th></th>";
-    $html[]="</tr>";
-    $TRCLASS=null;
-
-    $ForwardServersDynamics =   intval($socksngix->GET_INFO("ForwardServersDynamics"));
-    if($ForwardServersDynamics==1) {
-        $arrow="&nbsp;&nbsp;<i class='fa-solid fa-arrow-right-to-line'></i>&nbsp;&nbsp;";
-        $FSDynamicsExt = intval($socksngix->GET_INFO("FSDynamicsExt"));
-        $FSDynamicsSrc = trim($socksngix->GET_INFO("FSDynamicsSrc"));
-        $FSDynamicsDst = trim($socksngix->GET_INFO("FSDynamicsDst"));
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
-        if($FSDynamicsExt==1){
-            if(preg_match("#\.(.*?)$#",$FSDynamicsSrc,$re)){
-                $FSDynamicsSrc=str_replace(".".$re[1],".*",$FSDynamicsSrc);
-            }else{
-                $FSDynamicsSrc=$FSDynamicsSrc.".*";
-            }
-            if(preg_match("#\.(.*?)$#",$FSDynamicsDst,$re)){
-                $FSDynamicsDst=str_replace(".".$re[1],".*",$FSDynamicsDst);
-            }else{
-                $FSDynamicsDst=$FSDynamicsDst.".*";
-            }
-        }
-
-
-        $FSDynamicsSrc=$tpl->td_href($FSDynamicsSrc,null,"Loadjs('fw.nginx.sites.dynamics.php?service-id=$ID');");
-        $html[]="<tr class='$TRCLASS' id='a00'>";
-        $html[]="<td class=\"center\" style='width:1%' nowrap><i class='".ico_routes." fa-2x'></i></td>";
-        $html[]="<td style='width:100%;'><strong style='$StyleRow'>*.$FSDynamicsSrc$arrow*.$FSDynamicsDst</strong></td>";
-        $html[]="<td style='width:1%;' class='center'>&nbsp;</td>";
-        $html[]="</tr>";
-    }
-    $icon_certif=ico_certificate;
-
-    foreach ($Zhosts as $domains){
-        if (trim($domains)==null){continue;}
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $md=md5($domains);
-        $arrow=null;$redir=null;
-        $domainsenc=urlencode(base64_encode($domains));
-        $ResolvErr="<span class='text-danger'><i class='text-danger fa-2x fas fa-times'></i></span>";
-        $SSLText="";
-        $resolvedIp="";
-        $LetsEncrypt=false;
-        $infs="";
-        $Subtext=array();
-        if(isset($ResolvErrDetail[$domains])){
-            VERBOSE("ResolvErrDetail:$ResolvErrDetail[$domains]",__LINE__);
-            if(preg_match("#^ERROR:(.+)#",$ResolvErrDetail[$domains],$re)){
-                $ResolvErr="<span class='text-danger'><i class='text-danger fa-2x fas fa-times'></i></span>";
-                $Subtext[]="<small class='text-danger'>$re[1]</small>";
-            }else{
-
-                $ResolvedInfo=$ResolvErrDetail[$domains];
-                VERBOSE("ResolvedInfo:$ResolvedInfo",__LINE__);
-                if(strpos($ResolvedInfo,"||")){
-                    $ResolvedInfoSplitted=explode("||",$ResolvedInfo);
-                    if(preg_match("#^RESOLVED:([a-z:0-9\.]+)#",$ResolvedInfoSplitted[0],$re)){
-                        $resolvedIp=$re[1];
-                        $Subtext[]="<small>$resolvedIp</small>";
-                        $ResolvErr="<i style='color:#18a689' class='fa-2x fas fa-check-circle'></i>";
-                    }
-                    if(preg_match("#TRUE:(.+?):#",$ResolvedInfoSplitted[1],$re)){
-                        $LetsEncrypt=true;
-                    }
-                    if(preg_match("#^ERROR:(.+?):(.+)#",$ResolvedInfoSplitted[1],$re)){
-                        $Subtext[]="<small>$resolvedIp</small>";
-                        $ResolvErr="<i style='color:#18a689' class='fa-2x fas fa-check-circle'></i>";
-                        $Subtext[]="<small class='text-danger'>$re[2]</small>";
-                    }
-                }
 
 
 
-            }
-        }
 
 
-        $delete=$tpl->icon_delete("Loadjs('$page?www-host-delete=$domainsenc&md=$md&service-id=$ID')","AsWebMaster");
 
-        if(preg_match("#^(.+?)>(.+)#",$domains,$re)){
-            $domains=$re[1];
-            $arrow="&nbsp;&nbsp;<i class='fa-solid fa-arrow-right-to-line fa-1x'></i>&nbsp;&nbsp;";
-            $redir=$re[2];
-        }
-        if(count($ssl_certificates)>0){
-            if(isset($ssl_certificates[$domains])){
-                $SSLText="<i class='fa-2x $icon_certif' style='color:#18a689'></i><span style='$StyleRow'>&nbsp;{expire}: $ExpireCert</span>";
-            }else{
-                $SSLText="<i class='fa-2x $icon_certif' style='color:#ed5565'></i><span style='$StyleRow'>&nbsp;{unsigned}</span>";
-            }
-        }
-
-
-        $domains=$tpl->td_href($domains,null,"Loadjs('$page?www-host-edit=$domainsenc&service-id=$ID');");
-
-        $LetsEncrypt_ico="<i class='text-danger fa-2x fas fa-times'></i>";
-        if($LetsEncrypt){
-            $LetsEncrypt_ico="<i style='color:#18a689' class='fa-2x fas fa-check-circle'></i>";
-        }
-
-        if(count($Subtext)>0){
-            $infs=@implode(", ",$Subtext);
-        }
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td class=\"center\" style='width:1%' nowrap><i class='".ico_earth." fa-2x'></i></td>";
-        $html[]="<td style='width:100%;'><strong style='$StyleRow'><div>$domains$arrow$redir</strong></div>$infs</td>";
-        $html[]="<td width='1%' nowrap>$SSLText</td>";
-        $html[]="<td width='1%' nowrap class='center'>$ResolvErr</td>";
-        $html[]="<td width='1%' nowrap class='center'>$LetsEncrypt_ico</td>";
-        $html[]="<td style='width:1%;' class='center'>$delete</td>";
-        $html[]="</tr>";
-
-    }
-    $html[]="</table>";
-    $html[]="</div>";
-
-    echo $tpl->_ENGINE_parse_body($html);
-    return true;
-
-
-}
-function www_hosts_delete():bool{
-    $md=$_GET["md"];
-    $ID=$_GET["service-id"];
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $value=base64_decode($_GET["www-host-delete"]);
-    $servicename=get_servicename($ID);
-    $array["service-id"]=$ID;
-    $array["value"]=$value;
-    $finale=urlencode(base64_encode(serialize($array)));
-    return $tpl->js_confirm_delete("$servicename>$value","hosts-delete",$finale,"$('#$md').remove();Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$ID');");
-}
-function www_hosts_delete_perform():bool{
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $tpl->CLEAN_POST();
-
-    $svalue=base64_decode($_POST["hosts-delete"]);
-    $array=unserialize($svalue);
-    $ID=$array["service-id"];
-    $value=$array["value"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT `servicename`,`hosts` FROM nginx_services WHERE ID=$ID");
-    $Zhosts=explode("||",$ligne["hosts"]);
-    $MAIN=array();
-
-
-    foreach ($Zhosts as $domain){
-        $domain=trim(strtolower($domain));
-        if($domain==null){continue;}
-        $MAIN[$domain]=true;
-
-    }
-    unset($MAIN[$value]);
-    $F=array();
-    foreach($MAIN as $domain=>$none){
-        $domain=trim(strtolower($domain));
-        if(strpos($domain, ";")>0){continue;}
-        if($domain==null){continue;}
-        $F[]=$domain;
-    }
-    $newval=trim(@implode("||",$F));
-    $q->QUERY_SQL("UPDATE nginx_services SET `hosts`='$newval',`goodconftime`=0 WHERE ID=$ID");
-    $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($ID);
-    $servicename=get_servicename($ID);
-    admin_tracks("Delete $value from reverse-proxy service $servicename");
-    return true;
-}
-function www_hosts_save():bool{
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_POST["hosts-id"];
-    $F=array();
-    $tpl->CLEAN_POST();
-    $q=new lib_sqlite(NginxGetDB());
-    if(!isset($_POST["redirect"])){$_POST["redirect"]="";}
-    $ligne=$q->mysqli_fetch_array("SELECT `servicename`,`hosts` FROM nginx_services WHERE ID=$ID");
-    $Zhosts=explode("||",$ligne["hosts"]);
-
-    foreach ($Zhosts as $domain){
-        $domain=trim(strtolower($domain));
-        if($domain==null){continue;}
-        if(preg_match("#^(.+?)>(.+)#",$domain,$re)){
-            $MAIN[$re[1]]=$re[2];
-            continue;
-        }
-        $MAIN[$domain]="";
-
-    }
-    $domain=trim(strtolower($_POST["hosts"]));
-    $redirect=trim(strtolower($_POST["redirect"]));
-    $MAIN[$domain]=$redirect;
-
-
-    foreach($MAIN as $domain=>$redirect){
-        $domain=trim(strtolower($domain));
-        if(strpos($domain, ";")>0){continue;}
-        if($domain==null){continue;}
-        if($redirect<>null){
-            $domain="$domain>$redirect";
-        }
-        $F[]=$domain;
-    }
-
-    $newval=trim(@implode("||",$F));
-    $q->QUERY_SQL("UPDATE nginx_services SET `hosts`='$newval',`goodconftime`=0 WHERE ID=$ID");
-    if(!$q->ok){echo $q->mysql_error;return false;}
-    $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($ID);
-    $servicename=get_servicename($ID);
-    admin_tracks_post("Add/Edit domain for reverse-proxy service  $servicename");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
-    return true;
-}
 function isAlready14():bool{
     $q=new lib_sqlite(NginxGetDB());
     $ligne=$q->mysqli_fetch_array("SELECT ID FROM nginx_services WHERE type=14");
@@ -3876,8 +3562,11 @@ function table():bool{
     $cOffset=0;
     $TRCLASS=null;
     $MAX_WEB_SITES=count($results);
+    $NginxTableCurpage=1;
     $SessionTableOffset=$_SESSION["NginxTableOffset"];
-    $NginxTableCurpage=$_SESSION["NginxTableCurpage"];
+    if(isset($_SESSION["NginxTableCurpage"])) {
+        $NginxTableCurpage = $_SESSION["NginxTableCurpage"];
+    }
     $StartItems=0;
     $StopItems=99999;
 
@@ -4220,7 +3909,10 @@ function td_row_servicename($id=0):string{
     $sockngix                   = new socksngix($id);
     $ligne=$q->mysqli_fetch_array("SELECT enabled,badconf,servicename FROM nginx_services WHERE ID=$id");
     $enabled=$ligne["enabled"];
-    $badconflength=strlen($ligne["badconf"]);
+    $badconflength=0;
+    if(!is_null($ligne["badconf"])) {
+        $badconflength = strlen($ligne["badconf"]);
+    }
     $debug=intval($sockngix->GET_INFO("Debug"));
     $debug_ico="&nbsp;";
     $badconf="";

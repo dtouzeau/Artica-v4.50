@@ -1185,7 +1185,7 @@ function chart_top_sites_hours():bool{
     $today=date("Y-m-d")." 00:00:00";
     $sql="SELECT serviceid,SUM(requestcounter) as tcount FROM nginx_stats WHERE serviceid > 0 AND zdate > '$today' GROUP by serviceid ORDER BY tcount DESC LIMIT 5";
     $q=new postgres_sql();
-
+    $MAIN=array();
     $results=$q->QUERY_SQL($sql);
     while($ligne=@pg_fetch_assoc($results)){
         $instance=get_servicename($ligne['serviceid']);

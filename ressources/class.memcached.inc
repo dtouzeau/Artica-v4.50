@@ -78,3 +78,20 @@ class lib_memcached{
         return ValkeyClient::saveKey($key,$object,$ttl);
    }
 }
+function CheckMemCached():bool{
+    if(isset($GLOBALS["UseMemCacheClient"])){
+        return true;
+    }
+    if(isset($_SESSION["UseMemCacheClient"])){
+        $GLOBALS["UseMemCacheClient"]=intval($_SESSION["UseMemCacheClient"]);
+    }
+    if(!is_file("/etc/artica-postfix/settings/Daemons/UseMemCacheClient")){
+        $_SESSION["UseMemCacheClient"]=0;
+        $GLOBALS["UseMemCacheClient"]=0;
+        return false;
+    }
+
+    $GLOBALS["UseMemCacheClient"]=intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/UseMemCacheClient"));
+    $_SESSION["UseMemCacheClient"]=$GLOBALS["UseMemCacheClient"];
+    return true;
+}

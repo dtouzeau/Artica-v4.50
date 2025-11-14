@@ -2171,20 +2171,7 @@ function www_hosts():bool{
 
 
 }
-function www_hosts_edit_js():bool{
-    $page=CurrentPageName();
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=intval($_GET["service-id"]);
-    $servicename=get_servicename($ID);
-    $domain=$_GET["www-host-edit"];
-    if($domain==null){
-        $title="$servicename {new_domain}";
-    }else{
-        $title="$servicename ".base64_decode($domain);
-    }
-    $domain=urlencode($domain);
-    return $tpl->js_dialog2($title,"$page?www-host-edit-popup=$domain&service-id=$ID");
-}
+
 function www_hosts_edit_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
