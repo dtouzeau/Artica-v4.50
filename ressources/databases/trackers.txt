@@ -3073,7 +3073,6 @@ apps-bundles.makebecool.com
 apps-cdn.relevant-digital.com
 apps-demo.rokt.com
 apps.alsoenergy.com
-apps.apple.com
 apps.bazaarvoice.com
 apps.bdimg.com
 apps.boldapps.net

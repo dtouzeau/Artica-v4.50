@@ -468,14 +468,6 @@ function xgen(){
                     $f[] = $tpl->LeftMenu(
                         array("PAGE" => "fw.ipfeeds.php",
                             "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
-                    $SURICATA_NO_WIZARD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_NO_WIZARD"));
-                    if($SURICATA_NO_WIZARD==0) {
-                        $f[] = $tpl->LeftMenu(
-                            array("PAGE" => "fw.ids.wizard.php",
-                                "ICO" => ico_sensor, "TEXT" => "{IDS}"));
-                    }
-
-
                 }
             }
 /*

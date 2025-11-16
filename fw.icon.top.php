@@ -347,6 +347,15 @@ function notifs(){
         }
     }
 */
+    $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
+    if($EnableSuricata==0){
+        $HideSuricataManagerIco = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideSuricataManagerIco"));
+        if ($HideSuricataManagerIco == 0) {
+            $ERR[] = "{didyouknow}||{did_you_know_ids}||INFO||js:Loadjs('fw.ids.wizard.php?didyouknow-js=yes');||js:Loadjs('$page?SetToken=HideSuricataManagerIco');";
+        }
+
+    }
+
     if(!$users->AsDockerWeb) {
         $HideBootManagerIco = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideBootManagerIco"));
         if ($HideBootManagerIco == 0) {

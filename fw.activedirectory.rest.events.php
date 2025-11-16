@@ -211,6 +211,16 @@ function events_searcher():bool{
             $message="<span class='label label-info'>{APP_OPENSSH}</span>&nbsp;$message";
         }
 
+        if(strpos("    $message","BrowserPluginEngine.go[categories/BrowserPluginEngine.Run.func1")>0){
+            $message=str_replace("BrowserPluginEngine.go[categories/BrowserPluginEngine.Run.func1","[",$message);
+            $message="<span class='label label-info'>Browser Router</span>&nbsp;$message";
+        }
+        if(strpos("    $message","BrowserPluginEngine.go[categories/BrowserPluginEngine.Run:")>0){
+            $message=str_replace("BrowserPluginEngine.go[categories/BrowserPluginEngine.Run:","[",$message);
+            $message="<span class='label label-info'>Browser Router</span>&nbsp;$message";
+        }
+
+
         if(strpos("    $message","HaClusterClientPing.go[hacluster/HaClusterClientPing.PING:")>0){
             $message=str_replace("HaClusterClientPing.go[hacluster/HaClusterClientPing.PING:","[",$message);
             $message="<span class='label label-info'>HaCluster Client</span>&nbsp;$message";
@@ -516,6 +526,17 @@ function events_searcher():bool{
             $message=str_replace("sockets.go","",$message);
             $message="<span class='label label-default'>Internal</span>&nbsp;$message";
         }
+        if(strpos("    $message","main.go[main.main:")>0){
+            $message=str_replace("main.go[main.main:","[",$message);
+            $message="<span class='label label-default'>Internal</span>&nbsp;$message";
+        }
+
+        if(strpos("    $message","Categorize.go[categories.")>0){
+            $message=str_replace("Categorize.go[categories.","[",$message);
+            $message="<span class='label label-success'>{categories}</span>&nbsp;$message";
+        }
+
+
         if(strpos("    $message","suricata.go")>0){
             $message=str_replace("suricata.go","",$message);
             $message="<span class='label label-success'>IDS</span>&nbsp;$message";
@@ -573,6 +594,11 @@ function events_searcher():bool{
 
         if(strpos("    $message","[main.StartLocalHostRouter.func1:")>0){
             $message=str_replace("[main.StartLocalHostRouter.func1:","[",$message);
+            $message="<span class='label label-success'>HTTP Service</span>&nbsp;$message";
+        }
+
+        if(strpos("    $message","[main.StartLocalHostRouter:")>0){
+            $message=str_replace("[main.StartLocalHostRouter:","[",$message);
             $message="<span class='label label-success'>HTTP Service</span>&nbsp;$message";
         }
 

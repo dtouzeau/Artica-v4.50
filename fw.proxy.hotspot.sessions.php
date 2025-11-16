@@ -139,13 +139,13 @@ function table(){
 		$autocreate=$ligne["autocreate"];
         $tooltip=null;
 		if($autocreate==1){
-		    $tooltip=" <span class='label label-warning'>{waiting_confirmation}</span>";
+		    $tooltip=$tpl->_ENGINE_parse_body(" <span class='label label-warning'>{waiting_confirmation}</span>");
         }
         if($autocreate==2){
-            $tooltip=" <span class='label label-primary'>{confirmed}</span>";
+            $tooltip=$tpl->_ENGINE_parse_body(" <span class='label label-primary'>{confirmed}</span>");
         }
         if($autocreate==10){
-            $tooltip=" <span class='label label-primary'>{voucher_room}</span>";
+            $tooltip=$tpl->_ENGINE_parse_body(" <span class='label label-primary'>{voucher_room}</span>");
         }
 
 		
@@ -196,8 +196,6 @@ function table(){
 	$html[]="\t$(document).ready(function() { ";
 	$html[]="$('#table-hotspot-sessions-list').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
     $html[]="</script>";
-	
-	
 	echo $tpl->_ENGINE_parse_body($html);
 }
 

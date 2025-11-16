@@ -3195,8 +3195,8 @@ fixed/emxdgt.com/5
 fixed/eu-eb2.3lift.com/5
 fixed/eu-tlx.3lift.com/5
 fixed/eu-u.openx.net/5
-fixed/euc-ice.360yield.com
-fixed/euw-ice.360yield.com
+fixed/euc-ice.360yield.com/5
+fixed/euw-ice.360yield.com/5
 fixed/ad.360yield.com/5
 fixed/px.ads.linkedin.com/5
 fixed/match.adsrvr.org/5
@@ -3456,7 +3456,7 @@ regex/(^|\.)madd\.eu\.com$/98
 
 regex/(^|\.)samsungelectronics\.com$/48
 
-News and press
+# News and press
 regex/(^|\.)(diariodemallorca|prensaiberica|unidadeditorial)\.es/103
 regex/(^|\.)kioskoymas\.com/103
 regex/(^|\.)today.line.me/103
@@ -3966,7 +3966,7 @@ regex/(\.|^)(adguard|cloudflare-dns|dvr-ddns|blahdns|ahadns|yepdns|dnsforfamily|
 
 #internal
 fixed/192.in-addr.arpa/82
-regex/\.(int|maison|local|localdomain|tld|priv|localhost.local|home|pedago)$/82
+regex/\.(maison|local|localdomain|tld|priv|localhost.local|home|pedago)$/82
 regex/(\.|^)in-addr\.arpa/46
 
 # Sport 116

@@ -546,7 +546,7 @@ return implode(', ', $timeParts);
         $placeholder='http://example.com or domain.tld';
         $f=array();
         $page=CurrentPageName();
-        $title=base64_encode($this->_ENGINE_parse_body($title));
+        $title=base64_encode(html_entity_decode($this->_ENGINE_parse_body($title)));
         $explain=base64_encode($this->_ENGINE_parse_body($explain));
 
         if(strpos($field,"|")>0){
@@ -600,7 +600,7 @@ return implode(', ', $timeParts);
         $placeholder='example.com';
         $f=array();
         $page=CurrentPageName();
-        $title=base64_encode($this->_ENGINE_parse_body($title));
+        $title=base64_encode(html_entity_decode($this->_ENGINE_parse_body($title)));
         $explain=base64_encode($this->_ENGINE_parse_body($explain));
 
         if(strpos($field,"|")>0){
@@ -646,9 +646,123 @@ return implode(', ', $timeParts);
             });
         </script>";
     }
+    public function BigIntegerField($field,$title,$explain,$value,$after=null,$min=null,$max=null,$Privs=null):string{
+        $placeholder='0';
+        $id=time().rand(100,999);
+        $f=array();
+        $page=CurrentPageName();
+        $title=base64_encode(html_entity_decode($this->_ENGINE_parse_body($title)));
+        $explain=base64_encode($this->_ENGINE_parse_body($explain));
+
+        $minAttr = ($min !== null) ? "min: $min," : "";
+        $maxAttr = ($max !== null) ? "max: $max," : "";
+
+        if(strpos($field,"|")>0){
+            $tb=explode("|",$field);
+            foreach ($tb as $newf){
+                if(strpos($newf,":")>0){
+                    $ss=explode(":",$newf);
+                    $f[]="['$ss[0]']: '$ss[1]'";
+                }else{
+                    $f[]="['$newf']: value";
+                }
+            }
+        }else{
+            $f[]="['$field']: value";
+        }
+
+        $fftxt=@implode(",",$f);
+
+        return "<div id=\"intfield-$id\"></div>
+        <script>
+            renderBigIntegerFieldSafe('intfield-$id', [
+            {
+                title: base64_decode('$title'),
+                descriptionHTML: base64_decode('$explain'),
+                defaultValue: $value,
+                placeholder: '$placeholder',
+                $minAttr
+                $maxAttr
+                onSave: function(value) {
+                    // POST on save (Enter key or blur if value changed and valid)
+                    $.post('$page', { $fftxt })
+                      .done(function (resp, textStatus, jqXHR) {
+                        console.log('Integer saved:', value, 'Response:', resp);
+                        $after
+                      })
+                      .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('POST failed: ' + errorThrown);
+                      });
+                }
+            }
+            ]).then(function (ctrls) {
+                var ctrl = ctrls[0];
+                if (!ctrl) return;
+                ctrl.setDisabled(false);
+            });
+        </script>";
+    }
+
+    public function BigTextField($field,$title,$explain,$value,$after=null,$minLength=null,$maxLength=null,$Privs=null):string{
+        $placeholder='Enter text';
+        $id=md5(time().rand(1000,9999).$field);
+        $f=array();
+        $page=CurrentPageName();
+        $title=base64_encode(html_entity_decode($this->_ENGINE_parse_body($title)));
+        $explain=base64_encode($this->_ENGINE_parse_body($explain));
+
+        $minAttr = ($minLength !== null) ? "minLength: $minLength," : "";
+        $maxAttr = ($maxLength !== null) ? "maxLength: $maxLength," : "";
+
+        if(strpos($field,"|")>0){
+            $tb=explode("|",$field);
+            foreach ($tb as $newf){
+                if(strpos($newf,":")>0){
+                    $ss=explode(":",$newf);
+                    $f[]="['$ss[0]']: '$ss[1]'";
+                }else{
+                    $f[]="['$newf']: value";
+                }
+            }
+        }else{
+            $f[]="['$field']: value";
+        }
+
+        $fftxt=@implode(",",$f);
+
+        return "<div id=\"textfield-$id\" style='margin-top:6px'></div>
+        <script>
+            renderBigTextFieldSafe('textfield-$id', [
+            {
+                title: base64_decode('$title'),
+                descriptionHTML: base64_decode('$explain'),
+                defaultValue: '$value',
+                placeholder: '$placeholder',
+                $minAttr
+                $maxAttr
+                onSave: function(value) {
+                    // POST on save (Enter key or blur if value changed)
+                    $.post('$page', { $fftxt })
+                      .done(function (resp, textStatus, jqXHR) {
+                        console.log('Text saved:', value, 'Response:', resp);
+                        $after
+                      })
+                      .fail(function (jqXHR, textStatus, errorThrown) {
+                        alert('POST failed: ' + errorThrown);
+                      });
+                }
+            }
+            ]).then(function (ctrls) {
+                var ctrl = ctrls[0];
+                if (!ctrl) return;
+                ctrl.setDisabled(false);
+            });
+        </script>";
+    }
+
 
     public function BigNetworkField($field,$title,$explain,$value,$placeholder='192.168.1.0/24',$after=null,$Privs=null):string{
-        $id=time().rand(100,999);
+        $id=md5(time().rand(1000,9999).$field);
         $f=array();
         $page=CurrentPageName();
         $title=base64_encode(html_entity_decode($this->_ENGINE_parse_body($title)));
@@ -699,7 +813,7 @@ return implode(', ', $timeParts);
     }
 
     public function BigExplainCheckbox($field,$title,$explain,$after=null,$Privs=null):string{
-        $id=time().rand(1000,9999);
+        $id=md5(time().rand(1000,9999).$field);
         $page=CurrentPageName();
         $title=base64_encode($this->_ENGINE_parse_body($title));
         $explain=base64_encode($this->_ENGINE_parse_body($explain));

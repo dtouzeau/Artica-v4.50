@@ -11,6 +11,7 @@
         grey: "#9aa4b2",    // unchecked
         greyLight: "#e6e8ee"// disabled
     };
+
     // Utility: create element with inline styles + attributes (supports { text, html })
     function el(tag, styleObj = {}, attrs = {}) {
         const node = document.createElement(tag);
@@ -462,6 +463,502 @@
 
     window.BigCircleInteger = IntegerAPI;
     window.BigCircleInteger.__version__ = REQUIRED_VERSION;
+
+    // Build an Integer Field card (similar to network field, but validates integers only)
+    function createIntegerFieldCard({
+                                        title,
+                                        titleHTML,
+                                        description,
+                                        descriptionHTML,
+                                        defaultValue = 0,
+                                        placeholder = '0',
+                                        min = null,
+                                        max = null,
+                                        disabled = false,
+                                        onChange,
+                                        onSave
+                                    } = {}) {
+        const styles = {
+            card: {
+                position: "relative",
+                display: "grid",
+                gap: "12px",
+                background: COLORS.card,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: "16px",
+                padding: "18px",
+                userSelect: "none",
+                transition: "box-shadow .2s ease, border-color .2s ease"
+            },
+            header: { display: "grid", gap: "6px" },
+            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
+            desc: { fontSize: "16px", color: COLORS.muted },
+            inputWrapper: {
+                width: "100%",
+                borderRadius: "12px",
+                border: `2px solid ${COLORS.border}`,
+                background: COLORS.grey,
+                boxShadow: "none",
+                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
+                overflow: "hidden"
+            },
+            inputField: {
+                width: "100%",
+                border: "none",
+                background: "transparent",
+                color: "#ffffff",
+                fontSize: "18px",
+                fontWeight: "600",
+                outline: "none",
+                padding: "14px 16px",
+                fontFamily: "monospace"
+            }
+        };
+
+        const wrap = el("div", styles.card);
+        const header = el("div", styles.header);
+
+        const titleEl = (titleHTML != null)
+            ? el("div", styles.title, { html: titleHTML })
+            : el("div", styles.title, { text: title || "Integer Value" });
+
+        const descEl = (descriptionHTML != null)
+            ? el("div", styles.desc, { html: descriptionHTML })
+            : el("div", styles.desc, { text: description || "Enter an integer value" });
+
+        header.append(titleEl, descEl);
+
+        const inputWrapper = el("div", styles.inputWrapper);
+        const input = el("input", styles.inputField, {
+            type: "number",
+            value: String(defaultValue || 0),
+            placeholder: placeholder,
+            "aria-label": "Integer value",
+            "aria-disabled": String(!!disabled)
+        });
+
+        if (min !== null) input.setAttribute("min", String(min));
+        if (max !== null) input.setAttribute("max", String(max));
+        input.disabled = !!disabled;
+
+        inputWrapper.appendChild(input);
+        wrap.append(header, inputWrapper);
+
+        let lastSavedValue = defaultValue || 0;
+
+        // Validate integer input
+        function validateInteger(value) {
+            const trimmed = String(value).trim();
+            if (!trimmed && trimmed !== '0') return { valid: false, error: 'Empty value' };
+
+            const num = parseInt(trimmed, 10);
+            if (isNaN(num)) {
+                return { valid: false, error: 'Not a valid integer' };
+            }
+
+            if (min !== null && num < min) {
+                return { valid: false, error: `Value must be at least ${min}` };
+            }
+
+            if (max !== null && num > max) {
+                return { valid: false, error: `Value must be at most ${max}` };
+            }
+
+            return { valid: true, value: num };
+        }
+
+        function applyState(isValid = null) {
+            if (input.disabled) {
+                inputWrapper.style.background = COLORS.greyLight;
+                inputWrapper.style.borderColor = COLORS.greyLight;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.muted;
+                descEl.style.color = COLORS.muted;
+                input.style.color = COLORS.muted;
+            } else if (isValid === true) {
+                // Valid integer
+                inputWrapper.style.background = COLORS.ok;
+                inputWrapper.style.borderColor = COLORS.ok;
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else if (isValid === false) {
+                // Invalid integer
+                inputWrapper.style.background = "#8B2E2E";
+                inputWrapper.style.borderColor = "#C74444";
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else {
+                // Neutral (empty or typing)
+                inputWrapper.style.background = COLORS.grey;
+                inputWrapper.style.borderColor = COLORS.border;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            }
+        }
+
+        function saveValue() {
+            const result = validateInteger(input.value);
+
+            if (!result.valid) {
+                applyState(false);
+                return;
+            }
+
+            applyState(true);
+            const cleanValue = result.value;
+
+            // Only save if value changed
+            if (cleanValue !== lastSavedValue) {
+                lastSavedValue = cleanValue;
+                if (typeof onSave === "function") onSave(cleanValue);
+            }
+        }
+
+        // Focus ring
+        input.addEventListener("focus", () => {
+            if (!input.disabled) wrap.style.boxShadow = `0 0 0 4px ${COLORS.ring}`;
+        });
+
+        // Blur - validate and save if changed
+        input.addEventListener("blur", () => {
+            wrap.style.boxShadow = "none";
+            saveValue();
+        });
+
+        // Enter key - save if valid
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                e.preventDefault();
+                input.blur(); // This will trigger blur event which saves
+            }
+        });
+
+        // Input change - update visual state in real-time
+        input.addEventListener("input", () => {
+            const result = validateInteger(input.value);
+            applyState(input.value.trim() ? result.valid : null);
+
+            if (typeof onChange === "function" && result.valid) {
+                onChange(result.value);
+            }
+        });
+
+        // Prevent mouse wheel scrolling from changing value
+        input.addEventListener("wheel", (e) => {
+            e.preventDefault();
+        });
+
+        applyState(defaultValue !== null ? validateInteger(defaultValue).valid : null);
+
+        return {
+            root: wrap,
+            input,
+            getValue() {
+                return parseInt(input.value, 10) || 0;
+            },
+            setValue(val) {
+                input.value = String(val || 0);
+                lastSavedValue = val || 0;
+                const result = validateInteger(input.value);
+                applyState(result.valid);
+            },
+            isValid() {
+                return validateInteger(input.value).valid;
+            },
+            setDisabled(flag) {
+                input.disabled = !!flag;
+                input.setAttribute("aria-disabled", String(!!flag));
+                applyState(input.disabled ? null : validateInteger(input.value).valid);
+            }
+        };
+    }
+
+    // Public API for Integer Field Input
+    const IntegerFieldAPI = {
+        renderList(containerId, items = []) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return []; }
+            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            host.appendChild(grid);
+            const ctrls = [];
+            for (const cfg of items) {
+                const card = createIntegerFieldCard(cfg || {});
+                grid.appendChild(card.root);
+                ctrls.push(card);
+            }
+            return ctrls;
+        },
+
+        add(containerId, item = {}) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return null; }
+            let grid = host.lastElementChild;
+            const isGrid = grid && grid.style && grid.style.display === "grid";
+            if (!isGrid) {
+                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                host.appendChild(grid);
+            }
+            const card = createIntegerFieldCard(item);
+            grid.appendChild(card.root);
+            return card;
+        },
+
+        clear(containerId) {
+            const host = document.getElementById(containerId);
+            if (host) host.innerHTML = "";
+        }
+    };
+
+    window.BigIntegerField = IntegerFieldAPI;
+    window.BigIntegerField.__version__ = REQUIRED_VERSION;
+
+    // Build a Text Field card (simple text input with optional length constraints)
+    function createTextFieldCard({
+                                     title,
+                                     titleHTML,
+                                     description,
+                                     descriptionHTML,
+                                     defaultValue = '',
+                                     placeholder = 'Enter text',
+                                     minLength = null,
+                                     maxLength = null,
+                                     disabled = false,
+                                     onChange,
+                                     onSave
+                                 } = {}) {
+        const styles = {
+            card: {
+                position: "relative",
+                display: "grid",
+                gap: "12px",
+                background: COLORS.card,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: "16px",
+                padding: "18px",
+                userSelect: "none",
+                transition: "box-shadow .2s ease, border-color .2s ease"
+            },
+            header: { display: "grid", gap: "6px" },
+            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
+            desc: { fontSize: "16px", color: COLORS.muted },
+            inputWrapper: {
+                width: "100%",
+                borderRadius: "12px",
+                border: `2px solid ${COLORS.border}`,
+                background: COLORS.grey,
+                boxShadow: "none",
+                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
+                overflow: "hidden"
+            },
+            inputField: {
+                width: "100%",
+                border: "none",
+                background: "transparent",
+                color: "#ffffff",
+                fontSize: "18px",
+                fontWeight: "600",
+                outline: "none",
+                padding: "14px 16px"
+            }
+        };
+
+        const wrap = el("div", styles.card);
+        const header = el("div", styles.header);
+
+        const titleEl = (titleHTML != null)
+            ? el("div", styles.title, { html: titleHTML })
+            : el("div", styles.title, { text: title || "Text Field" });
+
+        const descEl = (descriptionHTML != null)
+            ? el("div", styles.desc, { html: descriptionHTML })
+            : el("div", styles.desc, { text: description || "Enter text value" });
+
+        header.append(titleEl, descEl);
+
+        const inputWrapper = el("div", styles.inputWrapper);
+        const input = el("input", styles.inputField, {
+            type: "text",
+            value: String(defaultValue || ''),
+            placeholder: placeholder,
+            "aria-label": "Text value",
+            "aria-disabled": String(!!disabled)
+        });
+
+        if (minLength !== null) input.setAttribute("minlength", String(minLength));
+        if (maxLength !== null) input.setAttribute("maxlength", String(maxLength));
+        input.disabled = !!disabled;
+
+        inputWrapper.appendChild(input);
+        wrap.append(header, inputWrapper);
+
+        let lastSavedValue = defaultValue || '';
+
+        // Validate text input
+        function validateText(value) {
+            const trimmed = String(value).trim();
+
+            if (minLength !== null && trimmed.length < minLength) {
+                return { valid: false, error: `Text must be at least ${minLength} characters` };
+            }
+
+            if (maxLength !== null && trimmed.length > maxLength) {
+                return { valid: false, error: `Text must be at most ${maxLength} characters` };
+            }
+
+            return { valid: true, value: trimmed };
+        }
+
+        function applyState(isValid = null) {
+            if (input.disabled) {
+                inputWrapper.style.background = COLORS.greyLight;
+                inputWrapper.style.borderColor = COLORS.greyLight;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.muted;
+                descEl.style.color = COLORS.muted;
+                input.style.color = COLORS.muted;
+            } else if (isValid === true) {
+                // Valid text
+                inputWrapper.style.background = COLORS.ok;
+                inputWrapper.style.borderColor = COLORS.ok;
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else if (isValid === false) {
+                // Invalid text
+                inputWrapper.style.background = "#8B2E2E";
+                inputWrapper.style.borderColor = "#C74444";
+                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            } else {
+                // Neutral (empty or typing)
+                inputWrapper.style.background = COLORS.grey;
+                inputWrapper.style.borderColor = COLORS.border;
+                inputWrapper.style.boxShadow = "none";
+                titleEl.style.color = COLORS.text;
+                descEl.style.color = COLORS.muted;
+                input.style.color = "#ffffff";
+            }
+        }
+
+        function saveValue() {
+            const result = validateText(input.value);
+
+            if (!result.valid) {
+                applyState(false);
+                return;
+            }
+
+            applyState(true);
+            const cleanValue = result.value;
+
+            // Only save if value changed
+            if (cleanValue !== lastSavedValue) {
+                lastSavedValue = cleanValue;
+                if (typeof onSave === "function") onSave(cleanValue);
+            }
+        }
+
+        // Focus ring
+        input.addEventListener("focus", () => {
+            if (!input.disabled) wrap.style.boxShadow = `0 0 0 4px ${COLORS.ring}`;
+        });
+
+        // Blur - validate and save if changed
+        input.addEventListener("blur", () => {
+            wrap.style.boxShadow = "none";
+            saveValue();
+        });
+
+        // Enter key - save if valid
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                e.preventDefault();
+                input.blur(); // This will trigger blur event which saves
+            }
+        });
+
+        // Input change - update visual state in real-time
+        input.addEventListener("input", () => {
+            const result = validateText(input.value);
+            applyState(input.value.trim() ? result.valid : null);
+
+            if (typeof onChange === "function") {
+                onChange(input.value, result.valid);
+            }
+        });
+
+        applyState(defaultValue ? validateText(defaultValue).valid : null);
+
+        return {
+            root: wrap,
+            input,
+            getValue() {
+                return input.value.trim();
+            },
+            setValue(val) {
+                input.value = String(val || '');
+                lastSavedValue = val || '';
+                const result = validateText(input.value);
+                applyState(result.valid);
+            },
+            isValid() {
+                return validateText(input.value).valid;
+            },
+            setDisabled(flag) {
+                input.disabled = !!flag;
+                input.setAttribute("aria-disabled", String(!!flag));
+                applyState(input.disabled ? null : validateText(input.value).valid);
+            }
+        };
+    }
+
+    // Public API for Text Field Input
+    const TextFieldAPI = {
+        renderList(containerId, items = []) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return []; }
+            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            host.appendChild(grid);
+            const ctrls = [];
+            for (const cfg of items) {
+                const card = createTextFieldCard(cfg || {});
+                grid.appendChild(card.root);
+                ctrls.push(card);
+            }
+            return ctrls;
+        },
+
+        add(containerId, item = {}) {
+            const host = document.getElementById(containerId);
+            if (!host) { console.warn("Container not found:", containerId); return null; }
+            let grid = host.lastElementChild;
+            const isGrid = grid && grid.style && grid.style.display === "grid";
+            if (!isGrid) {
+                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                host.appendChild(grid);
+            }
+            const card = createTextFieldCard(item);
+            grid.appendChild(card.root);
+            return card;
+        },
+
+        clear(containerId) {
+            const host = document.getElementById(containerId);
+            if (host) host.innerHTML = "";
+        }
+    };
+
+    window.BigTextField = TextFieldAPI;
+    window.BigTextField.__version__ = REQUIRED_VERSION;
 
     // Build a Network Address Input card (no left indicator, field below description)
     function createNetworkCard({
@@ -2051,6 +2548,54 @@ function addBigExplainCheckboxSafe(idOrSelector, item, root = document) {
                 ? idOrSelector.id
                 : String(idOrSelector).replace(/^#/, '');
             return BigExplainCheckbox.add(cid, item);
+        })
+        .catch(function (err) { console.warn(err.message); return null; });
+}
+
+/** Render integer field list safely once the container exists. */
+function renderBigIntegerFieldSafe(idOrSelector, items, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigIntegerField.renderList(cid, items);
+        })
+        .catch(function (err) { console.warn(err.message); return []; });
+}
+
+/** Add a single integer field safely once the container exists. */
+function addBigIntegerFieldSafe(idOrSelector, item, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigIntegerField.add(cid, item);
+        })
+        .catch(function (err) { console.warn(err.message); return null; });
+}
+
+/** Render text field list safely once the container exists. */
+function renderBigTextFieldSafe(idOrSelector, items, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigTextField.renderList(cid, items);
+        })
+        .catch(function (err) { console.warn(err.message); return []; });
+}
+
+/** Add a single text field safely once the container exists. */
+function addBigTextFieldSafe(idOrSelector, item, root = document) {
+    return waitForContainer(idOrSelector, 5000, root)
+        .then(function () {
+            var cid = (idOrSelector && idOrSelector.nodeType === 1)
+                ? idOrSelector.id
+                : String(idOrSelector).replace(/^#/, '');
+            return BigTextField.add(cid, item);
         })
         .catch(function (err) { console.warn(err.message); return null; });
 }

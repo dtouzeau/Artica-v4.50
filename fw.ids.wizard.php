@@ -10,6 +10,8 @@ if(isset($_GET["status"])){Status();exit;}
 if(isset($_GET["ndpid-flat-config"])){flat_config();exit;}
 if(isset($_GET["ndpi-top-status"])){Status_top();exit;}
 if(isset($_GET["start"])){start();exit;}
+if(isset($_GET["didyouknow-js"])){didyouknow_js();exit;}
+if(isset($_GET["didyouknow-popup"])){didyouknow_popup();exit;}
 page();
 function page(){
 	$page=CurrentPageName();
@@ -31,6 +33,21 @@ function page(){
 
 
 }
+function didyouknow_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog8("{didyouknow}: {APP_SURICATA}", "$page?didyouknow-popup=yes");
+}
+function didyouknow_popup():bool{
+    $tpl=new template_admin();
+    $go=$tpl->button_autnonome("{install_wizard_step}","document.location.href='/ids-wizard'",ico_cd,"AsFirewallManager",335,"btn-primary");
+
+    $html[]="<div style='font-size:16px'>{ids_text_tooltip}</div>";
+    $html[]="<div style='text-align:right;margin-top:20px;margin-right:30px'>$go</div>";
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+
 function uninstall_js(){
     $tpl=new template_admin();
     return $tpl->js_confirm_execute("{remove_ids_menu}","uninstall","ids-wizard","document.location.href='/index'");

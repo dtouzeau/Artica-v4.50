@@ -27,6 +27,8 @@ if(isset($_GET["sitenametest"])){test_categories_perform();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["js-simple"])){js_simple();exit;}
 if(isset($_GET["js-import"])){js_import();exit;}
+if(isset($_GET["browser-plugin"])){browser_plugin();exit;}
+if(isset($_POST["BBPlugin"])){browser_plugin_save();exit;}
 js();
 
 //fw.ufdb.categorize.php?js-import=
@@ -38,7 +40,7 @@ function tabs(){
     $array["{categorize} ({bulk})"] = "$page?import-popup=yes&function=$function";
     $array["{search}"] = "fw.ufdb.categories.php?category-items=0&EnableMenu=1&function=$function";
     $array["{test_categories}"]="$page?test=yes&function=$function";
-    $array["{test_categories} ({bulk})"]="$page?test-bulk=yes&function=$function";
+    $array["{browser_plugin}"]="$page?browser-plugin=yes&function=$function";
     echo $tpl->tabs_default($array);
 
 }
@@ -689,6 +691,63 @@ function file_uploaded():bool{
 
 
     return admin_tracks("Launching categorize after uploaded $file for category $category_id");
+}
+function browser_plugin():bool{
+
+    $tpl=new template_admin();
+    $EnableBrowserPlugin=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableBrowserPlugin"));
+    $BrowserPluginPortNum=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BrowserPluginPortNum"));
+    $BrowserPluginApiKey=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("BrowserPluginApiKey");
+    $BrowserPluginUseSSL=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("BrowserPluginUseSSL");
+    $html[]="<p>";
+    $html[]=$tpl->BigCircleCheckbox("BBPlugin:1|EnableBrowserPlugin","{enable_browser_plugin_port}","{enable_browser_plugin_explain}",$EnableBrowserPlugin);
+
+    $html[]=$tpl->BigCircleCheckbox("BBPlugin:1|BrowserPluginUseSSL","{useSSL}","{browser_plugin_ssl_explain}",$BrowserPluginUseSSL);
+
+    if(strlen($BrowserPluginApiKey)<3){
+        $BrowserPluginApiKey=generateApiKey();
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("BrowserPluginApiKey",$BrowserPluginApiKey);
+    }
+
+    if($BrowserPluginPortNum==0){
+        $BrowserPluginPortNum=9203;
+    }
+
+    $html[]=$tpl->BigIntegerField("BBPlugin:1|BrowserPluginPort","{listen_port}","{listen_port_explain}",$BrowserPluginPortNum,null,1,65535);
 
 
+
+    $html[]=$tpl->BigTextField("BBPlugin:1|BrowserPluginAPI","{API_KEY}","{browser_plugin_api_key}",$BrowserPluginApiKey);
+
+
+    $html[]="</p>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+    return true;
+
+}
+function browser_plugin_save():bool{
+    unset($_POST["BBPlugin"]);
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $tpl->SAVE_POSTs();
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/browsercat/reload");
+    return admin_tracks_post("Saving BrowserPlugin feature settings");
+
+}
+function generateApiKey(): string
+{
+    $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $groupLength = 3;
+    $groups = 4;
+    $key = [];
+
+    for ($g = 0; $g < $groups; $g++) {
+        $group = '';
+        for ($i = 0; $i < $groupLength; $i++) {
+            $group .= $letters[random_int(0, strlen($letters) - 1)];
+        }
+        $key[] = $group;
+    }
+
+    return implode('-', $key);
 }

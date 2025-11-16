@@ -3245,12 +3245,12 @@ function td_row_status($id=0):bool{
     $sockngix                   = new socksngix($id);
     $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$id");
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?reverse-fs=yes");
-
+    $MAIN_REVERSED = MAIN_REVERSED();
     $WAF=base64_encode(td_row_waf($id));
-    $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne,$sockngix)));
+    $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne,$sockngix,$MAIN_REVERSED)));
     $td_saved=base64_encode($tpl->_ENGINE_parse_body(td_saved($ligne,$sockngix)));
     $BtnAction=base64_encode($tpl->_ENGINE_parse_body(td_btnAction($id)));
-    $servicename=base64_encode(td_row_servicename($id));
+    $servicename=base64_encode(td_row_servicename($id,$MAIN_REVERSED));
     $servernames=base64_encode(td_row_serversnames($id));
     $ServerStats=base64_encode(td_row_serverstats($id));
 
@@ -3853,21 +3853,33 @@ function td_row_sslcertificate($id):string{
 
 
 }
-function td_row_serversnames($id):string{
+function td_row_serversnames($id,$MAIN_REVERSED=array()):string{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+    $style="";
     if($id==0) {
         $id = intval($_GET["td-status"]);
     }
     $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT type,hosts FROM nginx_services WHERE ID=$id");
+    $ligne=$q->mysqli_fetch_array("SELECT type,hosts,enabled FROM nginx_services WHERE ID=$id");
     $ServerType=$ligne["type"];
-    if($ServerType==5){
-        return td_row_serversnames_stream();
+    $enabled=intval($ligne["enabled"]);
+    if(count($MAIN_REVERSED)==0){
+        $MAIN_REVERSED=MAIN_REVERSED();
+    }
+    if (!isset($MAIN_REVERSED[$id])) {
+        $enabled=0;
     }
 
 
+    if($ServerType==5){
+        return td_row_serversnames_stream($id);
+    }
+    if($enabled==0) {
+        $style = "style='color:#a3a1a1;'";
+    }
+
     list($serversnames,$ServerNameFields)=extract_hosts($ligne["hosts"],$id);
-    return $tpl->_ENGINE_parse_body($ServerNameFields);
+    return "<span $style>".$tpl->_ENGINE_parse_body($ServerNameFields)."</span>";
 }
 function td_row_serversnames_stream($id):string{
     $f=array();
@@ -3894,9 +3906,10 @@ function td_row_serversnames_stream($id):string{
     }
     return @implode("",$f);
 }
-function td_row_servicename($id=0):string{
+function td_row_servicename($id=0,$MAIN_REVERSED=array()):string{
     $tpl=new template_admin();
     $tpl->CLUSTER_CLI=true;
+    $style="";
     $page=CurrentPageName();
     if($id==0) {
         $id = intval($_GET["td-status"]);
@@ -3925,7 +3938,12 @@ function td_row_servicename($id=0):string{
     if(!IS_LICENSE()){
         $jssite=$ligne["servicename"];
     }
-
+    if(count($MAIN_REVERSED)==0){
+        $MAIN_REVERSED=MAIN_REVERSED();
+    }
+    if (!isset($MAIN_REVERSED[$id])) {
+        $enabled=0;
+    }
 
     if($enabled==1) {
         if ($debug == 1) {
@@ -3937,6 +3955,7 @@ function td_row_servicename($id=0):string{
     if($enabled==0){
         $textdanger="text-default";
         $labelfanger="label-default";
+        $style="style='color:#a3a1a1;'";
     }
 
     $DenyAccess=intval($sockngix->GET_INFO("DenyAccess"));
@@ -3949,8 +3968,10 @@ function td_row_servicename($id=0):string{
         $badconf=$badconf."&nbsp;<span class='label $labelfanger'>{deny_access}</span>";
     }
 
+
+
     $ssl_certificate=td_row_sslcertificate($id);
-    return $tpl->_ENGINE_parse_body("$jssite$badconf$ssl_certificate$debug_ico");
+    return $tpl->_ENGINE_parse_body("<span $style>$jssite$badconf$ssl_certificate$debug_ico</span>");
 
 }
 function table_footer($totalRecords):string{
@@ -3968,8 +3989,6 @@ function table_footer($totalRecords):string{
     $f[]="<tfoot>";
     $f[]="<tr>";
     $f[]="<td colspan='17'>";
-
-
     $f[]="<div class=\"dataTables_paginate paging_simple_numbers\" id=\"DataTables_Table_0_paginate\" style='text-align:right'>";
     $f[]="	<ul class=\"pagination\">";
     for ($page = 1; $page <= $totalPages; $page++) {
@@ -4065,7 +4084,7 @@ function MAIN_REVERSED():array{
     }
     return $GLOBALS["MAIN_REVERSED"];
 }
-function td_status($ligne,$sockngix):string{
+function td_status($ligne,$sockngix,$MAIN_REVERSED=array()):string{
     VERBOSE("-------------------------- START STATUS --------------------------", __LINE__);
     $page = CurrentPageName();
     $ssl_certificate = $sockngix->GET_INFO("ssl_certificate");
@@ -4084,12 +4103,20 @@ function td_status($ligne,$sockngix):string{
     if ($ligne["enabled"] == 0) {
         return "<span class='label label-default'>#$ID {disabled}</span>";
     }
+    if(count($MAIN_REVERSED)==0) {
+        $MAIN_REVERSED = MAIN_REVERSED();
+    }
+
 
     if($MaintenanceSite==1){
+        if (!isset($MAIN_REVERSED[$ID])) {
+            return $tpl->td_href("<span class='label label-danger'>#$ID {not_saved}</span>", null, $goodconf_js);
+        }
+
         return $tpl->td_href("<span class='label label-warning'>#$ID {maintenance}</span>", null, $goodconf_js);
     }
 
-    $MAIN_REVERSED=MAIN_REVERSED();
+
 
     if ($ligne["type"] == 13) {
         if ($ssl_certificate == null) {

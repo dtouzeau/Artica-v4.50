@@ -1326,18 +1326,6 @@ class left_menus{
         $f[]="                    <a href='#' ><i class=\"$sensor\"></i> <span class=\"nav-label\">IDS</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
 
-        if($EnableSuricata==0) {
-                $f[] = $tpl->LeftMenu(
-                    array("PAGE" => "fw.ids.wizard.php",
-                        "ICO" => ico_cd,
-                        "TEXT" => "{about2}")
-                );
-        }
-
-
-
-
-
         if($EnableSuricata==1) {
 
             $f[] = $tpl->LeftMenu(
