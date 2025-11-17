@@ -329,7 +329,7 @@ function main_form_popup():bool{
     if($WazhuClientGroup==null){$WazhuClientGroup="default";}
 
 
-    $jsrestart="dialogInstance2.close();LoadAjaxSilent('wazhu-client-div','$page?tabs=yes');".$tpl->framework_buildjs("wazhu.client.php?restart=yes","wazhu.client.progress","wazhu.client.progress.log","wazhu-client-restart","LoadAjax('wazhu-status-start','$page?status-main=yes')");
+    $jsrestart="dialogInstance2.close();LoadAjaxSilent('wazhu-client-div','$page?tabs=yes');".$tpl->framework_buildjs("/wazuh/restart","wazhu.client.progress","wazhu.client.progress.log","wazhu-client-restart","LoadAjax('wazhu-status-start','$page?status-main=yes')");
 
     $form[] = $tpl->field_text("WazhuClientServer", "{remote_server_address}", $WazhuClientServer, true);
     $form[] = $tpl->field_numeric("WazhuClientServerPort", "{remote_server_port}", $WazhuClientServerPort, true);
@@ -356,7 +356,7 @@ function status_main():bool{
     $WazhuClientApiUser= trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WazhuClientApiUser"));
 
     if($WazhuClientApiUser==null){$WazhuClientApiUser="wazuh";}
-    $jsrestart=$tpl->framework_buildjs("wazhu.client.php?restart=yes","wazhu.client.progress","wazhu.client.progress.log","wazhu-client-restart","LoadAjax('wazhu-status-start','$page?status-main=yes')");
+    $jsrestart=$tpl->framework_buildjs("/wazuh/restart","wazhu.client.progress","wazhu.client.progress.log","wazhu-client-restart","LoadAjax('wazhu-status-start','$page?status-main=yes')");
 
     $tpl->table_form_field_js("Loadjs('$page?wazuh-form-js=yes')");
     $tpl->table_form_field_text("{remote_server}","$WazhuClientServer:$WazhuClientServerPort",ico_server);
@@ -455,10 +455,24 @@ function status_client():bool{
     $tpl            = new template_admin();
     $WazhuClientEnrollment=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WazhuClientEnrollment"));
 
-    $jsrestart=$tpl->framework_buildjs("wazhu.client.php?restart=yes","wazhu.client.progress","wazhu.client.progress.log","wazhu-client-restart","LoadAjax('wazhu-status-start','$page?status-main=yes')");
+    $jsrestart=$tpl->framework_buildjs("/wazuh/restart","wazhu.client.progress","wazhu.client.progress.log","wazhu-client-restart","LoadAjax('wazhu-status-start','$page?status-main=yes')");
 
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("wazhu.client.php?status=yes");
-    $bsini=new Bs_IniHandler(PROGRESS_DIR."/APP_WHAZU_AGENT.status");
+
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/wazuh/status"));
+
+    if (json_last_error()> JSON_ERROR_NONE) {
+        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("{error}", "JSON", null, "fa-solid fa-circle-1"));
+        return true;
+    }
+    if(!$json->Status){
+        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("{error}", "WEB API", null, "fa-solid fa-circle-1"));
+        return true;
+    }
+
+
+    $bsini=new Bs_IniHandler();
+    $bsini->loadString($json->Info);
     $status[]=$tpl->SERVICE_STATUS($bsini, "APP_WHAZU_AGENTD",$jsrestart);
     $status[]=$tpl->SERVICE_STATUS($bsini, "APP_WHAZU_EXECD",$jsrestart);
     $status[]=$tpl->SERVICE_STATUS($bsini, "APP_WHAZU_MODULESD",$jsrestart);

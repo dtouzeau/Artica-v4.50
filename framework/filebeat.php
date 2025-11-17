@@ -19,13 +19,7 @@ foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
 
 
-function status(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$cmd="$php5 /usr/share/artica-postfix/exec.status.php --filebeat >/usr/share/artica-postfix/ressources/logs/web/filebeat.status 2>&1";
-	shell_exec($cmd);
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
+
 
 function cloud_install(){
     $migration=null;
@@ -65,85 +59,7 @@ function cloud_uninstall(){
 }
 
 
-function install(){
-	$migration=null;
-	$GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/filebeat.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/filebeat.log";
-	@unlink($GLOBALS["CACHEFILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["CACHEFILE"],0777);
-	@chmod($GLOBALS["LOGSFILES"],0777);
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.filebeat.php --install >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
 
-}
-function uninstall(){
-	$migration=null;
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/filebeat.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/filebeat.log";
-	@unlink($GLOBALS["CACHEFILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["CACHEFILE"],0777);
-	@chmod($GLOBALS["LOGSFILES"],0777);
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.filebeat.php --uninstall >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-
-}
-function restart_progress(){
-	
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-
-
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/filebeat.restart.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/filebeat.restart.log";
-
-	@unlink($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@chmod($GLOBALS["CACHEFILE"],0777);$array["POURC"]=2;$array["TEXT"]="{please_wait}";@file_put_contents($GLOBALS["CACHEFILE"], serialize($array));
-	
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["LOGSFILES"],0777);
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.filebeat.php --restart >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-		
-	
-}
-function reload(){
-
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/3proxy.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/3proxy.progress.log";
-	@unlink($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@chmod($GLOBALS["CACHEFILE"],0777);$array["POURC"]=2;$array["TEXT"]="{please_wait}";@file_put_contents($GLOBALS["CACHEFILE"], serialize($array));
-
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["LOGSFILES"],0777);
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.filebeat.php --reload >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-
-
-}
 function systemusers(){
 	
 	

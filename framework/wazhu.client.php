@@ -10,10 +10,6 @@ if(isset($_GET["restart"])){RESTART();exit;}
 if(isset($_GET["logs"])){search_logs();exit;}
 writelogs_framework("unable to understand query...",__FUNCTION__,__FILE__,__LINE__);
 
-function STATUS(){
-    $unix=new unix();
-    $unix->framework_exec("exec.status.php --wazhu-client");
-}
 function search_logs():bool{
     $unix=new unix();
     $unix->framework_search_syslog($_GET["logs"],
@@ -24,21 +20,6 @@ function search_logs():bool{
 }
 
 
-function UNINSTALL(){
-    $unix=new unix();
-    $unix->framework_execute("exec.wazhu.client.php --uninstall","wazhu.client.progress","wazhu.client.progress.log");
-}
-
-function INSTALL(){
-    $unix=new unix();
-    $unix->framework_execute("exec.wazhu.client.php --install","wazhu.client.progress","wazhu.client.progress.log");
-}
-
-function RESTART(){
-	$unix=new unix();
-    $unix->framework_execute("exec.wazhu.client.php --restart","wazhu.client.progress","wazhu.client.progress.log");
-
-}
 
 
 

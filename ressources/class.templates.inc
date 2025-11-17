@@ -1554,7 +1554,6 @@ function noback(){
     $noback["miniadm.php"]=true;
     $noback["squid.access-sql.php"]=true;
     $noback["exec.shm.php"]=true;
-    $noback["change.title.php"]=true;
     $noback["squid.stats.listener.php"]=true;
     $noback["squid.blocks.listener.php"]=true;
     $noback["import.users.listener.php"]=true;
@@ -2246,99 +2245,7 @@ function REMOVE_CACHED($file=null){
     unset($_SESSION["cached-pages"]);
     return $sizetot;
 }
-function finduser_format($array,$faltomde=false){
-    $tpl=new templates();
-    $organization=$tpl->_ENGINE_parse_body("{organization}");
-    if(strpos($array["sn"], ',')>0){$array["sn"]=null;}
 
-    $uid=$array["uid"];
-
-    $disp="{$array["givenname"]} {$array["sn"]}";
-    if(trim($disp)=="{unknown}"){$disp=null;}
-
-    if(trim($disp)==null){
-        $disp=$array["displayname"];
-    }
-    $keyimg="uid={$array["uid"]}";
-    if($array["JS"]<>null){
-        if(isset($array["employeenumber"])){
-            $array["JS"]="javascript:Loadjs('contact.php?employeeNumber={$array["employeenumber"]}')";
-            if($array["img"]=="img/contact-unknown-user.png"){$array["img"]="img/contact-60.png";}
-            $keyimg="employeeNumber={$array["employeenumber"]}";
-
-        }
-
-    }
-    if(is_numeric($array["uidNumber"])){
-        $uidn="ID:&nbsp;<b>{$array["uidNumber"]}</b><br>";
-    }
-    if(trim($array["ou"])<>null){
-        $ou="$organization:<b>{$array["ou"]}</b><br>";
-    }
-
-    if($array["mail"]<>null){
-        $mail=$array["mail"];
-    }
-    if($array["phone"]<>null){
-        if($array["mobile"]<>null){$array["mobile"]="&nbsp|&nbsp;{$array["mobile"]}";}
-
-        $phone="{$array["phone"]}{$array["mobile"]}<br>";
-    }
-
-    if($array["title"]<>null){
-        $title=$array["title"]."<br>";
-    }
-
-    if($faltomde){
-        $html="
-		<div style='width:98%' class=form>		
-		<table style='width:100%'>
-		<tr>
-			<td valign='top' width=1%><a href=\"javascript:Blurz();\" OnClick=\"javascript:s_PopUp('edit.thumbnail.php?$keyimg',550,250);\"><img src='{$array["img"]}'></a></td>
-			<td valign='top'>
-				<table>
-				<tr>
-					<td><span style='font-size:14px;font-weight:bold'>$disp</span>
-					<div style='font-size:11px'><i>$mail</i></div>
-					<div style='font-size:11px'><i>$ou$title
-					<a href=\"javascript:Blurz();\" 
-						OnClick=\"Loadjs('domains.edit.user.phones.php?$keyimg')\" style='font-size:11px;text-decoration:underline'>
-						$phone</a>
-						$uidn</i></div>
-				</td>
-			</tr>
-			</table>
-			</td>
-		</tr>
-		</table>
-		</div>
-		";
-        return $html;
-
-
-    }
-
-    $color="black";
-    return array(
-        'id' => "$uidn",
-        'cell' => array(
-            "<a href=\"javascript:Blurz();\" 
-				OnClick=\"javascript:s_PopUp('edit.thumbnail.php?$keyimg',550,250);\">
-				<img src='{$array["img"]}'></a>",
-            "<a href=\"javascript:Blurz();\"  OnClick=\"{$array["JS"]};\" 
-		style='font-size:20px;text-decoration:underline;color:$color'>$uid</a>
-		<br><span style='font-size:18px;margin-bottom:-10px;text-transform:capitalize'>$disp</span>
-		<br><span style='font-size:16px'><i>$ou$title$phone$uidn</i>",
-            "<a href=\"javascript:Blurz();\"  OnClick=\"{$array["JS"]};\" 
-			style='font-size:20px;text-decoration:underline;color:$color'>$mail</a></span>",
-
-
-        )
-    );
-
-
-
-}
 function is_base64_encoded($encodedString) {
     if($encodedString==null){return false;}
     $fincaracts=substr($encodedString,strlen($encodedString)-2,2);

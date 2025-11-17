@@ -260,11 +260,7 @@ if (isset($argv[1])) {
     }
 
 
-    if($argv[1]=="--wazhu-client"){
-        include_once("$RDIR/class.status.wazhu.agent.inc");
-        echo APP_WHAZU_AGENT();
-        exit;
-    }
+
 
     if ($argv[1] == "--pdns") {
         $results = array();
@@ -454,13 +450,6 @@ if (isset($argv[1])) {
 
     if ($argv[1] == "--gdm") {
         echo "\n" . gdm();
-        exit;
-    }
-
-
-    if ($argv[1] == "--filebeat") {
-        include_once(dirname(__FILE__) . "/ressources/class.status.filebeat.inc");
-        echo "\n" . _filebeat();
         exit;
     }
 
@@ -1245,7 +1234,7 @@ function LoadIncludes(){
         "class.status.haproxy.inc","class.status.adagent.inc","class.status.privoxy.inc","class.status.sealion.inc",
         "class.status.watchdog.me.inc","class.status.splunk.inc","class.status.elasticsearch.inc","class.status.prads.inc",
         "class.status.videocache.inc","class.status.squid.inc","class.status.postfix.inc","class.status.pdns.inc","class.status.defaults.inc","class.status.xapian.inc","class.status.elasticsearch.inc","class.status.wordpress.inc","class.status.dwagent.inc","class.status.quagga.inc",
-        "class.status.saslauthd.inc","class.status.wanproxy.inc","class.status.fsm.inc","class.status.haexchange.inc","class.status.wazhu.agent.inc","class.status.hotspot.inc","class.status.vasd.inc");
+        "class.status.saslauthd.inc","class.status.wanproxy.inc","class.status.fsm.inc","class.status.haexchange.inc","class.status.hotspot.inc","class.status.vasd.inc");
 
     foreach ($RESSOURCES as $ressource){
         $fname=$GLOBALS["BASE_ROOT"] . "/ressources/$ressource";
@@ -2029,12 +2018,6 @@ function launch_all_status($force = false){
         include_once(dirname(__FILE__) . '/ressources/class.status.dnsfilterd.inc');
         dnsfilterd_status();
     }
-    if (is_file("/etc/init.d/filebeat")) {
-        include_once(dirname(__FILE__) . '/ressources/class.status.filebeat.inc');
-        _filebeat();
-    }
-
-
 
     $postfix_functions = array();
     $POSTFIX_INSTALLED = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_INSTALLED"));
@@ -6886,7 +6869,6 @@ function CheckCallable():bool{
     $Callables[]="/ressources/class.status.apt-mirror.inc";
     $Callables[]="/ressources/class.status.fsm.inc";
     $Callables[]="/ressources/class.status.haexchange.inc";
-    $Callables[]="/ressources/class.status.wazhu.agent.inc";
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
     if ($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MYSQL_INSTALLED") == 1) {if ($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMySQL") == 1) { $Callables[]="/ressources/class.status.mysql.inc"; } }

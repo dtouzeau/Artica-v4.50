@@ -396,56 +396,6 @@ function RefreshAllTabs(){
 	
 	
 }
-
-function x_ChangeHTMLTitle(obj) {
-	var tempvalue=obj.responseText;
-	if(tempvalue.length>0){
-		document.title=tempvalue;
-    }else{
-    	document.title="!!! Error !!!";
-    }
-}
-
-function ChangeHTMLTitle(){
-	  setTimeout('ChangeHTMLTitlePerform()',500);
-}
-function ChangeHTMLTitleUserSquid(){
-	  setTimeout('ChangeHTMLTitleUserSquidPerform()',500);
-}
- 
-function ChangeHTMLTitlePerform(){
-	var XHR = new XHRConnection();
-	XHR.appendData('GetMyTitle','yes');
-	XHR.sendAndLoad("change.title.php", 'POST',x_ChangeHTMLTitle);	
-}
-function ChangeHTMLTitleUserSquidPerform(){
-	var XHR = new XHRConnection();
-	XHR.appendData('GetMyTitle','yes');
-	XHR.sendAndLoad("squid.users.index.php", 'POST',x_ChangeHTMLTitle);	
-	}
-
-
-function RemoveSearchEngine(){
-	setTimeout('RemoveSearchEnginePerform()',1500);
-	
-}
-
-function RemoveSearchEnginePerform(){
-	if(!RemoveSearchEnginePage()){return;}
-
-	$('.search').remove();
-	$('.search').empty().remove();
-}
-
-function RemoveSearchEnginePage(){
-	var myPage=CurrentPageName();
-	if(myPage=='squid.users.logon.php'){return true;}
-	if(myPage=='squid.users.quicklinks.php'){return true;}
-	if(myPage=='squid.users.index.php'){return true;}
-	
-	return false;
-}
-
 function compteur_global_actions(){}
 
 function isNumber(v){

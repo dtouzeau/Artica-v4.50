@@ -146,7 +146,7 @@ function filebeat(){
 
     $unix=new unix();
     $php=$unix->LOCATE_PHP5_BIN();
-    system("$php ".dirname(__FILE__)."/exec.filebeat.php --setup");
+    system("/usr/sbin/artica-phpfpm-service -install-filebeat");
 
 }
 

@@ -136,19 +136,7 @@ function APP_DNSCRYPT_PROXY_VERSION(){
 }
 
 
-function APP_FILEBEAT_VERSION(){
-	if(isset($GLOBALS["APP_FILEBEAT_VERSION"])){return $GLOBALS["APP_FILEBEAT_VERSION"];}
-	$bin=$GLOBALS["CLASS_UNIX"]->find_program("filebeat");
-	exec("$bin version 2>&1",$results);
-	foreach ($results as $num=>$line){
-		$line=trim($line);
-		if($line==null){continue;}
-		if(!preg_match("#^filebeat version\s+([0-9\.]+)#i",$line,$re)){continue;}
-		$GLOBALS["APP_FILEBEAT_VERSION"]=$re[1];
-		return $GLOBALS["APP_FILEBEAT_VERSION"];
-	}
-	return null;
-}
+
 
 
 
@@ -364,22 +352,7 @@ function APP_RDPPROXY_VERSION():string{
 
 
 
-function APP_WAZHU_VERSION():string{
-    if(isset($GLOBALS["APP_WAZHU_VERSION"])){return $GLOBALS["APP_WAZHU_VERSION"];}
-    $MasterBin="/var/ossec/bin/wazuh-control";
-    chmod($MasterBin,0755);
-    exec("$MasterBin info 2>&1",$string);
-    foreach ($string as $line){
-        if(!preg_match("#WAZUH_VERSION=.*?([0-9\.]+)#",$line,$re)){
-            if($GLOBALS["VERBOSE"]){echo "APP_WAZHU_VERSION: no match \"$line\"\n";}
-            continue;
-        }
-        if($GLOBALS["VERBOSE"]){echo "APP_WAZHU_VERSION: FOUND {$re[1]}\n";}
-        $GLOBALS["APP_WAZHU_VERSION"]=$re[1];
-        return $re[1];
-    }
-    return "0.0.0";
-}
+
 
 function APP_UFDBCAT_VERSION(){
 	if(isset($GLOBALS["APP_UFDBCAT_VERSION"])){return $GLOBALS["APP_UFDBCAT_VERSION"];}
@@ -1846,14 +1819,6 @@ function Build_default_values(){
 	}
 	if($GLOBALS["VERBOSE"]){echo "PROCESS 1 --- ".__LINE__." --- \n";}
 
-    if(is_file("/var/ossec/bin/wazuh-control")){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_WAZHU_INSTALLED", 1);
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_WAZHU_VERSION",APP_WAZHU_VERSION());
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_WAZHU_INSTALLED", 0);
-    }
-
-    
     if(is_file($httrack)){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HTTRACK_INSTALLED", 1);
     }else{
@@ -1921,15 +1886,6 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSMTP_INSTALLED", 0);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSMTP_VERSION",0);
 	}
-
-	if(is_file($filebeat)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FILEBEAT_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FILEBEAT_VERSION", FILEBEAT_VERSION());
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FILEBEAT_INSTALLED", 0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FILEBEAT_VERSION",0);
-	}
-
 	if(is_file($frontail_linux)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FRONTAIL_LINUX_INSTALLED", 1);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FRONTAIL_LINUX_VERSION", FRONTAIL_LINUX_VERSION());
@@ -2083,15 +2039,6 @@ function Build_default_values(){
 	}else{
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PDNSInstalled", 0);
 	}
-
-
-
-
-	if(is_file($filebeat)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_FILEBEAT_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_FILEBEAT_VERSION", APP_FILEBEAT_VERSION());
-	}
-
     if(!is_null($nginx)) {
         if (is_file($nginx)) {
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_NGINX_INSTALLED", 1);

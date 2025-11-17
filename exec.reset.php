@@ -52,7 +52,7 @@ function startx():bool{
     $SERVICES["/etc/init.d/web-error-page"]="/usr/sbin/artica-phpfpm-service -uninstall-weberror";
     $SERVICES["/etc/init.d/go-shield-server"]="exec.go.shield.server.php --disable";
     $SERVICES["/etc/init.d/proftpd"]="exec.proftpd.install.php --uninstall";
-    $SERVICES["/etc/init.d/wazuh-agent"]="exec.wazhu.client.php --uninstall";
+    $SERVICES["/etc/init.d/wazuh-agent"]="/usr/sbin/artica-phpfpm-service -uninstall-wazuh";
     $SERVICES["/etc/init.d/splunk"]="/usr/sbin/artica-phpfpm-service -uninstall-splunk-uf";
     $SERVICES["/etc/init.d/fail2ban"]="exec.fail2ban.php --uninstall";
     $SERVICES["/etc/init.d/suricata"]="/usr/sbin/artica-phpfpm-service -uninstall-ids";

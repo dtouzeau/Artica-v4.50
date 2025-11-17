@@ -80,10 +80,7 @@ if($EnablePDNSRESTFul==1) {
 }
 
 
-if(is_file("/etc/init.d/filebeat")){
-    squid_admin_mysql(0,"Uninstall ElasticSearch client, License error",null,__FILE__,__LINE__);
-    shell_exec("$php /usr/share/artica-postfix/exec.filebeat.php --uninstall");
-}
+
 
 if(is_file("/etc/init.d/proxy-pac")){
     squid_admin_mysql(0, "Uninstall Proxy PAC Web server (No license )",null,__FILE__,__LINE__);

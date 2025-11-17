@@ -573,8 +573,8 @@ class features{
         $config["TOKEN_INSTALLED"]="APP_WAZHU_INSTALLED";
         $config["TOKEN"]="EnableWazhuCLient";
         $config["EXPLAIN"]="{APP_WAZHU_EXPLAIN}";
-        $config["CMD_ON"]="wazhu.client.php?install=yes";
-        $config["CMD_OFF"]="wazhu.client.php?uninstall=yes";
+        $config["CMD_ON"]="/wazuh/install";
+        $config["CMD_OFF"]="/wazuh/uninstall";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/wazhu.client.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/wazhu.client.progress.log";
         return $this->build_paragraph($config);
@@ -1603,7 +1603,7 @@ class features{
 
     }
 
-    public function APP_FILEBEAT(){
+    public function APP_FILEBEAT():string{
 
         $config["SECURITY"]="AsSystemAdministrator";
         $config["TOKEN_INSTALLED"]="APP_FILEBEAT_INSTALLED";
@@ -1612,8 +1612,8 @@ class features{
         $config["TOKEN"]="EnableFileBeat";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/filebeat.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/filebeat.log";
-        $config["CMD_ON"]="filebeat.php?install=yes";
-        $config["CMD_OFF"]="filebeat.php?uninstall=yes";
+        $config["CMD_ON"]="/filebeat/install";
+        $config["CMD_OFF"]="/filebeat/uninstall";
         $config["LICENSE"]=true;
         return $this->build_paragraph($config);
     }

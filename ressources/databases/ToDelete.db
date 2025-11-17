@@ -16,7 +16,10 @@ artica.update.manu.progress.php
 public.categories.personnal.php
 Inotify.php
 artica.verify.updates.php
-artica.cluster.php'
+artica.cluster.php
+change.title.php
+ProcessesBrowse.php
+class.ext.pear.neturl2.inc
 artica.instantLdapRestore.php
 artica.stats.receiver.php
 artica.update.progress.php
@@ -31,6 +34,10 @@ index.troubleshoot.php
 index.remoteinstall.php
 index.pflogsumm.php
 index.mindterm.php
+create-user.php
+create-user.progress.php
+my.addressbook.php
+contact.php
 dar.browse.php
 dar.index.php
 dar.restore.php
@@ -139,6 +146,7 @@ exec.squidlb.php
 streamget-params.php
 exec.abuse-ch.php
 exec.ufdb.disable.php
+exec.wazhu.client.php
 squid.bandwww.progress.php
 bin/squid-setuid.sh
 exec.squid.bandwidth.php
@@ -147,6 +155,7 @@ clamav.yararules.php
 exec.system.refresh.php
 clamav.yararules.progress.php
 statistics.mailgraph.php
+exec.filebeat.php
 exec.dhcpd.queue.php
 exec.freshclam.failed.php
 bin/reverse-tests
@@ -160,6 +169,8 @@ images.listener.php
 exec.hotspot.databases.php
 ressources/language/langs.tar.gz
 ressources/class.status.nagios.agent.inc
+ressources/class.status.wazhu.agent.inc
+ressources/class.status.filebeat.inc
 ressources/class.fix.libs.clamav.inc
 ressources/class.status.clamav.inc
 ressources/class.status.3proxy.inc
