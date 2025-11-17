@@ -10,7 +10,6 @@ if(isset($_GET["ufdbdebug"])){ufdbdebug_js();exit;}
 
 page();
 
-
 function page(){
     $page=CurrentPageName();
     $Version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("FILEBEAT_VERSION");
@@ -61,29 +60,88 @@ function table(){
     $tpl=new template_admin();
     $ini=new Bs_IniHandler();
     $sock=new sockets();
-    $sock->getFrameWork("filebeat.php?status=yes");
-    $ini->loadFile("/usr/share/artica-postfix/ressources/logs/web/filebeat.status");
+
+    $json=json_decode($sock->REST_API("/filebeat/status"));
+    $bsini=new Bs_IniHandler();
+    $bsini->loadString($json->Info);
+    $jsRestart=$tpl->framework_buildjs("/filebeat/restart","filebeat.restart.progress",
+        "filebeat.restart.log","progress-filebeat-restart","LoadAjaxSilent('table-filebeat-status','$page?table=yes')");
 
 
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/filebeat.restart.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/filebeat.restart.log";
-    $ARRAY["CMD"]="filebeat.php?restart=yes";
-    $ARRAY["TITLE"]="{restarting_service}";
-    $ARRAY["AFTER"]="LoadAjax('table-3proxy-status','$page?table=yes');";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestartfilebeat="Loadjs('fw.progress.php?content=$prgress&mainid=progress-filebeat-restart');";
+    $jsReload=$tpl->framework_buildjs("/filebeat/restart","filebeat.restart.progress","filebeat.restart.log","progress-filebeat-restart","LoadAjax('table-filebeat-status','$page?table=yes');");
+
+    $json=json_decode($sock->REST_API("/filebeat/stats"),true);
+
     $eventsSent="";
+    $queueInfo="";
+    $queueMaxEvents=0;
+    $queueActiveEvents=0;
+    $queueDroppedEvents=0;
+    $queueFailedEvents=0;
+    $queueRetryEvents=0;
+    $queueAckedEvents=0;
 
-    $APP_FILEBEAT_STATS=$sock->GET_INFO("APP_FILEBEAT_STATS");
-    if(strlen($APP_FILEBEAT_STATS)>10){
-        $json=json_decode($APP_FILEBEAT_STATS,true);
-        if(array_key_exists('filebeat', $json) ){
-            //<i class="fas fa-satellite-dish"></i>
-            $events_sent=$json["filebeat"]["events"]["done"];
-            $eventsSent=$tpl->widget_h("green","fas fa-satellite-dish",FormatNumber($events_sent),"{sent_events}");
+
+
+//    $stats = "
+//                    <div class=\"ibox-content\">
+//                    <h1>Cache Ratio $prc%</h1>
+//                    <span class=\"label label-success \">$QUERIES {requests}</span>
+//                    <span class=\"label label-success \">Hits $HITS</span>
+//                    <span class=\"label label-warning \">Misses: $MISSES</span>
+//                    <span class=\"label label-info \">$GO_SHIELD_SERVER_CACHE {items}</span>
+//                    <hr></hr>
+//                    <h5>Cache Used: $dbcapacity of $dbsize</h5>
+//                    </div>
+//
+//
+//                    ";
+
+
+    if (!empty($json["Info"])) {
+        $info = json_decode($json["Info"], true); // decode as associative array
+
+        if (isset($info["filebeat"])) {
+            $events_sent = $info["filebeat"]["events"]["done"];
+            $eventsSent = $tpl->widget_h(
+                "green",
+                "fas fa-satellite-dish",
+                FormatNumber($events_sent),
+                "{sent_events}"
+            );
+            if(isset($info["libbeat"]["pipeline"]["queue"])){
+                if(isset($info["libbeat"]["pipeline"]["queue"]["max_events"])) {
+                    $queueMaxEvents = intval($info["libbeat"]["pipeline"]["queue"]["max_events"]);
+                }
+                if(isset($info["libbeat"]["pipeline"]["queue"]["acked"])) {
+                    $queueAckedEvents = intval($info["libbeat"]["pipeline"]["queue"]["acked"]);
+                }
+                if(isset($info["libbeat"]["pipeline"]["queue"]["active"])) {
+                    $queueActiveEvents = intval($info["libbeat"]["pipeline"]["queue"]["active"]);
+                }
+                if(isset($info["libbeat"]["pipeline"]["queue"]["retry"])) {
+                    $queueRetryEvents = intval($info["libbeat"]["pipeline"]["queue"]["retry"]);
+                }
+                if(isset($info["libbeat"]["pipeline"]["queue"]["failed"])) {
+                    $queueFailedEvents = intval($info["libbeat"]["pipeline"]["queue"]["failed"]);
+                }
+                if(isset($info["libbeat"]["pipeline"]["queue"]["dropped"])) {
+                    $queueDroppedEvents = intval($info["libbeat"]["pipeline"]["queue"]["dropped"]);
+                }
+
+                $queueInfo = $tpl->widget_h(
+                    "grey",
+                    "fas fa-traffic-light",
+                    "<span class=\"label label-success \">{maximum} {events} {in} {queue} $queueMaxEvents</span><br><span class=\"label label-success \">{acked} {events} $queueAckedEvents</span><br><span class=\"label label-info \">{active} {events} $queueActiveEvents</span><br><span class=\"label label-warning \">{retry} {events} $queueRetryEvents</span><br><span class=\"label label-danger \">{drop} {events} $queueDroppedEvents</span><br><span class=\"label label-danger \">{failed} {events} $queueFailedEvents</span>",
+                    "{queue}"
+                );
+            }
 
         }
     }
+
+
+
 
 
 
@@ -101,8 +159,8 @@ function table(){
     $html[]="<tr><td>
 	<div class=\"ibox\">
     	<div class=\"ibox-content\">".
-        $tpl->SERVICE_STATUS($ini, "APP_FILEBEAT",$jsrestartfilebeat)
-        ."$eventsSent</div>
+        $tpl->SERVICE_STATUS($bsini, "APP_FILEBEAT",$jsRestart)
+        ."$eventsSent<br>$queueInfo</div>
 	    	</div></td></tr>";
 
 
@@ -118,6 +176,37 @@ function table(){
     $ElasticSearchUsernameFilebeat=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchUsernameFilebeat"));
     $ElasticSearchPasswordFilebeat=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchPasswordFilebeat"));
     if($ElasticsearchRemotePort==0){$ElasticsearchRemotePort=9200;}
+    //Queue Type
+    $FilebeatEnableDiskQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatEnableDiskQueue"));
+    //Mem Queue
+    $FilebeatMemMaxEvents=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatMemMaxEvents"));
+    if($FilebeatMemMaxEvents==0){$FilebeatMemMaxEvents=3200;}
+    $FilebeatMemFlushMinEvents=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatMemFlushMinEvents"));
+    if($FilebeatMemFlushMinEvents==0){$FilebeatMemFlushMinEvents=1600;}
+    $FilebeatMemFlushTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatMemFlushTimeout"));
+    if($FilebeatMemFlushTimeout==0){$FilebeatMemFlushTimeout=10;}
+
+    //Disk Queue
+    $FilebeatDiskMaxSize=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskMaxSize"));
+    if(strlen($FilebeatDiskMaxSize)==0){$FilebeatDiskMaxSize="10GB";}
+
+    $FilebeatDiskReadAhead=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskReadAhead"));
+    if($FilebeatDiskReadAhead==0){$FilebeatDiskReadAhead=512;}
+    $FilebeatDiskWriteAhead=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskWriteAhead"));
+    if($FilebeatDiskWriteAhead==0){$FilebeatDiskWriteAhead=2048;}
+    $FilebeatDiskRetryInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskRetryInterval"));
+    if($FilebeatDiskRetryInterval==0){$FilebeatDiskRetryInterval=1;}
+    $FilebeatDiskMaxRetryInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskMaxRetryInterval"));
+    if($FilebeatDiskMaxRetryInterval==0){$FilebeatDiskMaxRetryInterval=30;}
+    $DiskSize["512MiB"]="512MiB";
+    for ($i = 1; $i <= 20; $i++) {
+        $DiskSize["{$i}GB"]="{$i}GB";
+    }
+    $FilebeatIndexIsILM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatIndexIsILM"));
+    $FilebeatTemplateOverwrite=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatTemplateOverwrite"));
+
+
+
 
     $form[]=$tpl->field_ipv4("ElasticSearchAddress","{elasticsearch_address}",$ElasticSearchAddress,true);
     $form[]=$tpl->field_numeric("ElasticSearchRemotePort","{elasticsearch_remote_port}",$ElasticsearchRemotePort);
@@ -125,7 +214,23 @@ function table(){
     $form[]=$tpl->field_checkbox("ElasticsearchEnableAuthFilebeat","{authentication}",$ElasticsearchEnableAuthFilebeat,"ElasticSearchUsernameFilebeat,ElasticSearchPasswordFilebeat");
     $form[]=$tpl->field_text("ElasticSearchUsernameFilebeat", "{username}", $ElasticSearchUsernameFilebeat);
     $form[]=$tpl->field_password("ElasticSearchPasswordFilebeat", "{password}", $ElasticSearchPasswordFilebeat);
-    $formula=$tpl->form_outside("{APP_ELASTICSEARCH}",$form,null,"{apply}",$jsrestartfilebeat,"AsWebStatisticsAdministrator",true);
+    $form[]=$tpl->field_checkbox("FilebeatIndexIsILM","{index} {is} ILM",$FilebeatIndexIsILM);
+    $form[]=$tpl->field_checkbox("FilebeatTemplateOverwrite","{template} {overwrite}",$FilebeatTemplateOverwrite);
+
+    $form[]=$tpl->field_section("{queue}");
+    //mem
+    $form[]=$tpl->field_numeric("FilebeatMemMaxEvents","{maximum} {events}",$FilebeatMemMaxEvents);
+    $form[]=$tpl->field_numeric("FilebeatMemFlushMinEvents","{flush} {minimum} {events}",$FilebeatMemFlushMinEvents);
+    $form[]=$tpl->field_numeric("FilebeatMemFlushTimeout","{flush} {timeout}",$FilebeatMemFlushTimeout);
+    //disk
+    $form[]=$tpl->field_checkbox("FilebeatEnableDiskQueue","{enable} {disk} {queue}",$FilebeatEnableDiskQueue,"FilebeatDiskMaxSize,FilebeatDiskReadAhead,FilebeatDiskWriteAhead,FilebeatDiskRetryInterval");
+    $form[]=$tpl->field_array_hash($DiskSize, "FilebeatDiskMaxSize", "nonull:{size}", $FilebeatDiskMaxSize);
+    $form[]=$tpl->field_numeric("FilebeatDiskReadAhead","{read} {ahead}",$FilebeatDiskReadAhead);
+    $form[]=$tpl->field_numeric("FilebeatDiskWriteAhead","{write} {ahead}",$FilebeatDiskWriteAhead);
+    $form[]=$tpl->field_numeric("FilebeatDiskRetryInterval","{retry} {interval}",$FilebeatDiskRetryInterval);
+    $form[]=$tpl->field_numeric("FilebeatDiskMaxRetryInterval","{max} {retry} {interval}",$FilebeatDiskMaxRetryInterval);
+
+    $formula=$tpl->form_outside("{APP_ELASTICSEARCH}",$form,null,"{apply}",$jsReload,"AsWebStatisticsAdministrator",true);
 
     $html[]=$formula;
 

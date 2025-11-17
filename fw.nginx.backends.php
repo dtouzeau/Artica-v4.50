@@ -834,7 +834,6 @@ function td_options($TRCLASS,$serviceid){
     if($proxy_http_version==null){$proxy_http_version="1.0";}
 
     $js="Loadjs('$page?options-js=$serviceid')";
-
     $RemotePath=$sock->GET_INFO("RemotePath");
     $default_page       = trim($sock->GET_INFO("default_page"));
     $form[]=$tpl->field_text("RemotePath","{TargetRemotePath}",$sock->GET_INFO("RemotePath"));
@@ -886,7 +885,8 @@ function options_popup():bool{
 
     $form[]=$tpl->field_hidden("serviceid",$serviceid);
     $form[]=$tpl->field_text("HostHeader","{HostHeader}",$sock->GET_INFO("HostHeader"));
-
+    $EnableFalainacloudCapabilites=intval($sock->GET_INFO("EnableFalainacloudCapabilites"));
+    $MapBackendsByPort=intval($sock->GET_INFO("MapBackendsByPort"));
     $proxy_http_version=trim($sock->GET_INFO("proxy_http_version"));
     if($proxy_http_version==null){$proxy_http_version="1.0";}
 
@@ -902,6 +902,8 @@ function options_popup():bool{
         $form[] = $tpl->field_checkbox("HostHeaderReplace", "{HostHeaderReplace}", $sock->GET_INFO("HostHeaderReplace"));
         $form[] = $tpl->field_checkbox("ProtoReplaceContent","{ProtoReplaceContent}", $sock->GET_INFO("ProtoReplaceContent"));
     }
+    $form[] = $tpl->field_checkbox("MapBackendsByPort", "{map} {backends} {by} {port}", $MapBackendsByPort);
+    $form[] = $tpl->field_checkbox("EnableFalainacloudCapabilites", "{enable} Falainacloud {support}", $EnableFalainacloudCapabilites);
     $form[]=$tpl->field_text("RemotePath","{TargetRemotePath}",$sock->GET_INFO("RemotePath"));
     $form[]=$tpl->field_text("default_page","{nginx_default_page}",$default_page,false,"url:https://wiki.articatech.com/en/reverse-proxy/architecture/default-index;{nginx_default_page_explain}");
     $form[]=$tpl->field_text("resolvers","{nic_static_dns}",$resolvers);

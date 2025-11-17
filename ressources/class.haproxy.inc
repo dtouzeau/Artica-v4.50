@@ -707,7 +707,7 @@ class haproxy{
         $LINES=array();
         $HEADS=array();
         $check="check";
-
+        $check_ssl=0;
         if(!is_numeric($MainConfig["inter"])){$MainConfig["inter"]=60000;}
         if(!is_numeric($MainConfig["fall"])){$MainConfig["fall"]=3;}
         if(!is_numeric($MainConfig["rise"])){$MainConfig["rise"]=2;}
@@ -718,9 +718,9 @@ class haproxy{
         if(!is_numeric($MainConfig["postfix-send-proxy"])){$MainConfig["postfix-send-proxy"]=0;}
         if(!is_numeric($MainConfig["UseSSL"])){$MainConfig["UseSSL"]=0;}
         if(!is_numeric($MainConfig["proxy_protocol"])){$MainConfig["proxy_protocol"]=0;}
-
+if(!is_numeric($MainConfig["check_ssl"])){$MainConfig["check_ssl"]=0;}
         if($MainConfig["proxy_protocol"]==1){$send_proxy=1;}
-
+if($MainConfig["check_ssl"]==1){$check_ssl=1;}
         $asSquidArtica=intval($MainConfig["asSquidArtica"]);
         $HEADS[]="#\tasSquidArtica = $asSquidArtica, Proxy Protocol=$send_proxy";
 
@@ -758,6 +758,9 @@ class haproxy{
             $smtp_proxy=" send-proxy-v2";
             $check="$check check-send-proxy";
         }
+        if($check_ssl==1){
+                    $check="$check check-ssl verify none";
+                }
         if(count($xlogs)>0){$log=@implode("\n", $xlogs)."\n";}
         $LINES[]="$log\tserver {$ligne["backendname"]} {$ligne["listen_ip"]}:{$ligne["listen_port"]}$smtp_proxy{$ssl}$UseCookiesText weight {$ligne["bweight"]}$maxconn $check$check_params".$this->outgoing_address($ligne["localInterface"]);
         if($GLOBALS["VERBOSE"]){

@@ -38,6 +38,7 @@ if(isset($_POST["SuricataUpdateInterval"])){satistics_parameters_save();exit;}
 if(isset($_GET["interface-js"])){interface_js();exit;}
 if(isset($_GET["interface-popup"])){interface_popup();exit;}
 if(isset($_GET["interface-layer"])){interface_layer();exit;}
+if(isset($_GET["wazuh"])){wazuh();exit;}
 
 page();
 
@@ -179,6 +180,7 @@ function log_types_tabs():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $array["{traffic_logging}"]="$page?log-types-parameters=yes";
+    $array["{APP_WAZHU}"]="$page?wazuh=yes";
     echo $tpl->tabs_default($array);
     return true;
 }
@@ -536,11 +538,47 @@ function Save_nic():bool{
 	if($_POST["enable"]==0){return false;}
 	$q->QUERY_SQL("INSERT INTO suricata_interfaces (interface,threads,enable) VALUES ('{$_POST["nic-settings"]}','{$_POST["threads"]}',1)");
 	if(!$q->ok){echo $q->mysql_error_html(true);}
+    return true;
 }
 function Save_gen(){
 	$sock=new sockets();
 	$sock->SET_INFO("SnortRulesCode", $_POST["SnortRulesCode"]);
 	$sock->SET_INFO("SuricataFirewallPurges", $_POST["SuricataFirewallPurges"]);
 	$sock->SET_INFO("SuricataPurges", $_POST["SuricataPurges"]);	
-	
+}
+
+function wazuh():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+
+    $APP_WAZHU_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_WAZHU_INSTALLED"));
+    $EnableWazhuCLient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWazhuCLient"));
+    if($APP_WAZHU_INSTALLED==0){
+        $js="dialogInstance1.close();Loadjs('fw.system.upgrade-software.php?product=APP_WAZHU');";
+        $btn=$tpl->button_autnonome("{install} {APP_WAZHU}",$js,ico_cd,"AsSquidAdministrator",350,"btn-primary",80);
+        $html[]= "<p class='alert alert-warning'>{wazuh_not_installed_ids}</p>";
+        $html[]= "<p style='margin-top:10px;text-align: right;margin-right:20px'>$btn</p>";
+        $html[]= $tpl->_ENGINE_parse_body(@implode("\n",$html));
+        return true;
+    }
+    if($EnableWazhuCLient==0){
+        $js=$tpl->framework_buildjs("/wazuh/install","wazhu.client.progress","wazhu.client.progress.log","wazuh-install");
+        $btn=$tpl->button_autnonome("{install} {APP_WAZHU}",$js,ico_cd,"AsSquidAdministrator",350,"btn-primary",80);
+
+        $html[]= "<div id='wazuh-install'></div>";
+        $html[]= "<p class='alert alert-warning'>{wazuh_not_enabled_ids}</p>";
+        $html[]= "<p style='margin-top:10px;text-align: right;margin-right:20px'>$btn</p>";
+        echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+        return true;
+    }
+    $WazhuClientEnrollment=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WazhuClientEnrollment"));
+    if($WazhuClientEnrollment==0){
+        $html[]= "<p class='alert alert-warning'>{wazuh_not_enrollment_ids}</p>";
+        echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+        return true;
+    }
+
+    echo "<p>".$tpl->BigCircleCheckbox("EnableWazuh", "{APP_WAZHU}","{wazuh_siem_explain}", $EnableWazhuCLient, "dialogInstance1.close();")."</p>";
+
+    return true;
 }

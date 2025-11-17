@@ -2,8 +2,8 @@
 $GLOBALS["TITLENAME"]="DNS Cache service";
 ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);
 ini_set('error_prepend_string',null);ini_set('error_append_string',null);
-include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
-include_once("/usr/share/artica-postfix/ressources/class.resolv.conf.inc");
+include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+include_once(dirname(__FILE__)."/ressources/class.resolv.conf.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $GLOBALS["CLASS_SOCKETS"]->heads_exec_root($argv);
 if(function_exists("posix_getuid")){if(posix_getuid()<>0){die("Cannot be used in web server mode\n\n");}}
@@ -31,7 +31,6 @@ function uninstall():bool{
     build_progress(100, "{uninstalling} {success}");
     return true;
 }
-
 function build(){
     $unix=new unix();
     $conf="/var/ossec/etc/ossec.conf";
