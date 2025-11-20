@@ -258,7 +258,7 @@ function search_results():bool{
 				<td style='width:1%;' nowrap class='$class'>$date</td>
 				<td style='width:1%;' nowrap class='$class'>$type</td>
 				<td style='width:1%;' nowrap class='$class'>$service</td>
-				<td width=99% class='$class'>$line</td>
+				<td style='width:99%' class='$class'>$line</td>
 				</tr>";
     }
 
@@ -266,7 +266,7 @@ function search_results():bool{
 
     $html[]="</table>";
     $html[]="<script>";
-    $html[]=$tiny;
+    //$html[]=$tiny;
     $html[]="</script>";
     echo $tpl->_ENGINE_parse_body($html);
     return true;
@@ -341,7 +341,6 @@ function main_form_popup():bool{
         "AsSystemAdministrator");
     return true;
 }
-
 function status_main():bool{
     $tpl            = new template_admin();
 	$page           = CurrentPageName();
@@ -379,6 +378,8 @@ function status_main():bool{
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
+    $Refresh=$tpl->RefreshInterval_js("wazhu-client-status",$page,"wazhu-client-status=yes");
+
 	$html="<table style='width:100%;'>
     <tr>
 	<td style='vertical-align:top;width:240px'><div id='wazhu-client-status'></div></td>
@@ -388,13 +389,13 @@ function status_main():bool{
 	</tr>
 	</table>
 	<script>
-	$headsjs
-	LoadAjaxSilent('wazhu-client-status','$page?wazhu-client-status=yes');</script>
+	    $headsjs
+	    $Refresh
+	</script>
 	";
 	echo $tpl->_ENGINE_parse_body($html);
 	return true;
 }
-
 function status_top():bool{
     $page=CurrentPageName();
     $tpl            = new template_admin();
@@ -447,15 +448,12 @@ function status_top():bool{
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
-
-
-
 function status_client():bool{
     $page=CurrentPageName();
     $tpl            = new template_admin();
     $WazhuClientEnrollment=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WazhuClientEnrollment"));
 
-    $jsrestart=$tpl->framework_buildjs("/wazuh/restart","wazhu.client.progress","wazhu.client.progress.log","wazhu-client-restart","LoadAjax('wazhu-status-start','$page?status-main=yes')");
+    $jsrestart=$tpl->framework_buildjs("/wazuh/restart","wazhu.client.progress","wazhu.client.progress.log","wazhu-client-restart");
 
 
 
@@ -473,13 +471,13 @@ function status_client():bool{
 
     $bsini=new Bs_IniHandler();
     $bsini->loadString($json->Info);
-    $status[]=$tpl->SERVICE_STATUS($bsini, "APP_WHAZU_AGENTD",$jsrestart);
+    $status[]=$tpl->SERVICE_STATUS($bsini, "APP_WAZHU",$jsrestart);
     $status[]=$tpl->SERVICE_STATUS($bsini, "APP_WHAZU_EXECD",$jsrestart);
     $status[]=$tpl->SERVICE_STATUS($bsini, "APP_WHAZU_MODULESD",$jsrestart);
     $status[]=$tpl->SERVICE_STATUS($bsini, "APP_WHAZU_LOGCOLLECTOR",$jsrestart);
     $status[]=$tpl->SERVICE_STATUS($bsini, "APP_WHAZU_SYSCHECKD",$jsrestart);
     $status[]="<script>";
-    $status[]="LoadAjaxTiny('wazhu-client-top','$page?wazhu-client-top=yes')";
+    $status[]="LoadAjaxSilent('wazhu-client-top','$page?wazhu-client-top=yes')";
     $status[]="</script>";
     echo $tpl->_ENGINE_parse_body($status);
     return true;

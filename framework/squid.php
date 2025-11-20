@@ -3610,10 +3610,6 @@ function single_templates(){
     writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.ufdb-http-build.php >/dev/null 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-
     if(is_file("/etc/init.d/c-icap")){
         $cmd="$nohup $php5 /usr/share/artica-postfix/exec.c-icap.php --template >/dev/null 2>&1 &";
         writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);

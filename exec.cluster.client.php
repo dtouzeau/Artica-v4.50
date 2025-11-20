@@ -609,14 +609,6 @@ function import_backup($filename){
             build_progress(89, "{restarting_services}");
             shell_exec("$php /usr/share/artica-postfix/exec.squid.templates.php --progress");
         }
-
-        if (is_file("/etc/init.d/ufdb")){
-            build_progress(90, "{restarting_services}");
-            shell_exec("$php /usr/share/artica-postfix/exec.ufdb-http-build.php");
-        }
-
-
-
     }
 
     $CLUSTER_COMMANDS = unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CLUSTER_COMMANDS")));

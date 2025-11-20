@@ -1203,7 +1203,6 @@ class mysql_squid_builder{
         $this->tasks_processes[60]="exec.squid.run.schedules.php";
         $this->tasks_processes[61]="exec.clean.postgres.php";
         $this->tasks_processes[62]="exec.squid.KerbRefresh.php";
-        $this->tasks_processes[63]="exec.ufdb-http.php --restart";
         $this->tasks_processes[64]="exec.squid.reload.php";
         $this->tasks_processes[65]="exec.c-icap.php --restart-schedule";
 
@@ -1374,6 +1373,7 @@ class mysql_squid_builder{
         $this->tasks_disabled[50]=true;
         $this->tasks_disabled[55]=true;
         $this->tasks_disabled[56]=true;
+        $this->tasks_disabled[63]=true;
 
         $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
         $users=new usersMenus();

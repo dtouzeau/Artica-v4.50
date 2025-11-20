@@ -13,6 +13,7 @@ if(isset($_GET["updates-parameters"])){updates_parameters();exit;}
 if(isset($_GET["alienvault-js"])){alienvault_js();exit;}
 if(isset($_GET["alienvault-parameters"])){alienvault_parameters();exit;}
 if(isset($_POST["OtxEnabled"])){alienvault_save();exit;}
+if(isset($_POST["EnableWazuh"])){wazuh_save();exit;}
 
 if(isset($_GET["log-types"])){log_types_js();exit;}
 if(isset($_GET["log-types-parameters"])){log_types_parameters();exit;}
@@ -558,7 +559,7 @@ function wazuh():bool{
         $btn=$tpl->button_autnonome("{install} {APP_WAZHU}",$js,ico_cd,"AsSquidAdministrator",350,"btn-primary",80);
         $html[]= "<p class='alert alert-warning'>{wazuh_not_installed_ids}</p>";
         $html[]= "<p style='margin-top:10px;text-align: right;margin-right:20px'>$btn</p>";
-        $html[]= $tpl->_ENGINE_parse_body(@implode("\n",$html));
+        echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
         return true;
     }
     if($EnableWazhuCLient==0){
@@ -578,7 +579,24 @@ function wazuh():bool{
         return true;
     }
 
-    echo "<p>".$tpl->BigCircleCheckbox("EnableWazuh", "{APP_WAZHU}","{wazuh_siem_explain}", $EnableWazhuCLient, "dialogInstance1.close();")."</p>";
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        $html[]=$tpl->div_error("{error} API||$json->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+
+    $Enabled=$json->Info->Wazuh->Enabled;
+
+
+    echo "<p>".$tpl->BigCircleCheckbox("EnableWazuh", "{APP_WAZHU}","{wazuh_siem_explain}", $Enabled, "dialogInstance1.close();")."</p>";
 
     return true;
+}
+function wazuh_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $Enable=$_POST["EnableWazuh"];
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/wazuh-enable/$Enable");
+    return admin_tracks("Forward evetrs to Wazuh: $Enable");
 }

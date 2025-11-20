@@ -1307,11 +1307,8 @@ class left_menus{
             return "";
         }
         $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
-        $SURICATA_NO_WIZARD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_NO_WIZARD"));
         if($EnableSuricata==0) {
-            if($SURICATA_NO_WIZARD==1) {
                 return "";
-            }
         }
 
         //$EnableNetMonix=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNetMonix");

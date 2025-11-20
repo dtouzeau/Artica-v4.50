@@ -47,7 +47,9 @@ if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["OSPF"])){Save_OSPF();exit;}
 if(isset($_GET["AsGateway-options"])){AsGateway_options_js();exit;}
 if(isset($_GET["AsGateway-options-popup"])){AsGateway_options_popup();exit;}
-if(isset($_POST["EnableVPNPPTCompliance"])){AsGateway_options_save();exit;}
+if(isset($_GET["AsGateway-options-table"])){AsGateway_options_table();exit;}
+
+if(isset($_POST["AsGatewayOpts"])){AsGateway_options_save();exit;}
 if(isset($_GET["nic-config-deny"])){nic_config_deny();exit;}
 if(isset($_GET["ping-result"])){ping_results_js();exit;}
 if(isset($_GET["ping-popup"])){ping_results_popup();exit;}
@@ -2648,7 +2650,6 @@ function nic_security(){
 	$title="$niClass->netzone: $niClass->NICNAME ($Interface)";
 	$form[]=$tpl->field_hidden("nic_security", $Interface);
 	$form[]=$tpl->field_checkbox("SysCtlEnable","{enabled}",$niClass->SysCtlEnable,true);
-	$form[]=$tpl->field_checkbox("RPFilter","{IPspoofingprotection}",$niClass->RPFilter,false,"{IPspoofingprotection_text}");
 	$form[]=$tpl->field_checkbox("LogMartians","{log_martians}",$niClass->LogMartians,false,"{log_martians_text}");
 	$form[]=$tpl->field_checkbox("AcceptSourceRoute","{accept_source_route}",$niClass->AcceptSourceRoute,false,"{accept_source_route_text}");
 	$form[]=$tpl->field_checkbox("forwarding","{tcp_forwarding}",$niClass->forwarding,false,"{tcp_forwarding}");
@@ -4862,28 +4863,67 @@ function AsGateway_options_js():bool{
 
 }
 function AsGateway_options_popup():bool{
+    $page=CurrentPageName();
+    echo "<div id='AsGatewayOptionsPopup'></div><script>LoadAjax('AsGatewayOptionsPopup','$page?AsGateway-options-table=yes');</script>";
+    return true;
+}
+function AsGateway_options_table():bool{
     $tpl    = new template_admin();
     $EnableVPNPPTCompliance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableVPNPPTCompliance"));
+    $DisableNetworking =intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableNetworking"));
     $page=CurrentPageName();
 
-    $DisableNetworking =intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableNetworking"));
-    $form[]=$tpl->field_checkbox("DisableNetworking","{DenyHaproxyConf}",$DisableNetworking);
-    $form[]=$tpl->field_checkbox("EnableVPNPPTCompliance","{EnableVPNPPTCompliance}",$EnableVPNPPTCompliance);
+    $RpFilterSaved = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RpFilterSaved"));
+	$rpFilterValue = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RpFilterValue"));
+    if($rpFilterValue==0){
+        if($RpFilterSaved==0){
+            $rpFilterValue=1;
+        }
+    }
+    $val=0;if ($rpFilterValue==0){$val=1;}
+    $form[]=$tpl->BigCircleCheckbox("AsGatewayOpts:yes|rpfilter_0","{IPspoofingprotection}/{rpfilter_title0}","{rpfilter_0}",$val,
+    "LoadAjaxSilent('AsGatewayOptionsPopup','$page?AsGateway-options-table=yes')");
+
+    $val=0;if ($rpFilterValue==1){$val=1;}
+    $form[]=$tpl->BigCircleCheckbox("AsGatewayOpts:yes|rpfilter_1","{IPspoofingprotection}/{rpfilter_title1}","{rpfilter_1}",$val,
+        "LoadAjaxSilent('AsGatewayOptionsPopup','$page?AsGateway-options-table=yes')");
+    $val=0;if ($rpFilterValue==2){$val=1;}
+    $form[]=$tpl->BigCircleCheckbox("AsGatewayOpts:yes|rpfilter_2","{IPspoofingprotection}/{rpfilter_title2}","{rpfilter_2}",$val,
+        "LoadAjaxSilent('AsGatewayOptionsPopup','$page?AsGateway-options-table=yes')");
 
 
+    $form[]=$tpl->BigCircleCheckbox("AsGatewayOpts:yes|EnableVPNPPTCompliance","{EnableVPNPPTCompliance}","{EnableVPNPPTCompliance_explain}",$EnableVPNPPTCompliance);
 
-    $hml[]=$tpl->form_outside("{options}", $form,null,"{apply}",
-        "dialogInstance2.close();LoadAjax('table-loader-interfaces','$page?tabs=yes');","AsSystemAdministrator");
-    echo $tpl->_ENGINE_parse_body($hml);
+    $form[]=$tpl->BigCircleCheckbox("AsGatewayOpts:yes|DisableNetworking","{DenyHaproxyConf}","{DenyHaproxyConfExpl}",$DisableNetworking);
+
+    echo $tpl->_ENGINE_parse_body($form);
     return true;
 
 }
 function AsGateway_options_save():bool{
-    $EnableVPNPPTCompliance=$_POST["EnableVPNPPTCompliance"];
-    admin_tracks("Setp VPN PPTP compliance to $EnableVPNPPTCompliance");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableVPNPPTCompliance",$EnableVPNPPTCompliance);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisableNetworking",intval($_POST["DisableNetworking"]));
+    unset($_POST["AsGatewayOpts"]);
+    $tpl    = new template_admin();
+    $tpl->CLEAN_POST();
+    foreach ($_POST as $key=>$value){
+        if(preg_match("#rpfilter_([0-9])#",$key,$re)){
+            $rpfilter=intval($re[1]);
+            unset($_POST[$key]);
+            if($value==1){
+                echo "// RpFilterValue = $rpfilter\n";
+                $_POST["RpFilterValue"]=$rpfilter;
+                $_POST["RpFilterSaved"]=1;
+            }
+        }
+    }
+
+
+    $tpl->SAVE_POSTs();
+
+
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/sysctl");
+
+    admin_tracks_post("Set Network Global options");
+
     return true;
 }
 

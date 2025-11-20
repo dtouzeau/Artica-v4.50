@@ -238,6 +238,11 @@ function notifs(){
     if($php_error<>null){
         $ERR[]=$php_error;
     }
+    $RPF_FILTER=RPF_FILTER();
+    if(strlen($RPF_FILTER)>2){
+        $ERR[]=$RPF_FILTER;
+    }
+
 
 	$UPDATES_ARRAY  = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("v4softsRepo"));
     $UfdbguardSMTPNotifs=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbguardSMTPNotifs"));
@@ -2009,6 +2014,25 @@ function NOTIF_APP_ZABBIX_VERSION($UPDATES_ARRAY):string{
     $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
     $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
     return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_ZABBIX_AGENT')||WARN||||js:Loadjs('$page?SetToken=$Token');";
+
+}
+
+function RPF_FILTER():string{
+    $page               = CurrentPageName();
+    $Token ="NoRPFilterWarn";
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token)==1)){return "";}
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/kernel/rpfilter/validate"));
+    if (json_last_error()> JSON_ERROR_NONE) {
+        return "";
+
+    }
+    if (!$json->Status) {
+       return "";
+    }
+    if(strlen($json->Info)<2){
+        return "";
+    }
+    return  "$json->Info||js:Loadjs('fw.network.interfaces.php?AsGateway-options=yes')||WARN||||js:Loadjs('$page?SetToken=$Token');";
 
 }
 

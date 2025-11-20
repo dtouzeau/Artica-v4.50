@@ -15,6 +15,9 @@ artica.backup.php
 artica.update.manu.progress.php
 public.categories.personnal.php
 Inotify.php
+exec.ufdb-http.php
+exec.ufdb-http-build.php
+webfilter-http.py
 artica.verify.updates.php
 artica.cluster.php
 change.title.php
@@ -153,7 +156,10 @@ exec.squid.bandwidth.php
 squid.enable.progress.php
 clamav.yararules.php
 exec.system.refresh.php
+domain-local-create.php
 clamav.yararules.progress.php
+download.attach.php
+dotclear.index.php
 statistics.mailgraph.php
 exec.filebeat.php
 exec.dhcpd.queue.php

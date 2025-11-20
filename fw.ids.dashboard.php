@@ -511,6 +511,8 @@ function suricata_field_events($tpl,$json){
         $tt[]=$type;
     }
     $forwd[]="{to_artica_db}";
+    $Wazuh=iswazuh($GlobalConfig);
+
 
     $text=sprintf("<small>%s %s</small>",implode(" {and} ",$tt),implode(" {and} ",$forwd));
 
@@ -700,3 +702,29 @@ function suricata_main_status():string{
     return $tpl->_ENGINE_parse_body($tpl->SERVICE_STATUS($ini, "APP_SURICATA", $jsRestart));
 }
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}
+
+function iswazuh($json):string{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+
+    $APP_WAZHU_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_WAZHU_INSTALLED"));
+    $EnableWazhuCLient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWazhuCLient"));
+    if($APP_WAZHU_INSTALLED==0){
+        return "";
+    }
+    if($EnableWazhuCLient==0){
+        return "";
+
+    }
+    $WazhuClientEnrollment=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WazhuClientEnrollment"));
+    if($WazhuClientEnrollment==0){
+        return "";
+    }
+    $Enabled=$json->Wazuh->Enabled;
+    if ($Enabled==0){
+        return "";
+    }
+    return "{and} {APP_WAZHU}";
+
+
+}

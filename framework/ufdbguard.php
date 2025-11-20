@@ -17,13 +17,7 @@ if(isset($_GET["wizardxbfpage"])){wizard_webfiltering_page();exit;}
 if(isset($_GET["ufdbcat-service-events"])){ufdbcat_service_events();exit;}
 if(isset($_GET["restore-categories"])){restore_categories();exit;}
 if(isset($_GET["install-tgz"])){install_tgz();exit;}
-
-
-
-if(isset($_GET["ufdbweb-simple-install"])){install_webservice_light();exit;}
-if(isset($_GET["ufdbweb-simple-uninstall"])){uninstall_webservice_light();exit;}
 if(isset($_GET["compile-all-categories"])){compile_all_categories();exit;}
-if(isset($_GET["ufdbweb-simple-restart"])){restart_webservice_light();exit;}
 if(isset($_GET["getversion"])){getversion();exit;}
 if(isset($_GET["db-size"])){db_size();exit;}
 if(isset($_GET["recompile"])){recompile();exit;}
@@ -34,20 +28,15 @@ if(isset($_GET["service-cmds"])){service_cmds();exit;}
 if(isset($_GET["ad-dump"])){ad_dump();exit;}
 if(isset($_GET["saveconf"])){ufdbguard_save_content();exit;}
 if(isset($_GET["debug-groups"])){debug_groups();exit;}
-if(isset($_GET["databases-percent"])){databases_percent();exit;}
 if(isset($_GET["articawebfilter-database-version"])){artica_webfilter_database_version();exit;}
 if(isset($_GET["remove-sessions-caches"])){remove_sessions_caches();exit;}
 if(isset($_GET["ufdbtail-restart"])){ufdbtail_restart();exit;}
 if(isset($_GET["services-status"])){ufdbguard_status();exit;}
 if(isset($_GET["conf"])){ufdbguardconf();exit;}
 if(isset($_GET["phishtank"])){phishtank();exit;}
-if(isset($_GET["install-webpage"])){install_webservice();exit;}
-if(isset($_GET["uninstall-webpage"])){uninstall_webservice();exit;}
-if(isset($_GET["restart-webpage"])){restart_webservice();exit;}
 if(isset($_GET["remove-all-categories"])){remove_all_categories();exit;}
 if(isset($_GET["ufdbweb-events"])){ufdbweb_events();exit;}
 if(isset($_GET["catgorize-manu"])){catgorize_manu();exit;}
-if(isset($_GET["status-webpage"])){status_webservice();exit;}
 if(isset($_GET["unlock-rules"])){unlock_rules();exit;}
 if(isset($_GET["ppcategories-enable"])){personal_categories_enable();exit;}
 if(isset($_GET["ppcategories-disable"])){personal_categories_disable();exit;}
@@ -344,33 +333,9 @@ function unlock_rules(){
     @chmod($GLOBALS["CACHEFILE"],0777);
     @chmod($GLOBALS["LOGSFILES"],0777);
 
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb-http-build.php >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
 }
 
-function install_webservice(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdb.enable.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdb.enable.progress.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
 
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb-http.php --install-web >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
-}
 
 function personal_categories_enable(){
 
@@ -408,132 +373,6 @@ function personal_categories_disable(){
     $nohup=$unix->find_program("nohup");
     $php5=$unix->LOCATE_PHP5_BIN();
     $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb.enable.php --ppcategories-disable >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
-}
-
-
-function install_webservice_light(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdbweb.enable.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdbweb.enable.progress.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb-lighthttp.php --install-web >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
-}
-function uninstall_webservice_light(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdbweb.enable.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdbweb.enable.progress.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb-lighthttp.php --uninstall-web >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
-}
-function restart_webservice_light(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdbweb.enable.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdbweb.enable.progress.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb-lighthttp.php --restart >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
-
-function status_webservice(){
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$php5 /usr/share/artica-postfix/exec.status.php --ufdbguard-http >/usr/share/artica-postfix/ressources/logs/web/APP_UFDB_HTTP.status 2>&1");
-    shell_exec($cmd);
-    echo "/usr/share/artica-postfix/ressources/logs/web/APP_UFDB_HTTP.status == ".filesize("/usr/share/artica-postfix/ressources/logs/web/APP_UFDB_HTTP.status")." bytes..\n";
-    @chmod("/usr/share/artica-postfix/ressources/logs/web/APP_UFDB_HTTP.status",0755);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
-}
-
-
-
-function restart_webservice(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/microhotspot.web.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/microhotspot.web.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb-http.php --restart >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
-}
-
-function uninstall_webservice(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdb.enable.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdb.enable.progress.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb-http.php --uninstall-web >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
-}
-
-
-function ufdbcat_disable_progress(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdbcat.remove.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdbcat.remove.progress.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdbcat.php --remove-progress --ouptut >{$GLOBALS["LOGSFILES"]} 2>&1 &");
     shell_exec($cmd);
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 
@@ -733,106 +572,7 @@ function artica_webfilter_database_version(){
 
 }
 
-function databases_percent(){
-    $unix=new unix();
 
-    if(is_file("/etc/artica-postfix/UFDB_DB_STATS")){
-        if($unix->file_time_min("/etc/artica-postfix/UFDB_DB_STATS")<3){
-            echo "<articadatascgi>". base64_encode(@file_get_contents("/etc/artica-postfix/UFDB_DB_STATS"))."</articadatascgi>";
-            return;
-        }
-    }
-
-
-    $MAX=47;
-    $files=$unix->dirdir("/var/lib/ftpunivtlse1fr");
-
-    $c=0;
-    while (list ($dir, $line) = each ($files)){
-        if(is_link($dir)){continue;}
-        $database_path="$dir/domains.ufdb";
-        if(!is_file($database_path)){continue;}
-        $cat=basename($dir);
-        $size=@filesize("$dir/domains.ufdb");
-        if($size<290){continue;}
-        $time=filemtime("$dir/domains.ufdb");
-        $UFDB[$time]=true;
-        $c++;
-
-    }
-
-    krsort($UFDB);
-    while (list ($time, $line) = each ($UFDB)){
-        $xtime=$time;
-        break;
-    }
-    $ARRAY["TLSE"]["LAST_TIME"]=$xtime;
-    $ARRAY["TLSE"]["MAX"]=$MAX;
-    $ARRAY["TLSE"]["COUNT"]=$c;
-
-    $files=$unix->dirdir("/var/lib/ufdbartica");
-
-    $MAX=144;
-    $c=0;
-    $UFDB=array();
-
-    while (list ($dir, $line) = each ($files)){
-        if(is_link($dir)){continue;}
-        $database_path="$dir/domains.ufdb";
-        if(!is_file($database_path)){continue;}
-        $cat=basename($dir);
-        $size=@filesize("$dir/domains.ufdb");
-        if($size<290){continue;}
-        $time=filemtime("$dir/domains.ufdb");
-        $UFDB[$time]=true;
-        $c++;
-
-    }
-
-
-    krsort($UFDB);
-    while (list ($time, $line) = each ($UFDB)){
-        $xtime=$time;
-        break;
-    }
-
-    $ARRAY["ARTICA"]["LAST_TIME"]=$xtime;
-    $ARRAY["ARTICA"]["MAX"]=$MAX;
-    $ARRAY["ARTICA"]["COUNT"]=$c;
-
-
-    $MAX=150;
-    $c=0;
-    $UFDB=array();
-    $files=$unix->DirFiles("/home/artica/categories_databases");
-
-    $c=0;
-    while (list ($filename, $line) = each ($files)){
-        $filepath="/home/artica/categories_databases/$filename";
-        if($filename=="CATZ_ARRAY"){continue;}
-        if(is_link("$filepath")){continue;}
-
-        $cat=basename($filepath);
-        $size=@filesize($filepath);
-        if($size<290){continue;}
-        $UFDB[$time]=true;
-        $c++;
-
-    }
-    krsort($UFDB);
-    while (list ($time, $line) = each ($UFDB)){
-        $xtime=$time;
-        break;
-    }
-    $ARRAY["CATZ"]["LAST_TIME"]=$xtime;
-    $ARRAY["CATZ"]["MAX"]=$MAX;
-    $ARRAY["CATZ"]["COUNT"]=$c;
-
-    @file_put_contents("/etc/artica-postfix/UFDB_DB_STATS", serialize($ARRAY));
-
-    echo "<articadatascgi>". base64_encode(serialize($ARRAY))."</articadatascgi>";
-
-}
 function ufdbcat_service_events(){
     $search=trim(base64_decode($_GET["search"]));
     $unix=new unix();

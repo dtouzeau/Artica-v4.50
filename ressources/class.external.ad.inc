@@ -2144,7 +2144,7 @@ class external_ad_search{
 
     private function flexRTGroups_local($pattern,$maxitems=0,$objectClass="group",$ldap_config=array()){
         $remote_config=false;
-        if(!isset($ldap_config["LDAP_SERVER"])){
+        if( !isset($ldap_config["LDAP_SERVER"]) && isset($this->KerbAuthInfos["LDAP_SUFFIX"])){
             $LDAP_SUFFIX=$this->KerbAuthInfos["LDAP_SUFFIX"];
             if(!$this->connect()){return false;}
         }else{
@@ -2655,7 +2655,7 @@ class external_ad_search{
         if(!isset($MainConfig["LDAP_DN"])){
             $MainConfig["LDAP_DN"]=null;
         }
-        if($MainConfig["LDAP_PASSWORD"]==null) {
+        if($MainConfig["LDAP_PASSWORD"]==null && isset($this->KerbAuthInfos["WINDOWS_SERVER_PASS"])) {
             $MainConfig["LDAP_PASSWORD"]=$this->KerbAuthInfos["WINDOWS_SERVER_PASS"];
         }
         if(!isset($MainConfig["LDAP_DN"])) {

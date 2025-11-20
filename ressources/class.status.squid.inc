@@ -16,8 +16,6 @@ function squid_increment_func($array){
         $array[] = "storeid_file_rewrite_checkupdates";
         $array[]="adker_watchdog";
         $array[]="ufdbguardd";
-        $array[]="ufdbguard_http";
-        $array[]="ufdbguard_http_light";
         $array[]="WSUS_HTTP";
         $array[]="ziproxy";
         $array[]="ntlm_monitor";
@@ -359,86 +357,6 @@ function hypercache_logger(){
 	if(is_file("/usr/share/artica-postfix/exec.init-tail-hypercache.php")){@unlink("/usr/share/artica-postfix/exec.init-tail-hypercache.php"); }
 	if(is_file("/usr/share/artica-postfix/exec.hypercache-tail.php")){ @unlink("/usr/share/artica-postfix/exec.hypercache-tail.php"); }
 }
-
-
-
-
-
-
-
-
-function ufdbguard_http_light_pid(){
-
-	
-	$pid=$GLOBALS["CLASS_UNIX"]->get_pid_from_file("/var/run/UfdbWebf.pid");
-	if($GLOBALS["CLASS_UNIX"]->process_exists($pid)){
-		return $pid;
-	}
-
-	return $GLOBALS["CLASS_UNIX"]->PIDOF("/usr/sbin/ufdbweb");
-
-}
-
-function ufdbguard_http_light(){}
-
-function ufdbguard_http(){
-	
-	
-	$ARTICA_VERSION=@file_get_contents("/usr/share/artica-postfix/VERSION");
-	$EnableSquidGuardHTTPService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidGuardHTTPService"));
-	
-	if(!is_file("/etc/init.d/ufdb-http")){
-		if($EnableSquidGuardHTTPService==0){return null;}
-		shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.ufdb-http.php --install-web >/dev/null 2>&1 &");
-		squid_admin_mysql(0, "Install the Web-Filtering Web service ( enabled but was not installed)", null,__FILE__,__LINE__);
-		return null;
-		
-	}
-	$l[]="";
-	$l[]="[APP_UFDB_HTTP]";
-	$l[]="service_name=APP_UFDB_HTTP";
-	$l[]="master_version=$ARTICA_VERSION";
-	$l[]="service_cmd=/etc/init.d/ufdb-http";
-	$l[]="service_disabled=$EnableSquidGuardHTTPService";
-	$l[]="family=squid";
-	$l[]="watchdog_features=1";
-	$l[]="installed=1";
-	
-	if($EnableSquidGuardHTTPService==0){return implode("\n",$l);}
-	$master_pid=ufdbguard_http_pid();
-	$l[]="pid_path=/var/run/webfilter-http.pid";
-	
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		if(!$GLOBALS["DISABLE_WATCHDOG"]){
-			shell_exec2("{$GLOBALS["nohup"]} /etc/init.d/ufdb-http start >/dev/null 2>&1 &");
-		}
-		$l[]="";return implode("\n",$l);
-	}
-	
-	$l[]=GetMemoriesOf($master_pid,"APP_UFDB_HTTP");
-	$l[]="";
-	
-	return implode("\n",$l);
-}
-function ufdbguard_http_pid(){
-	$unix=new unix();
-	$pid=$unix->get_pid_from_file("/var/run/webfilter-http.pid");
-	if($unix->process_exists($pid)){
-		return $pid;
-	}
-	return $unix->PIDOF_PATTERN("/usr/share/artica-postfix/webfilter-http.py");
-
-}
-
-
-function squidguardweb(){
-	if(!is_file("/etc/init.d/squidguard-http")){return null;}
-	squid_admin_mysql(0, "Web error page service will be upgraded to 3.x generation", null,__FILE__,__LINE__);
-	shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.ufdb-http.php --install-web >/dev/null 2>&1");
-}
-
-
-
 function iptables_transparent():string{
 	$SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
 	if($SQUIDEnable==0){return "";}

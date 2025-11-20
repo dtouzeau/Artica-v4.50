@@ -79,8 +79,8 @@ function search(){
 	$TRCLASS=null;
 	$c=0;
     if(isset($_GET["bydn"])){$BYDN=true;}
-	
-	while (list ($DN, $groupname) = each ($array) ){
+
+    foreach ($array as $DN=>$groupname){
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$c++;
 		$color="black";

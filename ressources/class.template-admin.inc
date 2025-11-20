@@ -428,7 +428,7 @@ return implode(', ', $timeParts);
     }
 
     public function BigCircleCheckbox($field,$title,$explain,$value,$after=null,$Privs=null):string{
-        $id=md5($field.time().rand(100,999));
+        $id=md5($field.time().rand(100,999).$title.$field);
         $f=array();
         $page=CurrentPageName();
         $title=base64_encode(html_entity_decode($this->_ENGINE_parse_body($title)));

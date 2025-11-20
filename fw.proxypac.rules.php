@@ -529,7 +529,7 @@ function rule_options_save(){
 	if($_POST["NomadeResolve"]<>null){
         $ip=new IP();
         if($ip->isValid($_POST["NomadeResolve"])){
-            "jserror: Cannot be an IP address!";
+            echo $tpl->post_error("Cannot be an IP address!");
             return;
         }
     }
@@ -660,7 +660,7 @@ function table(){
 
 
 
-function table_search(){
+function table_search():bool{
     include_once(dirname(__FILE__)."/ressources/proxypac.sqlite.inc");
     $tpl=new template_admin();
 	$page=CurrentPageName();
@@ -705,9 +705,9 @@ function table_search(){
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true data-type='text'>$rulename</th>";
     $html[]="<th data-sortable=false style='width:1%' nowrap>&nbsp;</th>";
-    $html[]="<th data-sortable=false style='width:1%' nowrap>{status}</th>";
+    $html[]="<th data-sortable=false style='width:1%' nowrap>&nbsp;</th>";
     $html[]="<th data-sortable=false style='width:1%' nowrap>{enable}</th>";
-	$html[]="<th data-sortable=false style='width:1%' class='center' nowrap>{order}</th>";
+	$html[]="<th data-sortable=false style='width:1%' nowrap>{order}</th>";
 	$html[]="<th data-sortable=false nowrap>{delete}</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
@@ -834,7 +834,7 @@ function table_search(){
     $html[]="</script>";
 
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-
+return true;
 }
 function head_rule($rulename,$explain):string{
     return "<div style='vertical-align: middle;display: table-cell;font-size: 15px;padding-bottom: 6px;padding-top: 3px;'><i class='fa-duotone fa-scroll-old fa-1x'></i>&nbsp;$rulename</div><div style='margin-left: 20px;border-left:2px solid #C5C5C5;padding-left:5px'>$explain</div>";

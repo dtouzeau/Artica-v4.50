@@ -3249,3 +3249,13 @@ If redirecting to a URL, enter the complete address, e.g. https://www.domain.tld
 Install it if you want to use it.</wazuh_not_enabled_ids>
 <wazuh_not_enrollment_ids>The Wazuh agent is installed and enabled, but the enrollment process has not been completed yet.</wazuh_not_enrollment_ids>
 <wazuh_siem_explain>Send IDS events to the Wazuh EDR platform through the Wazuh agent installed on your Artica server.</wazuh_siem_explain>
+<DenyHaproxyConfExpl>If active, Artica will not change the configuration.[br]This option is useful if you want to keep your own custom settings without being overridden by Artica.</DenyHaproxyConfExpl>
+<EnableVPNPPTCompliance_explain>Makes PPTP VPN connections work when clients are behind a firewall.[br]It tracks the TCP/1723 control channel and rewrites the Call IDs used by PPTP.[br]This allows the firewall to correctly identify and NAT the GRE (protocol 47) data packets.[br]Without this module, PPTP tunnels often fail or break after authentication.[br]It is mainly needed for old PPTP servers and is considered obsolete today</EnableVPNPPTCompliance_explain>
+<rpfilter_0>The kernel does not check if the incoming packet’s source IP is reachable through the interface it arrived on.[br]Allows asymmetric routing and multi-homing setups.[br]Less secure, because spoofed IP packets can enter the system.[b]Used when complex routing requires flexibility.[/b]
+</rpfilter_0>
+<rpfilter_1>The kernel checks if the packet’s source IP is reachable only through the receiving interface.[br]If the route does not match, the packet is dropped.[br]Provides strong anti-spoofing protection.[br]Can break asymmetric routing or multi-WAN setups.[br][b]Recommended for simple, single-path networks.[/b]</rpfilter_1>
+<rpfilter_2>The kernel checks if the source IP is reachable through any interface, not just the one it came from.[br]If reachable somewhere, the packet is accepted.[br]More flexible than strict mode, works with asymmetric routing.[br]Still filters obviously spoofed IP addresses.[br][b]            Recommended for routers, firewalls, and multi-WAN environments.[/b]</rpfilter_2>
+<rpfilter_title0>Reverse Path Filtering Disabled</rpfilter_title0>
+<rpfilter_title1>Strict Reverse Path Filtering</rpfilter_title1>
+<rpfilter_title2>Loose Reverse Path Filtering</rpfilter_title1>
+<rpfilter_warn>It appears that the anti-spoofing configuration should be re-evaluated because your server is operating in gateway mode. We recommend switching to “Loose” mode or disabling this option.</rpfilter_warn>

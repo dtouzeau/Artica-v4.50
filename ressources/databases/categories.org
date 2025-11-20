@@ -3456,6 +3456,9 @@ regex/(^|\.)madd\.eu\.com$/98
 
 regex/(^|\.)samsungelectronics\.com$/48
 
+# Industry
+regex/(^|\.)hpe\.com$/81
+
 # News and press
 regex/(^|\.)(diariodemallorca|prensaiberica|unidadeditorial)\.es/103
 regex/(^|\.)kioskoymas\.com/103
@@ -3514,7 +3517,8 @@ regex/(^|\.)(gouv\.fr|govt\.nz|gov|gouv\.qc\.ca|gov\.pt|fvg\.it|\.gov.ar|\.gov.a
 regex/(^|\.)ipma\.pt$/62
 regex/(^|\.)(cordoba|laspalmasgc)\.es/62
 regex/(^|\.)ville-sallaumines\.fr$/62
-
+regex/(^|\.)lyon\.fr$/62
+regex/(^|\.)grandlyon\.com$/62
 
 # Hospitals 74
 regex/(^|\.)(clinfile|hopital-foch)\.com$/74

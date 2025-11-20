@@ -418,8 +418,8 @@ function proxy_pac():bool{
             $f[]="\t}";
 
         }
-
-        $f[]=build_whitelist($ID);
+        list($whites,$functions1)=build_whitelist($ID);
+        $f[]=$whites;
         $f[]="";
         $f[]=$exprs;
         //$f[]=$build_hooked["BEGIN"];
@@ -433,6 +433,9 @@ function proxy_pac():bool{
         //$f[]=build_forced($ID);
         if($office365==1){
             $f[]=build_office365_function();
+        }
+        if(strlen($functions1)>0) {
+            $f[] = $functions1;
         }
         $f[]=$functions;
         $f[]="function GetPort(TestURL){";
@@ -636,8 +639,6 @@ function pac_except($ID)
     @file_put_contents("/home/squid/proxy_pac_rules/$ID/Except.rules", @implode("\n", $f));
 
 }
-
-
 function client_matches($ID):bool{
     $q      = new lib_sqlite("/home/artica/SQLITE/acls.db");
     $f      = array();
@@ -732,8 +733,6 @@ function client_matches($ID):bool{
     @file_put_contents("/home/squid/proxy_pac_rules/myips",@implode("\n",$tt));
     return true;
 }
-
-
 function matches_browser($gpid,$negation,$f=array()):array{
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $sql="SELECT pattern FROM webfilters_sqitems WHERE gpid=$gpid AND enabled=1";
@@ -794,7 +793,6 @@ function matches_src($gpid,$negation,$f){
     }
     return $f;
 }
-
 function matches_time($gpid,$negation,$f){
     $ip=new IP();
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -855,7 +853,6 @@ function matches_time($gpid,$negation,$f){
     return $result;
 
 }
-
 function build_hooked($ID,$FinishbyDirect,$LBL):array{
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 
@@ -1015,7 +1012,7 @@ function build_forced($ID){
     $f[]="}";
     return @implode("\n",$f);
 }
-function build_whitelist($ID){
+function build_whitelist($ID):array{
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM wpad_rules WHERE ID='$ID'");
     $dntlhstname=$ligne["dntlhstname"];
@@ -1039,7 +1036,7 @@ function build_whitelist($ID){
     $results = $q->QUERY_SQL($sql);
     if(!$q->ok){
         pack_debug("Fatal !! $ID $q->mysql_error",__FILE__,__LINE__);
-        return @implode("\n", $f);
+        return array(@implode("\n", $f),"");
     }
 
     $CountObjects=count($results);
@@ -1047,15 +1044,13 @@ function build_whitelist($ID){
         pack_debug("Rule:[$ID] No whitelist groups set",__FUNCTION__,__LINE__);
         $f[]="\tif (isInNet(hostIP, \"10.0.0.0\", \"255.0.0.0\") || isInNet(hostIP, \"172.16.0.0\",  \"255.240.0.0\") || isInNet(hostIP, \"192.168.0.0\", \"255.255.0.0\") || isInNet(hostIP, \"127.0.0.0\", \"255.255.255.0\")) {";
         $f[]="\t\treturn \"DIRECT\"; }";
-        return @implode("\n", $f);
+        return array(@implode("\n", $f),"");
     }
 
     pack_debug("Rule:[$ID] $CountObjects Object(s)",__FUNCTION__,__LINE__);
-
+    $functions=array();
     foreach($results as $index=>$ligne) {
         $gpid=$ligne["gpid"];
-        $not=false;
-        $matches=false;
         $GroupName=$ligne["GroupName"];
         $negation=$ligne["negation"];
         if($negation==1){$not=true;}
@@ -1067,7 +1062,18 @@ function build_whitelist($ID){
             $f[]="\t\treturn \"DIRECT\"; }";
         }
         if($ligne["GroupType"]=="port"){ $f[]=build_whitelist_port($gpid,$negation); continue;}
-        if($ligne["GroupType"]=="dstdomain"){ $f[]=build_whitelist_dstdomain($gpid,$negation); continue;}
+        if($ligne["GroupType"]=="dstdomain"){
+            $Body=build_whitelist_dstdomain($gpid,$negation,false);
+            if(strlen($Body)>0){
+                $functions[]="function WBL$gpid(host) {";
+                $functions[]=$Body;
+                $functions[]="\treturn false;";
+                $functions[]="}";
+            }
+
+            $f[]="if( WBL$gpid(host) ) { return \"DIRECT\"; }";
+            continue;
+        }
         if($ligne["GroupType"]=="src"){ $f[]=build_whitelist_src($gpid,$negation); continue;}
         if($ligne["GroupType"]=="dst"){ $f[]=build_whitelist_dst($gpid,$negation); continue;}
         if($ligne["GroupType"]=="srcdomain"){ $f[]=build_whitelist_srcdomain($gpid,$negation); continue;}
@@ -1075,7 +1081,9 @@ function build_whitelist($ID){
         writelogs("Not supported Group {$ligne["GroupType"]} - $GroupName",__FUNCTION__,__FILE__,__LINE__);
     }
 
-    return @implode("\n", $f);
+
+        return array(@implode("\n", $f) , @implode("\n", $functions));
+
 }
 function build_whitelist_port($gpid,$negation,$return_direct=true):string{
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -1101,50 +1109,120 @@ function build_whitelist_port($gpid,$negation,$return_direct=true):string{
     return @implode("\n", $f);
 }
 
-function build_whitelist_dstdomain($gpid,$negation,$return_direct=true){
+function PatternNegative($pattern):array{
+
+    if (!preg_match('#^!|^\^!#', $pattern)) {
+        return array("",$pattern,"");
+    }
+    if (preg_match('#!!#', $pattern)) {
+        $pattern=str_replace("!!","",$pattern);
+        return array("",$pattern,"false;");
+    }
+    $pattern=str_replace("!","",$pattern);
+    return array("!",$pattern,"");
+}
+function build_whitelist_dstdomain($gpid,$negation,$return_direct=true):string{
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $fam=new familysite();
     $sql="SELECT pattern FROM webfilters_sqitems WHERE gpid=$gpid AND enabled=1";
     $results = $q->QUERY_SQL($sql);
-    $exclam=null;
+    $exclamSrc="";
     if(!$q->ok){writelogs("$gpid $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);return false;}
     if(count($results)==0){return false;}
-    if($negation==1){$exclam="!";}
+    if($negation==1){$exclamSrc="!";}
 
     if($return_direct) {
-        $return = "\"DIRECT\";";
+        $returnSrc = "\"DIRECT\";";
     }else{
-        $return="true;";
+        $returnSrc="true;";
     }
     $f=array();
+    $first=array();
     foreach($results as $index=>$ligne) {
         $pattern=trim(strtolower($ligne["pattern"]));
         $Family=$fam->GetFamilySites($pattern);
         pack_debug("Group::[$gpid] Item: \"$pattern\" -> $Family",__FUNCTION__,__LINE__);
+        $exclam=$exclamSrc;
+        $return=$returnSrc;
 
+        list($exclamS,$pattern,$returnS)=PatternNegative($pattern);
+        if(strlen($exclamS)>0){
+            $exclam=$exclamS;
+        }
+        if(strlen($returnS)>0){
+            $return=$returnS;
+        }
 
         if(strpos(" $pattern", "*")>0){
-            if(preg_match("#^\^(.+)#", $ligne["pattern"],$re)){$pattern=$re[1];}
-            $f[]="\tif( shExpMatch(host ,\"$pattern\") ){ return $return }";
+            if(preg_match("#^\^(.+)#", $pattern,$re)){$pattern=$re[1];}
+            $zLine="\tif( {$exclam}shExpMatch(host ,\"$pattern\") ){ return $return }";
+
+            if($return=="false;"){
+                $first[]=$zLine;
+                continue;
+            }
+
+            if(strlen($exclamS)>0){
+                $first[]=$zLine;
+                continue;
+            }
+            $f[]=$zLine;
             continue;
         }
 
-        if(preg_match("#^\^(.+)#", $ligne["pattern"],$re)){
-            $f[]="\tif( {$exclam}dnsDomainIs(host, \"{$re[1]}\") ){  return $return }";
+        if(preg_match("#^\^(.+)#",$pattern,$re)){
+            $zLine="\tif( {$exclam}dnsDomainIs(host, \"$re[1]\") ){  return $return }";
+            if($return=="false;"){
+                $first[]=$zLine;
+                continue;
+            }
+
+            if(strlen($exclamS)>0){
+                $first[]=$zLine;
+                continue;
+            }
+            $f[]=$zLine;
             continue;
         }
-        if($Family==$ligne["pattern"]){
-            if(!preg_match("#^\.#", $ligne["pattern"])){
-                $f[]="\tif( {$exclam}dnsDomainIs(host, \".{$ligne["pattern"]}\") ){  return $return }";
+        if($Family==$pattern){
+            if(!preg_match("#^\.#", $pattern)){
+                $zLine="\tif( {$exclam}dnsDomainIs(host, \".$pattern\") ){  return $return }";
+                if($return=="false;"){
+                    $first[]=$zLine;
+                    continue;
+                }
+                if(strlen($exclamS)>0){
+                    $first[]=$zLine;
+                    continue;
+                }
+                $f[]=$zLine;
                 continue;
             }
         }
 
-        $f[]="\tif( {$exclam}dnsDomainIs(host, \"{$ligne["pattern"]}\") ){  return $return }";
-    }
-    return @implode("\n", $f);
-}
 
+
+        $zLine="\tif( {$exclam}dnsDomainIs(host, \"$pattern\") ){  return $return }";
+        if($return=="false;"){
+            $first[]=$zLine;
+            continue;
+        }
+
+         if(strlen($exclamS)>0){
+             $first[]=$zLine;
+             continue;
+         }
+         $f[]=$zLine;
+    }
+
+    if(count($first)>0) {
+        return @implode("\n", $first) . "\n" . @implode("\n", $f);
+    }
+    if(count($f)>0) {
+        return @implode("\n", $f);
+    }
+    return "";
+}
 function build_whitelist_dst($gpid,$negation,$return_direct=true){
     $ip=new IP();
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -1206,7 +1284,6 @@ function build_whitelist_dst($gpid,$negation,$return_direct=true){
     }
     return @implode("\n", $f);
 }
-
 function build_whitelist_src($gpid,$negation,$return_direct=true):string{
     $ip=new IP();
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -1378,7 +1455,6 @@ function dstdomain_function($gpid,$FunctionName):string{
     $f[]="\t}";
     return @implode("\n",$f);
 }
-
 function rgexsrc_function($gpid,$FunctionName):string{
     $f[]="\tfunction $FunctionName(){";
     $f[]="\t\tvar CurrentIP=myIpAddress();";
@@ -1394,7 +1470,6 @@ function rgexsrc_function($gpid,$FunctionName):string{
     $f[]="\t}";
     return @implode("\n",$f);
 }
-
 function build_rgexsrc($gpid,$negation,$return_direct=true):string{
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $sql="SELECT pattern FROM webfilters_sqitems WHERE gpid=$gpid AND enabled=1";
@@ -1483,7 +1558,6 @@ function build_rgexdst($gpid,$negation,$return_direct=true):string{
     return @implode("\n", $f);
 
 }
-
 function build_whitelist_srcdomain($gpid,$negation,$return_direct=true){
     $ip=new IP();
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -1528,7 +1602,6 @@ function build_whitelist_srcdomain($gpid,$negation,$return_direct=true){
     return @implode("\n", $f);
 
 }
-
 function build_whitelist_time($gpid,$negation,$return_direct=true):string{
     $ip=new IP();
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -1583,7 +1656,6 @@ function build_whitelist_time($gpid,$negation,$return_direct=true):string{
     return @implode("\n", $f);
 
 }
-
 function GetRange($net):string{
 
     if(preg_match("#(.+?)-(.+)#", $net,$re)){
@@ -1631,7 +1703,7 @@ function build_proxies($ID,$FinishbyDirect=0,$LBL=0){
         $Direct="";
         if($FinishbyDirect==1){$Direct="DIRECT";}
 
-        $g[]="\tswitch (mySeg % {$count}) {";
+        $g[]="\tswitch (mySeg % $count) {";
         $case = 0;
         foreach ($results as $index1 => $ligne) {
             $PREFIX = "PROXY";
@@ -1664,7 +1736,6 @@ function build_proxies($ID,$FinishbyDirect=0,$LBL=0){
         }
         if(count($g)==0){return "\n\treturn \"DIRECT\";";}
         if($FinishbyDirect==1){$g[]="DIRECT";}
-
         return "\n\treturn \"".@implode(" ", $g)."\";";
     }
 
