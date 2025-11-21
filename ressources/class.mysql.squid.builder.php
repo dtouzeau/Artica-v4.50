@@ -227,6 +227,8 @@ class mysql_squid_builder{
         $this->acl_GroupTypeIcon["ssl_sni_regex"]="fa fa-certificate";
         $this->acl_GroupTypeIcon["webfilter"]="fas fa-shield";
         $this->acl_GroupTypeIcon["articablackreputation"]="fas fa-shield";
+        $this->acl_GroupTypeIcon["dstserv"]=ico_server;
+        $this->acl_GroupTypeIcon["itype"]=ico_list;
 
 
 
@@ -403,6 +405,7 @@ class mysql_squid_builder{
         $this->acl_ARRAY_NO_ITEM["opendnsf"]=true;
         $this->acl_ARRAY_NO_ITEM["netbiosname"]=true;
         $this->acl_ARRAY_NO_ITEM["senderad"]=true;
+        $this->acl_ARRAY_NO_ITEM["dstserv"]=true;
 
 
 
@@ -455,10 +458,12 @@ class mysql_squid_builder{
 
         $this->acl_GroupType_IDS["src"]="{ipsrc}";
         $this->acl_GroupType_IDS["dst"]="{dst}";
+        $this->acl_GroupType_IDS["dstserv"]="{this_server} ({destination})";
         $this->acl_GroupType_IDS["port"]="{destination_port}";
         $this->acl_GroupType_IDS["dstdomain"]="{dstdomain}";
         $this->acl_GroupType_IDS["geoipsrc"]="{geoipsrc}";
         $this->acl_GroupType_IDS["geoipdest"]="{geoipdest}";
+        $this->acl_GroupType_IDS["itype"]="{itype}";
 
 
 
@@ -644,7 +649,7 @@ class mysql_squid_builder{
         $this->acl_GroupType_explain["attachs"]="{alcs_attachs_explains}";
         $this->acl_GroupType_explain["articablackreputation"]="{articablackreputation_explain}";
 
-
+        $this->acl_GroupType_explain["dstserv"]="{dstserv_explain}";
 
         $this->CATEGORY_LICENSES["apple"]=true;
         $this->CATEGORY_LICENSES["microsoft"]=true;

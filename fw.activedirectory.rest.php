@@ -259,7 +259,7 @@ function artmem_status():string{
     $ini->loadString($json->Info);
     $jsrestart=$tpl->framework_buildjs(
         "/artmem/restart","artmem.progress","artmem.progress.logs",
-        "progress-redis-restart");
+        "progress-webapi-restart");
 
     return $tpl->SERVICE_STATUS($ini, "APP_ARTMEM",$jsrestart);
 }
@@ -269,8 +269,8 @@ function redis_status():string{
     $ini=new Bs_IniHandler();
     $ini->loadString($json->Info);
     $jsrestart=$tpl->framework_buildjs(
-        "/redis/restart","redis.restart.progress","redis.restart.progress.logs",
-        "progress-redis-restart");
+        "/redis/restart","progress-webapi-restart","progress-webapi-restart.logs",
+        "progress-webapi-restart");
 
     return $tpl->SERVICE_STATUS($ini, "APP_REDIS_SERVER",$jsrestart);
 }
@@ -286,7 +286,7 @@ function pogocache_status():string{
     }
 
     $tpl    = new template_admin();
-    $htopwebrestart=$tpl->framework_buildjs("/pogocache/restart","redis.restart.progress","redis.restart.progress.log","progress-webapi-restart");
+    $htopwebrestart=$tpl->framework_buildjs("/pogocache/restart","progress-webapi-restart","progress-webapi-restart.log","progress-webapi-restart");
     $data=$GLOBALS["CLASS_SOCKETS"]->REST_API("/pogocache/status");
 
     if(!function_exists("json_decode")){

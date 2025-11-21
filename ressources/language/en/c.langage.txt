@@ -3259,3 +3259,9 @@ Install it if you want to use it.</wazuh_not_enabled_ids>
 <rpfilter_title1>Strict Reverse Path Filtering</rpfilter_title1>
 <rpfilter_title2>Loose Reverse Path Filtering</rpfilter_title1>
 <rpfilter_warn>It appears that the anti-spoofing configuration should be re-evaluated because your server is operating in gateway mode. We recommend switching to “Loose” mode or disabling this option.</rpfilter_warn>
+<APP_ARTMEM>In-memory cache service</APP_ARTMEM>
+<urlhaus_suricata.rules>Contains URLHaus malware-URL signatures that detect connections to known malicious domains or URLs distributing malware.[br]                   URLHaus is maintained by abuse.ch and focuses on blocking botnets, droppers, loaders, and malware payload servers.[br]These rules alert when a host inside your network tries to contact a flagged malicious URL.[br]They are updated frequently to provide near–real-time threat intelligence.</urlhaus_suricata.rules>
+<this_server>This server</this_server>
+<dstserv_explain>Applies to network traffic whose destination is this server.</dstserv_explain>
+<itype>ICMPv4 message type</itype>
+<itype_explain>Detects specific ICMP operations such as pings, errors, redirects, or TTL-expired packets</itype_explain>

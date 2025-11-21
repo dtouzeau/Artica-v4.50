@@ -2927,3 +2927,4 @@ If IPv6 support is enabled then 127.0.0.1, ::127.0.0.1, ::ffff:127.0.0.1 are tre
 Example: 127.0.0.1,192.168.1.0/24,::1,2001:db8::/32,zabbix.example.com[br]
 </ZabbixAgentServerIP_explain>
 <zip_file>ZIP file</zip_file>
+

@@ -12,7 +12,7 @@ include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.familysites.inc");
 include_once(dirname(__FILE__)."/ressources/class.hosts.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
-
+if(isset($_GET["itype-search"])){itype_search();exit;}
 if(isset($_GET["change-groupname-js"])){group_chgpname_js();exit;}
 if(isset($_GET["change-groupname-popup"])){group_chgpname_popup();exit;}
 if(isset($_GET["items-compiled"])){items_compiled();exit;}
@@ -550,7 +550,7 @@ function item_tabs(){
     $ONEITEM["dmarc"]=true;
     $ONEITEM["spf"]=true;
     $ONEITEM["spamc"]=true;
-
+    $ONEITEM["dstserv"]=true;
 
     $URL_ADDONS=URL_ADDONS();
     $GroupNameEnc=$tpl->utf8_encode($GroupName);
@@ -593,26 +593,31 @@ function items_compiled():bool{
     return true;
 }
 
-function item_start(){
+function item_start():bool{
     $groupid    = $_GET["item-start"];
     $jsafter    = $_GET["js-after"];
     $function   = $_GET["function"];
     $RefreshFunction=$_GET["RefreshFunction"];
     $page       = CurrentPageName();
     $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT GroupType FROM webfilters_sqgroups 
-                  WHERE ID='$groupid'");
+    $ligne      = $q->mysqli_fetch_array("SELECT GroupType FROM webfilters_sqgroups WHERE ID='$groupid'");
+    $GroupType  = $ligne["GroupType"];
 
-    $GroupType=$ligne["GroupType"];
+    if($GroupType=="itype"){
+        echo "<div id='table-acls-items-$groupid' style='margin-top:10px'></div>
+	<script>LoadAjax('table-acls-items-$groupid','$page?itype-search=$groupid&js-after=$jsafter&function=$function&RefreshFunction=$RefreshFunction');</script>";
+        return false;
+    }
+
     if($GroupType=="spamc"){
         echo "<div id='table-acls-items-$groupid' style='margin-top:10px'></div>
 	<script>LoadAjax('table-acls-items-$groupid','$page?spamc-search=$groupid&js-after=$jsafter&function=$function&RefreshFunction=$RefreshFunction');</script>";
-        return;
+        return false;
     }
     if($GroupType=="fwgeo" OR $GroupType=="geoip"){
         echo "<div id='table-acls-items-$groupid' style='margin-top:10px'></div>
 	<script>LoadAjax('table-acls-items-$groupid','$page?countries-search=$groupid&js-after=$jsafter&function=$function&RefreshFunction=$RefreshFunction');</script>";
-        return;
+        return false;
     }
     if($GroupType=="categories"){
         $_GET["item-add"]=$groupid;
@@ -623,6 +628,7 @@ function item_start(){
 
     echo "<div id='table-acls-items-$groupid' style='margin-top:10px'></div>
 	<script>LoadAjax('table-acls-items-$groupid','$page?item-search=$groupid&js-after=$jsafter&function=$function&RefreshFunction=$RefreshFunction');</script>";
+    return true;
 }
 
 function item_popup(){
@@ -2499,6 +2505,48 @@ function item_import_uploaded(){
     $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=$mainid')";
     echo $jsrestart;
 }
+
+function itype_search():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $groupid=intval($_GET["itype-search"]);
+    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");;
+    $results=$q->QUERY_SQL("SELECT pattern FROM webfilters_sqitems where gpid=$groupid");
+    foreach ($results as $index=>$ligne){
+        $pattern=intval($ligne["pattern"]);
+        $ALREADY[$pattern]=true;
+    }
+
+    $f[0]="Echo Reply";
+    $f[3]="Destination Unreachable";
+    $f[4]="Source Quench (deprecated)";
+    $f[5]="Redirect";
+    $f[8]="Echo Request (ping)";
+    $f[9]="Router Advertisement";
+    $f[10]="Router Solicitation";
+    $f[11]="Time Exceeded";
+    $f[12]="Parameter Problem";
+    $f[13]="Timestamp Request";
+    $f[14]="Timestamp Reply";
+    $f[15]="Information Request (obsolete)";
+    $f[16]="Information Reply (obsolete)";
+    $f[17]="Address Mask Request";
+    $f[18]="Address Mask Reply";
+
+    $form[]=$tpl->field_hidden("itype",$groupid);
+
+    foreach($f as $k=>$v){
+        $val=0;
+        if(isset($ALREADY[$k])){
+            $val=1;
+        }
+        $form[]=$tpl->field_checkbox("itype",$k,$v);
+    }
+    echo $tpl->form_outside("",$form,"","{apply}","","AsFirewallManager");
+    return true;
+
+}
+
 function ndpi_list(){
     $tpl=new template_admin();
     $page=CurrentPageName();
