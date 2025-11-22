@@ -24,8 +24,6 @@ if(isset($_GET["install-progress"])){install_progress();exit;}
 if(isset($_GET["uninstall-progress"])){uninstall_progress();exit;}
 if(isset($_GET["connect-progress"])){connect_progress();exit;}
 if(isset($_GET["disconnect-progress"])){disconnect_progress();exit;}
-if(isset($_GET["kwts-install"])){kwts_install();exit;}
-if(isset($_GET["kwts-uninstall"])){kwts_uninstall();exit;}
 if(isset($_GET["install-clamav"])){clamav_install();exit;}
 if(isset($_GET["uninstall-clamav"])){clamav_uninstall();exit;}
 
@@ -56,14 +54,8 @@ function clients_scan(){
     $unix->framework_exec("exec.squid.watchdog.php --icap");
 }
 
-function kwts_install(){
-    $unix=new unix();
-    $unix->framework_execute("exec.c-icap.install.php --kwts-install","kwts.progress","kwts.log");
-}
-function kwts_uninstall(){
-    $unix=new unix();
-    $unix->framework_execute("exec.c-icap.install.php --kwts-uninstall","kwts.progress","kwts.log");
-}
+
+
 function clamav_install(){
     $unix=new unix();
     $unix->framework_execute("exec.c-icap.install.php --install-clamav","cicap.install.progress","cicap.install.log");

@@ -1192,9 +1192,7 @@ function RestartDedicatedServices($aspid=false){
 
     build_progress_manu("{starting} (Line:".__LINE__.")",100);
 
-    $unix->ToSyslog("Running $nohup /usr/bin/php $Aroot/exec.apt-get.php --grubpc","SYSTEM-UPGRADE");
-    shell_exec("$nohup /usr/bin/php $Aroot/exec.apt-get.php --grubpc >/dev/null 2>&1 &");
-    build_progress_manu("{starting} (Line:".__LINE__.")",100);
+
 
     shell_exec("$nohup /usr/bin/php $Aroot/exec.status.php --process1 --force >/dev/null 2>&1 &");
 	build_progress_manu("{starting} (Line:".__LINE__.")",100);

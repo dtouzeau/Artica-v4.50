@@ -3,9 +3,6 @@
 <error_cyrus_pbconnect>[br][b][i]You need to check the cyrus-imap connection, it seems it stopped working.</error_cyrus_pbconnect>
 <error_cyrus_pbmailbox>[br][b][i]You need to check this mailbox, it seems it over quota.
 [br]Growth it's quota or delete this user[/b][/i].</error_cyrus_pbmailbox>
-<error_kasmilter_stopped>Kaspersky Anti-spam daemon is not started, please check whether the daemon running and the licence is valid</error_kasmilter_stopped>
-<error_kavmilter_licence>[br][b][i]You need to get a new license key for Kaspersky antivirus for SendMail milter.
-[br]Or You must disable Kaspersky in Postfix/plugins section[/b][/i].</error_kavmilter_licence>
 <error_loopsbacktomyself>It seems that postfix is configured to relay e-mail that are directed to the internet are relayed to the same server that has postfix installed. Please check your configuration</error_loopsbacktomyself>
 <error_milter_grey_list_stopped>The Milter-greylist service stopped or ceased to function, please check configuration and service status.</error_milter_grey_list_stopped>
 <error_must_create_mailbox>[br][b][i]The mailbox is not created, and mail is refused by the imap server.

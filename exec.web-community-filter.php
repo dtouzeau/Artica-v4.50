@@ -106,7 +106,6 @@ if(isset($argv[1])) {
     if ($argv[1] == "--ping-cloud") {ping_server();exit();}
     if ($argv[1] == "--get-key") {get_key($argv[2], $argv[3]);exit();}
     if ($argv[1] == "--register-demo") {register_demo();exit();}
-    if ($argv[1] == "--register-kaspersky") {exit();}
     if ($argv[1] == "--uuid") {$unix = new unix();echo $unix->GetUniqueID() . "\n";exit();}
     if ($argv[1] == "--patterns") {patterns();exit();}
     if ($argv[1] == "--remove-grace-period") {remove_grace_period();exit();}

@@ -55,7 +55,7 @@
     * artica-opensource-security
       This package convert artica to use OpenSource security mail programs eg SpamAssassin,clamav and amavis.
     * artica-postfix-security
-      This package convert artica to a full SMTP security server using Kaspersky Anti-spam and Kaspersky Anti-virus (license with 30 days to evaluate them).
+      This package convert artica to a full SMTP security server.
     * artica-postfix-mailbox
       This package convert artica to be a mailbox IMAP/POP3 server using cyrus-imap
     * artica-postfix-webmail
@@ -70,7 +70,7 @@
   
 
   This section is currently on "beta stage"
-  if you want to test it, please let me know (david.touzeau@fr.kaspersky.com)
+  if you want to test it, please let me know (dtouzeau@gmail.com)
 
   If you using repositories packages for debian or RedHat(dpkg or rpm) :
   You have 2 modules that you can download on sourceforge.
@@ -78,7 +78,7 @@
     * artica-squid-proxy
       This package convert artica to be a proxy server using Squid 3.x
     * artica-squid-security
-      This package add security modules for Squid 3.x using DansGuardian and Kaspersky Anti-Virus For Squid ICAP (license with 30 days to evaluate it). 
+      This package add security modules for Squid 3.x.
 
   Thanks for using the artica postix, version 1.x
 

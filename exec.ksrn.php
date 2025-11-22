@@ -4,7 +4,7 @@ include_once(dirname(__FILE__).'/ressources/class.sockets.inc');
 include_once(dirname(__FILE__).'/ressources/class.squid.inc');
 $GLOBALS["CLASS_SOCKETS"]       = new sockets();
 $GLOBALS["GENPROGGNAME"]        = "ksrn.progress";
-$GLOBALS["TITLENAME"]           = "Kaspersky Security Reputation Network";
+$GLOBALS["TITLENAME"]           = "Security Reputation Network";
 $GLOBALS["CLASS_SOCKETS"]->heads_exec_root($argv);
 // COmpilateur 192.168.1.190
 

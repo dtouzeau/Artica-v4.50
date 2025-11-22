@@ -900,7 +900,6 @@ function Help(field){
 	html=html + "<div  id='locker' style='padding:0px;background-color:#005447;background-image:url(img/barrecroix.gif);";
 	html=html + "background-repeat:no-repeat;height:19px;padding-right:3px;background-position:right;cursor:pointer'>";
 	html=html + "<a href='#' OnClick=\"javascript:HideDive('windows');\">";
-	html=html + "<img src='http://images.kaspersky.fr/vide.gif' height=18 width=90 border=0 align='right'></a>";
 	html=html + "</div>";
 	html=html + "<div style='margin:4px;padding:15px;'>" + text_html + "</div>";
 	html=html + "</div>";
@@ -3212,17 +3211,7 @@ function SquidStatsInterface(){
 	}
 
 
-function ConfigureYourserver_Cancel(){
-        var X;
-   if(document.getElementById('ConfigureYourserverStart')){
-    if(document.getElementById('ConfigureYourserverStart').checked){
-        X=1;
-    }else{X=0;}
-    var XHR = new XHRConnection();
-    XHR.appendData('cancel',X);
-    XHR.sendAndLoad('firstwizard.php', 'GET');
-   }
-}
+
 
 
 function GetAllIdElements(pattern){

@@ -30,7 +30,6 @@ function startx():bool{
     $f[]="exec.doh.php --uninstall";
     $f[]="exec.haproxy.php --uninstall";
     $f[]="exec.kibana.php --uninstall";
-    $f[]="exec.klnagent.php --uninstall";
     $f[]="/usr/sbin/artica-phpfpm-service -uninstall-ntopng";
     $f[]="/usr/sbin/artica-phpfpm-service -uninstall-ntp";
     $f[]="exec.richfilemanager.php --uninstall";

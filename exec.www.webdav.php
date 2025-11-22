@@ -2,7 +2,6 @@
 	include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
 	include_once(dirname(__FILE__).'/ressources/class.ldap.inc');
 	include_once(dirname(__FILE__).'/ressources/class.users.menus.inc');
-	include_once(dirname(__FILE__).'/ressources/class.apache.inc');
 	include_once(dirname(__FILE__).'/ressources/class.system.network.inc');
 	include_once(dirname(__FILE__).'/ressources/class.pdns.inc');
 	include_once(dirname(__FILE__).'/ressources/class.os.system.inc');

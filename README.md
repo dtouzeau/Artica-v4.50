@@ -42,9 +42,6 @@ Read all licenses term and use it according licenses
 * Isoqlog                     : http://www.enderunix.org
 * AtMail Open                 : http://atmail.org
 * collectl                    : http://collectl.sourceforge.net
-* Kaspersky Anti-spam         : http://www.kaspersky.com/kaspersky_anti-spam
-* Kaspersky For SQUID         : http://www.kaspersky.com/support/squid 
-* Kaspersky Anti-Virus        : http://www.kaspersky.com/anti-virus_linux_mail_server 
 * Bogofilter                  : http://bogofilter.sourceforge.net
 * SPFMilter                   : http://www.acme.com/software/spfmilter
 * Milter-greylist             : http://hcpnet.free.fr/milter-greylist/#req

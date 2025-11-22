@@ -1566,7 +1566,6 @@ function SAMBA_PROXY(){
 	
 	if(!$user->WINBINDD_INSTALLED){progress_logs(16,"{APP_SAMBA}"," Samba, no such software");return;}
 	if($user->SQUID_APPLIANCE){$IsAppliance=true;}
-	if($user->KASPERSKY_WEB_APPLIANCE){$IsAppliance=true;}
 	$EnableWebProxyStatsAppliance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWebProxyStatsAppliance"));
 	if(!is_numeric($EnableWebProxyStatsAppliance)){$EnableWebProxyStatsAppliance=0;}
 	if($user->WEBSTATS_APPLIANCE){$EnableWebProxyStatsAppliance=1;}		

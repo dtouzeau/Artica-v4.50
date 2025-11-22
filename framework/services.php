@@ -70,7 +70,6 @@ if(isset($_GET["restart-mysql-emergency"])){restart_mysql_emergency();exit;}
 
 if(isset($_GET["license-migration"])){license_migration();exit;}
 if(isset($_GET["license-register"])){register_license();exit;}
-if(isset($_GET["kaspersky-license-register"])){register_license_kaspersky();exit;}
 if(isset($_GET["register"])){register_server_www();exit;}
 if(isset($_GET["pdns-status"])){pdns_status();exit;}
 if(isset($_GET["dnsmasq-status"])){dnsmasq_status();exit;}
@@ -109,7 +108,7 @@ if(isset($_GET["restart-framework"])){restart_framework();exit;}
 if(isset($_GET["restart-amavis"])){restart_amavis();exit;}
 if(isset($_GET["restart-monit"])){restart_monit();exit;}
 if(isset($_GET["kill-pid"])){kill_pid();exit;}
-if(isset($_GET["reconfig-jabberd"])){reconfig_jabberd();exit;}
+
 if(isset($_GET["ejabberd-status"])){ejabberd_status();exit;}
 if(isset($_GET["php-cgi-array"])){php_cgi_array();exit;}
 
@@ -1215,13 +1214,7 @@ function kill_pid(){
     unix_system_kill_force($pid);
 
 }
-function reconfig_jabberd(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $cmd=trim($nohup." ".$unix->LOCATE_PHP5_BIN(). " /usr/share/artica-postfix/exec.ejabberd.php >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
+
 
 
 
@@ -1934,16 +1927,7 @@ function netstart_log(){
     $data=@file_get_contents("/var/log/net-start.log");
     echo "<articadatascgi>". base64_encode($data)."</articadatascgi>";
 }
-function register_license_kaspersky(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$php5 /usr/share/artica-postfix/exec.web-community-filter.php --register-kaspersky 2>&1");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    exec($cmd,$results);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
-}
+
 function reload_sshd(){
     exec("/etc/init.d/ssh restart 2>&1",$results);
     echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";

@@ -18,9 +18,6 @@ class groups{
 	var $members_array=array();
 	var $computers_array=array();
 	var $ARRAY_MEMBERS=array();
-	var $KasperkyASDatas;
-	var $KasperskyASGroupNumber;
-	var $KasperkyASDatasRules;
 	var $Privileges_array=array();
 	var $groupName;
 	var $ou;
@@ -29,7 +26,6 @@ class groups{
 	var $generated_id;
 	var $sambaSID;
 	var $sambaGroupType;
-	var $KavMilterSettings;
 	var $DefaultGroupPassword;
 	var $objectClasses=array();
 	var $LOCAL_SID;
@@ -364,10 +360,6 @@ private function seems_utf8($Str) {
 			if(isset($attrs["DefaultGroupPassword"][0])){$this->DefaultGroupPassword=$attrs["DefaultGroupPassword"][0];}
 			if(isset($attrs["KasperkyASDatas"][0])){$res["KasperkyASDatas"]=$attrs["KasperkyASDatas"][0];}
 			if(isset($attrs["KasperkyASDatas"][0])){$this->KasperkyASDatas=$attrs["KasperkyASDatas"][0];}
-			if(isset($attrs["KasperskyASGroupNumber"][0])){$this->KasperskyASGroupNumber=$attrs["KasperskyASGroupNumber"][0];}
-			if(isset($attrs["KasperskyASGroupNumber"][0])){$res["KasperskyASGroupNumber"]=$attrs["KasperskyASGroupNumber"][0];}
-			if(isset($attrs["KasperkyASDatasRules"][0])){$this->KasperkyASDatasRules=$attrs["KasperkyASDatasRules"][0];}
-			if(isset($attrs["KasperkyASDatasRules"][0])){$res["KasperkyASDatasRules"]=$attrs["KasperkyASDatasRules"][0];}
 			if(isset($attrs["ArticaDansGuardianGroupRuleEnabled"][0])){$res["ArticaDansGuardianGroupRuleEnabled"]=$attrs["ArticaDansGuardianGroupRuleEnabled"][0];}
 			
 			

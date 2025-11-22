@@ -256,7 +256,6 @@ function artica_settings_blacklists($asCluster=false){
     $BLACKLIST["SuricataVersion"]=True;
     $BLACKLIST["SizeQuotasCheckerEmergency"]=True;
     $BLACKLIST["CurrentArticaDbCloud"]=True;
-    $BLACKLIST["KASPERSKY_UPDATE_UTILITY_INSTALLED"]=True;
     $BLACKLIST["SquidUrgencyCaches"]=True;
     $BLACKLIST["UFDBCAT_INSTALLED"]=True;
     $BLACKLIST["CORP_LICENSE"]=True;

@@ -1127,19 +1127,8 @@ class features{
 
 
     public function APP_KLNAGENT(){
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_KLNAGENT}";
-        $config["EXPLAIN"]="{APP_KLNAGENT_EXPLAIN}";
-        $config["TOKEN"]="EnableKlnagent";
-        $config["TOKEN_INSTALLED"]="KLNAGENT_INSTALLED";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/klnagent.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/klnagent.progress.txt";
-        $config["CMD_ON"]="klnagent.php?install=yes";
-        $config["CMD_OFF"]="klnagent.php?uninstall=yes";
-        return $this->build_paragraph($config);
+       return "";
+
     }
 
 

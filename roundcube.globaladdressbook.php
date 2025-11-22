@@ -4,7 +4,7 @@
 	include_once('ressources/class.roundcube.inc');
 	include_once('ressources/class.artica.inc');
 	include_once('ressources/class.ini.inc');
-	include_once('ressources/class.apache.inc');
+
 	
 	if(!CheckPrivs()){
 		$tpl=new templates();

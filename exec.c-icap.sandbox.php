@@ -5,7 +5,7 @@ include_once("/usr/share/artica-postfix/ressources/class.squid.familysites.inc")
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $GLOBALS["CLASS_SOCKETS"]->heads_exec_root($argv);
 
-if($argv[1]=="--ksb"){KasperskyPOST($argv[2]);exit;}
+
 if($argv[1]=="--upload"){uploaded_file($argv[2]);exit;}
 if($argv[1]=="--mime"){find_mime($argv[2]);exit;}
 if($argv[1]=="--queue"){scan_queue();exit;}
@@ -51,26 +51,7 @@ function uploaded_file($filencoded):bool{
     return true;
 }
 
-function KasperskySandboxMime_data():array{
-    include_once(dirname(__FILE__)."/ressources/class.mimes-types.inc");
-    $CountOfKasperskySandboxMime    = 0;
-    $KasperskySandboxMime=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxMime"));
-    if(is_array($KasperskySandboxMime)){
-        $CountOfKasperskySandboxMime=count($KasperskySandboxMime);
-    }
-    if($CountOfKasperskySandboxMime>0){return $KasperskySandboxMime;}
 
-    return mimesandboxdefaults();
-}
-
-function KasperskySandboxMime():array{
-    $MAIN=array();
-    $data=KasperskySandboxMime_data();
-    foreach ($data as $md5=>$content){
-        $MAIN[$content]=true;
-    }
-    return $MAIN;
-}
 
 function mime_is_compressed($content_type){
     if($content_type=="application/x-rar"){return true;}
@@ -172,247 +153,6 @@ function uncompress($filepath,$maindir){
 
 
 return false;
-}
-
-
-function ToKaspersky($filepath,$infos=array()):string{
-    $unix=new unix();
-    $results=array();
-    $rm=$unix->find_program("rm");
-    $find=$unix->find_program("find");
-    $EnableKasperskySandbox = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKasperskySandbox"));
-    if($EnableKasperskySandbox==0){return "NONE";}
-    $fname=basename($filepath);
-    $content_type       = mime_content_type($filepath);
-    $unix->ToSyslog("Analyze $fname/$content_type", false, "ArticaSandBox");
-
-    if(mime_is_compressed($content_type)){
-        $unix->ToSyslog("Uncompress $fname", false, "ArticaSandBox");
-        $tDir="/home/artica/squid/sandbox/work/$fname";
-        if(!uncompress($filepath,$tDir)){
-            @unlink($filepath);
-            return "CORRUPTED";
-        }
-        @unlink($filepath);
-        if(is_file("$filepath.meta")){@unlink("$filepath.meta");}
-        $results=array();
-
-        exec("$find $tDir 2>&1",$find_results);
-        foreach ($find_results as $file_src){
-           if (is_dir($file_src)) {continue;}
-            $sub_content_type=mime_content_type($file_src);
-            if($GLOBALS["VERBOSE"]){echo "Scanning $file_src - $sub_content_type\n";}
-
-            if (mime_is_compressed($sub_content_type)){
-                @unlink($file_src);
-                continue;
-            }
-            $file=basename($file_src);
-            $Fsize=filesize($file_src);
-
-            if ($Fsize > 62914560) {
-                $unix->ToSyslog("[$file]: Warning size exceed 60MB (aborting)", false, "ArticaSandBox");
-                @unlink($file_src);
-                continue;
-            }
-
-            $return_back=KasperskyPOST($file_src);
-            if($GLOBALS["VERBOSE"]){echo "VERBOSE: $file_src ==[$return_back]\n";}
-            if($return_back == "NONE"){@unlink($file_src);continue;}
-            if($return_back == "FATAL"){@unlink($file_src);continue;}
-            if($return_back == "RETRY"){$results[$file_src]="RETRY";continue;}
-            if($return_back == "CLEAN"){$results[$file_src]="CLEAN";@unlink($file_src);continue;}
-            if($return_back == "DETECTED"){$results[$file_src]="DETECTED"; @unlink($file_src);continue;}
-
-
-            @unlink($file_src);
-            $unix->ToSyslog("[$file] = $return_back", false, "ArticaSandBox");
-            $results[$file_src]=$return_back;
-        }
-
-        if(count($results)==0){
-            if(is_dir($tDir)) {
-                shell_exec("$rm -rf $tDir");
-            }
-            return "NONE";
-        }
-        return serialize($results);
-    }
-
-    $Fsize=filesize($filepath);
-
-    if ($Fsize > 62914560) {
-        $unix->ToSyslog("{warning} [".basename($filepath)."] size exceed 60MB (aborting)", false, "ArticaSandBox");
-        return "NONE";
-    }
-
-    $return_back=KasperskyPOST($filepath,$infos);
-    if($return_back=="NONE"){return "NONE";}
-    if($return_back=="FATAL"){return "NONE";}
-    $results[$filepath]=$return_back;
-    return serialize($results);
-
-}
-function KasperskyASK($task_id):string{
-    $unix                   = new unix();
-    $EnableKasperskySandbox = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKasperskySandbox"));
-    $KasperskySandboxAddr   = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxAddr"));
-    if($KasperskySandboxAddr==null){$EnableKasperskySandbox=0;}
-    if($EnableKasperskySandbox==0){return "NONE";}
-    $MAIN_URI="https://$KasperskySandboxAddr/sandbox/v1/tasks/$task_id";
-    $CURLOPT_HTTPHEADER[]="Pragma: no-cache,must-revalidate";
-    $CURLOPT_HTTPHEADER[]="Cache-Control: no-cache,must revalidate";
-    $CURLOPT_HTTPHEADER[]="Expect:";
-    $ch = curl_init($MAIN_URI);
-
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $CURLOPT_HTTPHEADER);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 300);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST,0);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER,0);
-    curl_setopt($ch, CURLOPT_SSLVERSION,'all');
-    curl_setopt($ch, CURLOPT_POST,0);
-
-    $response = curl_exec($ch);
-    $errno=curl_errno($ch);
-
-    if($errno>0){
-        $curl_error=curl_error($ch);
-        $unix->ToSyslog("[$task_id]: ERROR Network issue $errno $curl_error", false, "ArticaSandBox");
-        return "RETRY";
-    }
-
-    $CURLINFO_HTTP_CODE=intval(curl_getinfo($ch,CURLINFO_HTTP_CODE));
-    $KasperskyResults=KasperskyResults($CURLINFO_HTTP_CODE,$response);
-    $unix->ToSyslog("[$task_id] Result: $KasperskyResults", false, "ArticaSandBox");
-    return $KasperskyResults;
-
-}
-
-function KasperskyResults($CURLINFO_HTTP_CODE,$response){
-    $unix=new unix();
-    if($CURLINFO_HTTP_CODE==400){
-        $json       = json_decode($response);
-        $message    = $json->message;
-        $type       = $json->type;
-        echo "Error $CURLINFO_HTTP_CODE $type: $message\n";
-        $unix->ToSyslog("ERROR $CURLINFO_HTTP_CODE $type: $message", false, "ArticaSandBox");
-        return "FATAL";
-    }
-
-    if($CURLINFO_HTTP_CODE==503){
-        echo "Error $CURLINFO_HTTP_CODE Retry again\n";
-        $unix->ToSyslog("ERROR: $CURLINFO_HTTP_CODE Performance: Server unavailable. Try to connect to a different server or try again later.", false, "ArticaSandBox");
-        return "RETRY";
-    }
-
-    if($CURLINFO_HTTP_CODE==504){
-        echo "Error $CURLINFO_HTTP_CODE Retry again\n";
-        $unix->ToSyslog("ERROR: $CURLINFO_HTTP_CODE Performance: Server timeout. Try to connect to a different server or try again later.", false, "ArticaSandBox");
-        return "RETRY";
-    }
-
-    if($CURLINFO_HTTP_CODE==201){
-        $json       = json_decode($response);
-        $task_id    = $json->task_id;
-        echo "Success $CURLINFO_HTTP_CODE Accepted: $task_id\n";
-        $unix->ToSyslog("OK $CURLINFO_HTTP_CODE Accepted:TASK ID $task_id", false, "ArticaSandBox");
-        return $task_id;
-    }
-    if($CURLINFO_HTTP_CODE==200){
-        $json       = json_decode($response);
-        $result     = strtolower(trim($json->result));
-        if($result == "not found"){
-            $unix->ToSyslog("OK Already scanned - CLEAN", false, "ArticaSandBox");
-            return "CLEAN";
-        }
-        if( $result == "found"){
-            $unix->ToSyslog("MALICIOUS FILE", false, "ArticaSandBox");
-            return "DETECTED";
-        }
-
-        if($result =="processing"){
-            return "RETRY";
-        }
-
-    }
-
-    $unix->ToSyslog("Unknown error $response/$CURLINFO_HTTP_CODE", false, "ArticaSandBox");
-    return "RETRY";
-
-
-}
-
-function KasperskyPOST($filepath,$infos=array()):string{
-    $unix                   = new unix();
-    $KasperskySandboxMime   = KasperskySandboxMime();
-    $EnableKasperskySandbox = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKasperskySandbox"));
-    $KasperskySandboxAddr   = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxAddr"));
-    if($KasperskySandboxAddr==null){$EnableKasperskySandbox=0;}
-    $flog=basename($filepath);
-
-
-    $content_type       = mime_content_type($filepath);
-
-    if(isset($infos["content_type"])){
-        $content_type       = $infos["content_type"];
-    }
-
-    echo "$filepath - $content_type\n";
-
-
-    if($EnableKasperskySandbox==0){
-        return "NONE";
-    }
-
-
-
-    if(!isset($KasperskySandboxMime[$content_type])){
-        $unix->ToSyslog("[$flog]: NONE $content_type not accepted", false, "ArticaSandBox");
-        return "NONE";
-    }
-
-    $KasperskySandboxAddr=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxAddr"));
-    if(!is_file($filepath)){
-        $unix->ToSyslog("[$flog] ERROR: Cannot post $filepath (no such file)", false, "ArticaSandBox");
-        return "NONE";
-    }
-    if($KasperskySandboxAddr==null){
-        $unix->ToSyslog("[$flog] ERROR: Cannot post $filepath (no target defined)", false, "ArticaSandBox");
-        return "NONE";
-    }
-
-    $MAIN_URI="https://$KasperskySandboxAddr/sandbox/v1/tasks";
-    $CURLOPT_HTTPHEADER[]="Pragma: no-cache,must-revalidate";
-    $CURLOPT_HTTPHEADER[]="Cache-Control: no-cache,must revalidate";
-    $CURLOPT_HTTPHEADER[]="Expect:";
-    $ch = curl_init($MAIN_URI);
-    $cFile = curl_file_create($filepath);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $CURLOPT_HTTPHEADER);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 300);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST,0);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER,0);
-    curl_setopt($ch, CURLOPT_SSLVERSION,'all');
-
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, array( 'sample' => $cFile ));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($ch);
-    $errno=curl_errno($ch);
-
-    if($errno>0){
-        $curl_error=curl_error($ch);
-        echo "KasperskyPOST: [$flog] Network Error $errno $curl_error\n";
-        $unix->ToSyslog("ERROR Network issue $errno $curl_error", false, "ArticaSandBox");
-        return "RETRY";
-    }
-
-    $CURLINFO_HTTP_CODE=intval(curl_getinfo($ch,CURLINFO_HTTP_CODE));
-
-    $KasperskyResults=KasperskyResults($CURLINFO_HTTP_CODE,$response);
-    $unix->ToSyslog("[$flog] Result: $KasperskyResults", false, "ArticaSandBox");
-    return $KasperskyResults;
 }
 
 function scan_queue():bool{
@@ -519,12 +259,9 @@ function scan_queue():bool{
                 $FINAL=$results;
                 continue;
             }
-            if($results=="RETRY"){
-                $FINAL_ARRAY[$filepath]=ToKaspersky($filepath);
-                continue;
-            }
 
-            $results=KasperskyASK($results);
+
+
             if($results =="NONE"){continue;}
             if($results == "CORRUPTED"){continue;}
 
@@ -683,7 +420,7 @@ function xstart($aspid=false,$nottl=false):bool{
             continue;
         }
 
-        $results=ToKaspersky($file_content);
+
         if($GLOBALS["VERBOSE"]){$unix->ToSyslog("$file_content == [$results]","ArticaSandBox");}
 
         if($results=="CORRUPTED"){

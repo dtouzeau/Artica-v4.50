@@ -2150,15 +2150,6 @@ function _admin_event($text,$function,$file,$line,$category){
 
 }
 function _udfbguard_admin_events($text,$function,$file,$line,$category){}
-function infected_queue($TaskName,$InfectedPath,$ComputerName,$virusname){
-    $date=date('Y-m-d H:i:s');
-    $md5=md5($date.$TaskName.$InfectedPath.$virusname);
-    $filename="{$GLOBALS["ARTICALOGDIR"]}/infected-queue/$md5.sql";
-    if(is_file($filename)){return null;}
-    if($TaskName=="kavmilter"){$TaskName="eMail Scan Kaspersky";}
-    $sql="INSERT INTO antivirus_events (zDate,TaskName,VirusName,InfectedPath,ComputerName,zmd5) VALUES('$date','$TaskName','$virusname','$InfectedPath','$ComputerName','$md5');";
-    @file_put_contents($filename,$sql);
-}
 function _alt_stat($file) {
     $ss=@stat($file);
     if(!$ss) return false;

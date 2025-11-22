@@ -91,7 +91,6 @@ function ifMustBeExecuted(){
 	$IsHTTPAppliance=false;
 	$user=new settings_inc();
 	if($user->SQUID_APPLIANCE){$IsHTTPAppliance=true;}
-	if($user->KASPERSKY_WEB_APPLIANCE){$IsHTTPAppliance=true;}	
 	if($user->WEBSTATS_APPLIANCE){$IsHTTPAppliance=true;}
 	if($user->PROXYTINY_APPLIANCE){$IsHTTPAppliance=true;}		
 	if(!$IsHTTPAppliance){return true;}

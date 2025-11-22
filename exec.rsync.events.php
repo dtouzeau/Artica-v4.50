@@ -1,6 +1,5 @@
 <?php
-if(is_file("/etc/artica-postfix/KASPERSKY_WEB_APPLIANCE")){exit();}
-include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
+include_once(dirname(__FILE__).'/ressources/class.templates.inc');
 include_once(dirname(__FILE__).'/ressources/class.ldap.inc');
 include_once(dirname(__FILE__).'/ressources/class.demime.inc');
 include_once(dirname(__FILE__).'/ressources/class.mysql.inc');
@@ -20,8 +19,8 @@ if($users->STATS_APPLIANCE){events("WEBSTATS_APPLIANCE -> DIE");exit();}
 if($users->PROXYTINY_APPLIANCE){events("PROXYTINY_APPLIANCE -> DIE");exit();}
 if($users->SMTP_APPLIANCE){events("PROXYTINY_APPLIANCE -> DIE");exit();}
 if($users->ZARAFA_INSTALLED){events("PROXYTINY_APPLIANCE -> DIE");exit();}
-if($users->KASPERSKY_WEB_APPLIANCE){events("PROXYTINY_APPLIANCE -> DIE");exit();}
-if($users->KASPERSKY_SMTP_APPLIANCE){events("PROXYTINY_APPLIANCE -> DIE");exit();}
+
+
 
 if($argv[1]=="--computers-schedule"){
 	ScheduleComputers();

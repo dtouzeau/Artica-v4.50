@@ -1173,7 +1173,6 @@ function search(){
             $SRN["ADGUARD"] = "$theshield:AdGuard";
             $SRN["GOOGLE"] = "$theshield:GoogleSafe";
             $SRN["QUAD9"] = "$theshield:Quad9";
-            $SRN["KASPERSKY"] = "$theshield:Kaspersky";
             $SRN["DNBSL"] = "$theshield:DNSBL";
             $SRN["GENERIC"] = "$theshield:Generic";
             $SRN["CLOUDFLARE"] = "$theshield:Cloudflare";

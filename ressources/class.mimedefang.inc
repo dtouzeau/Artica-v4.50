@@ -478,7 +478,7 @@ function BuildConfig(){
 			$conf=$conf . $this->QuarantinePointer();
 			$conf=$conf ."\n\n";
 					
-			$conf=$conf . $this->Kaspersky_antispam();
+
 			$conf=$conf . $this->bogofilter_header();
 			$conf=$conf . $this->SpamAssassin();
 			$conf=$conf ."\n";
@@ -582,43 +582,7 @@ return $conf;
 }
 
 
-function Kaspersky_antispam(){
-		$maxrate=$this->ScriptConf_array["BUILD"]["DISCARD_SPAM_KAS3"];
-		$conf=$conf ."# Checking if Kaspersky Anti-spam has already detected has spam.-------------------------------\n";
-		$conf=$conf ."\tif (open(IN,\"<./HEADERS\")) {\n";
-		$conf=$conf ."        \t\$head = MIME::Head->read(\*IN);\n";
-		$conf=$conf ."\t\t\$XSpamTestRate=\$head->get('X-SpamTest-Rate');\n\n";
-		
-		$conf=$conf ."\t\tif(\$XSpamTestRate>$maxrate){\n";
-		$conf=$conf ."\t\t\tmd_graphdefang_log('spam', \$XSpamTestRate, \$RelayAddr);\n";
-if($this->ScriptConf_array["BUILD"]["ENABLE_BOGO"]==1){
-		$conf=$conf ."\t\t\t\$results=`/usr/share/artica-postfix/bin/artica-mimedefang-pipe --path=\$path --perform=learn_bogo --end`;\n";
-	}		
-		$conf=$conf ."\t\t\taction_discard();\n";
-		$conf=$conf ."\t\t\treturn;\n";
-		$conf=$conf ."\t\t}\n\n";
-		
-		$conf=$conf ."\t\tif(\$XSpamTestRate>70){\$GotoQuarantine=1;}\n";
-		$conf=$conf ."\t\t\$XSpamTestHeader=\$head->get('X-SpamTest-Header');\n";
-		$conf=$conf ."\t\tif(\$XSpamTestHeader=~/spam/){\$GotoQuarantine=1;}\n";
-		$conf=$conf ."\t\tif(\$GotoQuarantine==1){\n";
-		$conf=$conf ."\t\t\tmd_syslog('info', \"\$MsgID: Kaspersky anti-spam found this mail as spam (Rate \$XSpamTestRate - \$XSpamTestHeader)\");\t\n";
-		$conf=$conf ."\t\t\tmd_graphdefang_log('spam', \$XSpamTestRate, \$RelayAddr);\n";
-		if($this->ScriptConf_array["BUILD"]["ENABLE_BOGO"]==1){
-		$conf=$conf ."\t\t\t\$results=`/usr/share/artica-postfix/bin/artica-mimedefang-pipe --path=\$path --perform=learn_bogo --end`;\n";
-		}
-		$conf=$conf ."\t\t\tif(\$QuarantineSpamMessages==1){\n";
-		$conf=$conf ."\t\t\taction_quarantine_entire_message();\n";
-		$conf=$conf ."\t\t\taction_discard();\n";
-		$conf=$conf ."\t\t\treturn;\n";
-		$conf=$conf ."\t\t\t}\n";
-		$conf=$conf ."\t\treturn;}\n";
-		$conf=$conf ."\t}\n";
-		$conf=$conf ."\n";
-		$conf=$conf ."# --------------------------------------------------------------------------------------------\n\n";
-return $conf;	
-	
-}
+
 
 
 function SpamAssassin(){

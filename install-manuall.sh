@@ -601,7 +601,7 @@ then
   rm -rf /home/TempSystem/lib/modules
   rm -rf /home/TempSystem/usr/lib/x86_64-linux-gnu/xtables
 
-  TARGETS_DIRS=( "/usr/lib" "/lib" "/usr/local/lib" "/var/lib/elasticsearch" "/var/lib/fail2ban" "/var/lib/kibana" "/var/lib/netdata" "/usr/lib/x86_64-linux-gnu","/lib/x86_64-linux-gnu" "/etc" "/opt" "/usr/local/ArticaStats"  "/usr/local/ArticaWebConsole" "/usr/local/3proxy" "/usr/local/share" "/var/cache" "/var/log" "/var/lib" "/var/log" "/var/milter-greylist" "/var/opt" "/var/run" "/var/spool","/usr/local/modsecurity" "/usr/local/modsecurity/lib" "/var/opt" "/opt/kaspersky" "/usr/share/artica-postfix")
+  TARGETS_DIRS=( "/usr/lib" "/lib" "/usr/local/lib" "/var/lib/elasticsearch" "/var/lib/fail2ban" "/var/lib/kibana" "/var/lib/netdata" "/usr/lib/x86_64-linux-gnu","/lib/x86_64-linux-gnu" "/etc" "/opt" "/usr/local/ArticaStats"  "/usr/local/ArticaWebConsole" "/usr/local/3proxy" "/usr/local/share" "/var/cache" "/var/log" "/var/lib" "/var/log" "/var/milter-greylist" "/var/opt" "/var/run" "/var/spool","/usr/local/modsecurity" "/usr/local/modsecurity/lib" "/var/opt"  "/usr/share/artica-postfix")
   TARGETS_USR=( "RichFilemanager"  "artica-postfix"  "elasticsearch"  "greensql-console"  "lintian"  "netdata"  "php" "phpipam" "suricata" "wsusoffline" "aclocal" "doc" "filebeat" "kibana" "nDPI" "nmap" "php-composer" "pyshared" "update-ipsets"  "xapian-core" "nginx")
   TARGETS_BINS=( "/usr/local/sbin" "/usr/local/bin" "/bin" "/sbin" "/usr/bin" "/usr/sbin" "/usr/libexec" )
     percent=10

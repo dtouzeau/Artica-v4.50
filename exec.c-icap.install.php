@@ -19,81 +19,11 @@ if($argv[1]=="--disconnect"){disconnect();exit;}
 if($argv[1]=="--monit"){install_monit();exit;}
 if($argv[1]=="--check-port"){check_port();exit;}
 if($argv[1]=="--cicap-checks"){c_icap_checks();}
-if($argv[1]=="--kwts-install"){kwts_install();exit;}
-if($argv[1]=="--kwts-uninstall"){kwts_uninstall();exit;}
-if($argv[1]=="--kwts-check"){kwts_checks();exit;}
-if($argv[1]=="--kwts-monit"){kwts_monit();exit;}
 if($argv[1]=="--install-clamav"){install_clamav();}
 if($argv[1]=="--uninstall-clamav"){uninstall_clamav();}
 if($argv[1]=="--install-sandbox"){install_sandbox();}
 if($argv[1]=="--uninstall-sandbox"){uninstall_sandbox();}
 if($argv[1]=="--syslog-sandbox"){install_sandbox_syslog();exit;}
-
-
-
-function kwts_install_progress($prc,$text):bool{
-    $unix=new unix();
-    $unix->framework_progress($prc,$text,"kwts.progress");
-    return true;
-}
-
-function kwts_install(){
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KWTSEnabled", 1);
-    kwts_install_progress(20,"{reconfiguring}");
-    kwts_monit();
-    kwts_install_progress(50,"{reconfiguring}");
-    shell_exec("$php /usr/share/artica-postfix/exec.squid.global.access.php --icap-silent");
-    kwts_install_progress(100,"{done}");
-}
-
-function kwts_monit(){
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    $mfile  = "/etc/monit/conf.d/APP_KWTS_ICAP.monitrc";
-    $KWTSIPAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSIPAddr");
-    if($KWTSIPAddr==null){return false;}
-    $KWTSPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSPort"));
-    $KWTSReqMode=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSReqMode"));
-    if(is_file($mfile)){@unlink($mfile);}
-    $f[]="check host APP_KWTS_ICAP with address $KWTSIPAddr";
-    $f[]="\tif failed";
-    $f[]="\t\tport $KWTSPort";
-    $f[]="\t\ttype TCP and";
-    $f[]="\t\tsend \"OPTIONS icap://$KWTSIPAddr:$KWTSPort/$KWTSReqMode ICAP/1.0\\n\\n\"";
-    $f[]="\t\texpect \"200 OK\"";
-    $f[]="\t\tsend \"QUIT\\n\"";
-    $f[]="\tthen exec \"/usr/sbin/kwts-monit.sh\"";
-    $f[]="";
-    @file_put_contents($mfile,@implode("\n",$f));
-
-    $sh[]="#!/bin/sh";
-    $sh[]="$php ".__FILE__." --kwts-check";
-    $sh[]="exit 0";
-    @file_put_contents("/usr/sbin/kwts-monit.sh",@implode("\n",$sh));
-    @chmod("/usr/sbin/kwts-monit.sh",0755);
-    shell_exec("/usr/bin/monit -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload");
-    return true;
-}
-
-function kwts_uninstall(){
-    $unix   = new unix();
-    $php    = $unix->LOCATE_PHP5_BIN();
-    $mfile  = "/etc/monit/conf.d/APP_KWTS_ICAP.monitrc";
-    kwts_install_progress(20,"{reconfiguring}");
-
-    if(is_file($mfile)){
-        @unlink($mfile);
-        shell_exec("/usr/bin/monit -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload");
-    }
-    if(!is_file("/usr/sbin/kwts-monit.sh")){@unlink("/usr/sbin/kwts-monit.sh");}
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KWTSEnabled", 0);
-    kwts_install_progress(50,"{reconfiguring}");
-    shell_exec("$php /usr/share/artica-postfix/exec.squid.global.access.php --icap-silent");
-    kwts_install_progress(100,"{done}");
-    //c-icap-client -i 192.168.1.34 -p 1344 -s av/reqmod -method REQMOD -h";
-}
 
 function c_icap_local_interface():string{
     $unix               = new unix();
@@ -157,24 +87,7 @@ function parse_icap_proto($results):array{
     return $MAIN;
 }
 
-function kwts_checks(){
-    $unix=new unix();
-    $KWTSIPAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSIPAddr");
-    if($KWTSIPAddr==null){return false;}
-    $KWTSPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSPort"));
-    $KWTSReqMode=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSReqMode"));
-    $cicapclient=$unix->find_program("c-icap-client");
-    exec("$cicapclient -i $KWTSIPAddr -p $KWTSPort -s $KWTSReqMode -method REQMOD 2>&1",$results);
 
-    $MAIN=parse_icap_proto($results);
-    if(isset($MAIN["ERROR"])){
-        squid_admin_mysql(0,"Connection to Kaspersky Web traffic Security $KWTSIPAddr:$KWTSPort failed (see content)",
-            @implode("\n",$results),__FILE__,__LINE__);
-        return false;
-    }
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KWTS_INFOS",serialize($MAIN));
-    return true;
-}
 
 function uninstall_clamav(){
     $unix=new unix();

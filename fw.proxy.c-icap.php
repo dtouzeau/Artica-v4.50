@@ -11,14 +11,6 @@ if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["main-status"])){main_status();exit;}
 if(isset($_GET["main-status-start"])){main_status_start();exit;}
-if(isset($_GET["sandbox"])){sandbox_page();exit;}
-if(isset($_GET["ext-sandbox-js"])){sandbox_kaspersky_extensions();exit;}
-if(isset($_GET["sandbox-kaspersky-extensions"])){sandbox_kaspersky_extensions_list();exit;}
-if(isset($_GET["sandbox-kaspersky-exten"])){sandbox_kaspersky_exten();exit;}
-if(isset($_POST["EnableKasperskySandbox"])){sandbox_kaspersky_save();exit;}
-if(isset($_GET["upload-sandbbox-js"])){sandbox_upload_js();exit;}
-if(isset($_GET["upload-sandbbox-popup"])){sandbox_upload_popup();exit;}
-if(isset($_GET["file-uploaded"])){sandbox_uploaded_js();exit;}
 if(isset($_GET["error-page"])){error_page();exit;}
 if(isset($_GET["error-page-view"])){error_page_view();exit;}
 if(isset($_POST["CICAPWebErrorPage"])){error_page_save();exit;}
@@ -51,34 +43,12 @@ function main_status_start(){
     <script>LoadAjax('cicap-main-status-start','$page?main-status=yes')</script>
     ";
 }
-function sandbox_kaspersky_extensions() {
-    $tpl        = new template_admin();
-    $page       = CurrentPageName();
-    $tpl->js_dialog4("Kaspersky SandBox {extensions}","$page?sandbox-kaspersky-extensions=yes");
-}
-function sandbox_upload_js(){
-    $tpl        = new template_admin();
-    $page       = CurrentPageName();
-    $tpl->js_dialog4("SandBox {upload}","$page?upload-sandbbox-popup=yes");
-}
-function sandbox_upload_popup(){
-    $tpl        = new template_admin();
-    $page       = CurrentPageName();
-    $html[]="";
-    $html[]="<p>{upload_sb_ask}</p>";
-    $html[]="<div class='center' style='margin: 30px'>".$tpl->button_upload("{upload_a_file}",$page)."</div>";
-    $html[]="<div id='import-results' style='margin: 30px'></div>";
-    echo $tpl->_ENGINE_parse_body($html);
-}
 
-function sandbox_uploaded_js(){
-    $filename   = $_GET["file-uploaded"];
-    $fileencode = urlencode($filename);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cicap.php?sandbox-file=$fileencode");
-    admin_tracks("$filename was upload to SandBox detection");
-    header("content-type: application/x-javascript");
-    echo "dialogInstance4.close();";
-}
+
+
+
+
+
 function error_page_view(){
     $CICAPWebErrorPage=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CICAPWebErrorPage"));
     if(strlen($CICAPWebErrorPage)<20){
@@ -130,116 +100,12 @@ function error_page(){
 }
 
 
-function sandbox_kaspersky_extensions_list(){
-    $tpl        = new template_admin();
-    $page       = CurrentPageName();
-    $t          = time();
-    $TRCLASS    = null;
-    $security   ="AsSquidAdministrator";
-    $CountOfKasperskySandboxMime    = 0;
-    $text_class = null;
-
-    include_once(dirname(__FILE__)."/ressources/class.mimes-types.inc");
-    $mimes=mimestypes_array();
-
-    $fields[]="{extensions}";
-    $fields[]="{BannedMimetype}";
-    $fields[]="{enabled}";
-
-    $html[]=$tpl->table_head($fields,"table-$t");
-    $KasperskySandboxMime=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxMime"));
-
-    if(is_array($KasperskySandboxMime)) {
-        $CountOfKasperskySandboxMime=count($KasperskySandboxMime);
-    }
-    if ($CountOfKasperskySandboxMime == 0) {
-        $KasperskySandboxMime = mimesandboxdefaults();
-    }
-
-    foreach ($mimes as $ext=>$mime){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $token=md5("$ext$mime");
-        $enabled=0;
-        if(isset($KasperskySandboxMime[$token])){$enabled=1;}
-
-        $enabled=$tpl->icon_check($enabled,"Loadjs('$page?sandbox-kaspersky-exten=$token')",null,$security);
-
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td class=\"$text_class\" width='1%' nowrap>$ext</td>";
-        $html[]="<td class=\"$text_class\">$mime</td>";
-        $html[]="<td class=\"$text_class\" width='1%'>$enabled</td>";
-        $html[]="</tr>";
-    }
-
-    $html[]=$tpl->table_footer("table-$t",count($fields),true);
-    echo $tpl->_ENGINE_parse_body($html);
-
-}
-
-function sandbox_kaspersky_exten(){
-    $ptoken=$_GET["sandbox-kaspersky-exten"];
-    include_once(dirname(__FILE__)."/ressources/class.mimes-types.inc");
-    $KasperskySandboxMime   = unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxMime"));
-    $mimes                  = mimestypes_array();
-    foreach ($mimes as $ext=>$mime){
-        $token=md5("$ext$mime");
-        $MAINS[$token]=$mime;
-    }
-    if(isset($KasperskySandboxMime[$ptoken])){
-        unset($KasperskySandboxMime[$ptoken]);
-        admin_tracks("Removed scanning $mime in Kaspersky SandBox");
-
-    }else{
-        admin_tracks("Added scanning $mime in Kaspersky SandBox");
-        $KasperskySandboxMime[$ptoken]=$MAINS[$ptoken];
-    }
-
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KasperskySandboxMime",serialize($KasperskySandboxMime));
-
-}
 
 
-function sandbox_page(){
-    $page   = CurrentPageName();
-    $tpl    = new template_admin();
-    $security="AsSquidAdministrator";
-    $CountOfKasperskySandboxMime    = 0;
 
-    //$tpl->CLUSTER_CLI=true;
 
-    $jsCompile = "blur();";
-    $EnableKasperskySandbox=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKasperskySandbox"));
-    $KasperskySandboxAddr=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxAddr"));
-    $KasperskySandboxMime=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxMime"));
 
-    if(is_array($KasperskySandboxMime)) {
-        $CountOfKasperskySandboxMime = count($KasperskySandboxMime);
-    }
-    if($CountOfKasperskySandboxMime==0){
-        $KasperskySandboxMime=mimesandboxdefaults();
-        $CountOfKasperskySandboxMime = count($KasperskySandboxMime);
-    }
 
-    $form[]=$tpl->field_section("Kaspersky Sandbox");
-    $form[]=$tpl->field_checkbox("EnableKasperskySandbox","{enable_feature}",$EnableKasperskySandbox,false);
-    $form[]=$tpl->field_text("KasperskySandboxAddr","{sandbox_server_address}",$KasperskySandboxAddr);
-    $form[]=$tpl->field_info("extension_list", " {extension_list}",
-
-        array("VALUE"=>null,
-            "BUTTON"=>true,
-            "BUTTON_CAPTION"=>"$CountOfKasperskySandboxMime {extensions}",
-            "BUTTON_JS"=>"Loadjs('$page?ext-sandbox-js=yes')"
-
-        ),null);
-
-    $html[]=$tpl->form_add_button("{upload}","Loadjs('$page?upload-sandbbox-js=yes')");
-    $html[]=$tpl->form_outside("SandBox: {parameters}", @implode("\n", $form),null,"{apply}",$jsCompile,$security);
-    echo $tpl->_ENGINE_parse_body($html);
-}
-function sandbox_kaspersky_save(){
-    $tpl=new template_admin();
-    $tpl->SAVE_POSTs();
-}
 
 function main_status(){
     $page=CurrentPageName();
@@ -281,7 +147,7 @@ function main_status(){
         $BYTES_IN_STATUS=$tpl->widget_h("grey","fas fa-chart-line","{disabled}","{bandwidth}");
         $REQUEST_STATUS=$tpl->widget_h("grey","fas fa-tachometer-alt-average","{disabled}","{requests}");
         $USED_SERVERS_STATUS=$tpl->widget_h("grey","fas fa-microchip","{disabled}","{processes}");
-        $SANDBOX_STATUS=$tpl->widget_h("grey","far fa-times-circle","{disabled}","{sandbox_connector}");
+
     }
 
     $html[]="<div id='cicapclam-status'></div>";
@@ -391,7 +257,6 @@ function main_status(){
 
 
     $html[]="LoadAjaxSilent('cicapclam-status','$page?clamav-widget=yes')";
-    //$html[]="LoadAjaxSilent('sandbox-status','$page?sandbox-status=yes')";
     $html[]="LoadAjax('c-icap-status2','$page?status=yes')";
     $html[]="$jstiny";
     $html[]="</script>";
@@ -483,50 +348,7 @@ function clamav_widget(){
     return true;
 }
 
-function SANDBOX_STATUS(){
-    return false;
 
-    $C_ICAP_RECORD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("C_ICAP_RECORD"));
-    $C_ICAP_RECORD_ENABLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CICAPEnableSandBox"));
-
-    $jsuninstallSandbox=$tpl->framework_buildjs(
-        "cicap.php?uninstall-sandbox=yes",
-        "cicap.install.progress",
-        "cicap.install.log",
-        "LoadAjax('cicap-main-status-start','$page?main-status=yes');LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');"
-    );
-
-    $jsinstallSandbox=$tpl->framework_buildjs(
-        "cicap.php?install-sandbox=yes",
-        "cicap.install.progress",
-        "cicap.install.log",
-        "LoadAjax('cicap-main-status-start','$page?main-status=yes');LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');"
-    );
-
-    if($C_ICAP_RECORD==0){
-        //fas fa-box-check
-        $SANDBOX_STATUS=$tpl->widget_h("grey","far fa-times-circle","{not_installed}","{sandbox_connector}");
-    }else{
-        if($C_ICAP_RECORD_ENABLED==0){
-            $SANDBOX_STATUS=$tpl->widget_h("grey","far fa-box","{disabled}","{sandbox_connector}");
-        }else{
-            $SANDBOX_STATUS=$tpl->widget_h("green","fas fa-box-check","{running}","{sandbox_connector}");
-        }
-    }
-
-    $bt_sandbox=$tpl->button_autnonome("SandBox [X]", "blur()",
-        "far fa-box","AsSquidAdministrator",0,"btn-default");
-
-    if($C_ICAP_RECORD==1){
-        $bt_sandbox=$tpl->button_autnonome("SandBox [OFF]", $jsinstallSandbox,
-            "far fa-box","AsSquidAdministrator",0,"btn-default");
-        if($C_ICAP_RECORD_ENABLED==1){
-            $bt_sandbox=$tpl->button_autnonome("SandBox [ON]", $jsuninstallSandbox,
-                "fas fa-box-check","AsSquidAdministrator",0,"btn-primary");
-        }
-    }
-
-}
 
 function tabs(){
     $page=CurrentPageName();

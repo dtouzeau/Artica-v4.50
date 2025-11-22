@@ -2336,23 +2336,7 @@ if(preg_match("#nss_wins\[.+?warning: (.+?):\s+hostname\s+(.+?)\s+verification f
 }
 
 
-if(strpos($buffer,"connect to Milter service inet:127.0.0.1:1052: Connection refused")>0){
-	error_log("KavMilter stopped !",0);
-	$md5=md5("connect to Milter service inet:127.0.0.1:1052: Connection refused");
-	$file="/etc/artica-postfix/croned.1/postfix.milter.$md5";
-	$timefile=file_time_min($file);
-	if($timefile>5){
-		squid_admin_mysql(0,"Postfix: Kaspersky Antivirus For Postfix daemon is not available",
-		"Postfix claim \n$buffer\nArtica will restart it's daemon.",__FILE__,__LINE__);
-		@unlink($file);
-		shell_exec_maillog("/etc/init.d/kavmilterd restart &");
-		file_put_contents($file,"#");
-		
-	}else{
-		error_log("connect to Milter service inet:127.0.0.1:1052: Connection refused :{$timefile}Mn/5Mn to wait",0);
-	}
-	return;	
-}
+
 
 
 
@@ -3061,22 +3045,7 @@ if(preg_match("#starting amavisd-milter.+?on socket#",$buffer)){
 }
 
 
-if(preg_match("#kavmilter\[.+?\]:\s+Could not open pid file#",$buffer)){
-	$file="/etc/artica-postfix/croned.1/postfix.kavmilter.pid.error";
-		if(file_time_min($file)>10){
-			error_log("Kaspersky Milter PID error",0);
-			if($GLOBALS["ActAsSMTPGatewayStatistics"]==0){
-				squid_admin_mysql(0,"Kaspersky Milter PID error","kvmilter claim $buffer\nArtica will try to restart it","postfix",0);
-				$GLOBALS["CLASS_UNIX"]->THREAD_COMMAND_SET('/etc/init.d/artica-postfix restart kavmilter');
-			}
-			@unlink($file);
-		}else{
-			error_log("Kaspersky Milter PID error, but take action after 10mn",0);
-		}	
-	file_put_contents($file,"#");	
-	return null;
-	
-}	
+
 
 
 // HACK POP3
@@ -3408,17 +3377,7 @@ if(preg_match('#service pop3 pid.+?in BUSY state and serving connection#',$buffe
 	return null;
 }
 
-if(preg_match('#milter inet:[0-9\.]+:1052.+?Connection timed out#',$buffer)){
-	$file="/etc/artica-postfix/croned.1/KAV-TIMEOUT.error";
-	if(file_time_min($file)>10){
-		squid_admin_mysql(0,"Postfix service Cannot connect to Kaspersky Antivirus milter",
-		"it report:\n$buffer\nPlease,disable Kaspersky service or contact your support",
-		"postfix");
-		@unlink($file);
-		file_put_contents($file,"#");
-	}
-	return null;
-}
+
 
 if(preg_match('#milter unix:/var/run/milter-greylist/milter-greylist.sock.+?Connection timed out#',$buffer)){
 	$file="/etc/artica-postfix/croned.1/miltergreylist-TIMEOUT.error";
@@ -3453,19 +3412,6 @@ if(preg_match("#smtp.+?warning:\s+(.+?)\[(.+?)\]:\s+SASL DIGEST-MD5 authenticati
 
 
 
-if(preg_match('#warning: connect to Milter service unix:/var/run/kas-milter.socket: Permission denied#',$buffer)){
-	$file="/etc/artica-postfix/croned.1/kas-perms.error";
-	if(file_time_min($file)>10){
-		squid_admin_mysql(0,"Kaspersky Anti-spam socket error","it report:\n$buffer\nArtica will restart kas service...","postfix",0);
-		@unlink($file);
-		file_put_contents($file,"#");
-		if($GLOBALS["ActAsSMTPGatewayStatistics"]==0){
-			$GLOBALS["CLASS_UNIX"]->THREAD_COMMAND_SET('/etc/init.d/artica-postfix restart kas3');
-		}
-		
-	}
-	return null;
-}
 
 
 if(preg_match('#smtpd.+?warning: problem talking to server (.+?):\s+Connection refused#',$buffer,$re)){
@@ -3792,10 +3738,7 @@ if(preg_match('#warning: milter unix.+?amavisd-milter.sock:.+SMFIC_MAIL reply pa
 	amavis_error_restart($buffer);
 	return null;
 }
-if(preg_match('#sfupdates.+?KASERROR.+?keepup2date\s+failed.+?code.+?critical error#',$buffer,$re)){
-	kas_error_update($buffer);
-	return null;
-}
+
 
 
 if(preg_match('#lmtp.+?:\s+(.+?): to=<(.+?)>,.+?status=deferred.+?connect to .+?\[(.+?)\].+?No such file or directory#',
@@ -3955,16 +3898,7 @@ function amavis_error_restart($buffer){
 	file_put_contents($file,"#");	
 	}	
 	
-function kas_error_update($buffer){
-	error_log("kas_error_update:: $buffer",0);
-	$file="/etc/artica-postfix/cron.1/".__FUNCTION__;
-	if(file_time_min($file)<15){return null;}	
-	if($GLOBALS["ActAsSMTPGatewayStatistics"]==1){return;}
-	email_events('Kaspersky Anti-spam report failure when updating it`s database',"for your information: $buffer",'postfix');
-	$GLOBALS["CLASS_UNIX"]->THREAD_COMMAND_SET("/etc/init.d/artica-postfix restart kas3");
-	@unlink($file);
-	file_put_contents($file,"#");	
-	}
+
 
 function cyrus_generic_error($buffer,$subject){
 	$file="/etc/artica-postfix/cron.1/".__FUNCTION__;

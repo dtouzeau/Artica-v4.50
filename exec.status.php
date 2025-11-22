@@ -170,10 +170,7 @@ if (isset($argv[1])) {
         echo prads() . "\n";
         exit;
     }
-    if ($argv[1] == "--klnagent") {
-        echo klnagent() . "\n";
-        exit;
-    }
+
     if ($argv[1] == "--splunk") {
         echo splunk_forwarder() . "\n";
         exit;
@@ -310,10 +307,6 @@ if (isset($argv[1])) {
 
     if ($argv[1] == "--saslauthd") {
         echo "\n" . saslauthd();
-        exit;
-    }
-    if ($argv[1] == "--sysloger") {
-        echo "\n" . syslogger();
         exit;
     }
     if ($argv[1] == "--xmail") {
@@ -696,11 +689,7 @@ if (isset($argv[1])) {
     }
 
 
-    if ($argv[1] == "--ejabberd") {
-        echo ejabberd() . "\n";
-        echo pymsnt();
-        exit();
-    }
+
     if ($argv[1] == "--lighttpd-all") {
         echo framework();
         exit();
@@ -1969,17 +1958,17 @@ function launch_all_status($force = false){
         "philesight", "cron",  "disks_monitor",    "netdata","TAILSCALE_STATUS","VASD_STATUS","ZEBRA_STATUS","OSPF_STATUS","APP_URBACKUP","rustdesk","MANTICORE_STATUS",
         "CleanLogs",   "wpa_supplicant","sqlite_dbs",
         "fetchmail", "milter_greylist", "irqbalance", "ulogd",
-        "framework", "pdns_server", "pdns_recursor", "cyrus_imap",  "saslauthd", "syslogger",   "clamscan",  "spamassassin_milter", "spamassassin",   "ksrn", "DWAGENT_STATUS","CIESCACHE_STATUS",
+        "framework", "pdns_server", "pdns_recursor", "cyrus_imap",  "saslauthd",   "clamscan",  "spamassassin_milter", "spamassassin",   "ksrn", "DWAGENT_STATUS","CIESCACHE_STATUS",
         "mailman", "rpcbind",  "ntlm_auth_path", "scanned_only", "roundcube", "cups",
         "gdm",  "hamachi",  "artica_notifier", "pure_ftpd",
-        "ocs_agent",  "wanproxy","go_exec_update" ,"sshportal", "gluster", "auditd", "milter_dkim", "dropbox", "killstrangeprocesses", "klnagent","dockerd",
+        "ocs_agent",  "wanproxy","go_exec_update" ,"sshportal", "gluster", "auditd", "milter_dkim", "dropbox", "killstrangeprocesses", "dockerd",
          "tftpd",  "bandwith", "lsm", "Build_default_values",
         "pptpd", "pptp_clients", "ddclient", "cluebringer", "proftpd_status", "splunk",
          "openvpn", "vboxguest", "sabnzbdplus", "MemorySync",  "SwapWatchdog", "mosquitto","APP_ARTICAFSMON",        "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
         "iscsi", "netatalk", "smartd",   "greyhole_watchdog", "tomcat",
         "cgroups",  "arpd", "ps_mem", "ipsec", "openvpn", "ifconfig_network",
-        "udevd_daemon", "ejabberd", "pymsnt", "arkwsd", "arkeiad", "haproxy", "hacluster", "privoxy", "ad_rest", "CleanLogs", "checksyslog", "freeradius", "maillog_watchdog", "arp_spoof","go_squid_auth","HOTSPOT_STATUS",
-        "php_fpm", "CleanCloudCatz",   "Scheduler", "exim4", "ntopng",   "XMail", "conntrackd", "iptables", "wordpress",
+        "udevd_daemon",  "arkwsd", "arkeiad", "haproxy", "hacluster", "privoxy", "ad_rest", "CleanLogs", "checksyslog", "freeradius", "maillog_watchdog", "arp_spoof","go_squid_auth","HOTSPOT_STATUS",
+         "CleanCloudCatz",   "Scheduler", "exim4", "ntopng",   "XMail", "conntrackd", "iptables", "wordpress",
          "vde_all", "sealion_agent", "syncthing", "killstrangeprocesses","keepalived");
 
     ToSyslog("launch_all_status(): " . count($functions));
@@ -2989,107 +2978,9 @@ function cyrus_imap_pid()
 }
 
 //========================================================================================================================
-function syslogger_pid()
-{
-    $pid = $GLOBALS["CLASS_UNIX"]->get_pid_from_file("/etc/artica-postfix/exec.syslog.php.pid");
-    if ($GLOBALS["CLASS_UNIX"]->process_exists($pid)) {
-        return $pid;
-    }
-    return $GLOBALS["CLASS_UNIX"]->PIDOF("/usr/sbin/syslog-tail");
-
-}
-
-function syslogger()
-{
-    if (!is_file("/usr/share/artica-postfix/exec.syslog.php")) {
-        return;
-    }
-    CheckCallable();
-    $pid_path = "/etc/artica-postfix/exec.syslog.php.pid";
-    $master_pid = syslogger_pid();
-    if (is_file("/etc/init.d/syslog")) {
-        @chmod("/etc/init.d/syslog", 0755);
-    }
-
-    $l[] = "[APP_SYSLOGER]";
-    $l[] = "service_name=APP_SYSLOGER";
-    $l[] = "master_version=" . trim(@file_get_contents(dirname(__FILE__) . "/VERSION"));
-    $l[] = "service_cmd=/etc/init.d/artica-syslog";
-    $l[] = "service_disabled=1";
-    $l[] = "watchdog_features=1";
-    $l[] = "family=system";
-    $l[] = "pid_path=$pid_path";
 
 
-    $size = $GLOBALS["CLASS_UNIX"]->file_size("/usr/share/artica-postfix/ressources/logs/php.log");
-    if ($size > 104857600) {
-        @unlink("/usr/share/artica-postfix/ressources/logs/php.log");
-    }
 
-    if (!$GLOBALS["DISABLE_WATCHDOG"]) {
-        if (is_file("/etc/artica-postfix/settings/Daemons/NET_PINGABLE")) {
-            if (!is_dir("/etc/artica-postfix/cron.ping")) {
-                @mkdir("/etc/artica-postfix/cron.ping", 0755, true);
-            }
-            $NET_PINGABLE = unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NET_PINGABLE"));
-            if (is_array($NET_PINGABLE)) {
-                foreach ($NET_PINGABLE as $net => $interval) {
-                    if (intval($interval) < 5) {
-                        $interval = 15;
-                    }
-                    $filetime = "/etc/artica-postfix/cron.ping/" . md5($net);
-                    if ($GLOBALS["CLASS_UNIX"]->file_time_min($filetime) < $interval) {
-                        continue;
-                    }
-                    shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.nmapscan.php --pingeable \"$net\"");
-                }
-            }
-        }
-    }
-
-
-    $SquidPerformance = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidPerformance"));
-    if ($SquidPerformance > 2) {
-        return null;
-    }
-
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        shell_exec2("/etc/init.d/artica-syslog restart");
-        $l[] = "";
-        return implode("\n", $l);
-        events("done", __FUNCTION__, __LINE__);
-        return null;
-    }
-
-
-    if (!is_file("/var/log/artica-postfix/syslogger.debug")) {
-        events("restart sysloger", __FUNCTION__, __LINE__);
-        $GLOBALS["CLASS_UNIX"]->THREAD_COMMAND_SET("/etc/init.d/artica-syslog restart");
-    }
-
-
-    $timelog = $GLOBALS["CLASS_UNIX"]->file_time_min("/var/log/artica-postfix/syslogger.debug");
-    events("/var/log/artica-postfix/syslogger.debug = $timelog minutes TTL", __FUNCTION__, __LINE__);
-
-    $l[] = "running=1";
-    if ($GLOBALS ["VERBOSE"]) {
-        echo "GetMemoriesOf -> $master_pid\n";
-    }
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-
-    if (!$GLOBALS["DISABLE_WATCHDOG"]) {
-        $time = file_time_min("/var/log/artica-postfix/syslogger.debug");
-        //writelogs("LOG TIME: $time",__FUNCTION__,__FILE__,__LINE__);
-        if ($time > 5) {
-            $GLOBALS["CLASS_UNIX"]->THREAD_COMMAND_SET("/etc/init.d/artica-syslog restart");
-        }
-    }
-
-    return implode("\n", $l);
-
-}
 
 //=========================================================================================================
 function iptables_version()
@@ -4118,44 +4009,7 @@ function vde_version()
 //========================================================================================================================================================
 
 
-function php_fpm_version()
-{
-    if (isset($GLOBALS[__FUNCTION__])) {
-        return $GLOBALS[__FUNCTION__];
-    }
-    $bin = $GLOBALS["CLASS_UNIX"]->APACHE_LOCATE_PHP_FPM();
-    if (!is_file($bin)) {
-        if ($GLOBALS['VERBOSE']) {
-            echo "APACHE_LOCATE_PHP_FPM -> no such file\n";
-        }
-        return;
-    }
-    $array = array();
-    if (is_file("/etc/artica-postfix/phpfpm_version.db")) {
-        $array = unserialize(@file_get_contents("/etc/artica-postfix/phpfpm_version.db"));
-    }
-    $binMD5 = md5_file($bin);
-    if ($binMD5 <> $array["binMD5"]) {
-        $array["binMD5"] = $binMD5;
-        exec("$bin -v 2>&1", $array);
-        foreach ($array as $pid => $line) {
-            if (preg_match("#^PHP\s+([0-9\.\-]+)#i", $line, $re)) {
-                $GLOBALS[__FUNCTION__] = $re[1];
-                $array["binversion"] = $re[1];
-                syslog_status("php5-FPM: v{$array["binversion"]} - $binMD5", "artica-status");
-                @file_put_contents("/etc/artica-postfix/phpfpm_version.db", serialize($array));
-                return $re[1];
-            }
-            if ($GLOBALS['VERBOSE']) {
-                echo "php_fpm_version(), $line, not found \n";
-            }
-        }
-    }
 
-    $GLOBALS[__FUNCTION__] = $array["binversion"];
-    return $GLOBALS[__FUNCTION__];
-
-}
 
 function spwanfcgi_version()
 {
@@ -4192,122 +4046,7 @@ function FPM_PID()
 }
 
 //===============================================================================================
-function php_fpm()
-{
 
-    $bin = $GLOBALS["CLASS_UNIX"]->APACHE_LOCATE_PHP_FPM();
-    if (!is_file($bin)) {
-        if (!is_file("/etc/debian_version")) {
-            return;
-        }
-
-        $StampFile = "/etc/artica-postfix/pids/php_fpm.install.time";
-        $TimeFile = $GLOBALS["CLASS_UNIX"]->file_time_min($StampFile);
-        if ($TimeFile > 1440) {
-            @unlink($StampFile);
-            @file_put_contents($StampFile, time());
-            syslog_status("php5-FPM: Not installed , installing php5-fpm Time:{$TimeFile}Mn", "artica-status");
-            $cmd = trim("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.apt-get.php --phpfpm-daemon >/dev/null 2>&1 &");
-            shell_exec2($cmd);
-        }
-        return;
-    }
-
-    $master_pid = FPM_PID();
-    $EnablePHPFPM = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePHPFPM");
-
-    $EnableArticaApachePHPFPM = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaApachePHPFPM");
-    if (!is_numeric($EnableArticaApachePHPFPM)) {
-        $EnableArticaApachePHPFPM = 0;
-    }
-
-    $EnablePHPFPMFreeWeb = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePHPFPMFreeWeb");
-    if (!is_numeric($EnablePHPFPMFreeWeb)) {
-        $EnablePHPFPMFreeWeb = 0;
-    }
-
-    $EnablePHPFPMFrameWork = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePHPFPMFrameWork");
-    if (!is_numeric($EnablePHPFPMFrameWork)) {
-        $EnablePHPFPMFrameWork = 0;
-    }
-
-
-    if ($EnableArticaApachePHPFPM == 1) {
-        $EnablePHPFPM = 1;
-    }
-    if ($EnablePHPFPMFreeWeb == 1) {
-        $EnablePHPFPM = 1;
-    }
-    if ($EnablePHPFPMFrameWork == 1) {
-        $EnablePHPFPM = 1;
-    }
-    if ($EnableArticaApachePHPFPM == 1) {
-        $EnablePHPFPM = 1;
-    }
-    if (!is_numeric($EnablePHPFPM)) {
-        $EnablePHPFPM = 0;
-    }
-    if (is_file("/etc/artica-postfix/WORDPRESS_APPLIANCE")) {
-        $EnablePHPFPM = 1;
-        $EnablePHPFPMFreeWeb = 1;
-    }
-
-
-    $l[] = "[APP_PHPFPM]";
-    $l[] = "service_name=APP_PHPFPM";
-    $l[] = "master_version=" . php_fpm_version();
-    $l[] = "service_disabled=$EnablePHPFPM";
-    $l[] = "pid_path=/var/run/php5-fpm.pid";
-    $l[] = "service_cmd=/etc/init.d/php5-fpm";
-    $l[] = "watchdog_features=1";
-    $l[] = "family=network";
-
-    if (is_file("/etc/monit/conf.d/phpfpm.monitrc")) {
-        @unlink("/etc/monit/conf.d/phpfpm.monitrc");
-        $GLOBALS["CLASS_UNIX"]->MONIT_RELOAD();
-    }
-
-    if ($EnablePHPFPM == 0) {
-        $l[] = "";
-        return implode("\n", $l);
-        return;
-    }
-
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        $master_pid = $GLOBALS["CLASS_UNIX"]->PIDOF($bin);
-    }
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        if (!$GLOBALS["DISABLE_WATCHDOG"]) {
-            syslog_status("php5-FPM: Not running starting php5-fpm", "artica-status");
-            $cmd = trim("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.php-fpm.php --start >/dev/null 2>&1 &");
-            shell_exec2($cmd);
-        }
-        $l[] = "";
-        return implode("\n", $l);
-    }
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-
-    if ($EnableArticaApachePHPFPM == 1) {
-        if (!$GLOBALS["CLASS_UNIX"]->is_socket("/var/run/php-fpm.sock")) {
-            syslog_status("/var/run/php-fpm.sock: no such file, restarting php5-FPM", "artica-status");
-            $cmd = trim("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.php-fpm.php --restart >/dev/null 2>&1 &");
-            shell_exec2($cmd);
-        }
-    }
-
-    if ($EnablePHPFPMFreeWeb == 1) {
-        if (!$GLOBALS["CLASS_UNIX"]->is_socket("/var/run/php-fpm-apache2.sock")) {
-            syslog_status("/var/run/php-fpm-apache2.sock: no such file, restarting php5-FPM", "artica-status");
-            $cmd = trim("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.php-fpm.php --restart >/dev/null 2>&1 &");
-            shell_exec2($cmd);
-        }
-    }
-
-
-    return implode("\n", $l);
-}
 
 //========================================================================================================================================================
 function syslog_status($text)
@@ -4965,65 +4704,9 @@ function udevd_daemon_s()
 
 
 
-function klnagent_pid()
-{
-    $pid = $GLOBALS["CLASS_UNIX"]->get_pid_from_file("/var/run/klnagent.pid");
-    if ($GLOBALS["CLASS_UNIX"]->process_exists($pid)) {
-        return $pid;
-    }
-    return $GLOBALS["CLASS_UNIX"]->PIDOF("/opt/kaspersky/klnagent64/sbin/klnagent");
-
-}
-
-function klnagent()
-{
 
 
-    if (!is_file("/etc/init.d/klnagent64")) {
-        if (is_file("/etc/cron.d/klnagent")) {
-            @unlink("/etc/cron.d/klnagent");
-            system("/etc/init.d/cron reload");
-        }
-        if (is_file("/etc/monit/conf.d/APP_KLNAGENT.monitrc")) {
-            @unlink("/etc/monit/conf.d/APP_KLNAGENT.monitrc");
-            shell_exec("/usr/bin/monit -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload");
-        }
-        return;
-    }
-    $master_pid = klnagent_pid();
-    $KLNAGENT_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("KLNAGENT_VERSION");
 
-    $l[] = "[APP_KLNAGENT]";
-    $l[] = "service_name=APP_KLNAGENT";
-    $l[] = "master_version=$KLNAGENT_VERSION";
-    $l[] = "service_disabled=1";
-    $l[] = "watchdog_features=1";
-    $l[] = "family=system";
-    $l[] = "installed=1";
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        if ($GLOBALS["CLASS_UNIX"]->ServerRunSince() > 3) {
-            if (!$GLOBALS["DISABLE_WATCHDOG"]) {
-                $nohup = $GLOBALS["CLASS_UNIX"]->find_program("nohup");
-                squid_admin_mysql(0, "Kaspersky Network Agent not running [{action}={start}]", null, __FILE__, __LINE__);
-                shell_exec2("$nohup /etc/init.d/klnagent64 start >/dev/null 2>&1 &");
-            }
-        }
-        $l[] = "";
-        return implode("\n", $l);
-    }
-
-    if (!is_file("/etc/cron.d/klnagent")) {
-        $GLOBALS["CLASS_UNIX"]->Popuplate_cron_make("klnagent", "0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57 * * * *", "exec.klnagent.php --klnagchk");
-        system("/etc/init.d/cron reload");
-    }
-
-
-    $l[] = "running=1";
-    $l[] = GetMemoriesOf($master_pid,"APP_KLNAGENT");
-    $l[] = "";
-    return implode("\n", $l);
-}
 
 //===================================================================================================
 //===================================================================================================
@@ -6084,138 +5767,9 @@ return "";
 }
 
 //================================================================================================
-function ejabberd():string
-{
-    if (!$GLOBALS["CLASS_USERS"]->EJABBERD_INSTALLED) {
-        return "";
-    }
-
-    $enabled = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ejabberdEnabled"));
-    $pid_path = "/var/run/ejabberd/ejabberd.pid";
-    $master_pid = trim(@file_get_contents($pid_path));
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        $binpath = ejabberd_bin();
-        if ($binpath <> null) {
-            $master_pid = $GLOBALS["CLASS_UNIX"]->PIDOF($binpath);
-        }
-    }
-    $version = ejabberd_version();
-    @file_put_contents("/etc/artica-postfix/ejabberd_version", $version);
-    $l[] = "[APP_EJABBERD]";
-    $l[] = "service_name=APP_EJABBERD";
-    $l[] = "master_version=$version";
-    $l[] = "service_cmd=ejabberd";
-    $l[] = "family=network";
-    $l[] = "service_disabled=$enabled";
-    $l[] = "pid_path=$pid_path";
-
-    if ($enabled == 0) {
-        return implode("\n", $l);
-    }
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        WATCHDOG("APP_EJABBERD", "ejabberd");
-        $l[] = "running=0\ninstalled=1";
-        $l[] = "";
-        return implode("\n", $l);
-    }
-
-
-    $l[] = "running=1";
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-    return implode("\n", $l);
-
-
-}
-
 //================================================================================================
-function pymsnt_pgrep():string{
-    $pgrep = $GLOBALS["CLASS_UNIX"]->find_program("pgrep");
-    exec("$pgrep -l -f \"/usr/share/pymsnt/PyMSNt.py\" 2>&1", $results);
-    foreach ($results as $ligne) {
-        if (preg_match("#pgrep#", $ligne)) {
-            continue;
-        }
-        if (preg_match("#^([0-9]+)#", $ligne, $re)) {
-            return $re[1];
-        }
-    }
-
-    return "";
-
-}
-
 //================================================================================================
-function pymsnt_version():string
-{
-    if (isset($GLOBALS[__FUNCTION__])) {
-        return strval($GLOBALS[__FUNCTION__]);
-    }
-    $binpath = "/usr/share/pymsnt/src/legacy/glue.py";
-    if (!is_file($binpath)) {
-        return "0.0";
-    }
-    $results = file($binpath);
-
-    foreach ($results as $num => $ligne) {
-        if (preg_match("#version.*?=.*?([0-9\.]+)#", $ligne, $re)) {
-            $GLOBALS[__FUNCTION__] = $re[1];
-            return $GLOBALS[__FUNCTION__];
-        }
-    }
-    return "0.0";
-}
-
 //================================================================================================
-function pymsnt():string
-{
-    if (!$GLOBALS["CLASS_USERS"]->EJABBERD_INSTALLED) {
-        return "";
-    }
-    if (!$GLOBALS["CLASS_USERS"]->PYMSNT_INSTALLED) {
-        return "";
-    }
-
-    $enabled = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ejabberdEnabled"));
-
-    $pid_path = "/var/run/pymsnt/pymsnt.pid";
-    $master_pid = trim(@file_get_contents($pid_path));
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        $master_pid = pymsnt_pgrep();
-    }
-
-
-    $version = pymsnt_version();
-    @file_put_contents("/etc/artica-postfix/pymsnt_version", $version);
-    $l[] = "[APP_PYMSNT]";
-    $l[] = "service_name=APP_PYMSNT";
-    $l[] = "master_version=$version";
-    $l[] = "service_cmd=pymsnt";
-    $l[] = "family=network";
-    $l[] = "service_disabled=$enabled";
-    $l[] = "pid_path=$pid_path";
-
-    if ($enabled == 0) {
-        return implode("\n", $l);
-    }
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        WATCHDOG("APP_PYMSNT", "pymsnt");
-        $l[] = "running=0\ninstalled=1";
-        $l[] = "";
-        return implode("\n", $l);
-    }
-
-
-    $l[] = "running=1";
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-    return implode("\n", $l);
-
-
-}
-
 //================================================================================================
 
 

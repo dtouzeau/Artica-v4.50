@@ -101,16 +101,7 @@ class cron{
 	
 	
 	
-	
-	
-	
-	var $cronID=array(
-			1=>"{update} kaspersky {anti-spam} {database}",
-			2=>"{update} Kaspersky {antivirus} {database}",
-			3=>"{ensure} artica-postfix daemon {is up} ",
-			4=>"{task_postfix_network_auto}"
-			);
-			
+
 	var $LocalArrayCronFiles;
 	var $LocalArrayUser;
 	

@@ -94,20 +94,7 @@ class left_menus{
     }
 
     public function NetWorkAgent(): string{
-        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KLNAGENT_INSTALLED"))==0){return "";}
-        $EnableKlnagent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKlnagent"));
-        if($EnableKlnagent==0){return "";}
-        $f[]="<!-- KLNAGENT START -->";
-        $f[]="                <li id='left-menu'>";
-        $f[]="                    <a href='#' ><i class=\"fa fa-square\"></i> <span class=\"nav-label\">{KLNAGNT}</span> </a>";
-        $f[]="                    <ul class='nav nav-second-level'>";
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.klnagent.status.php');\">
-													<i class=\"fas fa-tachometer-alt\"></i> <span class=\"nav-label\">{status}</span> </a>";
-        $f[]="							</li>";
-        $f[]="					 </ul>";
-        $f[]="                </li>";
-        $f[]="<!-- KLNAGENT END -->";
+
         return @implode("\n",$f);
 
     }

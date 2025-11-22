@@ -467,9 +467,6 @@ function restart_upgrade(){
     build_progress(90,"Force inventory");
     $unix->ToSyslog("Running $php $Aroot/exec.status.php --process1 --force","SYSTEM-UPGRADE");
     shell_exec("$php $Aroot/exec.status.php --process1 --force");
-    $unix->ToSyslog("Running $php $Aroot/exec.apt-get.php --grubpc","SYSTEM-UPGRADE");
-    build_progress(95,"Force inventory");
-    shell_exec("$php $Aroot/exec.apt-get.php --grubpc >/dev/null 2>&1");
     build_progress(100,"{done}....");
 
 }

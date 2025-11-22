@@ -160,12 +160,6 @@ function features():bool{
     if(method_exists($features,"ARPD")) {
         $ARPD = $features->ARPD();
     }
-    $APP_KWTS_CONNECTOR=null;
-    if(method_exists($features,"APP_KWTS_CONNECTOR")) {
-        $APP_KWTS_CONNECTOR = $features->APP_KWTS_CONNECTOR();
-    }
-
-
     if(method_exists($features,"APP_DNS_FIREWALL")) {
         $APP_DNS_FIREWALL = $features->APP_DNS_FIREWALL();
     }
@@ -271,7 +265,6 @@ function features():bool{
     $GLANCES=$features->GLANCES();
     $POSTFIX=$features->POSTFIX();
 //  $APP_CYRUS=$features->APP_CYRUS();
-    $APP_KLNAGENT=$features->APP_KLNAGENT();
     $APP_SNMPD=$features->APP_SNMPD();
     //$APP_MAIL_SPY=$features->APP_MAIL_SPY();
     $APP_MIMEDEFANG=$features->APP_MIMEDEFANG();
@@ -680,7 +673,7 @@ function features():bool{
     $data_transfer[]=$RSYNC;
     $data_transfer[]=$ISCSI_CLIENT;
     $data_transfer[]=$INSTANTSEARCH;
-    $data_transfer[]=$APP_KLNAGENT;
+
     $data_transfer[]=$AUTOFS;
     $data_transfer[]=$APP_SYNO_BACKUP;
 
@@ -733,7 +726,6 @@ function features():bool{
         $proxy_features[] = $SQUID_PARENTS;
         $proxy_features[] = $PROXY_PAC;
         $proxy_features[] = $CICAP;
-        $proxy_features[] = $APP_KWTS_CONNECTOR;
         $proxy_features[] = $UFDBCAT;
         $proxy_features[]=$HA_CLUSTER;
         $proxy_features[]=$APP_GREENSQL;

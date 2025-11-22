@@ -1175,7 +1175,7 @@ class mysql_squid_builder{
         //$this->tasks_processes[8]="exec.update.squid.tlse.php";
 
 
-        $this->tasks_processes[12]="exec.keepup2date.php --update";
+       // $this->tasks_processes[12]="exec.keepup2date.php --update";
         $this->tasks_processes[13]="exec.keepup2date.php --UpdateUtility";
         $this->tasks_processes[14]="exec.squid.stats.php --optimize";
         $this->tasks_processes[18]="exec.squid.cloud.compile.php --backup-catz";

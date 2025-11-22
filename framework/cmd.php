@@ -310,9 +310,7 @@ if(isset($_GET["move_uploaded_file"])){move_uploaded_file_framework();exit;}
 
 if(isset($_GET["sslfingerprint"])){sslfingerprint();exit;}
 
-if(isset($_GET["kasversion"])){kasversion();exit;}
-if(isset($_GET["kaspersky-status"])){kaspersky_status();exit;}
-if(isset($_GET["UpdateUtility-pattern-date"])){UpdateUtilityPatternDate();exit;}
+
 
 
 
@@ -521,13 +519,7 @@ if(isset($_GET["cyrus-db-config"])){cyrus_db_config();exit;}
 
 
 
-if(isset($_GET["emailing-import-contacts"])){emailing_import_contacts();exit;}
-if(isset($_GET["emailing-database-migrate-perform"])){emailing_database_migrate_export();exit;}
-if(isset($_GET["emailing-builder-linker"])){emailing_builder_linker();exit;}
-if(isset($_GET["emailing-builder-linker-simple"])){emailing_builder_linker_simple();exit;}
-if(isset($_GET["emailing-build-emailrelays"])){emailing_build_emailrelays();exit;}
-if(isset($_GET["emailrelay-ou-status"])){emailing_emailrelays_status_ou();exit;}
-if(isset($_GET["emailing-make-unique-table"])){emailing_database_make_unique();exit;}
+
 
 
 
@@ -1280,23 +1272,7 @@ function ReloadCyrus(){
 	NOHUP_EXEC("/usr/share/artica-postfix/bin/artica-install --reload-cyrus");
 }
 
-function import_computer_from_list(){
-	writelogs_framework("STARTING" ,__FUNCTION__,__FILE__,__LINE__);
-	$GLOBALS["CACHEFILE"]=PROGRESS_DIR."/ocs.import.progress";
-	$GLOBALS["LOGSFILES"]=PROGRESS_DIR."/ocs.import.progress.txt";
-	@unlink($GLOBALS["CACHEFILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["CACHEFILE"],0777);
-	@chmod($GLOBALS["LOGSFILES"],0777);
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.computer.scan.php --import-list >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-}
+
 
 function format_disk_unix(){
 	$logs=md5($_GET["format-disk-unix"]);
@@ -1531,14 +1507,7 @@ function rsync_reconfigure(){
 	NOHUP_EXEC( LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.rsync-lvm.php");
 }
 
-function DeleteVHosts(){
-	$unix=new unix();
-	$tmp=$unix->FILE_TEMP();
-	shell_exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.www.install.php remove {$_GET["vhost-delete"]} --verbose >$tmp 2>&1");
-	echo "<articadatascgi>". @file_get_contents($tmp)."</articadatascgi>";
-	@unlink($tmp);
-	
-}
+
 
 
 
@@ -1763,19 +1732,9 @@ function CyrusRepairMailBox(){
 }
 
 
-function InstallWebServices(){
-	NOHUP_EXEC( LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.www.install.php");
-}
 
-function InstallWebServiceUnique(){
-	
-	$unix=new unix();
-	$php5=LOCATE_PHP5_BIN2();
-	$nohup=$unix->find_program("nohup");
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.www.install.php --single-install \"{$_GET["install-web-service-unique"]}\" >/dev/null 2>&1 &");
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-}
+
+
 
 
 function MailManSync(){
@@ -2637,7 +2596,7 @@ NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.admin.status.post
 NOHUP_EXEC("/usr/share/artica-postfix/bin/artica-install --write-versions");	
 }
 function BuildVhosts(){
-NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.www.install.php");
+
 NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.www.webdav.php --users");		
 }
 
@@ -2973,12 +2932,7 @@ function philesizeIMGPath(){
 	
 }
 
-function kaspersky_status(){
-	exec("/usr/share/artica-postfix/bin/artica-install --kaspersky-status",$results);
-	$text=trim(implode("\n",$results));
-	echo "<articadatascgi>". base64_encode($text)."</articadatascgi>";
-	
-}
+
 
 
 
@@ -5270,24 +5224,7 @@ function spamassassin_rebuild(){
 
 
 
-function emailing_builder_linker(){
-	$ou=$_GET["emailing-builder-linker"];
-	writelogs_framework("exec.emailing.php --build-queues $ou " ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.emailing.php --build-queues $ou &");
-}
 
-function emailing_builder_linker_simple(){
-	$ou=base64_decode($_GET["ou"]);
-	writelogs_framework("exec.emailing.php --build-single-queue {$_GET["ID"]} $ou" ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.emailing.php --build-single-queue {$_GET["ID"]} $ou &");
-	
-}
-
-
-function emailing_build_emailrelays(){
-	writelogs_framework("exec.emailrelay.php --emailrelays-emailing" ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.emailrelay.php --emailrelays-emailing &");
-}
 
 function system_debian_kernel(){
 	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.apt-cache.kernel.php --detect");
@@ -7410,8 +7347,7 @@ function ChangeMysqlParams(){
 	@file_put_contents("$basePath/mysql_server",$server);
 	shell_exec("/usr/bin/php /usr/share/artica-postfix/exec.status.php --process1 --force ".time());
 	$unix=new unix();
-	$cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.www.install.php";	
-	$unix->THREAD_COMMAND_SET("/etc/init.d/roundcube restart");	
+	$unix->THREAD_COMMAND_SET("/etc/init.d/roundcube restart");
 	$unix->THREAD_COMMAND_SET($cmd);
 }
 

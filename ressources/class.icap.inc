@@ -178,18 +178,8 @@ class icap{
 
 
         $CountDeServices=count($results);
-        $KWTSEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSEnabled"));
-        $KWTSIPAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSIPAddr");
-        $this->icap_lines[]="# Kaspersky Web traffic Security = $KWTSEnabled [$KWTSIPAddr]";
 
 
-        if($KWTSEnabled==1){
-            if($KWTSIPAddr<>null) {
-                if ($CountDeServices == 0) {$CountDeServices = 1;}
-            }else{
-                $KWTSEnabled=0;
-            }
-        }
         if($CicapEnabled==1){
             if($CICAPEnableSandBox==1){
                 if ($CountDeServices == 0) {$CountDeServices = 1;}
@@ -214,29 +204,7 @@ class icap{
         $overload["wait"]="wait";
         $overload["force"]="force";
 
-        if($KWTSEnabled==1){
-            $bypass="off";
-            $KWTSIPAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSIPAddr");
-            $KWTSByPass=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSByPass"));
-            $KWTSPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSPort"));
-            $KWTSReqMode=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSReqMode"));
-            $KWTSRepMode=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSRepMode"));
-            $KWTSOverload=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSOverload"));
-            $KWTSMaxCon=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSMaxCon"));
-            if($KWTSPort==0){$KWTSPort=1344;}
-            if($KWTSReqMode==null){$KWTSReqMode="av/reqmod";}
-            if($KWTSRepMode==null){$KWTSRepMode="av/respmod";}
-            if($KWTSOverload==null){$KWTSOverload="wait";}
-            if($KWTSMaxCon==null){$KWTSMaxCon=5000;}
-            $on_overload=$overload[$KWTSOverload];
-            if(intval($KWTSByPass==1)){$bypass="on";}
-            $maxconn_text="on-overload=$on_overload max-conn=$KWTSMaxCon ";
-            $opts="{$maxconn_text} bypass=$bypass";
-            $this->icap_lines[]="icap_service kwts_req $resqd icap://$KWTSIPAddr:$KWTSPort/$KWTSReqMode $opts";
-            $this->icap_lines[]="icap_service kwts_res $respd icap://$KWTSIPAddr:$KWTSPort/$KWTSRepMode $opts";
-            $this->CountDeServices++;
 
-        }
 
         $this->icap_lines[]="# C-ICAP Enabled......: $CicapEnabled";
 
@@ -617,9 +585,6 @@ class icap{
         $kav_rules[]="# --------- icap_service C-ICAP (mode 3.0.x)";
 
         if($this->EnableSquidGuardInCiCAP==1){$kav_rules[]="icap_service\tservice_req reqmod_precache O icap://$this->IcapServerAddress:1345/srv_url_check";}
-        if(!$users->KASPERSKY_WEB_APPLIANCE){
-            if($this->EnableClamavInCiCap==1){$kav_rules[]="icap_service\tservice_avi respmod_precache 1 icap://$this->IcapServerAddress:1345/srv_clamav";}
-        }
         if($this->enable_metascanner==1){$kav_rules[]="icap_service\tservice_khse respmod_precache 1 icap://$this->IcapServerAddress:1345/khse";}
 
 
@@ -674,59 +639,6 @@ class icap{
 
         return $result;
     }
-
-
-    private function C_ICAP_31(){
-        $users=new usersMenus();
-        $class_url_check=FALSE;
-        if($this->enable_cicap==0){
-            return "# --------- icap_service enable_cicap=0 [".__LINE__."]\n";
-        }
-        $sock=new sockets();
-        $DisableCicapDNBSL=$sock->GET_INFO("DisableCicapDNBSL");
-        if(!is_numeric($DisableCicapDNBSL)){$DisableCicapDNBSL=1;}
-
-
-        $kav_rules[]="# --------- icap_service C-ICAP mode 3.1.x";
-
-
-        if($this->enable_squidguard==1){
-            if($this->EnableSquidGuardInCiCAP==1){
-                $this->ICAP_SERVICES_COUNT=$this->ICAP_SERVICES_COUNT+1;
-                $class_url_check=true;
-                $kav_rules[]="# --------- icap_service C-ICAP + SquidGuard";
-                $kav_rules[]="icap_service\tservice_url_check reqmod_precache routing=on bypass=on icap://$this->IcapServerAddress:1345/url_check";
-            }
-        }
-
-
-        if(!$class_url_check){
-            if($DisableCicapDNBSL==0){
-                $this->ICAP_SERVICES_COUNT=$this->ICAP_SERVICES_COUNT+1;
-                $kav_rules[]="# --------- icap_service C-ICAP + DNSBL";
-                $kav_rules[]="icap_service\tservice_url_check reqmod_precache routing=on bypass=on icap://$this->IcapServerAddress:1345/url_check";
-            }
-        }
-
-        if($this->C_ICAP_31_icap_service()){
-            $this->ICAP_SERVICES_COUNT=$this->ICAP_SERVICES_COUNT+1;
-            $kav_rules[]="icap_service  service_antivir respmod_precache routing=on bypass=on icap://$this->IcapServerAddress:1345/srv_clamav";
-        }
-
-
-
-        if($this->enable_metascanner==1){
-            if(is_file("/opt/kaspersky/khse/libexec/libms-icap.so")){
-                $this->ICAP_SERVICES_COUNT=$this->ICAP_SERVICES_COUNT+1;
-                $kav_rules[]="icap_service  khse respmod_precache routing=on bypass=on icap://$this->IcapServerAddress:1345/khse";
-            }
-        }
-        return implode("\n",$kav_rules);
-    }
-
-
-
-
 
     public function LOCATE_C_ICAP_MODULES_DIR(){
         $f[]="virus_scan.so";

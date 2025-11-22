@@ -35,7 +35,7 @@ function table(){
 	$AllowSquidGoogle=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AllowSquidGoogle"));
 	$AllowSquidWhatsApp=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AllowSquidWhatsApp"));
 	$AllowSquidTeamViewer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AllowSquidTeamViewer"));
-	$AllowSquidKaspersky=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AllowSquidKaspersky"));
+
 	
 	$AllowSquidOtherProtocols=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AllowSquidOtherProtocols"));
 	$AllowSquidHSTS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AllowSquidHSTS"));
@@ -53,7 +53,6 @@ function table(){
         $AllowSquidGoogle=0;
         $AllowSquidWhatsApp=0;
         $AllowSquidTeamViewer=0;
-        $AllowSquidKaspersky=0;
         $AllowSquidOtherProtocols=0;
         $AllowSquidHSTS=0;
         $SquidAllowSmartPhones=0;
@@ -82,7 +81,7 @@ function table(){
     $form[]=$tpl->field_checkbox("AllowSquidGoogleHearth","{AllowSquidGoogleHearth}",$AllowSquidGoogleHearth,false,"{AllowSquidGoogleHearth_explain}");
 
 
-	$form[]=$tpl->field_checkbox("AllowSquidKaspersky","{AllowSquidKaspersky}",$AllowSquidKaspersky,false,"{AllowSquidKaspersky_explain}");
+
 	$form[]=$tpl->field_checkbox("AllowSquidCompatibility","{AllowSquidCompatibility}",$AllowSquidCompatibility,false,"{AllowSquidCompatibility_explain}");
 	$form[]=$tpl->field_checkbox("AllowSquidOtherProtocols","{AllowSquidOtherProtocols}",$AllowSquidOtherProtocols,false,"{AllowSquidOtherProtocols_explain}");
 	$form[]=$tpl->field_checkbox("AllowSquidHSTS","{AllowSquidHSTS}",$AllowSquidHSTS,false,"{AllowSquidHSTS_explain}");

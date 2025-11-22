@@ -1853,24 +1853,10 @@ private	function recipient_bcc_maps(){
 		}		
 		
 		
-		if($users->KAV_MILTER_INSTALLED){
-			if($KasxFilterEnabled==1){
-				if($array_filters["APP_KAS3"]==1){
-					echo "Starting......: ".date("H:i:s")." Postfix \"$this->myhostname\" Kaspersky AntiSpam Enabled\n";
-					$smtpd_milters[]="unix:/var/run/kas-milter.socket";
-				}
-			}
-		}
+
 		
 		
-		if($users->KAV_MILTER_INSTALLED){
-			if($kavmilterEnable==1){
-				if($array_filters["APP_KAVMILTER"]==1){
-					echo "Starting......: ".date("H:i:s")." Postfix \"$this->myhostname\" Kaspersky antivirus Enabled\n";
-					$smtpd_milters[]="inet:127.0.0.1:1052";
-				}
-			}
-		}
+
 		
 		if($users->MILTERGREYLIST_INSTALLED){
 			if($array_filters["APP_MILTERGREYLIST"]==1){

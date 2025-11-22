@@ -252,7 +252,6 @@ function table():bool{
     }
 
     $html[]=APP_MSKTUTIL($UPDATES_ARRAY);
-    $html[]=APP_KLNAGENT($UPDATES_ARRAY);
     $html[]=APP_TAILSCALE($UPDATES_ARRAY);
     $html[]=APP_OPENVPN($UPDATES_ARRAY);
     $html[]=APP_PPTP_CLIENT($UPDATES_ARRAY);
@@ -1876,30 +1875,7 @@ function APP_MSKTUTIL($UPDATES_ARRAY):string{
     $html[]="</tr>";
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
-function APP_KLNAGENT($UPDATES_ARRAY):string{
-    if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
-    $tpl=new template_admin();
-    $KLNAGENT_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KLNAGENT_INSTALLED"))==1){
-        $KLNAGENT_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("KLNAGENT_VERSION");
-    }
 
-    if(isset($UPDATES_ARRAY["APP_KLNAGENT"])){
-        $bton=$tpl->button_autnonome("{install_upgrade2}",
-            "Loadjs('fw.system.upgrade-software.php?product=APP_KLNAGENT');",
-            "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
-    }
-
-
-    $html[]="<tr>";
-    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_KLNAGENT}:</strong></td>";
-    $html[]="<td style='width:1%'  nowrap>$KLNAGENT_VERSION</td>";
-    $html[]="<td style='text-align:left;width:99%' nowrap>$bton</td>";
-    $html[]="</tr>";
-
-    if(!is_array($html)){$html=array();} return @implode("\n",$html);
-}
 
 function APP_TAILSCALE($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}

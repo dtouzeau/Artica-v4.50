@@ -262,7 +262,7 @@ def repasse_category(familysite):
     MAIN["cedexis.com"]=143
     MAIN["helpshift.com"]=143
     
-    MAIN["kaspersky.com"]=36
+
     MAIN["avast.com"]=36
     MAIN["onenote.net"]=151
     MAIN["microsoft.com"]=2

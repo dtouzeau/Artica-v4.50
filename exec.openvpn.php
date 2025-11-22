@@ -20,7 +20,7 @@ if(is_array($argv)){
 		if(preg_match("#--wait#",implode(" ",$argv))){$GLOBALS["WAIT"]=true;}
 if($GLOBALS["VERBOSE"]){echo "Debug mode TRUE for {$argv[1]}\n";}
 $users=new usersMenus();
-if($users->KASPERSKY_WEB_APPLIANCE){exit();}
+
 
 $openvpn=new openvpn();
 

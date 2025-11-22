@@ -168,8 +168,6 @@ class usersMenus {
 
 	public $STATS_APPLIANCE=null;
 	public $WEBSTATS_APPLIANCE=null;
-
-	public $KASPERSKY_WEB_APPLIANCE=false;
 	public $APP_ULOGD_INSTALLED=false;
 	public $APP_ZIP_INSTALLED=false;
 	public $APP_OPENVPN_PYTHON=false;
@@ -378,7 +376,6 @@ class usersMenus {
 	public $AsOrgPostfixAdministrator=false;
 	public $AsMessagingOrg=false;
     public $MEM_TOTAL_INSTALLEE=0;
-	public $KASPERSKY_SMTP_APPLIANCE=false;
 	public $POSTFILTER_INSTALLED=false;
 	public $VMWARE_TOOLS_INSTALLED=false;
 
@@ -428,7 +425,6 @@ class usersMenus {
 	public $PIWIGO_INSTALLED=false;
 	public $APP_SABNZBDPLUS_INSTALLED=false;
 	public $POSTSCREEN_INSTALLED=false;
-	public $KASPERSKY_UPDATE_UTILITY_INSTALLED=false;
 	public $deduplication_installed=false;
 
 	public $IPSET_INSTALLED=false;
@@ -1035,10 +1031,6 @@ class usersMenus {
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARPD_INSTALLED"))==1){$this->ARPD_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MEMCACHED_INSTALLED"))==1){$this->MEMCACHED_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HAMACHI_INSTALLED"))==1){$this->HAMACHI_INSTALLED=true;}
-
-
-
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KASPERSKY_WEB_APPLIANCE"))==1){$this->KASPERSKY_WEB_APPLIANCE=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_ULOGD_INSTALLED"))==1){$this->APP_ULOGD_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_ZIP_INSTALLED"))==1){$this->APP_ZIP_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_OPENVPN_PYTHON"))==1){$this->APP_OPENVPN_PYTHON=true;}
@@ -1109,7 +1101,6 @@ class usersMenus {
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SABNZBDPLUS_INSTALLED"))==1){$this->APP_SABNZBDPLUS_INSTALLED;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTSCREEN_INSTALLED"))==1){$this->POSTSCREEN_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPSET_INSTALLED"))==1){$this->IPSET_INSTALLED=True;}
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KASPERSKY_UPDATE_UTILITY_INSTALLED"))==1){$this->KASPERSKY_UPDATE_UTILITY_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ASPELL_INSTALLED"))==1){$this->ASPELL_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MUNIN_CLIENT_INSTALLED"))==1){$this->MUNIN_CLIENT_INSTALLED;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AS_VPS_CLIENT"))==1){$this->AS_VPS_CLIENT=True;}

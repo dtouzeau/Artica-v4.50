@@ -14,47 +14,9 @@ attributetype (1.1.2.1.1.10 NAME 'transport'
     EQUALITY caseIgnoreIA5Match
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.26)
 
-attributetype (1.1.2.1.1.10.1.1 NAME 'KasperkyAVScanningDatas'
-    DESC 'Kaspersky Antivirus Scanning settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26)
-
-
 attributetype (1.1.2.1.1.10.1.2 NAME 'ArticaGroupPrivileges'
     DESC 'Specials Artica privileges for a defined user group'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.40)  
-
-attributetype (1.1.2.1.1.10.1.3 NAME 'KasperkyASDatas'
-    DESC 'Kaspersky Anti-Spam settings actions'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-
-attributetype ( 1.1.2.1.1.10.1.4 NAME 'KasperskyASGroupNumber'
-	DESC 'numerically identifies an KAS group'
-	EQUALITY caseIgnoreMatch
-	SUBSTR caseIgnoreSubstringsMatch
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
-	SINGLE-VALUE )
-
-attributetype (1.1.2.1.1.10.1.5 NAME 'KasperkyASDatasMembers'
-    DESC 'Kaspersky Anti-Spam settings members'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26)
-
-attributetype (1.1.2.1.1.10.1.6 NAME 'KasperkyASDatasAllow'
-    DESC 'Kaspersky Anti-Spam settings White list'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
-
-attributetype (1.1.2.1.1.10.1.7 NAME 'KasperkyASDatasDeny'
-    DESC 'Kaspersky Anti-Spam settings Black list'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
-
-attributetype (1.1.2.1.1.10.1.8 NAME 'KasperkyASDatasRules'
-    DESC 'Kaspersky Anti-Spam settings Rules settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
 
 attributetype (1.1.2.1.1.10.1.9 NAME 'MailboxActive'
     DESC 'active or not active to local mailbox' 
@@ -408,27 +370,6 @@ attributetype (1.1.2.1.1.10.1.73 NAME 'mynetworks'
     EQUALITY caseIgnoreIA5Match
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.26)
 
-#---------------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.74 NAME 'KasperskyAntispamRules'
-    DESC 'Kaspersky Antispam Rules'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-
-#------------------------------------------------------------------------
-
-#---------------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.75 NAME 'KasperskyAntispamFilterConf'
-    DESC 'Kaspersky Global filter Rules'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-
-#------------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.76 NAME 'KasperskyAntispamDNSConf'
-    DESC 'Kaspersky DNS Black List'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-
-#------------------------------------------------------------------------
 attributetype (1.1.2.1.1.10.1.77 NAME 'ArticaUserFilterRule'
     DESC 'Artica Header rules per users'
     EQUALITY caseIgnoreIA5Match
@@ -742,16 +683,6 @@ attributetype (1.1.2.1.1.10.1.137 NAME 'ArticaProxyServerEnabled'
     EQUALITY caseIgnoreIA5Match
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
 #---------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.138 NAME 'Kav4ProxyMainConf'
-    DESC 'Define Kaspersky For Proxy Server Main configuration File'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#---------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.139 NAME 'Kav4ProxyGroupsConf'
-    DESC 'Define Kaspersky For Proxy Server Main configuration File'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26)
-#---------------------------------------------------------------------
 #attributetype (1.1.2.1.1.10.1.140 NAME 'GlobalSquidConf'
 #    DESC 'Define global configuration of squid proxy'
 #    EQUALITY caseIgnoreIA5Match
@@ -942,11 +873,6 @@ attributetype (1.1.2.1.1.10.1.179 NAME 'ArticaMailAddonsLevel'
     EQUALITY caseIgnoreIA5Match
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
 #--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.180 NAME 'ArticaEnableKav4ProxyInSquid'
-    DESC 'enable Kaspersky in squid'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
 attributetype (1.1.2.1.1.10.1.181 NAME 'PureFtpdConf'
     DESC 'Pureftpd main configuration file'
     EQUALITY caseIgnoreIA5Match
@@ -1098,12 +1024,6 @@ attributetype (1.1.2.1.1.10.1.210 NAME 'AmavisFilterEnabled'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
 #--------------------------------------------------------------------
 
-# 1.1.2.1.1.10.1.211 KasxFilterEnabled (removed)
-attributetype (1.1.2.1.1.10.1.211 NAME 'KasxFilterEnabled'
-    DESC 'Kaspersky Anti-spam Enable/disable'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
 attributetype (1.1.2.1.1.10.1.212 NAME 'OBMApacheFile'
     DESC 'Obm Apache configuration file'
     EQUALITY caseIgnoreIA5Match
@@ -1186,56 +1106,6 @@ attributetype (1.1.2.1.1.10.1.228 NAME 'SharedFolerConf'
 #--------------------------------------------------------------------
 attributetype (1.1.2.1.1.10.1.229 NAME 'SqlGreyTimeCode'
     DESC 'Shared folder list'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.230 NAME 'kasactiondef'
-     DESC 'Kaspersky Anti-spam group settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.231 NAME 'kasallowxml'
-    DESC 'Kaspersky Anti-spam group settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.232 NAME 'Kasdenyxml'
-     DESC 'Kaspersky Anti-spam group settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.233 NAME 'Kasipallowxml'
-    DESC 'Kaspersky Anti-spam group settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.234 NAME 'Kasipdenyxml'
-     DESC 'Kaspersky Anti-spam group settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.235 NAME 'kasmembersxml'
-    DESC 'Kaspersky Anti-spam group settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.236 NAME 'kasprofilexml'
-     DESC 'Kaspersky Anti-spam group settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.237 NAME 'kasruledef'
-    DESC 'Kaspersky Anti-spam group settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.238 NAME 'KasHexGroupName'
-    DESC 'Kaspersky Anti-spam group settings'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.239 NAME 'ApacheConfig'
-    DESC 'Apache httpd.conf'
     EQUALITY caseIgnoreIA5Match
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
 #--------------------------------------------------------------------
@@ -1393,12 +1263,6 @@ attributetype (1.1.2.1.1.10.1.271 NAME 'RecipientToAdd'
     DESC 'Combination ddd eMail address When go to a recipient'
     EQUALITY caseIgnoreIA5Match
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.26)
-#--------------------------------------------------------------------
-attributetype (1.1.2.1.1.10.1.272 NAME 'KasperskyAntiSpamDefaultGroupCommonActionDef'
-    DESC 'Kaspersky AntiSpam Default Group Common-Action-Def'
-    EQUALITY caseIgnoreIA5Match
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE)
-#--------------------------------------------------------------------
 attributetype (1.1.2.1.1.10.1.273 NAME 'ArticaUsbBackupKeyID'
     DESC 'Usb key detection to backup artica datas'
     EQUALITY caseIgnoreIA5Match
@@ -2029,7 +1893,7 @@ objectclass ( 1.3.6.1.4.1.15347.2.3.1.2
     	DESC 'special artica attributes'
 	SUP top
 	AUXILIARY
-	MAY(ArticaGroupPrivileges $ KasperkyAVScanningDatas $ KasperkyASDatas $ KasperskyASGroupNumber $ KasperkyASDatasRules $ MailboxActive $ KasperkyASDatasAllow $ KasperkyASDatasDeny $ CronDatas $ PostfixMaincf $ FetchMailsRules $ FetchMailsGlobalSettings $ PostfixHeadersRegex $ PostfixSSLCert $ MailBoxMaxSize $ PostfixHashSmtpSaslAuth $ SmtpdClientRestrictionsRules $ SmtpdRecipientRestrictionsRules $ SmtpdSenderRestrictionsRules $ PostFixBounceTemplate $ SieveScriptsUser $ ArticaGlobalSettings $ VirtualDomainsMapsMTA $ TemplateNotifyInfectedRecipient $ TemplateNotifyInfectedSender $  TemplateNotifyInfectedAdmin $ TemplateNotifyCorruptedRecipient $ TemplateNotifyCorruptedSender $ TemplateNotifyCorruptedAdmin $ TemplateNotifySuspiciousRecipient $ TemplateNotifySuspiciousSender $ TemplateNotifySuspiciousAdmin $ TemplateNotifyCuredRecipient $ TemplateNotifyCuredSender $ TemplateNotifyCuredAdmin $ TemplateNotifyWarningRecipient $ TemplateNotifyWarningSender $ TemplateNotifyWarningAdmin $ TemplateNotifyProtectedRecipient $ TemplateNotifyProtectedSender $ TemplateNotifyProtectedAdmin $ TemplateNotifyFilteredRecipient $ TemplateNotifyFilteredSender $ TemplateNotifyFilteredAdmin $ TemplateNotifyErrorRecipient $ TemplateNotifyErrorSender $ TemplateNotifyErrorAdmin $ CheckRecipientAccess $ checkrecipientmxaccess $ SmtpdHeloRestrictionsRules $ checkheloaccess $ checkhelomxaccess $ checkhelonsaccess $ checksenderaccess $ checksendermxaccess $ checksendernsaccess $ ArticaUserFilterRule $ ArticaMaxDayQuarantine $ ArticaFakedMailFrom $ ArticaDenyNoMXRecords $ FiltersExtensionsGroupName $ CountryDeny $ RblServers $ RblServersAction $ SURBLServers $ SURBLServersAction $ ArticaWebRootURI $ BogoFilterAction $ OuTrustMyUSers $ ArticaDansGuardianGroupRuleEnabled $ ArticaMailAddonsLevel $ ArticaMaxTempLogFilesDay $ ArticaFoldersSizeConfig $ ArticaAutoUpdateConfig $ ArticaFilterEnabled $ AmavisFilterEnabled $ jpegLogo $ DefaultGroupPassword $ AutoDomainAliases))
+	MAY(ArticaGroupPrivileges $ KasperkyAVScanningDatas $ KasperkyASDatas $  MailboxActive $ KasperkyASDatasAllow $ CronDatas $ PostfixMaincf $ FetchMailsRules $ FetchMailsGlobalSettings $ PostfixHeadersRegex $ PostfixSSLCert $ MailBoxMaxSize $ PostfixHashSmtpSaslAuth $ SmtpdClientRestrictionsRules $ SmtpdRecipientRestrictionsRules $ SmtpdSenderRestrictionsRules $ PostFixBounceTemplate $ SieveScriptsUser $ ArticaGlobalSettings $ VirtualDomainsMapsMTA $ TemplateNotifyInfectedRecipient $ TemplateNotifyInfectedSender $  TemplateNotifyInfectedAdmin $ TemplateNotifyCorruptedRecipient $ TemplateNotifyCorruptedSender $ TemplateNotifyCorruptedAdmin $ TemplateNotifySuspiciousRecipient $ TemplateNotifySuspiciousSender $ TemplateNotifySuspiciousAdmin $ TemplateNotifyCuredRecipient $ TemplateNotifyCuredSender $ TemplateNotifyCuredAdmin $ TemplateNotifyWarningRecipient $ TemplateNotifyWarningSender $ TemplateNotifyWarningAdmin $ TemplateNotifyProtectedRecipient $ TemplateNotifyProtectedSender $ TemplateNotifyProtectedAdmin $ TemplateNotifyFilteredRecipient $ TemplateNotifyFilteredSender $ TemplateNotifyFilteredAdmin $ TemplateNotifyErrorRecipient $ TemplateNotifyErrorSender $ TemplateNotifyErrorAdmin $ CheckRecipientAccess $ checkrecipientmxaccess $ SmtpdHeloRestrictionsRules $ checkheloaccess $ checkhelomxaccess $ checkhelonsaccess $ checksenderaccess $ checksendermxaccess $ checksendernsaccess $ ArticaUserFilterRule $ ArticaMaxDayQuarantine $ ArticaFakedMailFrom $ ArticaDenyNoMXRecords $ FiltersExtensionsGroupName $ CountryDeny $ RblServers $ RblServersAction $ SURBLServers $ SURBLServersAction $ ArticaWebRootURI $ BogoFilterAction $ OuTrustMyUSers $ ArticaDansGuardianGroupRuleEnabled $ ArticaMailAddonsLevel $ ArticaMaxTempLogFilesDay $ ArticaFoldersSizeConfig $ ArticaAutoUpdateConfig $ ArticaFilterEnabled $ AmavisFilterEnabled $ jpegLogo $ DefaultGroupPassword $ AutoDomainAliases))
 
 #---------------------------------------------------------------------------
 
@@ -2187,15 +2051,6 @@ objectclass ( 1.3.6.1.4.1.15347.2.118
 	MAY(mynetworks)
 	)
 #===========================================================
-objectclass ( 1.3.6.1.4.1.15347.2.119
-	NAME 'KasperskyAntiSpamSettings'
-    	DESC ' Kaspersky Anti-spam area'
-	SUP top
-	STRUCTURAL
-	MUST ( cn )
-	MAY(KasperskyAntispamRules $ KasperskyAntispamFilterConf $ KasperskyAntispamDNSConf $ KasperskyAntiSpamDefaultGroupCommonActionDef)
-	)
-#===========================================================
 objectclass ( 1.3.6.1.4.1.15347.2.120
 	NAME 'SmtpSaslPasswordMaps'
     	DESC 'Postfix smtp_sasl_password_maps  lookup table'
@@ -2275,16 +2130,6 @@ objectclass ( 1.3.6.1.4.1.15347.2.128
 	MUST ( cn )
 	MAY(MailManDefaultUrlHost $ MailManDefaultUrlPattern $ MailManDefaulPublicArchiveUrl $ MailManDefaultEmailHost $MailManAdminPassword $ VirtualHostOverview)
 	)
-#===========================================================
-#objectclass ( 1.3.6.1.4.1.15347.2.129
-#	NAME 'ArticaKavMilterd'
-#    	DESC 'Kaspersky Anti-virus Milter configuration'
-#	SUP top
-#	STRUCTURAL
-#	MUST ( cn )
-#	MAY(kavmilterConf $ KavMilterdRuleConf $ KavMilterdOU $ KavMilterdGroup $ KavMilterPolicyNumber $ kavmilterEnable)
-#	)
-#===========================================================
 objectclass ( 1.3.6.1.4.1.15347.2.130
 	NAME 'ArticaFetchmail'
     	DESC 'Fetch mail configs'
@@ -2491,15 +2336,6 @@ objectclass (1.3.6.1.4.1.15347.2.152
 	AUXILIARY
 	MUST ( cn )
 	MAY(SharedFolderPrefix $ SharedFolderList $ SharedFolerConf)
-	)
-#=========================================================
-objectclass (1.3.6.1.4.1.15347.2.153
-	NAME 'KasFiles'
-    	DESC 'Kaspersky Files configuration before apply to disk'
-	SUP top
-	STRUCTURAL
-	MUST ( cn )
-	MAY(KasHexGroupName $ kasactiondef $ kasallowxml $ kasdenyxml $ kasipallowxml $ kasipdenyxml $ kasmembersxml $ kasprofilexml $ kasruledef)
 	)
 #=========================================================
 objectclass (1.3.6.1.4.1.15347.2.154

@@ -1564,7 +1564,6 @@ $GLOBALS["EXTENSION_TYPES_ARRAY"]["kbd"]="Keyboard mapping (LocoScript - Signatu
 $GLOBALS["EXTENSION_TYPES_ARRAY"]["kbm"]="Keyboard mapping (Reflection 4.0)";
 $GLOBALS["EXTENSION_TYPES_ARRAY"]["kcl"]="Lisp source code (Kyoto Common Lisp)";
 $GLOBALS["EXTENSION_TYPES_ARRAY"]["kcp"]="Keychamp file";
-$GLOBALS["EXTENSION_TYPES_ARRAY"]["kdc"]="Kaspersky Virus Database file";
 $GLOBALS["EXTENSION_TYPES_ARRAY"]["keo"]="Older, outdated Print Shop extension";
 $GLOBALS["EXTENSION_TYPES_ARRAY"]["ket"]="Older, outdated Print Shop extension";
 $GLOBALS["EXTENSION_TYPES_ARRAY"]["kex"]="Macro (KEDIT)";

@@ -495,7 +495,6 @@ function create_package_squid($t){
 	mkdir("/root/squid-builder/usr/share/sarg/images",0755,true);
 	mkdir("/root/squid-builder/usr/etc",0755,true);
 	mkdir("/root/squid-builder/usr/share/gettext/po",0755,true);
-	mkdir("/root/squid-builder/opt/kaspersky/KasperskyUpdateUtility",0755,true);
 	mkdir("/root/squid-builder/usr/share/nmap",0755,true);
 	mkdir("/root/squid-builder/usr/share/squid27",0755,true);
 	mkdir("/root/squid-builder/usr/share/man/man8",0755,true);
@@ -583,7 +582,6 @@ function create_package_squid($t){
 	shell_exec("$cp -rfd /usr/bin/pactester /root/squid-builder/usr/bin/pactester");
 	shell_exec("$cp -rfd /usr/lib/libpacparser.so.1 /root/squid-builder/usr/lib/libpacparser.so.1");
 	shell_exec("$cp -rfd /usr/share/sarg/images/* /root/squid-builder/usr/share/sarg/images/");
-	shell_exec("$cp -rfd /opt/kaspersky/﻿KasperskyUpdateUtility/* /root/squid-builder/opt/kaspersky/﻿KasperskyUpdateUtility/");
 	shell_exec("$cp -rfd /usr/local/libexec/netdata/* /root/squid-builder/usr/local/libexec/netdata/");
 	shell_exec("$cp -rfd /usr/local/share/netdata/* /root/squid-builder/usr/local/share/netdata/");
 	shell_exec("$cp -rfd /usr/local/var/cache/netdata/* /root/squid-builder/usr/local/var/cache/netdata/");
@@ -728,7 +726,6 @@ function create_package_squid($t){
 	$f[]="/usr/lib/libboost_program_options.so.1.42.0";
 	$f[]="/usr/bin/bwm-ng";
 	$f[]="/usr/share/info/msmtp.info";
-	$f[]="/etc/ld.so.conf.d/KasperskyUpdateUtility.conf";
 	$f[]="/etc/ld.so.conf.d/cicap.conf";
 	
 	$f[]="/usr/bin/msmtp";

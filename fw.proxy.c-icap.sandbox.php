@@ -8,10 +8,6 @@ if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["sandbox"])){sandbox_page();exit;}
-if(isset($_GET["ext-sandbox-js"])){sandbox_kaspersky_extensions();exit;}
-if(isset($_GET["sandbox-kaspersky-extensions"])){sandbox_kaspersky_extensions_list();exit;}
-if(isset($_GET["sandbox-kaspersky-exten"])){sandbox_kaspersky_exten();exit;}
-if(isset($_POST["EnableKasperskySandbox"])){sandbox_kaspersky_save();exit;}
 if(isset($_GET["upload-sandbbox-js"])){sandbox_upload_js();exit;}
 if(isset($_GET["upload-sandbbox-popup"])){sandbox_upload_popup();exit;}
 if(isset($_GET["file-uploaded"])){sandbox_uploaded_js();exit;}
@@ -73,11 +69,7 @@ function page(){
 
 }
 
-function sandbox_kaspersky_extensions() {
-    $tpl        = new template_admin();
-    $page       = CurrentPageName();
-    $tpl->js_dialog4("Kaspersky SandBox {extensions}","$page?sandbox-kaspersky-extensions=yes");
-}
+
 function sandbox_upload_js(){
     $tpl        = new template_admin();
     $page       = CurrentPageName();
@@ -103,75 +95,6 @@ function sandbox_uploaded_js(){
 }
 
 
-function sandbox_kaspersky_extensions_list(){
-    $tpl        = new template_admin();
-    $page       = CurrentPageName();
-    $t          = time();
-    $TRCLASS    = null;
-    $security   ="AsSquidAdministrator";
-    $CountOfKasperskySandboxMime    = 0;
-    $text_class = null;
-
-    include_once(dirname(__FILE__)."/ressources/class.mimes-types.inc");
-    $mimes=mimestypes_array();
-
-    $fields[]="{extensions}";
-    $fields[]="{BannedMimetype}";
-    $fields[]="{enabled}";
-
-    $html[]=$tpl->table_head($fields,"table-$t");
-    $KasperskySandboxMime=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxMime"));
-
-    if(is_array($KasperskySandboxMime)) {
-        $CountOfKasperskySandboxMime=count($KasperskySandboxMime);
-    }
-    if ($CountOfKasperskySandboxMime == 0) {
-        $KasperskySandboxMime = mimesandboxdefaults();
-    }
-
-    foreach ($mimes as $ext=>$mime){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $token=md5("$ext$mime");
-        $enabled=0;
-        if(isset($KasperskySandboxMime[$token])){$enabled=1;}
-
-        $enabled=$tpl->icon_check($enabled,"Loadjs('$page?sandbox-kaspersky-exten=$token')",null,$security);
-
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td class=\"$text_class\" width='1%' nowrap>$ext</td>";
-        $html[]="<td class=\"$text_class\">$mime</td>";
-        $html[]="<td class=\"$text_class\" width='1%'>$enabled</td>";
-        $html[]="</tr>";
-    }
-
-    $html[]=$tpl->table_footer("table-$t",count($fields),true);
-    echo $tpl->_ENGINE_parse_body($html);
-
-}
-
-function sandbox_kaspersky_exten(){
-    $ptoken=$_GET["sandbox-kaspersky-exten"];
-    include_once(dirname(__FILE__)."/ressources/class.mimes-types.inc");
-    $KasperskySandboxMime   = unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxMime"));
-    $mimes                  = mimestypes_array();
-    foreach ($mimes as $ext=>$mime){
-        $token=md5("$ext$mime");
-        $MAINS[$token]=$mime;
-    }
-    if(isset($KasperskySandboxMime[$ptoken])){
-        unset($KasperskySandboxMime[$ptoken]);
-        admin_tracks("Removed scanning $mime in Kaspersky SandBox");
-
-    }else{
-        admin_tracks("Added scanning $mime in Kaspersky SandBox");
-        $KasperskySandboxMime[$ptoken]=$MAINS[$ptoken];
-    }
-
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KasperskySandboxMime",serialize($KasperskySandboxMime));
-
-}
-
-
 function sandbox_page(){
     $page   = CurrentPageName();
     $tpl    = new template_admin();
@@ -181,15 +104,12 @@ function sandbox_page(){
     $security="AsSquidAdministrator";
     $expl   = null;
     $bt     = "{apply}";
-    $CountOfKasperskySandboxMime    = 0;
+
     $C_ICAP_RECORD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("C_ICAP_RECORD"));
     $C_ICAP_RECORD_ENABLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CICAPEnableSandBox"));
     if($C_ICAP_RECORD==0){$C_ICAP_RECORD_ENABLED=0;}
 
     $jsCompile = "blur();";
-    $EnableKasperskySandbox=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKasperskySandbox"));
-    $KasperskySandboxAddr=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxAddr"));
-    $KasperskySandboxMime=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KasperskySandboxMime"));
     $SandBoxMaxRetentionTime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SandBoxMaxRetentionTime"));
     $SandBoxMaxEventRetentionTime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SandBoxMaxEventRetentionTime"));
     if($SandBoxMaxRetentionTime==0){$SandBoxMaxRetentionTime=180;}
@@ -197,28 +117,13 @@ function sandbox_page(){
 
 
 
-    if(is_array($KasperskySandboxMime)) {
-        $CountOfKasperskySandboxMime = count($KasperskySandboxMime);
-    }
-    if($CountOfKasperskySandboxMime==0){
-        $KasperskySandboxMime=mimesandboxdefaults();
-        $CountOfKasperskySandboxMime = count($KasperskySandboxMime);
-    }
+
+
     $form[]=$tpl->field_section("{parameters}");
     $form[]=$tpl->field_numeric("SandBoxMaxRetentionTime","{retention_time} {minutes}",$SandBoxMaxRetentionTime);
     $form[]=$tpl->field_numeric("SandBoxMaxEventRetentionTime","{logs_retention} {days}",$SandBoxMaxEventRetentionTime);
 
-    $form[]=$tpl->field_section("Kaspersky Sandbox");
-    $form[]=$tpl->field_checkbox("EnableKasperskySandbox","{enable_feature}",$EnableKasperskySandbox,false);
-    $form[]=$tpl->field_text("KasperskySandboxAddr","{sandbox_server_address}",$KasperskySandboxAddr);
-    $form[]=$tpl->field_info("extension_list", " {extension_list}",
 
-        array("VALUE"=>null,
-            "BUTTON"=>true,
-            "BUTTON_CAPTION"=>"$CountOfKasperskySandboxMime {extensions}",
-            "BUTTON_JS"=>"Loadjs('$page?ext-sandbox-js=yes')"
-
-        ),null);
 
     if($C_ICAP_RECORD_ENABLED==0){
         $expl   = "{feature_not_installed}";
@@ -231,12 +136,7 @@ function sandbox_page(){
     $html[]=$tpl->form_outside("SandBox: {parameters}", @implode("\n", $form),$expl,$bt,$jsCompile,$security);
     echo $tpl->_ENGINE_parse_body($html);
 }
-function sandbox_kaspersky_save(){
-    $tpl=new template_admin();
-    $tpl->SAVE_POSTs();
-    admin_tracks("SandBox settings modified.");
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cicap.php?reload=yes");
-}
+
 
 
 
@@ -380,7 +280,7 @@ function search(){
 
         $textclass=null;
 
-        if($sandboxsrv=="KSB"){$sandboxsrv="Kaspersky SandBox (KSB)";}
+
 
         $date=$tpl2->time_to_date($filetime,true);
         $md=md5(serialize($ligne));

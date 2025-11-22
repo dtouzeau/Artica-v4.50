@@ -3,7 +3,7 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 
-if(isset($_POST["KWTSIPAddr"])){kwts_save();exit;}
+
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["item-js"])){item_js();exit;}
 if(isset($_GET["item-popup"])){item_popup();exit;}
@@ -14,10 +14,6 @@ if(isset($_GET["move-item-js"])){move_items_js();exit;}
 if(isset($_POST["move-item"])){move_items();exit;}
 if(isset($_GET["ruleid-delete"])){ruleid_delete();exit;}
 if(isset($_POST["ruleid-delete"])){ruleid_delete_confirm();exit;}
-
-if(isset($_GET["kwts-js"])){kwts_js();exit;}
-if(isset($_GET["kwts-popup"])){kwts_popup();exit;}
-if(isset($_GET["kwts-disable"])){kwts_disable();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 
@@ -88,28 +84,7 @@ function item_js(){
     $title=$ligne["service_name"];
     $tpl->js_dialog1($title,"$page?item-popup=$ID",990);
 }
-function kwts_js(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $tpl->js_dialog1("{APP_KWTS_CONNECTOR}","$page?kwts-popup=yes",990);
-}
 
-function kwts_disable(){
-    header("content-type: application/x-javascript");
-    $page=CurrentPageName();
-    $KWTSDisable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSDisable"));
-    if($KWTSDisable==0){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KWTSDisable",1);
-        admin_tracks("Kaspersky Web Traffic Security link is passed to disabled mode");
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KWTSDisable",0);
-        admin_tracks("Kaspersky Web Traffic Security link is passed to enabled mode");
-    }
-
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?icap-silent=yes");
-    echo "LoadAjax('table-loader-icap-pages','$page?table=yes');\n";
-
-}
 
 function enabled(){
     $ID=$_GET["enabled"];
@@ -264,61 +239,9 @@ function save(){
 
 }
 
-function kwts_save(){
-    $tpl=new template_admin();
-    $tpl->SAVE_POSTs();
-    $KWTSIPAddr=$_POST["KWTSIPAddr"];
-    $KWTSPort=$_POST["KWTSPort"];
-
-    $fp=@fsockopen($KWTSIPAddr, $KWTSPort, $errno, $errstr, 1);
-    if(!$fp){
-        echo "jserror:".$tpl->javascript_parse_text($errstr);
-        return false;
-    }
-    $sock=new sockets();
-    $sock->getFrameWork("squid2.php?kwts-monit=yes");
-    admin_tracks("Kaspersky Web Traffic settings modified $KWTSIPAddr:$KWTSPort");
-    return true;
-
-}
-
-function kwts_popup(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-
-    $KWTSIPAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSIPAddr");
-    $KWTSByPass=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSByPass"));
-    $KWTSPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSPort"));
-    $KWTSReqMode=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSReqMode"));
-    $KWTSRepMode=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSRepMode"));
-    $KWTSOverload=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSOverload"));
-    $KWTSMaxCon=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSMaxCon"));
-    if($KWTSPort==0){$KWTSPort=1344;}
-    if($KWTSReqMode==null){$KWTSReqMode="av/reqmod";}
-    if($KWTSRepMode==null){$KWTSRepMode="av/respmod";}
-    if($KWTSOverload==null){$KWTSOverload="wait";}
-    if($KWTSMaxCon==null){$KWTSMaxCon=5000;}
 
 
-    $overload["block"]="{block}";
-    $overload["bypass"]="{bypass}";
-    $overload["wait"]="{wait}";
-    $overload["force"]="{force}";
 
-    $form[] = $tpl->field_ipv4("KWTSIPAddr", "{address}", $KWTSIPAddr);
-    $form[] = $tpl->field_numeric("KWTSPort", "{listen_port}", $KWTSPort);
-    $form[] = $tpl->field_text("KWTSReqMode", "{icap_reqmode}", $KWTSReqMode);
-    $form[] = $tpl->field_text("KWTSRepMode", "{icap_repmode}", $KWTSRepMode);
-
-    $form[]=$tpl->field_array_hash($overload,"overload","{if_overloaded}",$KWTSOverload);
-    $form[]=$tpl->field_checkbox("KWTSByPass","{bypass}",$KWTSByPass,False);
-    $form[]=$tpl->field_numeric("maxconn","{max_connections}",$KWTSMaxCon);
-
-    $reconf=reconfigure_progress();
-    $js="$reconf;dialogInstance1.close();";
-    echo $tpl->form_outside("{APP_KWTS_CONNECTOR}",$form,"{APP_KWTS_CONNECTOR_ABOUT}","{apply}",$js,"AsSquidAdministrator");
-
-}
 
 function item_popup(){
     $page=CurrentPageName();
@@ -413,9 +336,6 @@ function table(){
     $page           = CurrentPageName();
     $tpl            = new template_admin();
     $add            = "Loadjs('$page?item-js=0');";
-    $error_gen      = null;
-    $textclassip    = null;
-    $kwts_info      = null;
     $jsrestart      = reconfigure_progress();
     $t=time();
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cicap.php?clients-scan=yes");
@@ -463,85 +383,8 @@ function table(){
     $RESMODE["respmod_precache"]="{response}";
     $RESMODE["reqmod_precache"]="{request}";
     $RESMODE_ALL="{all}";
-
-    $KWTSEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSEnabled"));
-
-
     if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
     $html[]=cicap_status($TRCLASS);
-
-
-
-
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    if($KWTSEnabled==1){
-        $KWTS_STATUS=1;
-        $KWTSIPAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSIPAddr");
-        $KWTSPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSPort"));
-        $KWTSByPass=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSByPass"));
-        $KWTSDisable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTSDisable"));
-        if($KWTSPort==0){$KWTSPort=1344;}
-        if($KWTSIPAddr==null){
-            $textclassip="text-danger";
-            $KWTSIPAddr="x.x.x.x";
-            $KWTS_STATUS=3;
-        }else{
-            $fp=@fsockopen($KWTSIPAddr, $KWTSPort, $errno, $errstr, 1);
-            if(!$fp){
-                $textclassip="text-danger";
-                $KWTS_STATUS=2;
-                $error_gen=$errstr;
-            }else{
-
-                $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?kwts-check=yes");
-                $KWTS_INFOS=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KWTS_INFOS"));
-                $kwts_service=$KWTS_INFOS["SERVICE"];
-                $kwts_tag=$KWTS_INFOS["ISTag"];
-                $kwts_info=" <small>($kwts_service - $kwts_tag)</small>";
-            }
-        }
-        $bypass=null;
-        if($KWTSDisable==0){
-            $disabled="
-            <a href='#' OnClick=\"javascript:Loadjs('$page?kwts-disable=yes');\">
-            <span class='label label-primary'>{running}</span>
-            </a>";
-        }else{
-            $disabled="
-            <a href='#' OnClick=\"javascript:Loadjs('$page?kwts-disable=yes');\">
-            <span class='label label-danger'>{stopped}</span>
-            </a>";
-        }
-
-        if($KWTSDisable){$KWTS_STATUS=4;}
-        if($KWTSByPass==1){$bypass="<span class='fas fa-check'></span>";}
-        $html[]="<tr class='$TRCLASS' id='none'>";
-        $html[]="<td width='1%' nowrap>$STATUS_ARRAY[$KWTS_STATUS]</td>";
-        $html[]="<td width='1%'>0</td>";
-        $html[]="<td><strong>".$tpl->td_href("{APP_KWTS_CONNECTOR}",null,"Loadjs('$page?kwts-js=yes');")."&nbsp;<small class='$textclassip'>$error_gen</small></strong>$kwts_info</td>";
-        $html[]="<td><strong class='$textclassip'>$KWTSIPAddr:$KWTSPort</strong></td>";
-        $html[]="<td width='1%' nowrap>$RESMODE_ALL</td>";
-        $html[]="<td width='1%' nowrap align='center'>$bypass</td>";
-        $html[]="<td width=1% align='center' nowrap=''>&nbsp;</td>";
-        $html[]="<td width='1%' nowrap align='center'>$disabled</td>";
-        $html[]="<td width=1% align='center'>".$tpl->icon_nothing()."</td>";
-        $html[]="</tr>";
-    }else{
-        $html[]="<tr class='$TRCLASS' id='none'>";
-        $html[]="<td width='1%' nowrap>$STATUS_ARRAY[0]</td>";
-        $html[]="<td width='1%'>0</td>";
-        $html[]="<td><strong class='text-muted'>{APP_KWTS_CONNECTOR} ({APP_KWTS_CONNECTOR_ABOUT})</strong></td>";
-        $html[]="<td><strongclass='text-muted'>".$tpl->icon_nothing()."</strong></td>";
-        $html[]="<td width='1%' nowrap>$RESMODE_ALL</td>";
-        $html[]="<td width='1%' nowrap align='center'>".$tpl->icon_nothing()."</td>";
-        $html[]="<td width=1% align='center' nowrap=''>&nbsp;</td>";
-        $html[]="<td width='1%' nowrap align='center'>&nbsp;</span></td>";
-        $html[]="<td width=1% align='center'>".$tpl->icon_nothing()."</td>";
-        $html[]="</tr>";
-
-    }
-
-
     $C_ICAP_CLIENTS_SCAN=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("C_ICAP_CLIENTS_SCAN"));
 
 

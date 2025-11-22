@@ -121,7 +121,7 @@ class settings_inc {
 	*/
 	
 	
-	public $KASPERSKY_WEB_APPLIANCE=false;
+
 	public $mysql_password='';
 	public $mysql_admin='root';
 	public $mysql_server='127.0.0.1';
@@ -322,7 +322,6 @@ class settings_inc {
 	public $AsOrgPostfixAdministrator=false;
 	public $AsMessagingOrg=false;
 	public $MEM_TOTAL_INSTALLEE=0;
-	public $KASPERSKY_SMTP_APPLIANCE=false;
 	public $POSTFILTER_INSTALLED=false;
 	public $VMWARE_TOOLS_INSTALLED=false;
 	public $SQUIDGUARD_INSTALLED=false;
@@ -376,7 +375,6 @@ class settings_inc {
 	public $PIWIGO_INSTALLED=false;
 	public $APP_SABNZBDPLUS_INSTALLED=false;
 	public $POSTSCREEN_INSTALLED=false;
-	public $KASPERSKY_UPDATE_UTILITY_INSTALLED=false;
 	public $deduplication_installed=false;
 	
 	public $IPSET_INSTALLED=false;
@@ -790,7 +788,6 @@ class settings_inc {
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HOSTAPD_INSTALLED"))==1){$this->HOSTAPD_INSTALLED=true;}
 			if(is_file("/etc/artica-postfix/settings/Daemons/WPA_SUPPLIANT_INSTALLED")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WPA_SUPPLIANT_INSTALLED"))==1){$this->WPA_SUPPLIANT_INSTALLED=true;}}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARPD_INSTALLED"))==1){$this->ARPD_INSTALLED=true;}
-			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KASPERSKY_WEB_APPLIANCE"))==1){$this->KASPERSKY_WEB_APPLIANCE=true;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RSYNC_INSTALLED"))==1){$this->RSYNC_INSTALLED=true;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("openldap_installed"))==1){$this->openldap_installed=true;}
 			
@@ -861,7 +858,6 @@ class settings_inc {
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VIRTUALBOX_HOST"))==1){$this->VIRTUALBOX_HOST=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SABNZBDPLUS_INSTALLED"))==1){$this->APP_SABNZBDPLUS_INSTALLED;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MUNIN_CLIENT_INSTALLED"))==1){$this->MUNIN_CLIENT_INSTALLED;}
-			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KASPERSKY_UPDATE_UTILITY_INSTALLED"))==1){$this->KASPERSKY_UPDATE_UTILITY_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ASPELL_INSTALLED"))==1){$this->ASPELL_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPSET_INSTALLED"))==1){$this->IPSET_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTSCREEN_INSTALLED"))==1){$this->POSTSCREEN_INSTALLED=True;}
@@ -932,13 +928,6 @@ class settings_inc {
 				
 				$this->nmap_installed=false;
 			}			
-			
-			if($this->KASPERSKY_WEB_APPLIANCE){
-				$this->POSTFIX_INSTALLED=false;
-				$this->APP_AUDITD_INSTALLED=false;
-
-				
-			}
 	        $this->CORP_LICENSE=$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE();
 
 		}

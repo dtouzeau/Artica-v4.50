@@ -39,7 +39,6 @@ function MemoryInstances(){
 		
 		$Toremove["exec.squid.blacklists.php"]=true;
 		$Toremove["exec.haproxy-tail.php"]=true;
-		$Toremove["exec.syslog.php"]=true;
 		$Toremove["exec.maillog.php"]=true;
 		$Toremove["exec.status.php"]=true;
 		$Toremove["exec.executor.php"]=true;

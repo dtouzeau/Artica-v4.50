@@ -569,64 +569,10 @@ class status{
 
 
 
-    function avestatus_satus(){
-        $stat=trim($this->sock->getfile('aveserver_status'));
-        $stat=explode(';',$stat);
-        $title="{aveserver_status}";
-        switch ($stat[0]) {
-            case null:$img='i24.png';
-                $text='{no_infos}';
-                break;
-            case '-1':$img='i24.png';
-                $text='{service_not_installed}';
-                break;
-            case '1':$img='ok24.png';
-                $date=$this->avestatus_pattern_date($stat[3],$stat[4]);
-                $text='{service_running}<br>{using_version} ' . $stat[1]. ' {pid} ' . $stat[2]  .$date .$this->banner_services('aveserver');
-                break;
-            case '0':$img='warning24.png';
-                $date=$this->avestatus_pattern_date($stat[3],$stat[4]);
-                $text='{service_stopped}<br>{using_version} ' . $stat[1] . ' {pid} ' . $stat[2] . $date. $this->banner_services('aveserver');
-                break;
-        }
-
-        return $this->BuildDesign($img,$title,$text);
-
-    }
 
 
-    function avestatus_pattern_date($date,$time,$nobuild=0){
-        if(preg_match('#([0-9]{2})([0-9]{2})([0-9]{4})#',$date,$reg)){
-            $day=$reg[1];
-            $month=$reg[2];
-            $year=$reg[3];
-        }else{return null;}
 
-        if(preg_match('#([0-9]{2})([0-9]{2})#',$time,$reg)){
-            $hour=$reg[1];
-            $min=$reg[2];
 
-        }else{return null;}
-        $date1 = mktime($hour-2,$min,0,$month,$day,$year);
-        $time_date=date('Y/m/d H:i/s',$date1);
-
-        $date2 = mktime(date('H'),date('I'),0,date('m'),date('d'),date('Y'));
-        $diff_date = $date2-$date1;
-        $diff['H'] = (int)($diff_date/(60*60));
-        $diff['D'] = (int)($diff_date/(60*60*24));
-        if($diff['H'] >0){
-            if($nobuild==0){
-                $this->array_left[]=$this->BuildDesign_infos('warning32.png','{update_kaspersky_database_title}','{recommend_update_kaspersky}','ffa22a');
-            }
-        }
-        if($nobuild==0){
-            $text="<br>{pattern_update_date} :<strong>$time_date</stong><br></strong><i> {since} {$diff['D']} {days},  {$diff['H']} {hours} </i>";
-        }else{
-            $text="<strong>$time_date</stong><br></strong><i> {since} {$diff['D']} {days},  {$diff['H']} {hours}</i>";
-        }
-        return $text;
-
-    }
 
     function dateadd($per,$n,$d) {
         switch($per) {
@@ -777,7 +723,6 @@ class status{
 
 
     private function status_amavis_version($users){
-        if($users->KASPERSKY_SMTP_APPLIANCE){return false;}
         if(!$users->AMAVIS_INSTALLED){return false;}
         $localversion=$users->AMAVISD_VERSION;
         if($localversion==null){return null;}
@@ -942,7 +887,6 @@ class status{
 
 
     private function status_spamassassin($users){
-        if($users->KASPERSKY_SMTP_APPLIANCE){return false;}
         if(!$users->spamassassin_installed){$this->NewVersionsEvents(__FUNCTION__.":: SpamAssassin is not installed");return false;}
         $localversion=$users->spamassassin_version;
 

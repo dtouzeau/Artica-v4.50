@@ -13,10 +13,6 @@ include_once(dirname(__FILE__)."/class.unix.inc");
 
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}if(!isset($GLOBALS["ARTICALOGDIR"])){$GLOBALS["ARTICALOGDIR"]=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaLogDir"); if($GLOBALS["ARTICALOGDIR"]==null){ $GLOBALS["ARTICALOGDIR"]="/var/log/artica-postfix"; } }
 if(isset($_GET["disable-proxy-service"])){disable_proxy_service();exit;}
-if(isset($_GET["kwts-check"])){kwts_check();exit;}
-if(isset($_GET["kwts-monit"])){kwts_monit();exit;}
-
-
 if(isset($_GET["urlsdb-search"])){urlsdb_search();exit;}
 if(isset($_GET["urlsdb-upload"])){urlsdb_uppload();exit;}
 if(isset($_GET["import-acls-items"])){import_acls_items();exit;}
@@ -309,20 +305,6 @@ function quick_start() {
     $pl         = "squid.quick.log";
     $unix->framework_execute($cmdline,$pr,$pl);
 }
-
-function kwts_check(){
-    $unix=new unix();
-    $unix->framework_exec("exec.c-icap.install.php --kwts-check");
-}
-function kwts_monit() {
-    $unix=new unix();
-    $unix->framework_exec("exec.c-icap.install.php --kwts-monit");
-}
-
-
-
-
-
 function explain_this_rule(){
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();

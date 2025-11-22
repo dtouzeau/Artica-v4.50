@@ -157,7 +157,6 @@ class system_tasks{
         $this->tasks_array[60]="{mailsync_mailboxes_rules}";
         $this->tasks_array[61]="{clean_mysql_events}";
         $this->tasks_array[62]="{salearnschedule}";
-        $this->tasks_array[63]="{kaspersky_updateutility}";
         $this->tasks_array[64]="{milter_greylist_tables}";
         $this->tasks_array[65]="{purge_mysql_logrotate}";
         $this->tasks_array[66]="{restart_artica_web_services}";
@@ -238,7 +237,6 @@ class system_tasks{
         $this->tasks_explain_array[60]="{mailsync_mailboxes_rules_explain}";
         $this->tasks_explain_array[61]="{clean_mysql_events_explain}";
         $this->tasks_explain_array[62]="{salearnschedule_text}";
-        $this->tasks_explain_array[63]="{kaspersky_updateutility_text}";
         $this->tasks_explain_array[64]="{milter_greylist_tables_text}";
         $this->tasks_explain_array[65]="{purge_mysql_logrotate_explain}";
         $this->tasks_explain_array[66]="{restart_artica_web_services_explain}";

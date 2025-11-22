@@ -456,7 +456,7 @@ function check_files_dirs(){
     $dirs[]="/var/lib/dpkg/updates";
     $dirs[]="/var/lib/dpkg/info";
     $dirs[]="/var/lib/dpkg/config";
-    $dirs[]=PROGRESS_DIR."";
+    $dirs[]="/usr/share/artica-postfix/ressources/logs/web";
     $dirs[]="/etc/artica-postfix";
     foreach ($dirs as $directory){
         if(is_dir($directory)){continue;}

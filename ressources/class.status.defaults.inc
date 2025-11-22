@@ -384,20 +384,7 @@ function mimedefang_version():string{
 
 
 
-function KLNAGENT_VERSION():string{
-	if(isset($GLOBALS[__FUNCTION__])){return strval($GLOBALS[__FUNCTION__]);}
 
-	$f=explode("\n",@file_get_contents("/opt/kaspersky/klnagent64/lib/bin/setup/appdata.pm"));
-	foreach ($f as $line){
-		if($line==null){continue;}
-		if(preg_match("#^VER=([0-9\.]+)#", $line,$re)){
-			$GLOBALS[__FUNCTION__]=$re[1];
-			return $GLOBALS[__FUNCTION__];
-		}
-
-	}
-    return "";
-}
 
 function APP_CYRUS_VERSION():string{
 	if(isset($GLOBALS[__FUNCTION__])){return intval($GLOBALS[__FUNCTION__]);}
@@ -2481,13 +2468,7 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("TFTPD_INSTALLED", 0);
 	}
 
-	if(is_file("/opt/kaspersky/klnagent64/sbin/klnagent")){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KLNAGENT_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KLNAGENT_VERSION", KLNAGENT_VERSION());
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KLNAGENT_INSTALLED", 0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KLNAGENT_VERSION", "");
-	}
+
 
 
 

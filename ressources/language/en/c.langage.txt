@@ -919,8 +919,6 @@ This is very useful for devices in the home that cannot run Tailscale themselves
 <APP_DNS_FIREWALL>DNS Firewall</APP_DNS_FIREWALL>
 <APP_DNS_FIREWALL_ABOUT>The DNS Firewall feature allows you to filter DNS queries and create complex ACLs according to the DNS protocol.
 </APP_DNS_FIREWALL_ABOUT>
-<APP_KWTS_CONNECTOR>Kaspersky Web traffic Security Connector</APP_KWTS_CONNECTOR>
-<APP_KWTS_CONNECTOR_ABOUT>Link your Artica Proxy to the Kaspersky Web Traffic Security ICAP service</APP_KWTS_CONNECTOR_ABOUT>
 <icap_reqmode>Path to request modification service</icap_reqmode>
 <icap_repmode>Path to response modification service</icap_repmode>
 <tcp_keepalive_time>Initial time before TCP starts probing the connection</tcp_keepalive_time>
