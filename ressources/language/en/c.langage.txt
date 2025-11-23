@@ -3263,3 +3263,5 @@ Install it if you want to use it.</wazuh_not_enabled_ids>
 <dstserv_explain>Applies to network traffic whose destination is this server.</dstserv_explain>
 <itype>ICMPv4 message type</itype>
 <itype_explain>Detects specific ICMP operations such as pings, errors, redirects, or TTL-expired packets</itype_explain>
+<welcome_banner>Welcome banner</welcome_banner>
+<welcome_banner_explain>Displays an informational message after successful authentication.[br]The banner shows key system details so your administrator can quickly identify the server from their SSH console.</welcome_banner_explain>

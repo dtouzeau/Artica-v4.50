@@ -174,7 +174,7 @@ function KeyBoard(){
 /tmp/bash_keyboard_menu.sh
 }
 function ShutdownNow(){
- shutdown -h now
+ /usr/sbin/artica-phpfpm-service -poweroff
 }
 function Metap(){
   php /usr/share/artica-postfix/exec.menu.meta.php --menu

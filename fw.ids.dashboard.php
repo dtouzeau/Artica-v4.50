@@ -434,10 +434,14 @@ function flat_config():bool{
         if(isset( $CONF[$interface])){
             $enable=intval($CONF[$interface]["enable"]);
         }
-        if($State=="down"){
-            $tpl->table_form_field_js("");
-            $tpl->table_form_field_bool($NicName,0,ico_nic);
-            continue;
+        if($nic->UseSPAN==0) {
+            if ($State == "down") {
+                $tpl->table_form_field_js("");
+                $tpl->table_form_field_bool($NicName, 0, ico_nic);
+                continue;
+            }
+        }else{
+            $IPADDR="{mirror}";
         }
 
         $tpl->table_form_field_js("Loadjs('fw.ids.settings.php?interface-js=$interface')");

@@ -93,12 +93,6 @@ class left_menus{
         return @implode("\n", $f);
     }
 
-    public function NetWorkAgent(): string{
-
-        return @implode("\n",$f);
-
-    }
-
     public function DWAgent():string{
         if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DWAgentEnable"))==0){return "";}
         $f[]="<!-- DWAGENT START -->";
@@ -1291,21 +1285,17 @@ class left_menus{
 
     public function Suricata():string{
         if(!$this->isIds()){
-            return "";
+            return "<!-- isIds return false -->";
         }
         $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
-        if($EnableSuricata==0) {
-                return "";
+        $SURICATA_WIZARD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_WIZARD"));
+        if($EnableSuricata==0 && $SURICATA_WIZARD==0) {
+            return "<!-- EnableSuricata = 0 | SURICATA_WIZARD = $SURICATA_WIZARD -->";
         }
-
-        //$EnableNetMonix=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNetMonix");
-        //$NetMonixInstalled=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetMonixInstalled");
-        //if($NetMonixInstalled==0){$EnableNetMonix=1;}
-
         $sensor=ico_sensor;
-
         $tpl=new template_admin();
-        $f[]="<!-- IDS START -->";
+        $f[]="<!-- IDS START ".__LINE__." -->";
+        $f[]="<!-- EnableSuricata = $EnableSuricata -->";
         $f[]="                <li id='left-menu'>";
         $f[]="                    <a href='#' ><i class=\"$sensor\"></i> <span class=\"nav-label\">IDS</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
@@ -2447,6 +2437,7 @@ class left_menus{
         $EnableLocalUfdbCatService= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
 
         if(!$CORP_LICENSE){$EnableITChart=0;}
+        $c=0;
 
 
         $f[]="<li id='left-menu'>";
@@ -2456,6 +2447,7 @@ class left_menus{
         if($this->users->AsProxyMonitor) {
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ksrn.filtering.features.php", "ICO" => ico_cd,
                 "TEXT" => "{features}"));
+            $c++;
         }
 
         if($SQUIDEnable==1) {
@@ -2463,6 +2455,7 @@ class left_menus{
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.go.shield.connector.php",
                     "ICO" => "fad fa-exchange-alt",
                     "TEXT" => "Proxy {connector}"));
+                $c++;
             }
         }
 
@@ -2479,7 +2472,8 @@ class left_menus{
                             "ID" => "fw-left-menus-ksrn",
                             "PAGE" => "fw-left-menus-ksrn.php")
                     )
-                );
+                );$c++;
+
             }
         }
 
@@ -2489,12 +2483,14 @@ class left_menus{
                 if($UseRemoteUfdbguardService==0) {
                     $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.rules.php", "ICO" => "fa fa-align-justify",
                         "TEXT" => "{filtering_rules}"));
+                    $c++;
                 }
             }
 
             if($EnableLocalUfdbCatService==0) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.categories.php", "ICO" => "fad fa-books",
                     "TEXT" => "{your_categories}"));
+                $c++;
             }
 
 
@@ -2502,6 +2498,7 @@ class left_menus{
             if($this->users->AsProxyMonitor) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdbweb.php", "ICO" => "fad fa-page-break",
                     "TEXT" => "{error_page}"));
+                $c++;
             }
 
 
@@ -2527,6 +2524,7 @@ class left_menus{
             if ($EnableCategoriesCache == 1) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.categories-cache.php",
                     "ICO" => "fad fa-memory", "TEXT" => "{APP_CATEGORIES_CACHE}",));
+                $c++;
             }
         }
 
@@ -2539,6 +2537,7 @@ class left_menus{
 
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.blacklists.php", "ICO" => "fa fa-ban",
                     "TEXT" => "{deny_websites}"));
+                $c++;
             }
         }
 
@@ -2548,6 +2547,7 @@ class left_menus{
                 if ($UseRemoteUfdbguardService == 0) {
                     $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.databases.php", "ICO" => ico_download,
                         "TEXT" => "{categories_update}"));
+                    $c++;
                 }
             }
 
@@ -2556,12 +2556,14 @@ class left_menus{
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ksrn.uncategorized.php",
                 "ICO" => "fa-solid fa-book-circle-arrow-up",
                 "TEXT" => "{uncategorized_websites}"));
+            $c++;
 
         }
 
         if($this->users->AsProxyMonitor) {
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ksrn.events.php", "ICO" => ico_eye,
                 "TEXT" => "{service_events}"));
+            $c++;
         }
 
         if($EnableUfdbGuard==1) {
@@ -2569,13 +2571,14 @@ class left_menus{
                 if($this->users->AsProxyMonitor) {
                     $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.logs.php", "ICO" => ico_eye,
                         "TEXT" => "{events}: {url_filtering}"));
+                    $c++;
                 }
             }
         }
 
-
-
-
+        if($c==0){
+            return "<!-- KSRN END  NO ITEM -->";
+        }
         $f[]="					 </ul>";
         $f[]="                </li>";
         $f[]="<!-- KSRN END  -->";

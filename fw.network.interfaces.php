@@ -2677,6 +2677,13 @@ function nic_enable_interface():bool{
     $eth=$_GET["nic-enable-interface"];
     $md=$_GET["md"];
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
+
+    $ligne=$q->mysqli_fetch_array("SELECT Interface FROM nics WHERE Interface='$eth'");
+    if(!isset($ligne["Interface"])){$ligne["Interface"]="";}
+    if(strlen($ligne["Interface"])<3){
+        $q->QUERY_SQL("INSERT INTO nics (enabled,IPADDR,NETMASK,BROADCAST,txqueuelen,mtu,Interface,AUTO,BRIDGE_PORTS,BRIDGE_STP,DNS_SEARCH,VLAN_ROW_DEVICE,BOOTPROTO,GATEWAY,DNS1,DNS2,metric,defaultroute,NETWORK,ipv6gw) VALUES (1,'0.0.0.0','255.255.255.0','',1000,1500,'$eth',1,'','','','','','0.0.0.0','','',1,0,'','')");
+    }
+
     $q->QUERY_SQL("UPDATE nics SET enabled=1 WHERE Interface='$eth'");
     if(!$q->ok){
         return $tpl->js_error($q->mysql_error);
@@ -2737,8 +2744,18 @@ function nic_use_span_enable():bool{
     $eth=$_GET["nic-use-span-enable"];
     $md=$_GET["md"];
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
+
+
+    $ligne=$q->mysqli_fetch_array("SELECT Interface FROM nics WHERE Interface='$eth'");
+    if(!isset($ligne["Interface"])){$ligne["Interface"]="";}
+    if(strlen($ligne["Interface"])<3){
+        $q->QUERY_SQL("INSERT INTO nics (enabled,IPADDR,NETMASK,BROADCAST,txqueuelen,mtu,Interface,AUTO,BRIDGE_PORTS,BRIDGE_STP,DNS_SEARCH,VLAN_ROW_DEVICE,BOOTPROTO,GATEWAY,DNS1,DNS2,metric,defaultroute,NETWORK,ipv6gw) VALUES (1,'0.0.0.0','255.255.255.0','',1000,1500,'$eth',1,'','','','','','0.0.0.0','','',1,0,'','')");
+    }
+
+
     $q->QUERY_SQL("UPDATE nics SET UseSPAN=1 WHERE Interface='$eth'");
     if(!$q->ok){
+        writelogs($q->mysql_error,__FUNCTION__,__FILE__,__LINE__);
         return $tpl->js_error($q->mysql_error);
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/reset/cache");
@@ -3839,9 +3856,12 @@ function table(){
             $MASQUERADE="<span class='fas fa-check'></span>";
         }
 
+
+
 		unset($MYSQL_NIC[$val]);
         $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/nicstatus/$val"));
         $nicinfos=$data->Info;
+        $IfaceState="";
         $tbl=explode(";",$nicinfos);
 		if($GLOBALS["VERBOSE"]){ foreach ($tbl as $indexDebug=>$LIneDebug){ VERBOSE("LOOP: Interface $val NicInfo[$indexDebug] = $LIneDebug",__LINE__); } }
 
@@ -3851,7 +3871,14 @@ function table(){
             }
         }
 		$dhcp_text=null;
+        if(isset($tbl[6])) {
+            $IfaceState = $tbl[6];
+        }
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+
+        if($IfaceState=="down"){
+
+        }
 
 		$tcp->ifconfig(trim($val));
 

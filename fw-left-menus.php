@@ -369,6 +369,7 @@ function xgen(){
     $EnablenDPI=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablenDPI"));
     if(!$users->AsDockerWeb) {
         if($users->AsAnAdministratorGeneric OR $users->AsFirewallManager){
+        $IPFeed=false;
         $f[]="<!-- NETWORK START -->";
         $f[]="                <li id='left-menu'>";
         $f[]="                    <a href='#' ><i class=\"fa fa-sitemap\"></i> <span class=\"nav-label\">{network}</span> </a>";
@@ -416,7 +417,7 @@ function xgen(){
                     $f[] = $tpl->LeftMenu(
                     array("PAGE" => "fw.ipfeeds.php",
                         "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
-
+                    $IPFeed=true;
             }
         }
 
@@ -465,26 +466,14 @@ function xgen(){
 
             if($isFireWall==0) {
                 if($users->AsFirewallManager) {
-                    $f[] = $tpl->LeftMenu(
-                        array("PAGE" => "fw.ipfeeds.php",
-                            "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
+                    if(!$IPFeed) {
+                        $f[] = $tpl->LeftMenu(
+                            array("PAGE" => "fw.ipfeeds.php",
+                                "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
+                        $IPFeed=true;
+                    }
                 }
             }
-/*
-            $NetMonixInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetMonixInstalled"));
-
-            if($NetMonixInstalled==1){
-                $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"fw.network.ndpid.php","ICO"=>ico_sensor,"TEXT"=>"{inspection}"));
-
-            }else{
-                if($EnablenDPI==1){
-                    $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"fw.network.ndpifw.php","ICO"=>ico_sensor,"TEXT"=>"{APP_NDPI}"));
-                }
-            }
-
-*/
 
           $IPAUDIT_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPAUDIT_INSTALLED"));
             if($IPAUDIT_INSTALLED==1){
@@ -547,7 +536,7 @@ function xgen(){
     $f[]=$leftmenus->FireCracker();
     $f[]=$leftmenus->reverse_proxys();
     $f[]=$leftmenus->FireQOS();
-    $f[]=$leftmenus->NetWorkAgent();
+
 
     if(method_exists($leftmenus,"DWAgent")) {
         $f[] = $leftmenus->DWAgent();

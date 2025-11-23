@@ -2537,8 +2537,7 @@ function ParseSpecialsCharacters($content){
     }
     return $content;
 }
-function artica_mysql_events($severity=0,$subject=null,$text=null,$file=null,$line=0){
-    $hostname=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname");
+function artica_mysql_events($severity=0,$subject=null,$text=null,$file=null,$line=0):bool{
     $zdate=date("Y-m-d H:i:s");
     $content=$text;
 
@@ -2562,17 +2561,19 @@ function artica_mysql_events($severity=0,$subject=null,$text=null,$file=null,$li
 
     $q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
     $subject=$q->sqlite_escape_string2($subject);
-    $text=$q->sqlite_escape_string2($text);
     $ArticaNotifsMaxTime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaNotifsMaxTime"));
     if($ArticaNotifsMaxTime==0){$ArticaNotifsMaxTime=7;}
     $removeafter=strtotime("+$ArticaNotifsMaxTime day");
 
+    if(!$q->TABLE_EXISTS("squid_admin_mysql")){
+        return false;
+    }
     $q->QUERY_SQL("INSERT OR IGNORE INTO `squid_admin_mysql`
 			(`zDate`,`content`,`subject`,`function`,`filename`,`line`,`severity`,`removeafter`) VALUES
 			('$zdate','$content','$subject','$function','$file','$line','$severity','$removeafter')");
 
     if(!$q->ok){writelogs("SQL ERROR $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);}
-
+    return true;
 }
 function numberFormat  ($number  , $decimals = 2 , $dec_point = '.' , $sep = ',', $group=3   ){
     $num = sprintf("%0.{$decimals}f",$number);

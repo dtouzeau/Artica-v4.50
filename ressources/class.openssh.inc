@@ -292,6 +292,19 @@ class openssh{
         if($this->main_array["AuthorizedKeysFile"]==null){$this->main_array["AuthorizedKeysFile"]="%h/.ssh/authorized_keys";}
 		if($this->main_array["PasswordAuthentication"]==null){$this->main_array["PasswordAuthentication"]="yes";}
 		if($this->main_array["LogLevel"]==null){$this->main_array["LogLevel"]="INFO";}
+
+        if(!isset($this->main_array["PrintMotd"])){
+            $this->main_array["PrintMotd"]=1;
+            $this->SaveInterface();
+        }
+        if(!is_numeric($this->main_array["PrintMotd"])){
+            if ($this->main_array["PrintMotd"]=="no"){
+                $this->main_array["PrintMotd"]=0;
+            }
+            if ($this->main_array["PrintMotd"]=="yes"){
+                $this->main_array["PrintMotd"]=1;
+            }
+        }
 		
 		
 		unset($this->main_array["AllowGroups"]);

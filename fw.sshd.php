@@ -4,6 +4,10 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.openssh.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+
+if(isset($_POST["PrintMotd"])){UseWelcome_save();exit;}
+if(isset($_GET["UseWelcome-js"])){UseWelcome_js();exit;}
+if(isset($_GET["UseWelcome-popup"])){UseWelcome_popup();exit;}
 if(isset($_GET["MaxStartups-js"])){MaxStartups_js();exit;}
 if(isset($_GET["MaxStartups-popup"])){MaxStartups_popup();exit;}
 if(isset($_POST["MaxStartups"])){MaxStartups_save();exit;}
@@ -500,13 +504,12 @@ function group_users_list():bool{
 
 }
 
-function config_file_js(){
+function config_file_js():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$users=new usersMenus();
-	if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return;}
-	$tpl->js_dialog1("{APP_OPENSSH} >> {config_file}", "$page?config-file-popup=yes");
-	
+	if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return false;}
+	return $tpl->js_dialog1("{APP_OPENSSH} >> {config_file}", "$page?config-file-popup=yes");
 }
 function config_file_save():bool{
 	
@@ -1913,6 +1916,27 @@ function SSHDInterface_Save():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/ssh/reconfigure-restart");
     return admin_tracks("Save OpenSSH interface settings");
 }
+function UseWelcome_popup():bool{
+    $tpl                    = new template_admin();
+    $page                   = CurrentPageName();
+    $sshd                   = new openssh();
+    $PrintMotd              = $sshd->main_array["PrintMotd"];
+
+
+    $html[]=$tpl->BigCircleCheckbox("PrintMotd","{welcome_banner}","{welcome_banner_explain}",$PrintMotd,"dialogInstance1.close();LoadAjax('openssh-status-config','$page?openssh-status-config=yes');","AsSystemAdministrator");
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+function UseWelcome_save():bool{
+    $tpl                    = new template_admin();
+    $tpl->CLEAN_POST();
+    $PrintMotd              = intval($_POST["PrintMotd"]);
+    $sshd                   = new openssh();
+    $sshd->main_array["PrintMotd"]=$PrintMotd;
+    $sshd->SaveInterface();
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ssh/restart");
+    return admin_tracks("Save OpenSSH Welcome message to $PrintMotd");
+}
 function MaxStartups_popup():bool{
     $tpl                    = new template_admin();
     $page                   = CurrentPageName();
@@ -2420,6 +2444,8 @@ function status_config():bool{
     if($SSHDListenPort==0){$SSHDListenPort=22;}
     $SSHDInterface=SSHDInterfaceToText($SSHDListenPort);
     if(!isset($sshd->main_array["Banner"])){$sshd->main_array["Banner"]=0;}
+
+
     $tpl->table_form_field_js("Loadjs('$page?settings-js=yes&section=firewall')");
     $tpl->table_form_field_bool("{firewall_protection}",$SSHDIptables,ico_shield);
     $tpl->table_form_field_js("Loadjs('$page?settings-js=yes&section=interface')");
@@ -2436,6 +2462,9 @@ function status_config():bool{
 
     $tpl->table_form_field_js("Loadjs('$page?UseBanner-js=yes')");
     $tpl->table_form_field_bool("{UseBanner}",$sshd->main_array["Banner"],ico_proto);
+
+    $tpl->table_form_field_js("Loadjs('$page?UseWelcome-js=yes')");
+    $tpl->table_form_field_bool("{welcome_banner}",intval($sshd->main_array["PrintMotd"]),ico_proto);
 
     $tpl->table_form_field_js("Loadjs('$page?banner-js=yes')");
     $tpl->table_form_field_text("{banner}",strlen($SSHDBanner)." bytes",ico_configure);
@@ -2627,6 +2656,11 @@ function MaxStartups_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     return $tpl->js_dialog1("{MaxStartups}","$page?MaxStartups-popup=yes",650);
+}
+function UseWelcome_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog1("{welcome_banner}","$page?UseWelcome-popup=yes",650);
 }
 function UseBanner_js():bool{
     $sshd=new openssh();
