@@ -18,7 +18,6 @@ function squid_increment_func($array){
         $array[]="ufdbguardd";
         $array[]="WSUS_HTTP";
         $array[]="ziproxy";
-        $array[]="ntlm_monitor";
         $array[]="msktutil_watch";
         $array[]="RemoveServices";
 
@@ -1362,46 +1361,8 @@ function ss5(){
 
 
 
-function ntlm_monitor_pid(){
-	$pid=$GLOBALS["CLASS_UNIX"]->get_pid_from_file("/var/run/artica-ntlm.pid");
-	if($GLOBALS["CLASS_UNIX"]->process_exists($pid)){
-		return $pid;
-	}
-	return $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN("ntlm-monitor.py");
-}
-function ntlm_monitor():string{
-	if(!is_file("/etc/init.d/ntlm-monitor")){return "";}
-	$l[]="";
-	
-	$WindowsActiveDirectoryKerberos=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WindowsActiveDirectoryKerberos"));
-	if($WindowsActiveDirectoryKerberos==1){return "";}
-	$l[]="[APP_NTLM_MONITOR]";
-	$l[]="service_name=APP_NTLM_MONITOR";
-	$l[]="service_cmd=/etc/init.d/ntlm-monitor";
-	$l[]="master_version=".@file_get_contents("/usr/share/artica-postfix/VERSION");
-	$l[]="service_disabled=1";
-	$l[]="pid_path=/var/run/proxy-pac/http-server.pid";
-	$l[]="watchdog_features=1";
-	$l[]="installed=1";
-	$l[]="family=network";
-	$master_pid=ntlm_monitor_pid();
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		if(!$GLOBALS["DISABLE_WATCHDOG"]){
-			if($GLOBALS["CLASS_UNIX"]->ServerRunSince()>3){squid_admin_mysql(0, "NTLM Monitor {stopped} [{action}={start}]", null,__FILE__,__LINE__);}
-			$cmd=trim("{$GLOBALS["NICE"]} /etc/init.d/ntlm-monitor start >/dev/null 2>&1 &");
-			shell_exec2($cmd);
-		}
-		$l[]="running=0";
-		$l[]="";
-		return implode("\n",$l);
 
-	}
-	$l[]="running=1";
-	$l[]=GetMemoriesOf($master_pid,"APP_NTLM_MONITOR");
-	$l[]="";
-	return implode("\n",$l);
 
-}
 // ====================================================================================
 function isrtime_logs():bool{
     $EnableSquidLogger=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidLogger"));
