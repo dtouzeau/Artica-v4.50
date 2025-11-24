@@ -881,13 +881,10 @@ function status2(){
         $FW = $tpl->widget_h("green", "fad fa-shield-alt", "{enabled}", "{your_firewall}",$button);
     }
 
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/exec.virtuals-ip.php.html";
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/reconfigure-newtork.progress";
-    $ARRAY["CMD"]="/system/network/reconfigure-restart";
-    $ARRAY["TITLE"]="{please_wait_building_network}";
-    $ARRAY["AFTER"]="LoadAjax('netz-interfaces-status','$page?status2=yes');";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=netz-interfaces-status')";
+    $jsrestart=$tpl->framework_buildjs("/system/network/reconfigure-restart",
+    "reconfigure-newtork.progress","exec.virtuals-ip.php.html",
+    "netz-interfaces-status","LoadAjax('netz-interfaces-status','$page?status2=yes');");
+
 
     $apply="<button class='btn btn-primary btn-xs' type='button' OnClick=\"$jsrestart;\">{apply}</button>";
     if(!$users->AsSystemAdministrator){$apply=null;}
@@ -946,12 +943,25 @@ function status2(){
             continue;
         }
         VERBOSE($ligne["Interface"], __LINE__);
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("network.php?ifconfig-array=$Interface");
-        $MAIN = unserialize(@file_get_contents($intpath));
+        $MAIN=array("SPEED"=>0,"TX"=>0,"RX"=>0,"DROP"=>0,"STATE"=>"");
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/interface/info/$Interface"));
+
+
+        if(property_exists($json,"State")){
+            $MAIN["STATE"]=$json->State;
+        }
+
+        if(property_exists($json,"Stats")){
+            $MAIN["SPEED"]=$json->Stats->SPEED;
+            $MAIN["TX"]=$json->Stats->TX;
+            $MAIN["RX"]=$json->Stats->RX;
+            $MAIN["DROP"]=$json->Stats->DROP;
+        }
         $nicz = new system_nic($Interface);
         $NICNAME = $nicz->NICNAME;
         $UseSPAN = $nicz->UseSPAN;
         $speed = intval($MAIN["SPEED"]);
+        $IconState="";
         $TX = $MAIN["TX"];
         $RX = $MAIN["RX"];
         $DROP = $MAIN["DROP"];
@@ -1020,7 +1030,9 @@ function status2(){
                 if(!$users->AsSystemAdministrator){$button=array();}
             }
         }
-        $PingGateway=null;
+        if($MAIN["STATE"]=="up") {
+            $PingGateway = "<span class='label label-primary'>{status}:UP</span>";
+        }
 
         $NetStatus=new NetStatus($Interface);
         if($OpenVswitchEnable==0){
@@ -1073,6 +1085,10 @@ function status2(){
             $drop_icon = "<i class='fas fa-hand-paper'></i>&nbsp;" . FormatNumber($DROP);
         }
 
+        if($MAIN["STATE"]=="down"){
+            $IconState="&nbsp;<span class='label label-warning'>DOWN</span>&nbsp;";
+        }
+
         if($UseSPAN==1){
             $IPADDR="0.0.0.0";
             $label="label-info";
@@ -1109,7 +1125,7 @@ function status2(){
         $icon="<span class='label $label font-bold'>$text_icon</span>";
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"$text_class\" style='width:1%' nowrap>$icon</td>";
-        $html[]="<td class=\"$text_class\" style='width:1%' nowrap>$PingGateway</td>";
+        $html[]="<td class=\"$text_class\" style='width:1%' nowrap>$PingGateway$IconState</td>";
         $html[]="<td class=\"$text_class\" style='width:1%' nowrap>".
             $tpl->td_href("$H3$Interface</span>",null,$JS).
             "</td>";
@@ -3862,6 +3878,7 @@ function table(){
         $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/nicstatus/$val"));
         $nicinfos=$data->Info;
         $IfaceState="";
+        $IfaceStateIco="";
         $tbl=explode(";",$nicinfos);
 		if($GLOBALS["VERBOSE"]){ foreach ($tbl as $indexDebug=>$LIneDebug){ VERBOSE("LOOP: Interface $val NicInfo[$indexDebug] = $LIneDebug",__LINE__); } }
 
@@ -3876,8 +3893,8 @@ function table(){
         }
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 
-        if($IfaceState=="down"){
-
+        if($IfaceState=="down" && $nicz->enabled==1){
+            $IfaceStateIco="&nbsp;<span class='label label-warning'>DOWN</span>";
         }
 
 		$tcp->ifconfig(trim($val));
@@ -4112,6 +4129,7 @@ function table(){
         $icon="<i class=\"$text_class_ico fas fa-ethernet\"></i>";
 
         if($NIC_DISABLED){
+            $IfaceStateIco="";
             $text_class="text-muted";
             $text_class_ico=$text_class;
             $metric_warning=null;
@@ -4217,7 +4235,7 @@ function table(){
 
 		$html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"center $text_class\" style='width:1%' nowrap>$icon</td>";
-		$html[]=$tpl->_ENGINE_parse_body("<td class=\"$text_class\">$href$nicz->netzone: $nicz->NICNAME ($val)</a>$VirtualBridge$wire$metric_warning$error$hardware_text$macvlan_icon</td>");
+		$html[]=$tpl->_ENGINE_parse_body("<td class=\"$text_class\">$href$nicz->netzone: $nicz->NICNAME ($val)</a>$VirtualBridge$wire$IfaceStateIco$metric_warning$error$hardware_text$macvlan_icon</td>");
 		$html[]=$tpl->_ENGINE_parse_body("<td $width1>$NETADDR_TEXT</a> $dhcp_text</td>");
 		$html[]=$tpl->_ENGINE_parse_body("<td $width1>$ACTUAL_NETMASK</a></td>");
 		$html[]=$tpl->_ENGINE_parse_body("<td $width1>$ComputerMacAddress</a>$ComputerMacAddressError</td>");

@@ -119,7 +119,7 @@ function table_start():bool{
 function table():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $users=new usersMenus();
+
 
     $CURVER=@file_get_contents("VERSION");
     $UPDATES_ARRAY=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("v4softsRepo")));
@@ -470,10 +470,6 @@ function table():bool{
     $html[]="</tr>";
 
 //--------------------------------------------------------------------------------------------------
-
-
-
-
     $FIREQOS_VERSION=$tpl->icon_nothing();
     $bton=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIREQOS_INSTALLED"))==1){

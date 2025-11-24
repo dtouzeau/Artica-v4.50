@@ -714,14 +714,18 @@ class left_menus{
         $EnableFileBeat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFileBeat"));
         if(!$this->users->AsWebStatisticsAdministrator) {return "";}
         if ($EnableFileBeat == 0) {return "";}
+        $tpl=new template_admin();
         $f[] = "<!-- FILEBEAT START -->";
         $f[] = "<li id='left-menu'>";
         $f[] = "    <a href='#' ><i class=\"fas fa-file-medical-alt\"></i> <span class=\"nav-label\">{APP_FILEBEAT}</span> </a>";
         $f[] = "<ul class='nav nav-second-level'>";
-        $f[] = "<li id='left-menu'>";
-        $f[] = "<a href='#' OnClick=\"MenuRoot( $(this),'fw.filebeat.status.php');\">
-                <i class=\"fas fa-tachometer-alt\"></i> <span class=\"nav-label\">{status}</span> </a>";
-        $f[] = "</li>";
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.filebeat.status.php",
+            "ICO"=>ico_dashboard,"TEXT"=>"{status}"));
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.filebeat.events.php",
+            "ICO"=>ico_eye,"TEXT"=>"{service_events}"));
+
         $f[] = "</ul>";
         $f[] = "</li>";
         $f[] = "<!-- FILEBEAT END -->";
@@ -1336,10 +1340,16 @@ class left_menus{
 											<i class=\"" . ico_hacker . "\"></i> <span class=\"nav-label\">{detected_threats}</span> </a>";
             $f[] = "							</li>";
 
-            $f[] = "                			<li id='left-menu'>";
-            $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.service-events.php');\">
-											<i class=\"" . ico_eye . "\"></i> <span class=\"nav-label\">{service_events}</span> </a>";
-            $f[] = "							</li>";
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.ids.service-events.php",
+                    "ICO" => ico_eye, "TEXT" => "{service_events}",
+                ));
+
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.ids.artica-events.php",
+                    "ICO" => ico_eye, "TEXT" => "Artica:{events}",
+                ));
+
         }
 
 

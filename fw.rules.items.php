@@ -13,6 +13,7 @@ include_once(dirname(__FILE__)."/ressources/class.squid.familysites.inc");
 include_once(dirname(__FILE__)."/ressources/class.hosts.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["itype-search"])){itype_search();exit;}
+if(isset($_POST["itype"])){itype_save();exit;}
 if(isset($_GET["change-groupname-js"])){group_chgpname_js();exit;}
 if(isset($_GET["change-groupname-popup"])){group_chgpname_popup();exit;}
 if(isset($_GET["items-compiled"])){items_compiled();exit;}
@@ -2535,14 +2536,40 @@ function itype_search():bool{
 
     $form[]=$tpl->field_hidden("itype",$groupid);
 
-    foreach($f as $k=>$v){
+    foreach($f as $num=>$expl){
         $val=0;
-        if(isset($ALREADY[$k])){
+        if(isset($ALREADY[$num])){
             $val=1;
         }
-        $form[]=$tpl->field_checkbox("itype",$k,$v);
+        $form[]=$tpl->field_checkbox("itype_$num",$expl,$val);
     }
     echo $tpl->form_outside("",$form,"","{apply}","","AsFirewallManager");
+    return true;
+
+}
+function itype_save():bool{
+    $groupid=intval($_POST["itype"]);
+    unset($_POST["itype"]);
+    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+    $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$groupid");
+    $SQ=array();
+    $date=date("Y-m-d H:i:s");
+    $uid=$_SESSION["uid"];
+    foreach ($_POST as $key=>$value){
+        if(intval($value)==0){
+            continue;
+        }
+        if(!preg_match("#^itype_([0-9]+)#",$key,$re)){
+            continue;
+        }
+
+        $SQ[]="($groupid,$re[1],'$date','$uid',1)";
+    }
+    if(count($SQ)>0) {
+        $sql = "INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) VALUES " . @implode(",", $SQ);
+        $q->QUERY_SQL($sql);
+    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_SURICATA("/build/acls");
     return true;
 
 }

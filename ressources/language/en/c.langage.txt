@@ -3265,3 +3265,23 @@ Install it if you want to use it.</wazuh_not_enabled_ids>
 <itype_explain>Detects specific ICMP operations such as pings, errors, redirects, or TTL-expired packets</itype_explain>
 <welcome_banner>Welcome banner</welcome_banner>
 <welcome_banner_explain>Displays an informational message after successful authentication.[br]The banner shows key system details so your administrator can quickly identify the server from their SSH console.</welcome_banner_explain>
+<store_queue_ondisk>Use disk for queue storage</store_queue_ondisk>
+<read_ahead>Read-ahead</read_ahead>
+<write_ahead>Write ahead</write_ahead>
+<retry_interval>Retry interval</retry_interval>
+<flush_minimum_events>Minimum of events before flushing</flush_minimum_events>
+<flush_timeout>Maximum wait time before forcing a bulk flush</flush_timeout>
+<extended>Extended</extended>
+<simplified>Simplifed</simplified>
+<fbeat_idx_expl>By default, the index used is [b]artica-%{[fileset.name]}-%{+yyyy}[/b].
+[br]]If enabled, the index will be simplified to [b]artica-%{[fileset.name]}[/b].
+</fbeat_idx_expl>
+<filbeat_template_overwrite>Tells Filebeat whether it should replace an existing index template in Elasticsearch with the one Filebeat provides.[br]
+Useful when:[br]
+You upgraded Filebeat and want updated mappings.[br]
+You changed custom template settings.[br]
+The existing template is corrupted or outdated.</filbeat_template_overwrite>
+<overwrite_template>Overwrite template</overwrite_template>
+<filbeat_noaddr>The Filebeat service cannot start if you have not specified the Elasticsearch server address.</filbeat_noaddr>
+<acked_events>Acked events</acked_events>
+<dstserv>To this server</dstserv>

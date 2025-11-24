@@ -2,15 +2,31 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
-if(isset($_GET["table"])){table();exit;}
+if(isset($_GET["flat-config"])){table();exit;}
+if(isset($_GET["service-status"])){status();exit;}
+if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["filebeat-status"])){status();exit;}
 if(isset($_POST["ElasticSearchAddress"])){Save();exit;}
 if(isset($_POST["ElasticsearchEnableAuthFilebeat"])){Save();exit;}
+if(isset($_POST["FilebeatEnableDiskQueue"])){Save();exit;}
+if(isset($_POST["FilebeatIndexIsILM"])){Save();exit;}
+if(isset($_POST["FilebeatTemplateOverwrite"])){Save();exit;}
+
 
 if(isset($_GET["srv-addr-js"])){srv_addr_js();exit;}
 if(isset($_GET["srv-addr-popup"])){srv_addr_popup();exit;}
 
+if(isset($_GET["disk-queue-js"])){disk_queue_js();exit;}
+if(isset($_GET["disk-queue-popup"])){disk_queue_popup();exit;}
 
+if(isset($_GET["disk-memory-js"])){disk_memory_js();exit;}
+if(isset($_GET["disk-memory-popup"])){disk_memory_popup();exit;}
+
+if(isset($_GET["disk-index-js"])){disk_index_js();exit;}
+if(isset($_GET["disk-index-popup"])){disk_index_popup();exit;}
+
+if(isset($_GET["disk-template-js"])){disk_template_js();exit;}
+if(isset($_GET["disk-template-popup"])){disk_template_popup();exit;}
 
 page();
 
@@ -39,8 +55,8 @@ function start():bool{
     $tpl=new template_admin();
     $html[]="<table style='width:100%'>";
     $html[]="<tr>";
-    $html[]="<td style='width:240px'><div id='filebeat-status'></div></td>";
-    $html[]="<td style='width:240px'><div id='flat-config'></div></td>";
+    $html[]="<td style='width:240px;vertical-align: top'><div id='filebeat-status'></div></td>";
+    $html[]="<td style='width:99%;;vertical-align: top'><div id='flat-config'></div></td>";
     $html[]="</tr>";
     $html[]="</table>";
     $html[]="<script>";
@@ -104,7 +120,7 @@ function status(){
                 $queueInfo = $tpl->widget_h(
                     "grey",
                     "fas fa-traffic-light",
-                    "<span class=\"label label-success \">{maximum} {events} {in} {queue} $queueMaxEvents</span><br><span class=\"label label-success \">{acked} {events} $queueAckedEvents</span><br><span class=\"label label-info \">{active} {events} $queueActiveEvents</span><br><span class=\"label label-warning \">{retry} {events} $queueRetryEvents</span><br><span class=\"label label-danger \">{drop} {events} $queueDroppedEvents</span><br><span class=\"label label-danger \">{failed} {events} $queueFailedEvents</span>",
+                    "<span class=\"label label-success \">{maximum} {events} {in} {queue} $queueMaxEvents</span><br><span class=\"label label-success \">{acked_events} $queueAckedEvents</span><br><span class=\"label label-info \">{active2} {events} $queueActiveEvents</span><br><span class=\"label label-warning \">{retry} {events} $queueRetryEvents</span><br><span class=\"label label-danger \">{drop} {events} $queueDroppedEvents</span><br><span class=\"label label-danger \">{failed} {events} $queueFailedEvents</span>",
                     "{queue}"
                 );
             }
@@ -112,7 +128,7 @@ function status(){
         }
     }
 
-    echo $tpl->SERVICE_STATUS($bsini, "APP_FILEBEAT",$jsRestart) ."$eventsSent<br>$queueInfo";
+    echo $tpl->_ENGINE_parse_body($tpl->SERVICE_STATUS($bsini, "APP_FILEBEAT",$jsRestart) ."$eventsSent<br>$queueInfo");
 
 }
 function srv_addr_js():bool{
@@ -121,6 +137,59 @@ function srv_addr_js():bool{
     $users=new usersMenus();
     if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return false;}
     return $tpl->js_dialog1("{elasticsearch_address}", "$page?srv-addr-popup=yes");
+}
+function disk_queue_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return false;}
+    return $tpl->js_dialog1("{queue}", "$page?disk-queue-popup=yes",900);
+}
+function disk_memory_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return false;}
+    return $tpl->js_dialog1("{queue}", "$page?disk-memory-popup=yes",900);
+}
+function disk_index_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return false;}
+    return $tpl->js_dialog1("{index}", "$page?disk-index-popup=yes",650);
+}
+function disk_template_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return false;}
+    return $tpl->js_dialog1("{template}", "$page?disk-template-popup=yes",650);
+}
+
+function disk_index_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $FilebeatIndexIsILM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatIndexIsILM"));
+
+    echo $tpl->BigCircleCheckbox("FilebeatIndexIsILM",
+    "{index}",
+    "{fbeat_idx_expl}",
+    $FilebeatIndexIsILM,
+    "dialogInstance1.close();LoadAjaxSilent('flat-config','$page?flat-config=yes');");
+    return true;
+}
+function disk_template_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $FilebeatTemplateOverwrite=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatTemplateOverwrite"));
+
+    echo $tpl->BigCircleCheckbox("FilebeatTemplateOverwrite",
+        "{overwrite_template}",
+        "{filbeat_template_overwrite}",
+        $FilebeatTemplateOverwrite,
+        "dialogInstance1.close();LoadAjaxSilent('flat-config','$page?flat-config=yes');");
+    return true;
 }
 
 function srv_addr_popup():bool{
@@ -141,7 +210,65 @@ function srv_addr_popup():bool{
     echo $tpl->form_outside("",$form,null,
         "{apply}",
         "dialogInstance1.close();LoadAjaxSilent('flat-config','$page?flat-config=yes');",
-        "AsWebStatisticsAdministrator",true);
+        "AsWebStatisticsAdministrator");
+    return true;
+}
+function disk_queue_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $FilebeatEnableDiskQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatEnableDiskQueue"));
+    $FilebeatDiskMaxSize=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskMaxSize"));
+    if(strlen($FilebeatDiskMaxSize)==0){$FilebeatDiskMaxSize="10GB";}
+    $DiskSize["512MiB"]="512MiB";
+    for ($i = 1; $i <= 20; $i++) {
+        $DiskSize["{$i}GB"]="{$i}GB";
+    }
+    $FilebeatDiskReadAhead=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskReadAhead"));
+    if($FilebeatDiskReadAhead==0){$FilebeatDiskReadAhead=512;}
+    $FilebeatDiskWriteAhead=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskWriteAhead"));
+    if($FilebeatDiskWriteAhead==0){$FilebeatDiskWriteAhead=2048;}
+    $FilebeatDiskRetryInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskRetryInterval"));
+    if($FilebeatDiskRetryInterval==0){$FilebeatDiskRetryInterval=1;}
+    $FilebeatDiskMaxRetryInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskMaxRetryInterval"));
+    if($FilebeatDiskMaxRetryInterval==0){$FilebeatDiskMaxRetryInterval=30;}
+
+    $form[]=$tpl->field_checkbox("FilebeatEnableDiskQueue","{store_queue_ondisk}",$FilebeatEnableDiskQueue,"FilebeatDiskMaxSize,FilebeatDiskReadAhead,FilebeatDiskWriteAhead,FilebeatDiskRetryInterval");
+    $form[]=$tpl->field_array_hash($DiskSize, "FilebeatDiskMaxSize", "nonull:{size}", $FilebeatDiskMaxSize);
+
+    $form[]=$tpl->field_numeric("FilebeatDiskReadAhead","{read_ahead} ({events})",$FilebeatDiskReadAhead);
+    $form[]=$tpl->field_numeric("FilebeatDiskWriteAhead","{write_ahead} ({events})",$FilebeatDiskWriteAhead);
+    $form[]=$tpl->field_numeric("FilebeatDiskRetryInterval","{retry_interval} ({seconds})",$FilebeatDiskRetryInterval);
+    $form[]=$tpl->field_numeric("FilebeatDiskMaxRetryInterval","{maxretries} ({seconds})",$FilebeatDiskMaxRetryInterval);
+
+
+    echo $tpl->form_outside("",$form,null,
+        "{apply}",
+        "dialogInstance1.close();LoadAjaxSilent('flat-config','$page?flat-config=yes');",
+        "AsWebStatisticsAdministrator");
+    return true;
+}
+function disk_memory_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $FilebeatEnableDiskQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatEnableDiskQueue"));
+
+    $FilebeatMemMaxEvents=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatMemMaxEvents"));
+    if($FilebeatMemMaxEvents==0){$FilebeatMemMaxEvents=3200;}
+    $FilebeatMemFlushMinEvents=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatMemFlushMinEvents"));
+    if($FilebeatMemFlushMinEvents==0){$FilebeatMemFlushMinEvents=1600;}
+    $FilebeatMemFlushTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatMemFlushTimeout"));
+    if($FilebeatMemFlushTimeout==0){$FilebeatMemFlushTimeout=10;}
+
+    $form[]=$tpl->field_checkbox("FilebeatEnableDiskQueue","{store_queue_ondisk}",$FilebeatEnableDiskQueue);
+
+    $form[]=$tpl->field_numeric("FilebeatMemMaxEvents","{max_records_in_memory}",$FilebeatMemMaxEvents);
+    $form[]=$tpl->field_numeric("FilebeatMemFlushMinEvents","{flush_minimum_events}",$FilebeatMemFlushMinEvents);
+    $form[]=$tpl->field_numeric("FilebeatMemFlushTimeout","{flush_timeout} ({seconds})",$FilebeatMemFlushTimeout);
+
+    echo $tpl->form_outside("",$form,null,
+        "{apply}",
+        "dialogInstance1.close();LoadAjaxSilent('flat-config','$page?flat-config=yes');",
+        "AsWebStatisticsAdministrator");
     return true;
 }
 
@@ -179,7 +306,12 @@ function table(){
     if($ElasticsearchRemotePort==0){$ElasticsearchRemotePort=9200;}
     $ElasticsearchEnableAuthFilebeat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticsearchEnableAuthFilebeat"));
     $ElasticSearchUsernameFilebeat=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchUsernameFilebeat"));
-    $ElasticSearchPasswordFilebeat=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchPasswordFilebeat"));
+    $FilebeatEnableDiskQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatEnableDiskQueue"));
+
+    if(strlen($ElasticSearchAddress)<3){
+        echo $tpl->_ENGINE_parse_body("<p style='margin:30px'>".$tpl->div_error("{filbeat_noaddr}")."</p>");
+    }
+
 
 
     $tpl->table_form_field_js("Loadjs('$page?srv-addr-js=yes')","AsSystemAdministrator");
@@ -195,69 +327,29 @@ function table(){
         $tpl->table_form_field_text("{authentication}",$ElasticSearchUsernameFilebeat,ico_user);
     }
 
-
-
-    //Queue Type
-    $FilebeatEnableDiskQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatEnableDiskQueue"));
-    //Mem Queue
-    $FilebeatMemMaxEvents=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatMemMaxEvents"));
-    if($FilebeatMemMaxEvents==0){$FilebeatMemMaxEvents=3200;}
-    $FilebeatMemFlushMinEvents=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatMemFlushMinEvents"));
-    if($FilebeatMemFlushMinEvents==0){$FilebeatMemFlushMinEvents=1600;}
-    $FilebeatMemFlushTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatMemFlushTimeout"));
-    if($FilebeatMemFlushTimeout==0){$FilebeatMemFlushTimeout=10;}
-
-    //Disk Queue
-    $FilebeatDiskMaxSize=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskMaxSize"));
-    if(strlen($FilebeatDiskMaxSize)==0){$FilebeatDiskMaxSize="10GB";}
-
-    $FilebeatDiskReadAhead=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskReadAhead"));
-    if($FilebeatDiskReadAhead==0){$FilebeatDiskReadAhead=512;}
-    $FilebeatDiskWriteAhead=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskWriteAhead"));
-    if($FilebeatDiskWriteAhead==0){$FilebeatDiskWriteAhead=2048;}
-    $FilebeatDiskRetryInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskRetryInterval"));
-    if($FilebeatDiskRetryInterval==0){$FilebeatDiskRetryInterval=1;}
-    $FilebeatDiskMaxRetryInterval=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskMaxRetryInterval"));
-    if($FilebeatDiskMaxRetryInterval==0){$FilebeatDiskMaxRetryInterval=30;}
-    $DiskSize["512MiB"]="512MiB";
-    for ($i = 1; $i <= 20; $i++) {
-        $DiskSize["{$i}GB"]="{$i}GB";
+    if($FilebeatEnableDiskQueue==0){
+        $tpl->table_form_field_js("Loadjs('$page?disk-memory-js=yes')","AsSystemAdministrator");
+        $tpl->table_form_field_text("{queue}","{memory}",ico_mem);
+    }else{
+        $tpl->table_form_field_js("Loadjs('$page?disk-queue-js=yes')","AsSystemAdministrator");
+        $FilebeatDiskMaxSize=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatDiskMaxSize"));
+        if(strlen($FilebeatDiskMaxSize)==0){$FilebeatDiskMaxSize="10GB";}
+        $tpl->table_form_field_text("{queue}","{store_queue_ondisk} ($FilebeatDiskMaxSize)",ico_hd);
     }
+
+    $tpl->table_form_field_js("Loadjs('$page?disk-index-js=yes')","AsSystemAdministrator");
     $FilebeatIndexIsILM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatIndexIsILM"));
+    if($FilebeatIndexIsILM==0) {
+        $tpl->table_form_field_text("{index}", "{extended}", ico_database);
+    }else{
+        $tpl->table_form_field_text("{index}", "{simplified}", ico_database);
+
+    }
+    $tpl->table_form_field_js("Loadjs('$page?disk-template-js=yes')","AsSystemAdministrator");
     $FilebeatTemplateOverwrite=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FilebeatTemplateOverwrite"));
+    $tpl->table_form_field_bool("{overwrite_template}",$FilebeatTemplateOverwrite,ico_list);
 
-
-
-
-
-
-    $form[]=$tpl->field_checkbox("FilebeatIndexIsILM","{index} {is} ILM",$FilebeatIndexIsILM);
-    $form[]=$tpl->field_checkbox("FilebeatTemplateOverwrite","{template} {overwrite}",$FilebeatTemplateOverwrite);
-
-    $form[]=$tpl->field_section("{queue}");
-    //mem
-    $form[]=$tpl->field_numeric("FilebeatMemMaxEvents","{maximum} {events}",$FilebeatMemMaxEvents);
-    $form[]=$tpl->field_numeric("FilebeatMemFlushMinEvents","{flush} {minimum} {events}",$FilebeatMemFlushMinEvents);
-    $form[]=$tpl->field_numeric("FilebeatMemFlushTimeout","{flush} {timeout}",$FilebeatMemFlushTimeout);
-    //disk
-    $form[]=$tpl->field_checkbox("FilebeatEnableDiskQueue","{enable} {disk} {queue}",$FilebeatEnableDiskQueue,"FilebeatDiskMaxSize,FilebeatDiskReadAhead,FilebeatDiskWriteAhead,FilebeatDiskRetryInterval");
-    $form[]=$tpl->field_array_hash($DiskSize, "FilebeatDiskMaxSize", "nonull:{size}", $FilebeatDiskMaxSize);
-    $form[]=$tpl->field_numeric("FilebeatDiskReadAhead","{read} {ahead}",$FilebeatDiskReadAhead);
-    $form[]=$tpl->field_numeric("FilebeatDiskWriteAhead","{write} {ahead}",$FilebeatDiskWriteAhead);
-    $form[]=$tpl->field_numeric("FilebeatDiskRetryInterval","{retry} {interval}",$FilebeatDiskRetryInterval);
-    $form[]=$tpl->field_numeric("FilebeatDiskMaxRetryInterval","{max} {retry} {interval}",$FilebeatDiskMaxRetryInterval);
-
-    $formula=$tpl->form_outside("{APP_ELASTICSEARCH}",$form,null,"{apply}",$jsReload,"AsWebStatisticsAdministrator",true);
-
-    $html[]=$formula;
-
-    $html[]="</td>";
-    $html[]="</tr>";
-
-    $html[]="</table>";
-
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-
+    echo $tpl->table_form_compile();
 }
 
 function Save(){
@@ -310,6 +402,8 @@ function Save(){
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
     curl_setopt($ch, CURLOPT_HTTPPROXYTUNNEL, false);
     curl_setopt($ch, CURLOPT_NOPROXY,"*");
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
     if($ElasticsearchEnableAuthFilebeat==1) {
         curl_setopt($ch, CURLOPT_USERPWD, "$ElasticSearchUsernameFilebeat:$ElasticSearchPasswordFilebeat");
     }
@@ -317,7 +411,7 @@ function Save(){
 
     if ($result === false) {
         $Error=curl_error($ch);
-        echo "jserror:return network error code $Error";
+        echo $tpl->post_error("return network error code $Error");
         if(function_exists("curl_close")) {
             curl_close($ch);
         }
@@ -326,13 +420,13 @@ function Save(){
 
     $responseCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     if ($responseCode >= 400) {
-        echo "jserror:return HTTP error code $responseCode";
+        echo $tpl->post_error("return HTTP error code $responseCode");
         if(function_exists("curl_close")) {
             curl_close($ch);
         }
         return false;
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/filebeat/restart");
     return admin_tracks_post("Saving Filebeat parameters");
 
 }

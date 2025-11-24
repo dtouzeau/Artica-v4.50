@@ -412,10 +412,10 @@ function rules_scan_ids():bool{
         echo "alert('".$q->mysql_error.$sql."');";
         return false;
     }
-    
+    $getCurrentRules=getCurrentRules();
     foreach ($results as $index=>$ligne){
         $ID=$ligne["ID"];
-        $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne)));
+        $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne,$getCurrentRules)));
         $f[]="// $index -> $ID";
         $f[]="if (document.getElementById('ids-status-$ID') ){";
         $f[]="  document.getElementById('ids-status-$ID').innerHTML=base64_decode('$status');";
@@ -873,16 +873,18 @@ function table():bool{
 }
 function  getCurrentRules():array{
     $MAIN=array();
-    $f=explode("\n",@file_get_contents("/etc/squid3/http_access.conf"));
-    foreach ($f as $line){
-        if(!preg_match("#STATUS=\[(.+?)\]#",$line,$re)){continue;}
-        $HEADS=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($re[1]);
-        if(!isset($HEADS["STATUS_RULES"])){$HEADS["STATUS_RULES"]=array();}
-        foreach ($HEADS["STATUS_RULES"] as $ruleid=>$none){
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/current"));
+
+
+    if(!property_exists($json,"rules")){
+        return array();
+    }
+
+    foreach ($json->rules as $ruleid=>$none){
             $MAIN[$ruleid]=true;
         }
 
-    }
+
     return $MAIN;
 }
 function TINY_PAGE($return=false):string{
@@ -912,12 +914,19 @@ function TINY_PAGE($return=false):string{
     if($return){
         return $tpl->th_buttons($topbuttons);
     }
+    $jscompile=  $tpl->framework_buildjs(
+        "suricata:/build/acls",
+        "dumpacls.progress",
+        "dumpacls.progress.txt","progress-acls-restart"
+    );
+
+    $topbuttons[] = array($jscompile,ico_save,"{apply_changes}");
 
     $TINY_ARRAY["TITLE"]="{SURICATA_ACLS}";
     $TINY_ARRAY["ICO"]="fad fa-shield-alt";
     $TINY_ARRAY["EXPL"]="{SURICATA_ACLS_EXPLAIN}";
     $TINY_ARRAY["URL"]="suricata-acls-access";
-    $TINY_ARRAY["BUTTONS"]=$tpl->th_buttons($topbuttons);
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
     header("content-type: application/x-javascript");
@@ -1060,10 +1069,10 @@ function table_builder():bool{
 		$row_order=$tpl->td_href(" <span class=\"label label-default\" id='acl-order-$ID'>{$ligne["xORDER"]}</span>",
             null,"Loadjs('$page?change-order=$ID');");
 
-        $rule_status=td_status($ligne);
+        $rule_status=td_status($ligne,$getCurrentRules);
         $td_name=$tpl->td_href($aclname,"{click_to_edit}",$js);
 
-		$html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
+		$html[]="<tr class='$TRCLASS$MUTED' id='acl-$ID'>";
 		$html[]="<td class=\"center\" style='width:1%' nowrap >$row_order</td>";
         $html[]="<td style='vertical-align:middle;width:1%'  nowrap><span id='ids-status-$ID'>$rule_status</span></td>";
 		$html[]="<td style='vertical-align:middle;width:1%'  nowrap>$td_name</td>";
@@ -1245,7 +1254,7 @@ function rule_delete($ID):bool{
     return true;
 }
 
-function td_status($ligne):string{
+function td_status($ligne,$getCurrentRules):string{
     if($ligne["enabled"]==0){
         return"<span class='label label-default'>{disabled}</span>";
     }
@@ -1253,5 +1262,9 @@ function td_status($ligne):string{
     if($ligne["enabled"]==1 && $isError==1){
         return "<span class='label label-danger'>{error}</span>";
     }
-    return"<span class='label label-default'>{unknown}</span>";
+    if(!isset($getCurrentRules[$ligne["ID"]])){
+        return"<span class='label label-default'>{inactive}</span>";
+    }
+
+    return"<span class='label label-primary'>{active2}</span>";
 }

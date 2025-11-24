@@ -12,6 +12,8 @@ if(isset($_GET["rule-settings"])){rule_settings();exit;}
 if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["delete"])){delete_js();exit;}
 if(isset($_POST["delete-remove"])){delete_remove();exit;}
+if(isset($_GET["tabs"])){tabs();exit;}
+if(isset($_GET["engine"])){engine();exit;}
 page();
 
 function severity_choose(){
@@ -37,6 +39,23 @@ function delete_js(){
 	var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
 	LoadAjax('table-loader','$page?table=yes&t=$t&search='+ss);";
 	
+}
+function tabs():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $array["{threats}"]="$page?engine=yes";
+    //$array["{reports}"]="fw.system.monit.php?incidents=yes";
+    echo $tpl->tabs_default($array);
+    return true;
+}
+function engine():bool{
+
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    echo "<div style='margin-top:10px'>";
+    echo $tpl->search_block($page,"","");
+    echo "</div>";
+    return true;
 }
 
 function enable_signature(){

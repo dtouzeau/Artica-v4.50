@@ -521,4 +521,5 @@ function enable(){
 	if($enabled==0){$enabled=1;}else{$enabled=0;}
 	$q->QUERY_SQL("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile='$filename'","artica_backup");
 	if(!$q->ok){echo $q->mysql_error;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/acls");
 }

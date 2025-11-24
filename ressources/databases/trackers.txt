@@ -8718,7 +8718,6 @@ cust.aggregateknowledge.com
 custimy.io
 custom-api.exponea.com
 custom-blacklisted-tracking-example.com
-custom-domain.fliphtml5.com
 custom.memberspace.com
 custom.metaffiliation.com
 custom.plausible.io
@@ -24271,16 +24270,9 @@ onion.e-papadakis.gr
 onioninsights.com
 online-metrix.net
 online.adservicemedia.dk
-online.citibank.com.edgekey.net
 online.cphi-china.cn
-online.fliphtml5.com
 online.jtiadvance.co.uk
 online.mps-gba.de
-online.nhbc.co.uk
-online.prod.fahrplanzvv.ch
-online.simplii.com.edgekey.net
-online.superoffice.com
-online.toll.com.au
 online.trackingsport.com
 onlinedbschecks.co.uk
 onlinegeotrack.com.ar

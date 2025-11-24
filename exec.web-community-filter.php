@@ -289,22 +289,23 @@ function register($force=false,$demo=false):bool{
     $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API("/register/server?force=$force&migration=$Migration&fromWizard={$GLOBALS['FROM_WIZARD']}&demo=$demo");
     echo $resp."\n";
     $resp=json_decode($resp,true);
-    if($resp[0]["message"]=="server_register_successfully_force_register_license"){
-        echo "Server registered successfully, initiating register license process\n";
-        register_lic(true);
-        return true;
+    if(isset($resp[0]["message"])) {
+        if ($resp[0]["message"] == "server_register_successfully_force_register_license") {
+            echo "Server registered successfully, initiating register license process\n";
+            register_lic(true);
+            return true;
+        }
     }
     return true;
 }
-function uuid_check()
-{
+function uuid_check():bool{
     $unix=new unix();
     $uuid=$unix->GetUniqueID();
     echo $uuid."\n";
+    return true;
 }
 
-function remove_grace_period()
-{
+function remove_grace_period():bool{
     echo "Remove Grace Period\n";
     $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API("/remove/grace/period");
     echo $resp."\n";
