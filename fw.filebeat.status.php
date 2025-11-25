@@ -12,6 +12,8 @@ if(isset($_POST["FilebeatEnableDiskQueue"])){Save();exit;}
 if(isset($_POST["FilebeatIndexIsILM"])){Save();exit;}
 if(isset($_POST["FilebeatTemplateOverwrite"])){Save();exit;}
 
+if(isset($_GET["auth-js"])){auth_js();exit;}
+if(isset($_GET["auth-popup"])){auth_popup();exit;}
 
 if(isset($_GET["srv-addr-js"])){srv_addr_js();exit;}
 if(isset($_GET["srv-addr-popup"])){srv_addr_popup();exit;}
@@ -152,6 +154,13 @@ function disk_memory_js():bool{
     if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return false;}
     return $tpl->js_dialog1("{queue}", "$page?disk-memory-popup=yes",900);
 }
+function auth_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return false;}
+    return $tpl->js_dialog1("{authentication}", "$page?auth-popup=yes",650);
+}
 function disk_index_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -197,6 +206,11 @@ function srv_addr_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ElasticSearchAddress=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchAddress"));
+    $ElasticSearchAddress1=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchAddress1"));
+    $ElasticSearchAddress2=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchAddress2"));
+
+
+
     $ElasticsearchRemotePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchRemotePort"));
     $ElasticSearchProtocol=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchProtocol"));
     if(empty($ElasticSearchProtocol)){$ElasticSearchProtocol='http';}
@@ -205,6 +219,10 @@ function srv_addr_popup():bool{
         $UseSSL=0;
     }
     $form[]=$tpl->field_ipv4("ElasticSearchAddress","{elasticsearch_address}",$ElasticSearchAddress,true);
+    $form[]=$tpl->field_ipv4("ElasticSearchAddress1","{elasticsearch_address} 2",$ElasticSearchAddress1);
+    $form[]=$tpl->field_ipv4("ElasticSearchAddress2","{elasticsearch_address} 3",$ElasticSearchAddress2);
+
+
     $form[]=$tpl->field_numeric("ElasticSearchRemotePort","{elasticsearch_remote_port}",$ElasticsearchRemotePort);
     $form[]=$tpl->field_checkbox("UseSSL", "{UseSSL}", $UseSSL);
     echo $tpl->form_outside("",$form,null,
@@ -383,49 +401,6 @@ function Save(){
        }
    }
     $tpl->SAVE_POSTs();
-
-    $ElasticSearchAddress=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchAddress"));
-    $ElasticsearchRemotePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchRemotePort"));
-    $ElasticSearchProtocol=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchProtocol"));
-    if(empty($ElasticSearchProtocol)){$ElasticSearchProtocol='http';}
-    if($ElasticsearchRemotePort==0){$ElasticsearchRemotePort=9200;}
-
-    $ElasticsearchEnableAuthFilebeat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticsearchEnableAuthFilebeat"));
-    $ElasticSearchUsernameFilebeat=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchUsernameFilebeat"));
-    $ElasticSearchPasswordFilebeat=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchPasswordFilebeat"));
-
-    $ch = curl_init();
-    $method = "GET";
-    $url = "$ElasticSearchProtocol://$ElasticSearchAddress:$ElasticsearchRemotePort/_cluster/stats?human&pretty";
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
-    curl_setopt($ch, CURLOPT_HTTPPROXYTUNNEL, false);
-    curl_setopt($ch, CURLOPT_NOPROXY,"*");
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-    if($ElasticsearchEnableAuthFilebeat==1) {
-        curl_setopt($ch, CURLOPT_USERPWD, "$ElasticSearchUsernameFilebeat:$ElasticSearchPasswordFilebeat");
-    }
-    $result = curl_exec($ch);
-
-    if ($result === false) {
-        $Error=curl_error($ch);
-        echo $tpl->post_error("return network error code $Error");
-        if(function_exists("curl_close")) {
-            curl_close($ch);
-        }
-        return false;
-    }
-
-    $responseCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    if ($responseCode >= 400) {
-        echo $tpl->post_error("return HTTP error code $responseCode");
-        if(function_exists("curl_close")) {
-            curl_close($ch);
-        }
-        return false;
-    }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/filebeat/restart");
     return admin_tracks_post("Saving Filebeat parameters");
 

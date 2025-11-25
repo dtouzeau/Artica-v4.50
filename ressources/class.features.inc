@@ -2147,25 +2147,7 @@ class features{
         return $this->build_paragraph($config);
     }
 
-    public function APP_ARTICALOGGER(){
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $SquidInRouterMode=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidInRouterMode"));
-        if($SquidInRouterMode==1){return;}
-        $config["LICENSE"]=true;
-        $config["SECURITY"]="AsSquidAdministrator";
-        $config["TOKEN_INSTALLED"]="SQUIDEnable";
-        $config["TOKEN_REQUIRE"]="{proxy_service}";
-        $config["TITLE"]="{APP_ARTICALOGGER}";
-        $config["EXPLAIN"]="{APP_ARTICALOGGER_EXPLAIN}";
-        $config["TOKEN"]="EnableSquidLogger";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/SquidLogger.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/SquidLogger.progress.log";
-        $config["CMD_ON"]="squidlogger.php?install=yes";
-        $config["CMD_OFF"]="squidlogger.php?uninstall=yes";
-        return $this->build_paragraph($config);
-    }
+
 
     public function SQUID_MIKROTIK(){
         if($this->ASReverseProxyAppliance){

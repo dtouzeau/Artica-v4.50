@@ -271,7 +271,7 @@ function SquidRouterMode(){
 
 	$CicapEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CicapEnabled"));
 	$EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
-	$EnableSquidLogger=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidLogger"));
+
 	
 	if($SquidCachesProxyEnabled==1){
 		shell_exec2("{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.squid.global.access.php --disable-cache");
@@ -293,9 +293,7 @@ function SquidRouterMode(){
 	if($EnableLocalUfdbCatService==1){
 		shell_exec2("{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.ufdbcat.php --remove-progress >/dev/null 2>&1");
 	}	
-	if($EnableSquidLogger==1){
-		shell_exec2("{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.squid-logger.php --install >/dev/null 2>&1");
-	}
+
 	
 	
 }
@@ -1365,10 +1363,8 @@ function ss5(){
 
 // ====================================================================================
 function isrtime_logs():bool{
-    $EnableSquidLogger=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidLogger"));
     $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
     $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
-    if($EnableSquidLogger==0){return false;}
     if($EnableRedisServer==0){return false;}
     if($SQUIDEnable==0){return false;}
     return true;

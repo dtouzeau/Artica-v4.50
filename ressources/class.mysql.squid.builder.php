@@ -180,11 +180,11 @@ class mysql_squid_builder{
         $this->acl_GroupType["proxy_auth_tagad"]="{acl_tag_adgroup}";
         $this->acl_GroupType["proxy_auth_multiad"]="{multiple_active_directory_groups}";
         $this->acl_GroupType["srcproxy"]="{srcproxy}";
+        $this->acl_GroupType["dstproxy"]="{dstproxy}";
         $this->acl_GroupType["the_shields"]="{KSRN}";
        // $this->acl_GroupType["reputation"]="{use_reput_service}";
 
         $this->acl_GroupTypeIcon["ssl_error"]=ico_ssl;
-        $this->acl_GroupTypeIcon["reputation"]=ico_clouds;
         $this->acl_GroupTypeIcon["reputation"]=ico_clouds;
         $this->acl_GroupTypeIcon["netbiosname"]=ico_computer;
         $this->acl_GroupTypeIcon["ptr"]="fa-solid fa-arrow-left-to-line";
@@ -238,6 +238,7 @@ class mysql_squid_builder{
         //$this->acl_GroupTypeIcon["quota_time"]="fad fa-user-clock";
         $this->acl_GroupTypeIcon["weekrange"]="fas fa-calendar-alt";
         $this->acl_GroupTypeIcon["srcproxy"]="fas fa-server";
+        $this->acl_GroupTypeIcon["dstproxy"]=ico_sensor;
 
         $this->acl_GroupTypeIcon["method"]="far fa-compress";
         $this->acl_GroupTypeIcon["FTP"]="fas fa-file-alt";
@@ -414,6 +415,7 @@ class mysql_squid_builder{
         $this->acl_GroupType_WPAD["rgexsrc"]="{ipsrc} (regex)";
         $this->acl_GroupType_WPAD["rgexdst"]="{dst} (regex)";
         $this->acl_GroupType_WPAD["srcproxy"]="{srcproxy}";
+        $this->acl_GroupType_WPAD["dstproxy"]="{dstproxy}";
         $this->acl_GroupType_WPAD["srcdomain"]="{srcdomain}";
         $this->acl_GroupType_WPAD["dstdomain"]="{dstdomain}";
         $this->acl_GroupType_WPAD["dst"]="{dst}";
@@ -631,6 +633,7 @@ class mysql_squid_builder{
         $this->acl_GroupType_explain["browser"]="{proxy_acls_browser_explain}";
         $this->acl_GroupType_explain["proxy_auth_adou"]="{group_explain_proxy_acls_type_5}";
         $this->acl_GroupType_explain["srcproxy"]="{srcproxy_txt}";
+        $this->acl_GroupType_explain["dstproxy"]="{dstproxy_explain}";
         $this->acl_GroupType_explain["proxy_auth_authenticated"]="{is_authenticated_explain}";
         $this->acl_GroupType_explain["url_db"]="{acl_url_db_explain}";
         $this->acl_GroupType_explain["the_shields"]="{KSRN_EXPLAIN}";
@@ -808,11 +811,14 @@ class mysql_squid_builder{
         $GroupType["maxconn"]="{max_connections}";
         $GroupType["ndpi"]="Deep packet inspection";
         $GroupType["the_shields"]="The Shields";
+        $GroupType["dstserv"]="{dstserv}";
+        $GroupType["dstproxy"]="{dstproxy}";
+        $GroupType["itype"]="{itype}";
         $GroupType["AclsGroup"]="{group_of_objects}";
         return $GroupType[$GroupTypeName];
     }
 
-    public function GRANT_PRIVS($hostname,$username,$password){
+    public function GRANT_PRIVS($hostname,$username,$password):bool{
         $this->BD_CONNECT();
         $ok=@mysqli_select_db($this->mysqli_connection,"mysql");
         if (!$ok){

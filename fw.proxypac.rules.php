@@ -591,7 +591,7 @@ function rule_tab(){
 
         $array["{whitelist}"]="fw.proxy.acls.objects.php?rule-id=$id&TableLink=wpad_white_link&RefreshTable=$refresh_enc&ProxyPac=1";
 
-        //$array["{force}"]="fw.proxy.acls.objects.php?rule-id=$id&TableLink=wpad_black_link&RefreshTable=$refresh_enc&ProxyPac=1&function=$function";
+        $array["{force}"]="fw.proxy.acls.objects.php?rule-id=$id&TableLink=wpad_black_link&RefreshTable=$refresh_enc&ProxyPac=1&function=$function";
 
         $array["{proxy_servers}"]="$page?rule-proxies=$id&function=$function";
 
@@ -985,16 +985,22 @@ function explainArule($ID){
 
     $results = $q->QUERY_SQL($sql);
     $FORCED=array();
+    $FORCED_PROXY=array();
     foreach($results as $index=>$ligne) {
         $gpid=$ligne["gpid"];
+        $jsdest=grouplink($gpid,"wpad_black_link");
         $not=null;
+        $GroupTypeSrc=$ligne["GroupType"];
         $GroupName=$tpl->utf8_encode($ligne["GroupName"]);
+        $GroupType=$qProxy->acl_GroupType[$GroupTypeSrc];
+        $js=$tpl->td_href($GroupName,"{edit}:$index $GroupName ($GroupType)",$jsdest);
+
+        if($GroupTypeSrc=="dstproxy"){
+            $FORCED_PROXY[]="$js</a>";
+            continue;
+        }
         $negation=$ligne["negation"];
         if($negation==1){$not="{not} ";}
-        $GroupType=$qProxy->acl_GroupType[$ligne["GroupType"]];
-
-        $jsdest=grouplink($gpid,"wpad_black_link");
-        $js=$tpl->td_href("{$GroupName}","{edit}: {$GroupName} ($GroupType)",$jsdest);
         $FORCED[]="$not$js ($GroupType)</a>";
 
     }
@@ -1035,10 +1041,8 @@ function explainArule($ID){
         if($negation==1){$not="{not} ";}
         $link="Loadjs('squid.acls.groups.php?AddGroup-js=yes&ID=$gpid&table-org=table-items-{$_GET["t"]}',true);";
         $GroupType=$qProxy->acl_GroupType[$ligne["GroupType"]];
-
         $jsdest=grouplink($gpid,"wpad_white_link");
-        $js=$tpl->td_href("{$GroupName}","{edit}: {$GroupName} ($GroupType)",$jsdest);
-
+        $js=$tpl->td_href($GroupName,"{edit}: $GroupName ($GroupType)",$jsdest);
         $h[]="$not$js ($GroupType)</a>";
 
     }
@@ -1069,9 +1073,13 @@ function explainArule($ID){
     $thenfinal="{then_set_proxy_parameters}";
 
     if(count($FORCED)>0){
-        if(count($PPNAME)>0) {
-            $FINAL[] = "{and_if_it_request_using} " . @implode("&nbsp;{or}&nbsp;", $FORCED);
-            $FINAL[] = "{then_force_proxy_parameters} " . @implode($PPNAME).".";
+        if( count($PPNAME)>0 OR count($FORCED_PROXY)>0 ) {
+            $FINAL[] = "{and_if_it_request_using} " . @implode("&nbsp;{and}&nbsp;", $FORCED);
+            if(count($FORCED_PROXY)==0) {
+                $FINAL[] = "{then_force_proxy_parameters} " . @implode($PPNAME) . ".";
+            }else{
+                $FINAL[] = "{then_force_proxy_parameters} <strong>".@implode(", ",$FORCED_PROXY)."</strong>.";
+            }
             $thenfinal="{by_default_set_proxy_parameters}";
         }
     }

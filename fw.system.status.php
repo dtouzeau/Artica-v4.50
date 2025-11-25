@@ -29,7 +29,6 @@ function tabs(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $users=new usersMenus();
-    $EnableSquidLogger=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidLogger"));
     $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
     $EnableStatsCommunicator=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableStatsCommunicator"));
     $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
@@ -108,12 +107,6 @@ function tabs(){
     if($users->AsProxyMonitor) {
         if ($SQUIDEnable == 1) {
             $array["{your_proxy}"] = "fw.dashboard.YourProxy.php";
-            if ($EnableRedisServer == 1) {
-                if ($EnableSquidLogger == 1) {
-                    $array["{proxy_statistics}"] = "fw.dashboard.proxy.php";
-                    $array["{proxy_members}"] = "fw.dashboard.proxy.members.php";
-                }
-            }
         }
     }
     if($users->AsPostfixAdministrator) {

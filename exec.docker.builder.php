@@ -65,7 +65,6 @@ function build_webadmin():bool{
     $f[] = "RUN /usr/share/artica-postfix/bin/articarest -phpini -debug";
     $f[] = "RUN php /usr/share/artica-postfix/exec.initslapd.php";
     $f[] = "RUN php /usr/share/artica-postfix/exec.go.exec.php || true";
-    $f[] = "RUN php /usr/share/artica-postfix/exec.artica-php-fpm.php --install";
     $f[] = "RUN php /usr/share/artica-postfix/exec.convert-to-sqlite.php\n";
     $f[] = "COPY docker-client /usr/sbin/docker-client";
     $f[] = "RUN chmod 0755 /usr/sbin/docker-client";

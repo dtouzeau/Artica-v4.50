@@ -654,14 +654,7 @@ function users_requests_table():bool{
 	$t=time();
 
 
-	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/recategorize.progress";
-	$ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/recategorize.progress.txt";
 
-	$ARRAY["CMD"]="squidlogger.php?rescan-not-categorized=yes";
-	$ARRAY["TITLE"]="{analyze} {not_categorized}";
-	$ARRAY["AFTER"]="LoadAjax('table-not-categorized-section','$page?not-categorized-table=yes');";
-	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-catz-restart')";
 
 
 	$html[]=$tpl->_ENGINE_parse_body("

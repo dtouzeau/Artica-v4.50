@@ -248,25 +248,9 @@ function UpdateUtility_run(){
 
 }
 
-function arp_poisonning_stop(){
-    $cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.arpspoof.php --stop 2>&1";
-    exec($cmd,$results);
-    writelogs_framework("$cmd ",__FUNCTION__,__FILE__,__LINE__);
-    echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
-}
-function arp_poisonning_start(){
-    $cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.arpspoof.php --start 2>&1";
-    exec($cmd,$results);
-    writelogs_framework("$cmd ",__FUNCTION__,__FILE__,__LINE__);
-    echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
-}
-function arp_poisonning_status(){
-    $ID=$_GET["ID"];
-    $cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.arpspoof.php --status $ID 2>&1";
-    exec($cmd,$results);
-    writelogs_framework("$cmd ".count($results)." lines",__FUNCTION__,__FILE__,__LINE__);
-    echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
-}
+
+
+
 function webdav_service(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");

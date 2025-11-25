@@ -68,50 +68,6 @@ function elasticsearch(){
 	return @implode("\n", $l);
 }
 
-function squid_logger(){
 
-	if(!is_file("/etc/init.d/squid-logger")){return;}
-	$ARTICA_VERSION=@file_get_contents("/usr/share/artica-postfix/VERSION");
-
-
-	$l[]="";
-	$l[]="[APP_ARTICALOGGER]";
-	$l[]="service_name=APP_ARTICALOGGER";
-	$l[]="master_version=$ARTICA_VERSION";
-	$l[]="service_cmd=/etc/init.d/squid-logger";
-	$l[]="service_disabled=1";
-	$l[]="family=squid";
-	$l[]="watchdog_features=1";
-	$l[]="installed=1";
-
-	$master_pid=squid_logger_pid();
-	
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		squid_watchdog_events("[squid_tail]: $master_pid Not running !!!");
-		if($GLOBALS["CLASS_UNIX"]->ServerRunSince()>1){
-			if(!$GLOBALS["DISABLE_WATCHDOG"]){
-				squid_admin_mysql(1, "Proxy events listener {stopped} [{action}={start}]", null,__FILE__,__LINE__);
-				shell_exec2("{$GLOBALS["nohup"]} /etc/init.d/squid-logger start >/dev/null 2>&1 &");
-			}
-		}
-	$l[]="running=0\ninstalled=1";
-	$l[]="";
-	return implode("\n",$l);
-
-	}
-
-	$l[]=GetMemoriesOf($master_pid);
-	$l[]="";
-	return implode("\n",$l);return;
-
-
-}
-function squid_logger_pid(){
-	$unix=new unix();
-	$pid=$unix->get_pid_from_file("/var/run/squid-tail.pid");
-	if($unix->process_exists($pid)){return $pid;}
-	return $unix->PIDOF_PATTERN("squid-logger.py");
-
-}
 
 ?>

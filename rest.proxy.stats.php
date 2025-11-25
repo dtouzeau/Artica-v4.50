@@ -48,16 +48,7 @@ function isAuth(){
         exit;
     }
 
-    $EnableSquidLogger=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidLogger"));
 
-    if($EnableSquidLogger==0){
-        $array["status"] = false;
-        $array["message"] = "Proxy Logger is not Activated";
-        $array["category"] = 0;
-        $RestAPi->response(json_encode($array), 500);
-        logon_events("FAILED");
-        exit;
-    }
 
 
     $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));

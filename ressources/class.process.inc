@@ -49,8 +49,7 @@ function MemoryInstances(){
 		$Toremove["exec.auth-tail.php"]=true;
 		$Toremove["exec.artica-filter-daemon.php"]=true;
 		$Toremove["exec.postfix-logger.php"]=true;
-		$Toremove["exec.squid2.logger.php"]=true;
-		$Toremove["exec.openvpn.php"]=true;	
+		$Toremove["exec.openvpn.php"]=true;
 		$Toremove["exec.smtp-senderadv.php"]=true;	
 		$Toremove["external_acl_squid.php"]=true;
 		$Toremove["external_acl_restrict_access.php"]=true;
@@ -71,7 +70,6 @@ function MemoryInstances(){
 		$Toremove["exec.auth-tail.php"]=true;
 		$Toremove["exec.artica-filter-daemon.php"]=true;
 		$Toremove["exec.postfix-logger.php"]=true;
-		$Toremove["exec.squid2.logger.php"]=true;
 		$Toremove["exec.openvpn.php"]=true;
 		$Toremove["exec.squid.blacklists.php"]=true;
 		$Toremove["exec.parse-orders.php"]=true;
@@ -91,7 +89,6 @@ function MemoryInstances(){
 		
 		$Toremove["exec.artica-filter-daemon.php"]=true;
 		$Toremove["exec.postfix-logger.php"]=true;
-		$Toremove["exec.squid2.logger.php"]=true;
 		$Toremove["exec.openvpn.php"]=true;
 		$Toremove["exec.schedules.php"]=true;
 		$Toremove["exec.smtp-senderadv.php"]=true;

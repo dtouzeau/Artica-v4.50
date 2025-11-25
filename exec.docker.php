@@ -704,7 +704,6 @@ function install():bool{
     $SERVICES["/etc/init.d/proxy-pac"]="/usr/sbin/artica-phpfpm-service -uninstall-proxypac";
     $SERVICES["/etc/init.d/ufdb"]="/usr/sbin/artica-phpfpm-service -uninstall-ufdb";
     $SERVICES["/etc/init.d/postfix"]="exec.postfix-install.php --uninstall";
-    $SERVICES["/etc/init.d/squid-logger"]="exec.squid-logger.php --uninstall";
     $SERVICES["/etc/init.d/squid"]="/usr/sbin/artica-phpfpm-service -uninstall-proxy";
     $SERVICES["/etc/init.d/nginx"]="/usr/sbin/artica-phpfpm-service -nginx-uninstall";
     $SERVICES["/etc/init.d/dnsfilterd"]="exec.dnsfilterd.php --uninstall";

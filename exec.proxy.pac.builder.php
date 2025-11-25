@@ -403,7 +403,15 @@ function proxy_pac():bool{
 
         list($exprs,$functions)=forced_proxies($ID,$FinishbyDirect,$LBL);
 
-        //$build_hooked=build_hooked($ID,$FinishbyDirect,$LBL);
+        list($EnforceProxy,$Enforcefunctions,$error)=EnforceProxy($ID,$LBL);
+        if(strlen($error)>1){
+            $f[]="// $error";
+        }
+        if(strlen($EnforceProxy)>2){
+            $f[]="";
+            $f[]=$EnforceProxy;
+
+        }
 
        // $f[]="\tif( ForceProxies(DestPort,hostIP,host) ){";
       //  $f[]="\t\t".build_proxies($ID,0,$LBL);
@@ -436,6 +444,9 @@ function proxy_pac():bool{
         }
         if(strlen($functions1)>0) {
             $f[] = $functions1;
+        }
+        if(strlen($Enforcefunctions)>2){
+            $f[]=$Enforcefunctions;
         }
         $f[]=$functions;
         $f[]="function GetPort(TestURL){";
@@ -853,7 +864,7 @@ function matches_time($gpid,$negation,$f){
     return $result;
 
 }
-function build_hooked($ID,$FinishbyDirect,$LBL):array{
+function EnforceProxy($ID,$LBL=0):array{
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 
     $sql="SELECT wpad_black_link.gpid,wpad_black_link.negation,wpad_black_link.zmd5 as mkey,
@@ -867,94 +878,77 @@ function build_hooked($ID,$FinishbyDirect,$LBL):array{
 
     $results = $q->QUERY_SQL($sql);
     $CountObjects=count($results);
-    if($CountObjects==0){return array("BEGIN"=>"// No object found for #$ID","END"=>"");}
-    $BEGIN=array();
-    $END=array();
-    $BEGIN[]="//\tBuilding objects for rule.$ID";
-    $case = 0;
-    $Direct="";
-    if($FinishbyDirect==1){$Direct="DIRECT";}
-    $confirmLBL=false;
-    if(!$q->ok){$BEGIN[]="// $q->mysql_error";}
+    if($CountObjects==0){return array("","",__LINE__." No object for #$ID");}
+
+
+
+    if(!$q->ok){
+        return array("","",__LINE__." $q->mysql_error");
+    }
+    $functionsNames=array();
+    $SubFonctionsContent=array();
+    $ForcedProxies=array();
 
     foreach($results as $index=>$ligne) {
         $gpid=$ligne["gpid"];
         $GroupName=$ligne["GroupName"];
         $negation=$ligne["negation"];
-        $pacpxy=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["pacpxy"]);
-        $pacproxs=array();
-        $count=count($pacpxy);
-        if(count($pacpxy)==0){continue;}
-        if($ligne["GroupType"]=="all"){continue;}
-        foreach ($pacpxy as $xyz=>$pacline){
-            $proxyserver=trim($pacline["hostname"]);
-            if($proxyserver==null){continue;}
-            if($proxyserver=="0.0.0.0"){
-                $pacproxs=array();
-                $pacproxs[]="DIRECT";
-                break;
+        $GroupType=$ligne["GroupType"];
+        if($GroupType=="all"){continue;}
+        $xyz=__LINE__;
+        if($GroupType=="dstproxy"){
+            $temp=build_forced_proxies($gpid);
+            if(count($temp)==0){
+                continue;
             }
-            if(intval($LBL)==1 && $count>1){
-                $proxyport=$pacline["port"];
-                $PREFIX="PROXY";
-                if($pacline["secure"]==1){$PREFIX="HTTPS";}
-                $slaves= "";
-
-                foreach ($pacpxy as $slaveindex=>$slave){
-                    $proxyslaveserver=trim($slave["hostname"]);
-                    if ($proxyslaveserver==$proxyserver){
-                        continue;
-                    }
-                    $proxyslaveport=$slave["port"];
-                    $slaves .= " $PREFIX $proxyslaveserver:$proxyslaveport;";
-                }
-                //$pacproxs[]="$PREFIX $proxyserver:$proxyport";
-                $pacproxs[] = "\n\t\tcase $case: return \"$PREFIX $proxyserver:$proxyport;$slaves $Direct\";";
-                $case = $case+1;
-                $confirmLBL=true;
-
-            } else {
-                $proxyport=$pacline["port"];
-                $PREFIX="PROXY";
-                if($pacline["secure"]==1){$PREFIX="HTTPS";}
-                $pacproxs[]="$PREFIX $proxyserver:$proxyport";
+            foreach ($temp as $ppxy){
+                $PREFIX = "PROXY";
+                $ForcedProxies[]="$PREFIX $ppxy;";
             }
+            continue;
         }
-        if(count($pacproxs)==0){continue;}
-        if ($confirmLBL){
-            $pr=@implode(" ", $pacproxs);
-            $destinations_final="\tswitch (mySeg % {$count}) { $pr \n\t}";
+        $functionsNames[]="ForceGroup$gpid(DestPort,myip,host,url,hostIP)";
+        $SubFonctionsContent[]="";
+        $SubFonctionsContent[]="//\t[$xyz]: Checks Group [$GroupName] ($GroupType)";
+        $SubFonctionsContent[]="function ForceGroup$gpid(DestPort,myip,host,url,hostIP){";
+        if($GroupType=="port"){ $SubFonctionsContent[]=build_whitelist_port($gpid,$negation,false); }
+        if($GroupType=="dstdomain"){ $SubFonctionsContent[]=build_whitelist_dstdomain($gpid,$negation,false); }
+        if($GroupType=="src"){ $SubFonctionsContent[]=build_whitelist_src($gpid,$negation,false); }
+        if($GroupType=="dst"){ $SubFonctionsContent[]=build_whitelist_dst($gpid,$negation,false); }
+        if($GroupType=="srcdomain"){ $SubFonctionsContent[]=build_whitelist_srcdomain($gpid,$negation,false); }
+        if($GroupType=="time"){ $SubFonctionsContent[]=build_whitelist_time($gpid,$negation,false); }
+        if($GroupType=="rgexsrc"){ $SubFonctionsContent[]=build_rgexsrc($gpid,$negation,false); }
+        if($GroupType=="rgexdst"){ $SubFonctionsContent[]=build_rgexdst($gpid,$negation,false); }
 
-        } else {
-            $destinations_final=@implode("; ", $pacproxs);
-        }
-
-        $BEGIN[]="//\t[$xyz]: Checks Group [$GroupName]";
-        $BEGIN[]="\tif( ForceGroup{$gpid}(DestPort,hostIP,host) ){";
-        //$BEGIN[]="\t\treturn \"$destinations_final\";";
-        if($confirmLBL){
-            $BEGIN[] = $destinations_final;
-        } else {
-            $BEGIN[] = "\t\treturn \"$destinations_final\";";
-        }
-        $BEGIN[]="\t}\n";
-
-        $END[]="";
-        $END[]="function ForceGroup{$gpid}(DestPort,hostIP,host){";
-        if($ligne["GroupType"]=="port"){ $END[]=build_whitelist_port($gpid,$negation,false); }
-        if($ligne["GroupType"]=="dstdomain"){ $END[]=build_whitelist_dstdomain($gpid,$negation,false); }
-        if($ligne["GroupType"]=="src"){ $END[]=build_whitelist_src($gpid,$negation,false); }
-        if($ligne["GroupType"]=="dst"){ $END[]=build_whitelist_dst($gpid,$negation,false); }
-        if($ligne["GroupType"]=="srcdomain"){ $END[]=build_whitelist_srcdomain($gpid,$negation,false); }
-        if($ligne["GroupType"]=="time"){ $END[]=build_whitelist_time($gpid,$negation,false); }
-        if($ligne["GroupType"]=="rgexsrc"){ $END[]=build_rgexsrc($gpid,$negation,false); }
-        if($ligne["GroupType"]=="rgexdst"){ $END[]=build_rgexdst($gpid,$negation,false); }
-        $END[]="\treturn false;";
-        $END[]="}";
+        $SubFonctionsContent[]="\treturn false;";
+        $SubFonctionsContent[]="}";
 
 
     }
-    return array("BEGIN"=>@implode("\n",$BEGIN),"END"=>@implode("\n",$END));
+    if(count($functionsNames)==0){
+        return array("","",__LINE__." No function names for #$ID");
+    }
+    $MAINFunctions[]="// if all group matches, then redirect to the proxys";
+    $MAINFunctions[]="function ForceRule$ID(DestPort,myip,host,url,hostIP){";
+    foreach ($functionsNames as $ffunc){
+        $MAINFunctions[]="\tif (!$ffunc){ return false;}";
+    }
+    $MAINFunctions[]="\treturn true;";
+    $MAINFunctions[]="}\n";
+    $MAINFunctions[]=@implode("\n",$SubFonctionsContent);
+
+    if(count($ForcedProxies)==0) {
+        $Proxies = build_proxies($ID, 0, $LBL);
+    }else{
+        $Proxies="return \"".@implode(" ",$ForcedProxies)."\";";
+    }
+
+    $HEAD[]="if ( ForceRule$ID(DestPort,myip,host,url,hostIP) ) {";
+    $HEAD[]=$Proxies;
+    $HEAD[]="}";
+
+
+    return array(implode("\n",$HEAD),implode("\n",$MAINFunctions),"");
 
 }
 function build_forced($ID){
@@ -1222,6 +1216,24 @@ function build_whitelist_dstdomain($gpid,$negation,$return_direct=true):string{
         return @implode("\n", $f);
     }
     return "";
+}
+function build_forced_proxies($gpid):array{
+    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+    $sql="SELECT pattern FROM webfilters_sqitems WHERE gpid=$gpid AND enabled=1";
+    $results = $q->QUERY_SQL($sql);
+    if(!$q->ok){
+        pack_debug("Group:[$gpid] FATAL !! $q->mysql_error",__FUNCTION__,__LINE__);
+        return array();
+    }
+    $f=array();
+    foreach($results as $index=>$ligne) {
+        $pattern=trim(strtolower($ligne["pattern"]));
+        if(strpos(" $pattern", ":")==0) {
+            continue;
+        }
+        $f[]=$pattern;
+    }
+    return $f;
 }
 function build_whitelist_dst($gpid,$negation,$return_direct=true){
     $ip=new IP();
@@ -1690,7 +1702,12 @@ function cdirToNetmask($net):string{
     return "";
 }
 
-function build_proxies($ID,$FinishbyDirect=0,$LBL=0){
+function build_proxies_acls($ID){
+
+
+}
+
+function build_proxies($ID,$FinishbyDirect=0,$LBL=0):string{
     $sql="SELECT * FROM `wpad_destination` WHERE aclid=$ID AND enabled=1 ORDER BY zorder";
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     patch_tables();

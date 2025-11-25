@@ -241,7 +241,7 @@ function features():bool{
     $SQUID_RESTFULL=$features->SQUID_RESTFULL();
     $SQUID_CACHE=$features->SQUID_CACHE();
     $SQUID_PARENTS=$features->SQUID_PARENTS();
-// $APP_ARTICALOGGER=$features->APP_ARTICALOGGER();
+
 //  $UFDBGUARD=$features->UFDBGUARD();
 //    $PERSONAL_CATEGORIES=$features->PERSONAL_CATEGORIES();
     $ACTIVEDIRECTORY=$features->ACTIVEDIRECTORY();

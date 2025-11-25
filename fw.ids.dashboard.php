@@ -342,6 +342,20 @@ function flat_config():bool{
     $GlobalConfig=$jsonStatus->Info;
     $error="";
 
+    $jsReconfigure=$tpl->framework_buildjs("suricata:/suricata/reconfigure",
+        "suricata.reconfigure.progress",
+        "suricata.reconfigure.progress.txt","progress-suricata-restart",
+        ""
+    );
+
+    if (!$jsonStatus->PersoRules){
+        $btn="<div style='margin:30px;text-align:right'>".$tpl->button_autnonome("{reconfigure}", $jsReconfigure, ico_retweet, "AsFirewallManager", 350, "btn-primary", 80)."</div>";
+        $error=$tpl->div_error("{configuration}||{out_of_acls}<br>$btn");
+
+
+    }
+
+
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/pfring"));
     if(!$json->Status){
         $btn="<div style='margin:30px;text-align:right'>".$tpl->button_autnonome("{install}", "Loadjs('fw.system.upgrade-software.php?product=APP_XTABLES')", ico_cd, "AsFirewallManager", 350, "btn-primary", 80)."</div>";

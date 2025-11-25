@@ -94,7 +94,19 @@ function search(){
 
     foreach ($json->Logs as $line){
 		$sline=json_decode(trim($line));
+        if (json_last_error()> JSON_ERROR_NONE) {
+            $lastmes=json_last_error_msg();
+            $html[]="<tr>
+				<td >-</td>
+				<td >-</td>
+				<td><span class='text-error'>$lastmes</span></td>
+				</tr>";
+            continue;
+        }
 
+        if(!property_exists($sline,"level")){
+           continue;
+        }
 
         $date=$tpl->time_to_date($sline->time,true);
         $dLevel=$LEVELS[strtoupper($sline->level)];

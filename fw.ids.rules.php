@@ -10,7 +10,7 @@ if(isset($_GET["filter-categories-popup"])){filter_categories_popup();exit;}
 if(isset($_GET["filter-classifications-js"])){filter_classifications();exit;}
 if(isset($_GET["filter-classifications-popup"])){filter_classifications_popup();exit;}
 
-
+if(isset($_GET["disable-all-js"])){disable_all_js();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["enable-signature"])){enable_signature();exit;}
@@ -149,8 +149,21 @@ function enable_all_rules():bool{
 
     return admin_tracks("Enable all IDS rule from category $cat");
 }
+function disable_all_js():bool{
+    $function=$_GET["function"];
+    $tpl=new template_admin();
+    $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
+    $q->QUERY_SQL("UPDATE rules SET enabled=0");
+    if(!$q->ok){
+        echo $tpl->js_error($q->mysql_error);
+        return false;
+    }
+    header("content-type: application/x-javascript");
+    echo $function."()\n";
+    return admin_tracks("Disable all IDS rules from all categories.");
+}
 function disable_all_rules():bool{
-    $page=CurrentPageName();
+
     $function=$_GET["function"];
     $tpl=new template_admin();
     $cat=$_GET["disable-all-rules"];
@@ -165,7 +178,7 @@ function disable_all_rules():bool{
     header("content-type: application/x-javascript");
     echo $function."()\n";
 
-    return admin_tracks("Disable all IDS rule from category $cat");
+    return admin_tracks("Disable all IDS rules from category $cat");
 }
 function enable_all_family():bool{
     $page=CurrentPageName();
@@ -475,8 +488,11 @@ function search(){
     $topbuttons[] = array("Loadjs('$page?filter-categories-js=yes&function=$function')",ico_books,"{categories}");
     $topbuttons[] = array("Loadjs('$page?filter-classifications-js=yes&function=$function')",ico_folder,"{categories_groups}");
 
+
     $t=time();
+    $topbuttons[] = array("Loadjs('$page?disable-all-js=yes&function=$function')",ico_trash,"{disable_all}");
     $topbuttons[] = array($jscompile,ico_save,"{apply_changes}");
+
     $TINY_ARRAY["TITLE"]="{IDS} {rules} <span id='ids-rules-$t'><span class='fa fa-refresh fa-spin'></span></span>";
     $TINY_ARRAY["ICO"]="fa fa-list";
     $TINY_ARRAY["EXPL"]="{ids_rules_explain}";

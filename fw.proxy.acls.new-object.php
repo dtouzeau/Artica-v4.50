@@ -103,6 +103,7 @@ function popup(){
 
 
     if($ProxyPac==0){
+        unset($qProxy->acl_GroupType["dstproxy"]);
         unset($qProxy->acl_GroupType["srcproxy"]);
         unset($qProxy->acl_GroupType["rgexsrc"]);
         unset($qProxy->acl_GroupType["rgexdst"]);

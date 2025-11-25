@@ -3285,3 +3285,8 @@ The existing template is corrupted or outdated.</filbeat_template_overwrite>
 <filbeat_noaddr>The Filebeat service cannot start if you have not specified the Elasticsearch server address.</filbeat_noaddr>
 <acked_events>Acked events</acked_events>
 <dstserv>To this server</dstserv>
+<and_if_it_request_using>And if the client sends a request using</and_if_it_request_using>
+<out_of_acls>Your ACL rules are currently out of sync with the system.[br]Click the reconfiguration button to apply and activate your custom rule set.</out_of_acls>
+<pw_it_should_take_time>Please wait, it should take time</pw_it_should_take_time>
+<dstproxy>Destination proxy server(s)</dstproxy>
+<dstproxy_explain>[b]Force[/b] the use of a proxy server list.[br]This object is used in the [b]Force[/b] section of this rule.</dstproxy_explain>

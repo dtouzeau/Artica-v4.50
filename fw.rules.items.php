@@ -558,7 +558,11 @@ function item_tabs(){
 
     VERBOSE("$groupid == {$ligne["bulkimport"]}",__LINE__);
     $STR_BULK=false;
-    if(strlen($ligne["bulkimport"])>6){$STR_BULK=true;}
+    if(!is_null($ligne["bulkimport"])) {
+        if (strlen($ligne["bulkimport"]) > 6) {
+            $STR_BULK = true;
+        }
+    }
 
     if($GroupType=="spamc"){
         $array["{spamc}"]="$page?item-start=$groupid{$URL_ADDONS}";
@@ -2569,7 +2573,7 @@ function itype_save():bool{
         $sql = "INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) VALUES " . @implode(",", $SQ);
         $q->QUERY_SQL($sql);
     }
-    $GLOBALS["CLASS_SOCKETS"]->REST_SURICATA("/build/acls");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/acls");
     return true;
 
 }

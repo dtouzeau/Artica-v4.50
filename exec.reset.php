@@ -42,7 +42,6 @@ function startx():bool{
     $SERVICES["/etc/init.d/ufdb"]="/usr/sbin/artica-phpfpm-service -uninstall-ufdb";
     squid_admin_mysql(0,"Reseting all parameters!",null,__FILE__,__LINE__);
     $SERVICES["/etc/init.d/postfix"]="exec.postfix-install.php --uninstall";
-    $SERVICES["/etc/init.d/squid-logger"]="exec.squid-logger.php --uninstall";
     $SERVICES["/etc/init.d/squid"]="/usr/sbin/artica-phpfpm-service -uninstall-proxy";
     $SERVICES["/etc/init.d/nginx"]="/usr/sbin/artica-phpfpm-service -nginx-uninstall";
     $SERVICES["/etc/init.d/dnsfilterd"]="exec.dnsfilterd.php --uninstall";

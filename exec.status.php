@@ -860,7 +860,7 @@ if (isset($argv[1])) {
     }
 
     if ($argv[1] == "--elasticsearch") {
-        echo elasticsearch() . "\n" . squid_logger();
+        echo elasticsearch();
         exit();
     }
     if ($argv[1] == "--all-postfix") {
@@ -1952,7 +1952,7 @@ function launch_all_status($force = false){
 
 
     $functions = array("Default_values", "gam_server",  "glances", "elasticsearch",
-        "squid_logger",  "load_stats", "watchdog_me_load",  "bandwidthd", "unifi_mongodb", "unifi",
+          "load_stats", "watchdog_me_load",  "bandwidthd", "unifi_mongodb", "unifi",
         "prads", "Popuplate_cron", "squid_dashboard_statistics",
         "APP_WHAZU_AGENT","APP_ARTICAPCAP",
         "philesight", "cron",  "disks_monitor",    "netdata","TAILSCALE_STATUS","VASD_STATUS","ZEBRA_STATUS","OSPF_STATUS","APP_URBACKUP","rustdesk","MANTICORE_STATUS",
@@ -2549,20 +2549,7 @@ function wpa_supplicant()
 }
 
 // ========================================================================================================================================================
-function arp_spoof()
-{
-    if (!$GLOBALS["CLASS_USERS"]->ETTERCAP_INSTALLED) {
-        return null;
-    }
-    $enabled = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArpSpoofEnabled");
-    if (!is_numeric($enabled)) {
-        $enabled = 0;
-    }
-    if ($enabled == 0) {
-        return;
-    }
-    shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.arpspoof.php --start >/dev/null 2>&1 &");
-}
+
 
 // ========================================================================================================================================================
 function fetchmail_version()

@@ -235,7 +235,6 @@ function status(){
 
 	
 	echo $tpl->SERVICE_STATUS($ini, "APP_ELASTICSEARCH",$jsrestart);
-	//echo $tpl->SERVICE_STATUS($ini, "APP_ARTICALOGGER",$jsrestart_logger);
 	$database_size=$tpl->_ENGINE_parse_body("{database_size}");
 
     $result=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ELASTICSEARCH_STATUS");
