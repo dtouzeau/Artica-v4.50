@@ -16,6 +16,7 @@ if(isset($_GET["import-js"])){import_js();exit;}
 if(isset($_GET["externalALCLDAPRecursive"])){externalALCLDAPRecursive();exit;}
 if(isset($_GET["externalALCLDAPRecursive-popup"])){externalALCLDAPRecursive_popup();exit;}
 if(isset($_GET["externalALCLDAPRecursive-switch"])){externalALCLDAPRecursive_switch();exit;}
+if(isset($_GET["export-js"])){export_js();exit;}
 if(isset($_GET["rule-code"])){rule_code();exit;}
 if(isset($_GET["proxy-acls-bugs"])){proxy_acls_bugs();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -63,6 +64,40 @@ function SquidAclFinishDeny_js():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/localnets");
     return admin_tracks("Modify the final proxy acl rules by accepting all nodes");
 }
+function export_js(){
+
+    $ID=intval($_GET["export-js"]);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/export/$ID"));
+    if(!$json->Status){
+        echo "<html lang='en'><head></head><body><H1 style='color;red'>$json->Error</H1></body></html>";
+        return false;
+    }
+    $data=$json->export;
+    $fsize=strlen($data);
+    $timestamp =time();
+    $etag = md5($data);
+    if($GLOBALS["VERBOSE"]) {
+        echo $data . "\n";
+        return true;
+    }
+
+    $tsstring = gmdate('D, d M Y H:i:s ', $timestamp) . 'GMT';
+    header("Content-Length: ".$fsize);
+    header('Content-type: application/json');
+    header('Content-Transfer-Encoding: binary');
+    header("Content-Disposition: attachment; filename=\"ids.rule.$ID.json\"");
+    header("Cache-Control: no-cache, must-revalidate");
+    header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', $timestamp + (60 * 60)));
+    header("Last-Modified: $tsstring");
+    header("ETag: \"$etag\"");
+    header("Content-Length: ".$fsize);
+    ob_clean();
+    flush();
+    echo $data;
+
+}
+
+
 function opts_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -138,7 +173,8 @@ function export_rule_download(){
 function import_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    return $tpl->js_dialog1("{import}","$page?import-popup=yes",550);
+    $function=$_GET["function"];
+    return $tpl->js_dialog1("{import}","$page?import-popup=yes&function=$function",550);
 }
 function externalALCLDAPRecursive():bool{
     $page=CurrentPageName();
@@ -186,23 +222,26 @@ function externalALCLDAPRecursive_switch():bool{
 function import_popup(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $html[]=$tpl->div_explain("{import}||{import_acl_explain}");
-    $html[]="<div class='center' style='margin: 30px'>".$tpl->button_upload("{upload_a_file}",$page)."</div>";
+    $function = $_GET["function"];
+    $html[]=$tpl->div_explain("{import}||{import_acl_ids_explain}");
+    $html[]="<div class='center' style='margin: 30px'>".$tpl->button_upload("{upload_a_file}",$page,null,"&function=$function")."</div>";
     echo $tpl->_ENGINE_parse_body($html);
 }
-function import_uploaded_js(){
+function import_uploaded_js():bool{
     $tpl=new template_admin();
+    $function = $_GET["function"];
     $filename   = $_GET["file-uploaded"];
     $fileencode = urlencode($filename);
     $page=CurrentPageName();
 
-    admin_tracks("$filename was uploaded to Proxy ACLs rules");
+    admin_tracks("$filename was uploaded to IDS ACLs rules");
     header("content-type: application/x-javascript");
-    $js=$tpl->framework_buildjs("squid2.php?acls-import-file=$fileencode",
-        "acls.parse",
-        "acls.logs","progress-acls-restart","LoadAjax('table-acls-rules','$page?table=yes');");
+    $js=$tpl->framework_buildjs("suricata:/acls/import/$fileencode",
+        "suricata.acls.parse",
+        "acls.logs","progress-acls-restart","$function()");
 
     echo "dialogInstance1.close();\n$js\n";
+    return true;
 
 }
 function export_acls(){
@@ -262,24 +301,25 @@ function change_order_save(){
     if(!$q->ok){echo $q->mysql_error;}
 
 }
-function rule_delete_js(){
+function rule_delete_js():bool{
     $ID         = $_GET["rule-delete-js"];
     $md         = "acl-$ID";
     $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT aclname,aclgroup FROM suricata_sqacllinks WHERE ID='$ID'");
+    $ligne      = $q->mysqli_fetch_array("SELECT aclname,aclgroup FROM suricata_sqacls WHERE ID='$ID'");
 
     if(intval($ligne["aclgroup"])==1){
         $tpl=new template_admin();
         $aclname=$ligne["aclname"];
         $tpl->js_confirm_delete("{group_of_rules}<br><strong>$aclname</strong><br>{group_of_rules_delete_ask}","rule-delete-confirm",$ID,"$('#$md').remove();");
-        return;
+        return true;
     }
 
 	header("content-type: application/x-javascript");
 
 
-	if(!rule_delete($ID)){return;}
+	if(!rule_delete($ID)){return true;}
 	echo "$('#$md').remove();";
+    return true;
 }
 function rule_delete_confirm():bool{
     $ID         = $_POST["rule-delete-confirm"];
@@ -324,7 +364,7 @@ function duplicate_rule($ID_SRC,$NewAClGPID=0){
 
     $TempName=md5(time());
 
-    $sql="INSERT INTO suricata_sqacllinks (aclname,enabled,acltpl,xORDER,aclport,aclgroup,aclgpid,zExplain,zTemplate,description)
+    $sql="INSERT INTO suricata_sqacls (aclname,enabled,acltpl,xORDER,aclport,aclgroup,aclgpid,zExplain,zTemplate,description)
 	VALUES ('$TempName',$enabled,'$acltpl','$xORDER','$aclport','$aclgroup','$aclgpid','$zExplain','$zTemplate','$description')";
     $q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return 0;}
@@ -894,7 +934,7 @@ function TINY_PAGE($return=false):string{
     $function       = $_GET["function"];
 
     $add="Loadjs('$page?newrule-js=yes&gprule=$gprule&function=$function',true);";
-    $jsimport="Loadjs('$page?import-js=yes');";
+    $jsimport="Loadjs('$page?import-js=yes&function=$function');";
     $users=new usersMenus();
     $topbuttons=array();
 
@@ -938,9 +978,6 @@ function table_builder():bool{
     if(!isset($_GET["gprule"])){$_GET["gprule"]=0;}
     $tpl            = new template_admin();
 	$page           = CurrentPageName();
-	$eth_sql        = null;
-	$token          = null;
-	$class          = null;
 	$order          = $tpl->_ENGINE_parse_body("{order}");
 	$rulename       = $tpl->_ENGINE_parse_body("{rulename}");
 	$description    = $tpl->_ENGINE_parse_body("{description}");
@@ -949,7 +986,6 @@ function table_builder():bool{
     $search         = $_GET["search"];
     $function       = $_GET["function"];
 
-	$class=null;
     $getCurrentRules=getCurrentRules();
 	$t=md5(time()."{$_GET["gprule"]}".microtime(true));
 
@@ -967,16 +1003,17 @@ function table_builder():bool{
         $TableClass="footable ";
     }
 
+    $th1="data-sortable=true class='text-capitalize' data-type='text'";
     $html[]="<table id='table-ids-rules-$t' class=\"{$TableClass}table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th $data1>$order</th>";
     $html[]="<th $data1>{status}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>$rulename</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$description}</th>";
+	$html[]="<th  nowrap>$rulename</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$description</th>";
     $html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false>{copy}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center'>$enabled</th>";
+	$html[]="<th data-sortable=false>{export}</th>";
+    $html[]="<th $th1>$enabled</th>";
 	$html[]="<th data-sortable=false></th>";
 	$html[]="<th data-sortable=false></th>";
 	$html[]="<th data-sortable=false></th>";
@@ -1072,16 +1109,18 @@ function table_builder():bool{
         $rule_status=td_status($ligne,$getCurrentRules);
         $td_name=$tpl->td_href($aclname,"{click_to_edit}",$js);
 
+        $dCet="style='vertical-align:middle;width:1%' nowrap";
+        $dCenter="class=\"center\" style='width:1%' nowrap";
 		$html[]="<tr class='$TRCLASS$MUTED' id='acl-$ID'>";
-		$html[]="<td class=\"center\" style='width:1%' nowrap >$row_order</td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  nowrap><span id='ids-status-$ID'>$rule_status</span></td>";
-		$html[]="<td style='vertical-align:middle;width:1%'  nowrap>$td_name</td>";
+		$html[]="<td $dCenter>$row_order</td>";
+        $html[]="<td $dCet><span id='ids-status-$ID'>$rule_status</span></td>";
+		$html[]="<td $dCet>$td_name</td>";
 		$html[]="<td style='vertical-align:middle'><div id='ids-explain-$ID'>$explain</div></td>";
-        $html[]="<td class='center' style='width:1%' nowrap></td>";
-        $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_copy("Loadjs('$page?duplicate-js=$ID')","AsFirewallManager")."</td>";
-		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsFirewallManager")."</td>";
-		$html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
-		$html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$delete</center></td>";
+        $html[]="<td $dCenter></td>";
+        $html[]="<td $dCenter>".$tpl->icon_export("window.location.href ='$page?export-js=$ID'","AsFirewallManager")."</td>";
+		$html[]="<td $dCenter>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsFirewallManager")."</td>";
+		$html[]="<td $dCenter>$up&nbsp;&nbsp;$down</center></td>";
+		$html[]="<td $dCenter>$delete</center></td>";
 		$html[]="</tr>";
 	
 	}
@@ -1242,7 +1281,7 @@ function new_rule_save():bool{
 }
 function rule_delete($ID):bool{
 	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->QUERY_SQL("SELECT aclname FROM suricata_sqacllinks WHERE ID=$ID");
+    $ligne=$q->QUERY_SQL("SELECT aclname FROM suricata_sqacls WHERE ID=$ID");
     $aclname=$ligne["aclname"];
     if(!$q->ok){echo "alert('".$q->mysql_error."');";return false;}
 	$q->QUERY_SQL("DELETE FROM suricata_sqacls WHERE ID='$ID'");
@@ -1251,6 +1290,7 @@ function rule_delete($ID):bool{
 	$results = $q->QUERY_SQL($sql);
 	foreach($results as $index=>$ligne) {rule_delete($ligne["ID"]);}
 	admin_tracks("Remove $aclname ACL IDS rule");
+    $q->QUERY_SQL("DELETE FROM suricata_sqacllinks WHERE aclid='$ID'");
     return true;
 }
 

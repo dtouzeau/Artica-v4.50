@@ -14,6 +14,7 @@ if(isset($_GET["alienvault-js"])){alienvault_js();exit;}
 if(isset($_GET["alienvault-parameters"])){alienvault_parameters();exit;}
 if(isset($_POST["OtxEnabled"])){alienvault_save();exit;}
 if(isset($_POST["EnableWazuh"])){wazuh_save();exit;}
+if(isset($_POST["EnableFileBeat"])){filebeat_save();exit;}
 
 if(isset($_GET["log-types"])){log_types_js();exit;}
 if(isset($_GET["log-types-parameters"])){log_types_parameters();exit;}
@@ -40,6 +41,7 @@ if(isset($_GET["interface-js"])){interface_js();exit;}
 if(isset($_GET["interface-popup"])){interface_popup();exit;}
 if(isset($_GET["interface-layer"])){interface_layer();exit;}
 if(isset($_GET["wazuh"])){wazuh();exit;}
+if(isset($_GET["filebeat"])){filebeat();exit;}
 
 page();
 
@@ -182,6 +184,7 @@ function log_types_tabs():bool{
     $page=CurrentPageName();
     $array["{traffic_logging}"]="$page?log-types-parameters=yes";
     $array["{APP_WAZHU}"]="$page?wazuh=yes";
+    $array["{APP_FILEBEAT}"]="$page?filebeat=yes";
     echo $tpl->tabs_default($array);
     return true;
 }
@@ -548,8 +551,45 @@ function Save_gen(){
 	$sock->SET_INFO("SuricataPurges", $_POST["SuricataPurges"]);	
 }
 
+function filebeat():bool{
+    $tpl=new template_admin();
+    $APP_FILEBEAT_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_FILEBEAT_INSTALLED"));
+    if($APP_FILEBEAT_INSTALLED==0) {
+        $js = "dialogInstance1.close();Loadjs('fw.system.upgrade-software.php?product=APP_FILEBEAT');";
+        $btn=$tpl->button_autnonome("{install} {APP_FILEBEAT}",$js,ico_cd,"AsSquidAdministrator",350,"btn-primary",80);
+        $html[]= "<p class='alert alert-warning' style='margin-top:20px'>{filebeat_not_installed_ids}</p>";
+        $html[]= "<p style='margin-top:10px;text-align: right;margin-right:20px'>$btn</p>";
+        echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+        return true;
+    }
+    $EnableFileBeat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFileBeat"));
+
+    if($EnableFileBeat==0){
+        $js=$tpl->framework_buildjs("/filebeat/install","filebeat.progress","filebeat.progress.log","filebeat-install");
+        $btn=$tpl->button_autnonome("{install} {APP_FILEBEAT}",$js,ico_cd,"AsSquidAdministrator",350,"btn-primary",80);
+
+        $html[]= "<div id='filebeat-install'></div>";
+        $html[]= "<p class='alert alert-warning' style='margin-top:20px'>{filebeat_not_enabled_ids}</p>";
+        $html[]= "<p style='margin-top:10px;text-align: right;margin-right:20px'>$btn</p>";
+        echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+        return true;
+    }
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        $html[]=$tpl->div_error("{error} API||$json->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+
+    $Enabled=$json->Info->Filebeat->Enabled;
+
+    echo "<p>".$tpl->BigCircleCheckbox("EnableFileBeat", "{APP_FILEBEAT}","{filebeat_siem_explain}", $Enabled, "dialogInstance1.close();")."</p>";
+    return true;
+
+}
+
 function wazuh():bool{
-    $page=CurrentPageName();
     $tpl=new template_admin();
 
     $APP_WAZHU_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_WAZHU_INSTALLED"));
@@ -557,7 +597,7 @@ function wazuh():bool{
     if($APP_WAZHU_INSTALLED==0){
         $js="dialogInstance1.close();Loadjs('fw.system.upgrade-software.php?product=APP_WAZHU');";
         $btn=$tpl->button_autnonome("{install} {APP_WAZHU}",$js,ico_cd,"AsSquidAdministrator",350,"btn-primary",80);
-        $html[]= "<p class='alert alert-warning'>{wazuh_not_installed_ids}</p>";
+        $html[]= "<p class='alert alert-warning' style='margin-top:20px'>{wazuh_not_installed_ids}</p>";
         $html[]= "<p style='margin-top:10px;text-align: right;margin-right:20px'>$btn</p>";
         echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
         return true;
@@ -567,14 +607,14 @@ function wazuh():bool{
         $btn=$tpl->button_autnonome("{install} {APP_WAZHU}",$js,ico_cd,"AsSquidAdministrator",350,"btn-primary",80);
 
         $html[]= "<div id='wazuh-install'></div>";
-        $html[]= "<p class='alert alert-warning'>{wazuh_not_enabled_ids}</p>";
+        $html[]= "<p class='alert alert-warning' style='margin-top:20px'>{wazuh_not_enabled_ids}</p>";
         $html[]= "<p style='margin-top:10px;text-align: right;margin-right:20px'>$btn</p>";
         echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
         return true;
     }
     $WazhuClientEnrollment=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WazhuClientEnrollment"));
     if($WazhuClientEnrollment==0){
-        $html[]= "<p class='alert alert-warning'>{wazuh_not_enrollment_ids}</p>";
+        $html[]= "<p class='alert alert-warning' style='margin-top:20px'>{wazuh_not_enrollment_ids}</p>";
         echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
         return true;
     }
@@ -598,5 +638,13 @@ function wazuh_save():bool{
     $tpl->CLEAN_POST();
     $Enable=$_POST["EnableWazuh"];
     $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/wazuh-enable/$Enable");
-    return admin_tracks("Forward evetrs to Wazuh: $Enable");
+    return admin_tracks("Forward events to Wazuh: $Enable");
+}
+function filebeat_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $Enable=$_POST["EnableFileBeat"];
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/filebeat-enable/$Enable");
+    return admin_tracks("Forward events to FileBeat: $Enable");
+
 }

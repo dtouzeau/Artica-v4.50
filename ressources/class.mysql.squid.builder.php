@@ -182,6 +182,7 @@ class mysql_squid_builder{
         $this->acl_GroupType["srcproxy"]="{srcproxy}";
         $this->acl_GroupType["dstproxy"]="{dstproxy}";
         $this->acl_GroupType["the_shields"]="{KSRN}";
+        $this->acl_GroupType["itype"]="{itype}";
        // $this->acl_GroupType["reputation"]="{use_reput_service}";
 
         $this->acl_GroupTypeIcon["ssl_error"]=ico_ssl;

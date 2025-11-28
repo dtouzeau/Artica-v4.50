@@ -1311,7 +1311,7 @@ function save(){
 
     $APP_NGINX_CONSOLE_HTTPV2    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NGINX_CONSOLE_HTTPV2"));
 
-    if($APP_NGINX_CONSOLE_HTTPV2==1){
+    if($APP_NGINX_CONSOLE_HTTPV2==0){
         $_POST["UseHttp2"]=0;
     }
 

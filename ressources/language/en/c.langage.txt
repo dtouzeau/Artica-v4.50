@@ -3290,3 +3290,9 @@ The existing template is corrupted or outdated.</filbeat_template_overwrite>
 <pw_it_should_take_time>Please wait, it should take time</pw_it_should_take_time>
 <dstproxy>Destination proxy server(s)</dstproxy>
 <dstproxy_explain>[b]Force[/b] the use of a proxy server list.[br]This object is used in the [b]Force[/b] section of this rule.</dstproxy_explain>
+<import_acl_ids_explain>This section lets you upload a rule file in [b]JSON[/b] format.[br]Use it to re-import Artica IDS rules that you previously exported.</import_acl_ids_explain>
+<filebeat_not_installed_ids>The FileBeat agent is not installed on this machine, so Artica cannot send alerts to your ElasticSearch server.[br]Artica uses the FileBeat agent as an intermediary for communications.</filebeat_not_installed_ids>
+<filebeat_not_enabled_ids>The Filebeat agent is installed on your server’s disk, but the service has not been enabled (permanently installed into the system). For now, it remains inactive.[br]
+Install it if you want to use it.</filebeat_not_enabled_ids>
+<filebeat_siem_explain>Send IDS events to the ElasticSearch platform through the FileBeat agent installed on your Artica server.</filebeat_siem_explain>
+<ssl.verification_mode>SSL verification mode</ssl.verification_mode>

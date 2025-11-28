@@ -1299,10 +1299,23 @@ class left_menus{
         $sensor=ico_sensor;
         $tpl=new template_admin();
         $f[]="<!-- IDS START ".__LINE__." -->";
-        $f[]="<!-- EnableSuricata = $EnableSuricata -->";
+        $f[]="<!-- EnableSuricata = $EnableSuricata SURICATA_WIZARD=$SURICATA_WIZARD -->";
         $f[]="                <li id='left-menu'>";
         $f[]="                    <a href='#' ><i class=\"$sensor\"></i> <span class=\"nav-label\">IDS</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
+
+        if($EnableSuricata==0 && $SURICATA_WIZARD==1) {
+
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.ids.wizard.php",
+                    "ICO" => ico_cd,
+                    "TEXT" => "{use_the_wizard}")
+            );
+            $f[] = "					 </ul>";
+            $f[] = "                </li>";
+            $f[] = "<!-- IDS END -->";
+            return @implode("\n", $f);
+        }
 
         if($EnableSuricata==1) {
 
@@ -1316,6 +1329,11 @@ class left_menus{
                     "ICO" => "fas fa-list",
                     "TEXT" => "Acls" )
             );
+
+            $f[]=$tpl->LeftMenu(
+                array("PAGE"=>"fw.proxy.objects.list.php?ids=yes",
+                    "ICO"=>"fas fa-cubes","TEXT"=>"{firewall_objects}",
+                ) );
 
             $f[] = "<li id='left-menu'>";
             $f[] = "<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.rules.php');\">
@@ -1351,8 +1369,6 @@ class left_menus{
                 ));
 
         }
-
-
 
         $f[]="					 </ul>";
         $f[]="                </li>";

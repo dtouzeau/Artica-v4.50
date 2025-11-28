@@ -530,7 +530,13 @@ function suricata_field_events($tpl,$json){
     }
     $forwd[]="{to_artica_db}";
     $Wazuh=iswazuh($GlobalConfig);
-
+    if(strlen($Wazuh)>0){
+        $forwd[]=$Wazuh;
+    }
+    $isFileBeat=isFileBeat($GlobalConfig);
+    if(strlen($isFileBeat)>0){
+        $forwd[]=$isFileBeat;
+    }
 
     $text=sprintf("<small>%s %s</small>",implode(" {and} ",$tt),implode(" {and} ",$forwd));
 
@@ -721,28 +727,59 @@ function suricata_main_status():string{
 }
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}
 
+
+
+function isFileBeat($json):string{
+    $APP_FILEBEAT_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_FILEBEAT_INSTALLED"));
+    $EnableFileBeat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFileBeat"));
+    if($APP_FILEBEAT_INSTALLED==0){
+        return "";
+    }
+    if($EnableFileBeat==0){
+        return "";
+
+    }
+
+    $Enabled=$json->Filebeat->Enabled;
+    if ($Enabled==0){
+        return "";
+    }
+    return "{APP_FILEBEAT}";
+
+}
+
 function iswazuh($json):string{
-    $page=CurrentPageName();
-    $tpl=new template_admin();
+    $Enabled=$json->Wazuh->Enabled;
 
     $APP_WAZHU_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_WAZHU_INSTALLED"));
     $EnableWazhuCLient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWazhuCLient"));
     if($APP_WAZHU_INSTALLED==0){
+        if($Enabled==1){
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/wazuh-enable/0");
+        }
         return "";
     }
     if($EnableWazhuCLient==0){
+        if($Enabled==1) {
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/wazuh-enable/0");
+        }
         return "";
 
     }
     $WazhuClientEnrollment=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WazhuClientEnrollment"));
     if($WazhuClientEnrollment==0){
+        if($Enabled==1) {
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/wazuh-enable/0");
+        }
         return "";
     }
-    $Enabled=$json->Wazuh->Enabled;
+
+
+
     if ($Enabled==0){
         return "";
     }
-    return "{and} {APP_WAZHU}";
+    return "{APP_WAZHU}";
 
 
 }

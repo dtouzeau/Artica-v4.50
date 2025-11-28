@@ -120,6 +120,13 @@ function page(){
         $addons="&firewall=yes";
         $firewall_query=1;
     }
+    if(isset($_GET["ids"])){
+        $title="{firewall_objects}";
+        $Explain="{firewall_objects_explain}";
+        $links="ids-objects";
+        $addons="&firewall=yes";
+        $firewall_query=1;
+    }
     $titleenc=urlencode($title);
     $Explainenc=urlencode($Explain);
     $error=null;
@@ -360,6 +367,11 @@ function table(){
 function WHICH_RULE_OBJECT($ID):string{
     $tpl=new template_admin();
     if(!isset($GLOBALS["WHICH_RULE_OBJECT_WPAD"])){$GLOBALS["WHICH_RULE_OBJECT_WPAD"]=WHICH_RULE_OBJECT_WPAD();}
+
+    if(!isset($GLOBALS["WHICH_RULE_OBJECT_SURICATA"])){
+        $GLOBALS["WHICH_RULE_OBJECT_SURICATA"]=WHICH_RULE_OBJECT_SURICATA();
+    }
+
     $RULES=array();
     $i=0;
     if(isset($GLOBALS["LoadRulesInMemory"][$ID])) {
@@ -400,7 +412,6 @@ function WHICH_RULE_OBJECT($ID):string{
     if(!isset($GLOBALS["WHICH_RULE_OBJECT_WPAD"][$ID])){
         VERBOSE("$ID !isset WHICH_RULE_OBJECT_WPAD",__LINE__);
     }
-
     if(isset($GLOBALS["WHICH_RULE_OBJECT_WPAD"][$ID])){
         foreach ($GLOBALS["WHICH_RULE_OBJECT_WPAD"][$ID] as $ruletext){
             $i++;
@@ -409,6 +420,16 @@ function WHICH_RULE_OBJECT($ID):string{
             $RULES[]="$class$ruletext";
 
         }
+    }
+    if(isset($GLOBALS["WHICH_RULE_OBJECT_SURICATA"][$ID])) {
+        foreach ($GLOBALS["WHICH_RULE_OBJECT_SURICATA"][$ID] as $ruletext){
+            $i++;
+            if($i>9){$i=1;}
+            $class="<i class='fa-solid fa-circle-$i'></i>&nbsp;";
+            $RULES[]="$class$ruletext";
+
+        }
+
     }
 
     if(count($RULES)==0){
@@ -449,7 +470,7 @@ function WHICH_RULE_OBJECT_WPAD():array{
 				wpad_rules.enabled,
 				wpad_rules.ID as aclid,
 				wpad_white_link.gpid 
-				FROM wpad_sources_link,wpad_rules 
+				FROM wpad_white_link,wpad_rules 
 				WHERE wpad_white_link.aclid=wpad_rules.ID");
 
     if(!$q->ok){
@@ -464,4 +485,30 @@ function WHICH_RULE_OBJECT_WPAD():array{
 
     return $array;
 }
+function WHICH_RULE_OBJECT_SURICATA():array{
+    $array=array();
+    $tpl=new template_admin();
+    $function=$_GET["function"];
+    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+    $results = $q->QUERY_SQL("SELECT 
+                suricata_sqacls.aclname,
+				suricata_sqacls.enabled,
+				suricata_sqacls.ID as aclid,
+				suricata_sqacllinks.gpid 
+				FROM suricata_sqacllinks,suricata_sqacls 
+				WHERE suricata_sqacllinks.aclid=suricata_sqacls.ID");
 
+    if(!$q->ok){
+        VERBOSE($q->mysql_error,__LINE__);
+    }
+
+    foreach ($results as $ligne){
+        $gpid=$ligne["gpid"];
+        $aclid=$ligne["aclid"];
+        $js="Loadjs('fw.suricata.acls.php?ruleid-js=$aclid&function=$function')";
+        $array[$gpid][$aclid]=$tpl->td_href("IDS: {$ligne["aclname"]}",null,$js);
+    }
+
+
+    return $array;
+}

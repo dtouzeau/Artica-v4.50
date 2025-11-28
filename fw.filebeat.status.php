@@ -210,6 +210,12 @@ function srv_addr_popup():bool{
     $ElasticSearchAddress2=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchAddress2"));
 
 
+    $FileBeatSSLVerificationMode=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FileBeatSSLVerificationMode"));
+
+    $FileBeatSSLVerificationModes[0]="{full2}";
+    $FileBeatSSLVerificationModes[1]="{certificate}";
+    $FileBeatSSLVerificationModes[2]="{none}";
+
 
     $ElasticsearchRemotePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchRemotePort"));
     $ElasticSearchProtocol=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchProtocol"));
@@ -225,6 +231,9 @@ function srv_addr_popup():bool{
 
     $form[]=$tpl->field_numeric("ElasticSearchRemotePort","{elasticsearch_remote_port}",$ElasticsearchRemotePort);
     $form[]=$tpl->field_checkbox("UseSSL", "{UseSSL}", $UseSSL);
+
+    $form[]=$tpl->field_array_hash($FileBeatSSLVerificationModes, "FileBeatSSLVerificationMode", "nonull:{ssl.verification_mode}", $FileBeatSSLVerificationMode);
+
     echo $tpl->form_outside("",$form,null,
         "{apply}",
         "dialogInstance1.close();LoadAjaxSilent('flat-config','$page?flat-config=yes');",
@@ -330,13 +339,31 @@ function table(){
         echo $tpl->_ENGINE_parse_body("<p style='margin:30px'>".$tpl->div_error("{filbeat_noaddr}")."</p>");
     }
 
+    $FileBeatSSLVerificationMode=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FileBeatSSLVerificationMode"));
+
+    $FileBeatSSLVerificationModes[0]="{full2}";
+    $FileBeatSSLVerificationModes[1]="{certificate}";
+    $FileBeatSSLVerificationModes[2]="{none}";
+    $UseSSL=1;
+    $ElasticSearchProtocol=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchProtocol"));
+    if(empty($ElasticSearchProtocol)){$ElasticSearchProtocol='http';}
+    if($ElasticsearchRemotePort==0){$ElasticsearchRemotePort=9200;}
+    if($ElasticSearchProtocol=="http"){
+        $UseSSL=0;
+    }
+
 
 
     $tpl->table_form_field_js("Loadjs('$page?srv-addr-js=yes')","AsSystemAdministrator");
     if(strlen($ElasticSearchAddress)<3){
         $tpl->table_form_field_bool("{elasticsearch_address}",0,ico_server);
     }else{
-        $tpl->table_form_field_text("{elasticsearch_address}","$ElasticSearchProtocol://$ElasticSearchAddress:$ElasticsearchRemotePort",ico_server);
+        $modeTEXT="";
+        if($UseSSL==1){
+            $modeTEXT=" {ssl.verification_mode}:".$FileBeatSSLVerificationModes[$FileBeatSSLVerificationMode];
+        }
+
+        $tpl->table_form_field_text("{elasticsearch_address}","<small>$ElasticSearchProtocol://$ElasticSearchAddress:$ElasticsearchRemotePort$modeTEXT</small>",ico_server);
     }
     $tpl->table_form_field_js("Loadjs('$page?auth-js=yes')","AsSystemAdministrator");
     if($ElasticsearchEnableAuthFilebeat==0){
