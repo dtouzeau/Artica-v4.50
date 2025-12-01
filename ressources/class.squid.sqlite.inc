@@ -44,10 +44,13 @@ class sqlite_squid{
 	}
 	
 	
-	public function COUNT_ROWS($table){
+	public function COUNT_ROWS($table):int{
+        if(!$this->TABLE_EXISTS($table)){
+            return 0;
+        }
 		$sql="SELECT count(*) as tcount from `$table`";
 		$results=$this->QUERY_SQL($sql);
-		return $results[0]["tcount"];
+		return intval($results[0]["tcount"]);
 		
 	}
 

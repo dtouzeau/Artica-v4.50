@@ -85,7 +85,7 @@ function enable_signature():bool{
         $q->QUERY_SQL("UPDATE suricata_rules_conf SET enabled='$enabled' WHERE sid='$id'");
     }
     if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/categories/build");
     return admin_tracks("Enable/Disable IDS rule $id enabled=$enabled");
 
 }
@@ -158,8 +158,10 @@ function disable_all_js():bool{
         echo $tpl->js_error($q->mysql_error);
         return false;
     }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/categories/build");
     header("content-type: application/x-javascript");
     echo $function."()\n";
+
     return admin_tracks("Disable all IDS rules from all categories.");
 }
 function disable_all_rules():bool{
@@ -174,10 +176,9 @@ function disable_all_rules():bool{
         echo $tpl->js_error($q->mysql_error);
         return false;
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/categories/build");
     header("content-type: application/x-javascript");
     echo $function."()\n";
-
     return admin_tracks("Disable all IDS rules from category $cat");
 }
 function enable_all_family():bool{
@@ -192,14 +193,12 @@ function enable_all_family():bool{
         echo $tpl->js_error($q->mysql_error);
         return false;
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/categories/build");
     header("content-type: application/x-javascript");
     echo $function."()\n";
-
     return admin_tracks("Enable all IDS rule from category $cat");
 }
 function disable_all_family():bool{
-    $page=CurrentPageName();
     $function=$_GET["function"];
     $tpl=new template_admin();
     $cat=$_GET["enable-all-family"];
@@ -210,10 +209,9 @@ function disable_all_family():bool{
         echo $tpl->js_error($q->mysql_error);
         return false;
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/categories/build");
     header("content-type: application/x-javascript");
     echo $function."()\n";
-
     return admin_tracks("Disable all IDS rule from category $cat");
 }
 
@@ -414,11 +412,15 @@ function search(){
     $searchq="WHERE 1";
     $search=$_GET["search"];
     if(strlen($search)>2){
+        $SerchOrg=trim($search);
         $search="*$search*";
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
         $searchq="WHERE msg LIKE '$search'";
+        if(intval($SerchOrg)>0){
+            $searchq="WHERE sid='$SerchOrg'";
+        }
     }
 	
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");

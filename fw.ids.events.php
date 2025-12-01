@@ -125,7 +125,9 @@ function page(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $html=$tpl->page_header(
-        "{ids_events}",ico_hacker2cols,"{ids_events_explain}","$page?tabs=yes","ids-threats","ids-threats-progress",false,"page-ids-stats"
+        "{ids_events}",ico_hacker2cols,
+        "{ids_events_explain}","$page?tabs=yes",
+        "ids-threats","ids-threats-progress",false,"page-ids-stats"
 
     );
 
@@ -181,6 +183,13 @@ function table(){
         $topbuttons[]=array($js,ico_filter,$severity_array_filter[$sev]);
     }
 
+    $RefreshIndex=$tpl->framework_buildjs("suricata:/rules/indexes",
+        "suricata.indexes",
+    "suricata.indexes.log","ids-threats-progress",
+    "$function()");
+    $topbuttons[]=array($RefreshIndex,ico_retweet,"{build_indexes}");
+
+
 	$html[]="<table id='table-ids-events' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
@@ -224,9 +233,8 @@ function table(){
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$zDate</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>$src_ip</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>$dst_ip</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>FW</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$rule</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{hits}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category}</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
 	$html[]="<tbody>";
@@ -260,22 +268,38 @@ function table(){
 		$dst_port=$ligne["dst_port"];
 		$proto=$ligne["proto"];
 		$signature=$ligne["signature"];
-        $xcount=$ligne["xcount"];
-		$ligne2=pg_fetch_assoc($q->QUERY_SQL("SELECT description FROM suricata_sig WHERE signature='$signature'"));
-		if(!$q->ok){$ligne2["description"]=$q->mysql_error;}
-		$FW_ACT="NOTIFY";
-		$FW_CCL=null;
-		if(isset($GLOBALS["FIREWALL"][$signature])){
-			$FW_ACT="BLOCK";
-			$FW_CCL="label-danger";
-		}
-		
-		
-		$description=$ligne2["description"];
+        $category=array();
+        $Address=array();
+
+        $Infos=RuleDetails($signature);
+        $classtype=$Infos["class_type"];
+        $source_file=$Infos["source_file"];
+        $description=$Infos["description"];
+
 		$signature_js="<a href=\"javascript:blur();\"
-		OnClick=\"Loadjs('fw.ids.rule.zoom.php?signature=$signature');\"
+		OnClick=\"Loadjs('fw.ids.rules.php?rule-js=$signature');\"
 		style='color:$color;text-decoration:underline'>";
-		
+
+        if(preg_match("#^71([0-9]+)#",$signature,$matches)){
+            $ruleid=intval($matches[1]);
+            $signature_js="<a href=\"javascript:blur();\"
+		    OnClick=\"Loadjs('fw.suricata.acls.php?rule-id-js=$ruleid')\"
+		    style='color:$color;text-decoration:underline'>";
+        }
+
+        if(strlen($classtype)>1){
+            $category[]=$classtype;
+        }
+        if(strlen($source_file)>1){
+            $category[]=$source_file;
+        }
+
+        if(strlen($dst_ip)>1){
+            $Address[]=$dst_ip;
+        }
+        if(intval($dst_port)>1){
+            $Address[]=$dst_port;
+        }
 
 		
 		if($signature==0){$signature_js=null;}
@@ -284,10 +308,9 @@ function table(){
 		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>$icon</td>";
 		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>$zDate</a></td>";
 		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>$src_ip</td>";
-		$html[]="<td class='$text_class' style='vertical-align:middle;width:1%' nowrap>$proto $dst_ip:$dst_port</span></td>";
-		$html[]="<td class=\"$text_class\" style='width:1%' class='center' nowrap><span class='label $FW_CCL'>$FW_ACT</span></center></td>";
+		$html[]="<td class='$text_class' style='vertical-align:middle;width:1%' nowrap>$proto ".implode(":",$Address)."</span></td>";
 		$html[]="<td>[$signature_js$signature</a>]: $description</td>";
-        $html[]="<td style='width:1%' nowrap>$xcount</td>";
+        $html[]="<td style='width:1%' nowrap>".implode("/",$category)."</td>";
 		$html[]="</tr>";
 		
 
@@ -306,7 +329,7 @@ function table(){
 	$html[]="<tfoot>";
 
 	$html[]="<tr>";
-	$html[]="<td colspan='7'>";
+	$html[]="<td colspan='6'>";
 	$html[]="<ul class='pagination pull-right'></ul>";
 	$html[]="</td>";
 	$html[]="</tr>";
@@ -319,9 +342,24 @@ NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 $(document).ready(function() { $('#table-ids-events').footable( {\"filtering\": {\"enabled\": false },\"sorting\": {\"enabled\": true } } ); });
 </script>";
 
-			echo @implode("\n", $html);
+			echo $tpl->_ENGINE_parse_body($html);
 
 }
+
+function RuleDetails($ruleid){
+    if(isset($GLOBALS["SURIRULES"][$ruleid])){
+        return $GLOBALS["SURIRULES"][$ruleid];
+    }
+    $q=new postgres_sql();
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_tmp WHERE signature='$ruleid'");
+    $GLOBALS["SURIRULES"][$ruleid]=array(
+        "description"=>$ligne["description"],
+        "source_file"=>$ligne["source_file"],
+        "classtype"=>$ligne["classtype"]
+    );
+    return $GLOBALS["SURIRULES"][$ruleid];
+}
+
 function enable(){
 	
 	$filename=$_POST["filename"];

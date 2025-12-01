@@ -40,9 +40,6 @@ function phpinfo_popup():bool{
     echo $s;
     return true;
 }
-
-
-
 function tabs():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -71,7 +68,6 @@ function tabs():bool{
     echo $tpl->tabs_default($array);
     return true;
 }
-
 function page():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -87,7 +83,6 @@ function page():bool{
     return true;
 
 }
-
 function TinyJS():string{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -107,7 +102,6 @@ function TinyJS():string{
     $TINY_ARRAY["EXPL"]="{fw_artica_versions_explain}";
     return "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 }
-
 function table_start():bool{
     $page=CurrentPageName();
     echo "<div id='update-softwares-index'></div>
@@ -115,13 +109,22 @@ function table_start():bool{
         ";
     return true;
 }
-
 function table():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
 
 
     $CURVER=@file_get_contents("VERSION");
+
+    $v4softsRepo=base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("v4softsRepo"));
+    $Strlen=strlen($v4softsRepo);
+    if($Strlen < 10){
+        if(!is_file("/etc/artica-postfix/settings/Daemons/v4softsRepo")) {
+            echo $tpl->_ENGINE_parse_body($tpl->div_warning("{missing_update_index}||{missing_update_index_explain}"));
+            return true;
+        }
+    }
+
     $UPDATES_ARRAY=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("v4softsRepo")));
     if(is_file("/etc/artica-postfix/ARTICA_REVERSE_PROXY_APPLIANCE")){
         $UPDATES_ARRAY["REVERSE_APPLIANCE"]=true;
@@ -288,6 +291,8 @@ function table():bool{
     $html[]="</tr>";
     $html[]=APP_NGINX($UPDATES_ARRAY);
     $html[]=WP_CLIENT($UPDATES_ARRAY);
+    $html[]=APP_MATTERMOST($UPDATES_ARRAY);
+
     $html[]=APP_PHP_REVERSE($UPDATES_ARRAY);
     if($MESSAGING) {
         $html[] = "<tr>";
@@ -320,7 +325,7 @@ function table():bool{
     $html[]="<th colspan='3' nowrap style='background-color:#CCCCCC'><H2>{APP_FIREWALL}</H2></td>";
     $html[]="</tr>";
     $IPTABLES_VERSION   = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPTABLES_VERSION");
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $html[]="<tr>";
     $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_IPTABLES}:</strong></td>";
     $html[]="<td style='width:1%'  nowrap>$IPTABLES_VERSION</td>";
@@ -343,7 +348,7 @@ function table():bool{
     $html[]="</tr>";
 
     $APP_NDPI_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NDPI_INSTALLED"))==1){
         $APP_NDPI_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NDPI_VERSION");
     }
@@ -361,7 +366,7 @@ function table():bool{
 
     $warn_ico="";
     $APP_CROWDSEC_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_CROWDSEC_INSTALLED"))==1){
         $APP_CROWDSEC_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_CROWDSEC_VERSION");
     }
@@ -390,7 +395,7 @@ function table():bool{
 
 
     $SURICATA_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_INSTALLED"))==1) {
         $SURICATA_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_VERSION");
     }
@@ -411,7 +416,7 @@ function table():bool{
 
 //--------------------------------------------------------------------------------------------------
     $APP_SAMHAIN_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SAMHAIN_INSTALLED"))==1) {
         $APP_SAMHAIN_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SAMHAIN_VERSION");
     }
@@ -431,7 +436,7 @@ function table():bool{
 
 //--------------------------------------------------------------------------------------------------
     $APP_KEEPALIVED_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_INSTALLED"))==1) {
         $APP_KEEPALIVED_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_VERSION");
     }
@@ -451,7 +456,7 @@ function table():bool{
 
 
     $APP_FAILOVER_CHECKER_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_INSTALLED"))==1) {
         $APP_FAILOVER_CHECKER_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("go-failover-checker-ver");
     }
@@ -471,7 +476,7 @@ function table():bool{
 
 //--------------------------------------------------------------------------------------------------
     $FIREQOS_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIREQOS_INSTALLED"))==1){
         $FIREQOS_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIREQOS_VERSION");
     }
@@ -492,7 +497,7 @@ function table():bool{
     //-------------------------------------------------------------------------------------------
     $warn_ico=null;
     $APP_MONIT_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MONIT_INSTALLED"))==1){
         $APP_MONIT_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MONIT_VERSION");
     }
@@ -523,7 +528,7 @@ function table():bool{
 //--------------------------------------------------------------------------------------------
     $APP_WAZHU_VERSION=$tpl->icon_nothing();
     $warn_ico=null;
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_WAZHU_INSTALLED"))==1){
         $APP_WAZHU_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_WAZHU_VERSION");
     }
@@ -556,7 +561,7 @@ function table():bool{
 //--------------------------------------------------------------------------------------------
     $APP_NAGIOS_CLIENT_VERSION=$tpl->icon_nothing();
     $warn_ico=null;
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NAGIOS_CLIENT_INSTALLED"))==1){
         $APP_NAGIOS_CLIENT_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NAGIOS_CLIENT_VERSION");
     }
@@ -601,7 +606,7 @@ function table():bool{
 
     $warn_ico=null;
     $APP_NETDATA_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetDataInstalled"))==1){
         $APP_NETDATA_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NETDATA_VERSION");
     }
@@ -798,47 +803,6 @@ function php_ini_path():string{
     if(preg_match("#<body>(.*?)</body>#is", $s,$re)){$s=$re[1];}
     return $s;
 }
-
-function MEMCACHED($UPDATES_ARRAY=array()):string{
-    $tpl=new template_admin();
-    $APP_MEMCACHED_VERSION=$tpl->icon_nothing();
-    $warn_ico=null;
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MEMCACHED_INSTALLED"))==1){
-        $APP_MEMCACHED_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MEMCACHED_VERSION");
-    }
-
-
-    $bton=$tpl->button_autnonome("{install_upgrade2}",
-        "Loadjs('fw.apt-memcached.php');",
-        "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_MEMCACHED",
-            "TOKEN_VER"=>"APP_MEMCACHED_VERSION",
-            "TOKEN_ENABLED"=>""),false);
-
-    if(isset($RESULTS["NEW_VER"])){
-        $warn_ico="&nbsp;<i class='text-warning fa-solid fa-light-emergency-on'></i>";
-    }
-
-
-    if(isset($UPDATES_ARRAY["APP_MEMCACHED"])){
-        $bton=$tpl->button_autnonome("{install_upgrade2}",
-            "Loadjs('fw.system.upgrade-software.php?product=APP_MEMCACHED');",
-            "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
-    }
-
-
-
-    $html[]="<tr>";
-    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_MEMCACHED}:</strong></td>";
-    $html[]="<td style='width:1%'  nowrap>$APP_MEMCACHED_VERSION$warn_ico</td>";
-    $html[]="<td style='text-align:left;width:99%' nowrap>$bton</td>";
-    $html[]="</tr>";
-    if(!is_array($html)){$html=array();} return @implode("\n",$html);
-}
-
 function APP_FIRECRACKER($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $APP_VERSION=$tpl->icon_nothing();
@@ -907,7 +871,7 @@ function APP_NETMONIX($UPDATES_ARRAY):string
 function APP_GO_AD_GROUP_SEARCH($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $html=array();
     if(isset($UPDATES_ARRAY["APP_GO_AD_GROUP_SEARCH"])){
         $bton=$tpl->button_autnonome("{install_upgrade2}",
@@ -966,7 +930,7 @@ function APP_AUTOFS($UPDATES_ARRAY):string{
 function APP_FIRMWARES($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $APP_FIRMWARES_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_FIRMWARES_INSTALLED"))==1){
         $APP_FIRMWARES_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_FIRMWARES_VERSION");
     }
@@ -1054,12 +1018,19 @@ function APP_JAVA($UPDATES_ARRAY):string{
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
 function APP_VMTOOLS($UPDATES_ARRAY):string{
+    $tpl=new template_admin();
+    $bton="";
+    if(isset($UPDATES_ARRAY["APP_VMTOOLS"])){
+        $bton=$tpl->button_autnonome("{install_upgrade2}",
+            "Loadjs('fw.system.upgrade-software.php?product=APP_VMTOOLS');",
+            "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
+    }
 
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VMWARE_TOOLS_INSTALLED"))==0){return "";}
     $html[]="<tr>";
     $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_VMTOOLS}:</strong></td>";
-    $html[]="<td nowrap>".$GLOBALS["CLASS_SOCKETS"]->GET_INFO("VMWARE_TOOLS_VERSION")."</td>";
-    $html[]="<td>&nbsp;</td>";
+    $html[]="<td nowrap>".$GLOBALS["CLASS_SOCKETS"]->GET_INFO("VMWARE_TOOLS_VERSION")."$bton</td>";
+    $html[]="<td style='text-align:left;width:99%' nowrap>$bton</td>";
     $html[]="</tr>";
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
@@ -1078,7 +1049,7 @@ function APP_NGINX_CONSOLE($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $warn_ico=null;
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $APP_NGINX_CONSOLE_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NGINX_CONSOLE_VERSION");
 
 
@@ -1164,7 +1135,7 @@ $html[]="</tr>";if(!is_array($html)){$html=array();} return @implode("\n",$html)
 }
 function APP_PHP_GEOIP2($UPDATES_ARRAY):string{
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $APP_PHP_GEOIP2_VERSION=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PHP_GEOIP_INSTALLED"))==1){
         $APP_PHP_GEOIP2_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("GEOIPUPDATE_VERSION");
@@ -1187,7 +1158,7 @@ function APP_PHP_GEOIP2($UPDATES_ARRAY):string{
 function APP_ZABBIX_AGENT($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $warn_ico=null;
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $APP_ZABBIX_AGENT_VERSION=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_ZABBIX_AGENT_INSTALLED"))==1){
         $APP_ZABBIX_AGENT_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_ZABBIX_AGENT_VERSION");
@@ -1223,7 +1194,7 @@ function APP_ZABBIX_AGENT($UPDATES_ARRAY):string{
 }
 function APP_SYNO_BACKUP($UPDATES_ARRAY):string{
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $APP_SYNO_BACKUP_VERSION=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SYNO_BACKUP_INSTALLED"))==1){
         $APP_SYNO_BACKUP_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SYNO_BACKUP_VERSION");
@@ -1246,7 +1217,7 @@ function APP_SYNO_BACKUP($UPDATES_ARRAY):string{
 function APP_URBACKUP($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $APP_URBACKUP_VERSION=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_URBACKUP_INSTALLED"))==1){
         $APP_URBACKUP_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_URBACKUP_VERSION");
@@ -1302,7 +1273,7 @@ function APP_SYSLOGD($UPDATES_ARRAY):string{
 function APP_CLAMAV($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $warn_ico=null;
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $ClamAVDaemonVersion=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClamAVDaemonInstalled"))==1){
         $ClamAVDaemonVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClamAVDaemonVersion");
@@ -1334,41 +1305,7 @@ function APP_CLAMAV($UPDATES_ARRAY):string{
 
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
-function APP_LOKI($UPDATES_ARRAY):string{
-    $tpl=new template_admin();
-    $warn_ico=null;
-    $bton=$tpl->icon_nothing();
-    $DaemonVersion=$tpl->icon_nothing();
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LokiInstalled"))==1){
-        $DaemonVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LokiVersion");
-    }
 
-    if(isset($UPDATES_ARRAY["APP_LOKI"])){
-        $bton=$tpl->button_autnonome("{install_upgrade2}",
-            "Loadjs('fw.system.upgrade-software.php?product=APP_LOKI');",
-            "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
-    }
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_LOKI",
-            "TOKEN_VER"=>"LokiVersion",
-            "TOKEN_ENABLED"=>"EnableLokiDB")
-    );
-
-    if(isset($RESULTS["NEW_VER"])){
-        $warn_ico="&nbsp;<i class='text-warning fa-solid fa-light-emergency-on'></i>";
-    }
-
-
-    $html[]="<tr>";
-    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_LOKI}:</strong></td>";
-    $html[]="<td nowrap>$DaemonVersion$warn_ico</td>";
-    $html[]="<td>$bton</td>";
-    $html[]="</tr>";
-
-    if(!is_array($html)){$html=array();} return @implode("\n",$html);
-}
 function APP_MYSQL($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $warn_ico=null;
@@ -1517,7 +1454,7 @@ function APP_POSTGRES($UPDATES_ARRAY):string{
 function APP_ELASTICSEARCH($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
         $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $ELASTICSEARCH_VERSION=$tpl->icon_nothing();
     $APP_KIBANA_VERSION=$tpl->icon_nothing();
 
@@ -1548,7 +1485,7 @@ function APP_ELASTICSEARCH($UPDATES_ARRAY):string{
 }
 function APP_FILEBEAT($UPDATES_ARRAY):string{
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $FILEBEAT_VERSION=$tpl->icon_nothing();
 
 
@@ -1572,7 +1509,7 @@ function APP_FILEBEAT($UPDATES_ARRAY):string{
 }
 function APP_REDIS_SERVER($UPDATES_ARRAY):string{
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $APP_REDIS_SERVER_VERSION=$tpl->icon_nothing();
 
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_REDIS_SERVER_INSTALLED"))==1){
@@ -1596,7 +1533,7 @@ function APP_SSHPORTAL($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_SSHPORTAL_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SSHPORTAL_INSTALLED"))==1){
         $APP_SSHPORTAL_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SSHPORTAL_VERSION");
     }
@@ -1619,7 +1556,7 @@ function APP_SHELLINABOX($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_SHELLINABOX_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SHELLINABOX_INSTALLED"))==1){
         $APP_SHELLINABOX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SHELLINABOX_VERSION");
     }
@@ -1642,7 +1579,7 @@ function APP_RUSTDESK($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_RUSTDESK_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RUSTDESK_INSTALLED"))==1){
         $APP_RUSTDESK_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RUSTDESK_VERSION");
     }
@@ -1665,7 +1602,7 @@ function APP_FRONTAIL_LINUX($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $FRONTAIL_LINUX_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FRONTAIL_LINUX_INSTALLED"))==1){
         $FRONTAIL_LINUX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("FRONTAIL_LINUX_VERSION");
     }
@@ -1688,7 +1625,7 @@ function APP_DDNS_AGENT($UPDATES_ARRAY):string{
 
     $tpl=new template_admin();
     $APP_DDNS_AGENT_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DDNS_AGENT_INSTALLED"))==1){
         $APP_DDNS_AGENT_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DDNS_AGENT_VERSION");
     }
@@ -1710,7 +1647,7 @@ function APP_DDNS_AGENT($UPDATES_ARRAY):string{
 function APP_TAILON($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $TAILON_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TAILON_INSTALLED"))==1){
         $TAILON_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("TAILON_VERSION");
     }
@@ -1770,7 +1707,7 @@ function APP_PROFTPD($UPDATES_ARRAY):string
 function APP_PFRING_AVX($UPDATES_ARRAY){
     $tpl=new template_admin();
 
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
 
 
     if(isset($UPDATES_ARRAY["APP_PFRING_AVX"])){
@@ -1796,7 +1733,7 @@ function APP_PFRING_AVX($UPDATES_ARRAY){
 function PFRING($UPDATES_ARRAY):string{
     $tpl=new template_admin();
 
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
 
 
     if(isset($UPDATES_ARRAY["PFRING"])){
@@ -1818,7 +1755,7 @@ function PFRING($UPDATES_ARRAY):string{
 function APP_DHCP($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $DHCPD_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DHCPD_INSTALLED"))==1){
         $DHCPD_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DHCPDVersion");
     }
@@ -1840,7 +1777,7 @@ function APP_MSKTUTIL($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $MSKTUTIL_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $warn_ico=null;
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MSKTUTIL_INSTALLED"))==1){
         $MSKTUTIL_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("MSKTUTIL_VERSION");
@@ -1877,7 +1814,7 @@ function APP_TAILSCALE($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_TAILSCALE_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_TAILSCALE_INSTALLED"))==1){
         $APP_TAILSCALE_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_TAILSCALE_VERSION");
     }
@@ -1901,7 +1838,7 @@ function APP_SAMBA($UPDATES_ARRAY):string{
     //if(isset($UPDATES_ARRAY["APP_SAMBA"])){return "";}
     $tpl=new template_admin();
     $APP_SAMBA_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SAMBA_INSTALLED"))==1){
         $APP_SAMBA_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SAMBA_VERSION");
     }
@@ -1940,7 +1877,7 @@ function APP_OPENVPN($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_OPENVPN_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OPENVPN_INSTALLED"))==1){
         $APP_OPENVPN_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_OPENVPN_VERSION");
     }
@@ -1978,7 +1915,7 @@ function APP_PPTP_CLIENT($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_PPTP_CLIENT_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_PPTP_CLIENT_INSTALLED"))==1){
         $APP_PPTP_CLIENT_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_PPTP_CLIENT_VERSION");
     }
@@ -2002,7 +1939,7 @@ function APP_STRONGSWAN($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $IPSEC_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPSEC_INSTALLED"))==1){
         $IPSEC_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPSEC_VERSION");
     }
@@ -2055,7 +1992,7 @@ function APP_SPLUNK_FORWARDER($UPDATES_ARRAY):string{
 function APP_NGINX($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $APP_NGINX_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NGINX_INSTALLED"))==1){
         $APP_NGINX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NGINX_VERSION");
     }
@@ -2077,7 +2014,7 @@ function APP_NGINX($UPDATES_ARRAY):string{
 function WP_CLIENT($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $WP_CLIENT_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
 
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WP_CLIENT_INSTALLED"))==1){$WP_CLIENT_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("WP_CLIENT_VERSION");}
     $warn_ico=null;
@@ -2111,7 +2048,7 @@ function APP_POSTFIX($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_POSTFIX_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_INSTALLED"))==1){
         $APP_POSTFIX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_VERSION");
     }
@@ -2134,7 +2071,7 @@ function APP_MSMTP($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $MSMTP_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MSMTP_INSTALLED"))==1){
         $MSMTP_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("MSMTP_VERSION");
     }
@@ -2157,7 +2094,7 @@ function APP_MILTER_GREYLIST($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_MILTER_GREYLIST_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MILTER_GREYLIST_INSTALLED"))==1){
         $APP_MILTER_GREYLIST_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MILTER_GREYLIST_VERSION");
     }
@@ -2182,7 +2119,7 @@ function APP_MILTER_REGEX($UPDATES_ARRAY):string{
     $tpl=new template_admin();
 
     $APP_MILTER_REGEX_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MILTER_REGEX_INSTALLED"))==1){
         $APP_MILTER_REGEX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MILTER_REGEX_VERSION");
     }
@@ -2205,7 +2142,7 @@ function APP_MIMEDEFANG($UPDATES_ARRAY):string{
         if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
         $tpl=new template_admin();
     $APP_MIMEDEFANG_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangInstalled"))==1){
         $APP_MIMEDEFANG_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangVersion");
     }
@@ -2228,7 +2165,7 @@ function APP_RBLDNSD($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_RBLDNSD_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RBLDNSD_INSTALLED"))==1){
         $APP_RBLDNSD_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RBLDNSD_VERSION");
     }
@@ -2264,7 +2201,7 @@ function APP_DNSCRYPT_PROXY($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $APP_DNSCRYPT_PROXY_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DNSCRYPT_PROXY_INSTALLED"))==1){$APP_DNSCRYPT_PROXY_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DNSCRYPT_PROXY_VERSION");}
 
     if(isset($UPDATES_ARRAY["APP_DNSCRYPT_PROXY"])) {
@@ -2284,7 +2221,7 @@ function APP_UNBOUND($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $UnboundVersion=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundInstalled"))==1){$UnboundVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundVersion");}
 
     if(isset($UPDATES_ARRAY["APP_UNBOUND"])){
@@ -2309,7 +2246,7 @@ function APP_DOH_PROXY($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $CurVersion=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $warn_ico="";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DOH_PROXY_INSTALLED"))==1){$CurVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DOH_PROXY_VERSION");}
 
@@ -2346,7 +2283,7 @@ function APP_CLOUDFLARE_DNS($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $CurVersion=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $warn_ico="";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CLOUDFLARED_INSTALLED"))==1){$CurVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("CLOUDFLARED_VERSION");}
 
@@ -2383,9 +2320,9 @@ function APP_CLOUDFLARE_DNS($UPDATES_ARRAY):string{
 function APP_VNSTAT($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_VNSTAT_VERSION");
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if($version==null){ $version=$tpl->icon_nothing(); }
-
+    $warn_ico="";
     if (isset($UPDATES_ARRAY["APP_VNSTAT"])) {
         $bton = $tpl->button_autnonome("{install_upgrade2}",
             "Loadjs('fw.system.upgrade-software.php?product=APP_VNSTAT');",
@@ -2416,7 +2353,7 @@ function APP_DNSDIST($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $dnsdist_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DNSDIST_VERSION");
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if($dnsdist_version==null){ $dnsdist_version=$tpl->icon_nothing(); }
 
     if (isset($UPDATES_ARRAY["APP_DNSDIST"])) {
@@ -2451,7 +2388,7 @@ function APP_DNSDIST9($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $dnsdist_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DNSDIST_VERSION");
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if($dnsdist_version==null){ $dnsdist_version=$tpl->icon_nothing(); }
 
     if (isset($UPDATES_ARRAY["APP_DNSDIST9"])) {
@@ -2487,7 +2424,7 @@ function APP_DSC($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $DSCVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DSCVersion");
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
 
     if(isset($UPDATES_ARRAY["APP_DSC"])){
         $bton=$tpl->button_autnonome("{install_upgrade2}",
@@ -2513,7 +2450,7 @@ function APP_PDNS($UPDATES_ARRAY):string{
     $APP_PDNS_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("PDNSVersion");
     $APP_PDNS_RECURSOR_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("PDNSRecursorVersion");
 
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(isset($UPDATES_ARRAY["APP_PDNS"])){
         $bton=$tpl->button_autnonome("{install_upgrade2}",
             "Loadjs('fw.system.upgrade-software.php?product=APP_PDNS');",
@@ -2543,7 +2480,7 @@ function APP_FAIL2BAN($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $FAIL2BAN_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
 
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FAIL2BAN_INSTALLED"))==1) {
         $FAIL2BAN_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("FAIL2BAN_VERSION");
@@ -2567,7 +2504,7 @@ function APP_NTOPNG($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $NTOPNG_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
 
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NtopNGInstalled"))==1) {
         $NTOPNG_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTOPNG_VERSION");
@@ -2588,7 +2525,7 @@ function APP_NTOPNG($UPDATES_ARRAY):string{
 function APP_GREENSQL($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $APP_GREENSQL_VERSION=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_GREENSQL_INSTALLED"))==1){
         $APP_GREENSQL_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_GREENSQL_VERSION");
@@ -2611,7 +2548,7 @@ function APP_GREENSQL($UPDATES_ARRAY):string{
 function APP_RDPPROXY($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $APP_RDPPROXY_VERSION=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RDPPROXY_INSTALLED"))==1){
         $APP_RDPPROXY_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RDPPROXY_VERSION");
@@ -2633,7 +2570,7 @@ function APP_RDPPROXY($UPDATES_ARRAY):string{
 function APP_3PROXY($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $APP_3PROXY_VERSION=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_3PROXY_INSTALLED"))==1){
         $APP_3PROXY_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_3PROXY_VERSION");
@@ -2675,7 +2612,7 @@ function APP_REDSOCKS($UPDATES_ARRAY):string{
 function APP_HAPROXY($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $VERSION=$tpl->icon_nothing();
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HAPROXY_INSTALLED"))==1){$VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HAPROXY_VERSION");}
 
@@ -2691,12 +2628,49 @@ function APP_HAPROXY($UPDATES_ARRAY):string{
     $html[]="</tr>";
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
+function APP_MATTERMOST($UPDATES_ARRAY):string{
+    $tpl=new template_admin();
+    $bton="<span class='label label-default'>{unavailable}</span>";
+    $VERSION=$tpl->icon_nothing();
+    $warn_ico="";
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_INSTALLED"))==1){$VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_INSTALLED");}
+
+    if(isset($UPDATES_ARRAY["APP_MATTERMOST"])){
+        $bton=$tpl->button_autnonome("{install_upgrade2}",
+            "Loadjs('fw.system.upgrade-software.php?product=APP_MATTERMOST');",
+            "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
+    }
+
+    $RESULTS=$tpl->NOTIF_ARRAY(
+        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
+            "TOKEN_UPDATE_ARRAY"=>"APP_MATTERMOST",
+            "TOKEN_VER"=>"APP_MATTERMOST_VERSION",
+            "TOKEN_ENABLED"=>"EnableMattermost"),false
+    );
+
+    $APP_MATTERMOST_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_VERSION");
+    if(strlen($APP_MATTERMOST_VERSION)>1) {
+        $VERSION = $APP_MATTERMOST_VERSION;
+    }
+
+    if(isset($RESULTS["NEW_VER"])){
+        $warn_ico="&nbsp;<i class='text-warning fa-solid fa-light-emergency-on'></i>";
+    }
+
+
+    $html[]="<tr>";
+    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_MATTERMOST}:</strong></td>";
+    $html[]="<td nowrap>$VERSION$warn_ico</td>";
+    $html[]="<td>$bton</td>";
+    $html[]="</tr>";
+    if(!is_array($html)){$html=array();} return @implode("\n",$html);
+}
 function APP_QAT($UPDATES_ARRAY):string{
 
     $tpl=new template_admin();
     $warn_ico=null;
     $IntelQATVersion=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IntelQATInstalled"))==1){
         $IntelQATVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("IntelQATVersion");
     }
@@ -2732,7 +2706,7 @@ function APP_UFDBGUARDD($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $warn_ico=null;
     $UFDBDaemonVersion=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_UFDBGUARD_INSTALLED"))==1){
         $UFDBDaemonVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("UFDBDaemonVersion");
     }
@@ -2766,7 +2740,7 @@ function APP_WANPROXY($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $WANPROXYVERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WANPROXY_INSTALLED"))==1){
         $WANPROXYVERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("WANPROXY_VERSION");
         if($WANPROXYVERSION==null){$WANPROXYVERSION="2170101";}
@@ -2790,7 +2764,7 @@ function APP_C_ICAP($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
     $C_ICAP_VERSION=$tpl->icon_nothing();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
 
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("C_ICAP_INSTALLED"))==1){
         $C_ICAP_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("CicapVersion");
@@ -2812,7 +2786,7 @@ function APP_C_ICAP($UPDATES_ARRAY):string{
 function APP_GO_SHIELD_SERVER($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $warn_ico=null;
 
     if(isset($UPDATES_ARRAY["APP_GO_SHIELD_SERVER"])){
@@ -2845,7 +2819,10 @@ function APP_GO_SHIELD_SERVER($UPDATES_ARRAY):string{
             curl_setopt($cURLConnection, CURLOPT_URL, "http://$Go_Shield_Server_Addr:$Go_Shield_Server_Port/get-version");
             curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
             $resp = curl_exec($cURLConnection);
-            curl_close($cURLConnection);
+            if(function_exists("curl_close")) {
+                curl_close($cURLConnection);
+            }
+
             $jsonArrayResponse = json_decode($resp, true);
             $Go_Shield_Server_Version = $tpl->icon_nothing();
             if (isset($jsonArrayResponse["version"])) {
@@ -2858,7 +2835,7 @@ function APP_GO_SHIELD_SERVER($UPDATES_ARRAY):string{
             $html[] = "</tr>";
         }
 
-        $bton=$tpl->icon_nothing();
+        $bton="<span class='label label-default'>{unavailable}</span>";
 
         if(isset($UPDATES_ARRAY["APP_GO_FS"])){
             $bton=$tpl->button_autnonome("{install_upgrade2}",
@@ -2880,7 +2857,7 @@ function APP_GO_SHIELD_SERVER($UPDATES_ARRAY):string{
 function APP_GO_SHIELD_CONNECTOR($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $html=array();
     if(isset($UPDATES_ARRAY["APP_GO_SHIELD_CONNECTOR"])){
         $bton=$tpl->button_autnonome("{install_upgrade2}",
@@ -2904,7 +2881,7 @@ function APP_GO_SHIELD_CONNECTOR($UPDATES_ARRAY):string{
 }
 function APP_GO_EXEC($UPDATES_ARRAY):string{
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $html=array();
     if(isset($UPDATES_ARRAY["APP_GO_EXEC"])){
         $bton=$tpl->button_autnonome("{install_upgrade2}",
@@ -2926,7 +2903,7 @@ function APP_GO_EXEC($UPDATES_ARRAY):string{
 function APP_GO_HOTSPOT_ENGINE($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $html=array();
     if(isset($UPDATES_ARRAY["APP_GO_HOTSPOT_ENGINE"])){
         $bton=$tpl->button_autnonome("{install_upgrade2}",
@@ -2947,7 +2924,7 @@ function APP_GO_HOTSPOT_ENGINE($UPDATES_ARRAY):string{
 function APP_GO_PAC_ENGINE($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $html=array();
     if(isset($UPDATES_ARRAY["APP_GO_PAC_ENGINE"])){
         $bton=$tpl->button_autnonome("{install_upgrade2}",
@@ -2967,7 +2944,7 @@ function APP_GO_PAC_ENGINE($UPDATES_ARRAY):string{
 function APP_GO_WEBFITLER_ERROR_PAGE_ENGINE($UPDATES_ARRAY):string{
     if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
     $tpl=new template_admin();
-    $bton=$tpl->icon_nothing();
+    $bton="<span class='label label-default'>{unavailable}</span>";
     $html=array();
     if(isset($UPDATES_ARRAY["APP_GO_WEBFITLER_ERROR_PAGE_ENGINE"])){
         $bton=$tpl->button_autnonome("{install_upgrade2}",

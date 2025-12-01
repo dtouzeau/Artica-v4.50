@@ -3296,3 +3296,15 @@ The existing template is corrupted or outdated.</filbeat_template_overwrite>
 Install it if you want to use it.</filebeat_not_enabled_ids>
 <filebeat_siem_explain>Send IDS events to the ElasticSearch platform through the FileBeat agent installed on your Artica server.</filebeat_siem_explain>
 <ssl.verification_mode>SSL verification mode</ssl.verification_mode>
+<Admin.rules>These are the rules created by the administrators of the Artica platform. These rules are updated whenever the dedicated ACLs are compiled through the web interface.</Admin.rules>
+<trafficid.rules>Suricata ruleset provided by OISF to recognize and classify network traffic (applications and services).[br]It is used to identify/classify traffic (applications, services, protocols) and to add tags/classifications to events.[br]It simplifies statistical detection and reporting (who uses HTTP/2, QUIC, DNS-over-HTTPS, specific apps, etc.) and is useful for visibility and statistics, not just traditional intrusion alerts.</trafficid.rules>
+<malsilo-url.rules>It is part of a broader collection of “MalSilo Suricata exports” that covers multiple protocols (HTTP, DNS, TCP/UDP) to flag malicious or suspicious activity such as malware-related traffic, URL-based malware C2 (command-and-control), suspicious downloads, and more.[br]It can help detect compromised clients contacting malware C2 infrastructure or download servers.</malsilo-url.rules>
+<malsilo-ip.rules>Ruleset provided by MalSilo that focuses on IP-based threat detection (rather than URL- or content-based detection).[br]The file contains a set of Suricata rules defined by MalSilo, designed to trigger on network connections toward known malicious IP addresses (often C&C servers, malware distribution hosts, or other bad actors).[br]Enabling MalSilo-IP could help you detect suspicious outbound connections (e.g. compromised machines, lateral movement, C2 communication) that may escape URL- or payload-based detection.</malsilo-ip.rules>
+<families>Families</families>
+<APP_MATTERMOST_EXPLAIN>Mattermost is an open-source, self-hosted team messaging platform that gives organizations full control over their data.[br]It offers secure channels, private messages, file sharing, and integrations with DevOps tools like GitLab and Jira.[br]Designed as a privacy-focused alternative to Slack, it supports LDAP/AD, SSO, plugins, and bots, and can be customized to fit internal workflows.</APP_MATTERMOST_EXPLAIN>
+<APP_MATTERMOST>Mattermost</APP_MATTERMOST>
+<missing_update_index>Missing Update index</missing_update_index>
+<missing_update_index_explain>The software catalog file is missing. Click the Update button to instruct Artica to retrieve the index file from the remote mirrors.</missing_update_index_explain>
+<APP_MATTERMOST_POSTGRES>PostgreSQL for Mattermost</APP_MATTERMOST_POSTGRES>
+<build_indexes>Build indexes</build_indexes>
+<ids_categories_explain>This section lets you list the rule categories enabled in the IDS engine.[br]You will find both the active rules and the available rules for each category here.</ids_categories_explain>

@@ -612,8 +612,10 @@ function wazuh():bool{
         echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
         return true;
     }
-    $WazhuClientEnrollment=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WazhuClientEnrollment"));
-    if($WazhuClientEnrollment==0){
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/wazuh/state"));
+
+    if(!$json->Status OR strlen($json->AgentID)==0){
         $html[]= "<p class='alert alert-warning' style='margin-top:20px'>{wazuh_not_enrollment_ids}</p>";
         echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
         return true;
@@ -626,10 +628,10 @@ function wazuh():bool{
         return false;
     }
 
-    $Enabled=$json->Info->Wazuh->Enabled;
 
 
-    echo "<p>".$tpl->BigCircleCheckbox("EnableWazuh", "{APP_WAZHU}","{wazuh_siem_explain}", $Enabled, "dialogInstance1.close();")."</p>";
+
+    echo "<p>".$tpl->BigCircleCheckbox("EnableWazuh", "{APP_WAZHU}","{wazuh_siem_explain}", 1, "dialogInstance1.close();")."</p>";
 
     return true;
 }

@@ -11,14 +11,9 @@ page();
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-    $xtime=@file_get_contents("/etc/artica-postfix/pids/exec.suricata.updates.php.update.time");
-    $distance=distanceOfTimeInWords($xtime,time());
-    $date=$tpl->time_to_date($xtime,true);
 
     $html=$tpl->page_header("{updates}","far fa-cloud-download","{ids_updates_explain2}","$page?table=yes",
         "ids-updates","progress-suricata-update-restart",false,"table-ids-update-loader");
-
-
 
 	echo $tpl->_ENGINE_parse_body($html);
 
@@ -27,7 +22,6 @@ function page(){
 function table(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$users=new usersMenus();
 	$path="/etc/suricata/rules";
 	$dir_handle = @opendir($path);
 	$array=array();
@@ -64,22 +58,25 @@ function table(){
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{family}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{families}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{date}</center></th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>diff</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
 	$html[]="<tbody>";
-	
+
+    $td1prc="style='width:1%' nowrap";
 	
 	
 	while ($file = readdir($dir_handle)) {
 	  if($file=='.'){continue;}
 	  if($file=='..'){continue;}
+      if($file=='COPYRIGHT'){continue;}
 	  if(preg_match("#\.(txt|yaml|map|config|conf)$#", $file)){continue;}
-	  if(preg_match("#(LICENSE|-deleted)#", $file)){continue;}
+	  if(preg_match("#(LICENSE|-deleted|COPYRIGHT)#", $file)){continue;}
 	  if(preg_match("#^(rbn|rbn-malvertisers|botcc\.portgrouped|modbus-events|emerging-misc|dyre_sslblacklist|emerging-info|iprep|emerging-retired|local|whitelist|Production)\.#", $file)){continue;}
 	  if(is_dir("$path/$file")){continue;}
+      
 	 
 	  if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	  $zdate=filemtime("$path/$file");
@@ -90,15 +87,20 @@ function table(){
 	  $status="<span class='label label-primary'>{updated}</span>";
 	  
 	  if($min>6422){
-	  	$status="<span class='label label-danger'>{outdated}</span>";
-	  	$color="class='text-danger'";
+	  	$status="<span class='label label-warning'>{updated}</span>";
+	  	$color="class='text-warning'";
 	  }
+      if($min>18844){
+        $status="<span class='label label-warning'>{outdated}</span>";
+        $color="class='text-danger'";
+      }
+
       $id=md5($file);
 	  $html[]="<tr class='$TRCLASS'>";
-	  $html[]="<td><span style='font-weight:bold' id='id-$id' width=1% nowrap $color>$status</span></td>";
+	  $html[]="<td $td1prc><span style='font-weight:bold' id='id-$id' $color>$status</span></td>";
 	  $html[]="<td><span style='font-weight:bold' id='id-$id' $color>{{$file}}</span></td>";
-	  $html[]="<td><span style='font-weight:bold' $color width=1% nowrap>$date</span></td>";
-	  $html[]="<td $color width=1% nowrap>$distances</td>";
+	  $html[]="<td $td1prc><span style='font-weight:bold' $color>$date</span></td>";
+	  $html[]="<td $color $td1prc>$distances</td>";
 	 
 	  $html[]="</tr>";
 	  

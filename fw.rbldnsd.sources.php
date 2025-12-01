@@ -144,9 +144,7 @@ function source_events_search():bool{
             continue;}
         $date="$re[1] $re[2]";
         $xtime=strtotime($date);
-        $FTime=date("Y-m-d H:i:s",$xtime);
-        $curDate=date("Y-m-d");
-        $FTime=trim(str_replace($curDate, "", $FTime));
+		$FTime=$tpl->time_to_date($xtime,true);
         $line=$re[3];
 
         if(preg_match("#(Fatal error|syntax error|unexpected|exiting on|format error|unable to|TIME_ERROR)#",$line)){

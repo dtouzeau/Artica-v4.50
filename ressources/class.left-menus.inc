@@ -1335,23 +1335,21 @@ class left_menus{
                     "ICO"=>"fas fa-cubes","TEXT"=>"{firewall_objects}",
                 ) );
 
-            $f[] = "<li id='left-menu'>";
-            $f[] = "<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.rules.php');\">
-											<i class=\"fas fa-list\"></i> <span class=\"nav-label\">{rules}</span> </a>";
-            $f[] = "
-											</li>";
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.ids.rules.php",
+                    "ICO" => ico_list, "TEXT" => "{rules}",
+                ));
 
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.ids.categories.php",
+                    "ICO" => ico_books, "TEXT" => "{categories}",
+                ));
 
-            $f[] = "                			<li id='left-menu'>";
-            $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.updates.php');\">
-											<i class=\"" . ico_download . "\"></i> <span class=\"nav-label\">{updates}</span> </a>";
-            $f[] = "							</li>";
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.ids.updates.php",
+                    "ICO" => ico_download, "TEXT" => "{updates}",
+                ));
 
-
-//            $f[] = "                			<li id='left-menu'>";
-//            $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.firewall.php');\">
-//											<i class=\"fab fa-free-code-camp\"></i> <span class=\"nav-label\">{firewall_rules}</span> </a>";
-//            $f[] = "							</li>";
 
             $f[] = "                			<li id='left-menu'>";
             $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.ids.events.php');\">
@@ -1366,6 +1364,11 @@ class left_menus{
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.ids.artica-events.php",
                     "ICO" => ico_eye, "TEXT" => "Artica:{events}",
+                ));
+
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.ids.artica-updates.php",
+                    "ICO" => ico_eye, "TEXT" => "{update_events}",
                 ));
 
         }

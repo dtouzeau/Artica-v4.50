@@ -749,36 +749,27 @@ function isFileBeat($json):string{
 }
 
 function iswazuh($json):string{
-    $Enabled=$json->Wazuh->Enabled;
+
 
     $APP_WAZHU_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_WAZHU_INSTALLED"));
     $EnableWazhuCLient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWazhuCLient"));
     if($APP_WAZHU_INSTALLED==0){
-        if($Enabled==1){
-            $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/wazuh-enable/0");
-        }
         return "";
     }
     if($EnableWazhuCLient==0){
-        if($Enabled==1) {
-            $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/wazuh-enable/0");
-        }
         return "";
 
     }
-    $WazhuClientEnrollment=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WazhuClientEnrollment"));
-    if($WazhuClientEnrollment==0){
-        if($Enabled==1) {
-            $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/config/wazuh-enable/0");
-        }
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/wazuh/state"));
+
+    if(!$json->Status){
+        return "";
+    }
+    if(strlen($json->AgentID)<2){
         return "";
     }
 
 
-
-    if ($Enabled==0){
-        return "";
-    }
     return "{APP_WAZHU}";
 
 
