@@ -18,6 +18,7 @@ dsc.update.engine.progress.php
 dns.linker.php
 dnsperfs.php
 dns.stats.php
+ressources/ldap-back/touzeau/backup.ldif
 exec.artica-filter.py
 dsc.update.engine.php
 Inotify.php

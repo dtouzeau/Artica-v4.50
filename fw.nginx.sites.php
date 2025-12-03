@@ -2586,6 +2586,15 @@ function new_www():bool{
         $Types[12] = "{CREATE_WEBCOPY_SERVICE}";
         $Types[13] = "{CREATE_ADFS_SERVICE}";
         */
+        $APP_MATTERMOST_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_INSTALLED"));
+        $EnableMattermost=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMattermost"));
+        if($APP_MATTERMOST_INSTALLED==0){
+            $EnableMattermost=0;
+        }
+        if($EnableMattermost==1) {
+            $Types[19] = "{CREATE_MATTERMOST_SERVICE}";
+        }
+
     }
     if(!isAlready14()) {
         $Types[14] = "{DEFAULT_SERVER_BLOCK}";
@@ -2952,7 +2961,7 @@ function td_destinations():bool{
     $idDiv="rcolor9-$ID";
     if(!isset($ligne["type"])){$ligne["type"]=0;}
 
-    if(($ligne["type"]==8) OR ($ligne["type"]==6) or ($ligne["type"]==1) or ($ligne["type"]==10)){
+    if(($ligne["type"]==8) OR ($ligne["type"]==19) OR ($ligne["type"]==6) OR ($ligne["type"]==1) or ($ligne["type"]==10)){
         $destination=base64_encode($tpl->_ENGINE_parse_body("{local}"));
         VERBOSE("This is a local website",__LINE__);
         $f[]="if( document.getElementById('$idDiv') ){";
@@ -3454,6 +3463,7 @@ function table():bool{
     $Types[14]="{default_website}";
     $Types[15]="DNS Over HTTPS";
     $Types[16]="{artica_meta_server}";
+    $Types[19]="{APP_MATTERMOST}";
     $ANDPRIVS="";
     if(!$q->FIELD_EXISTS("backends","weight")) {
         $q->QUERY_SQL("ALTER TABLE backends ADD `weight` INT NOT NULL DEFAULT 0");
@@ -4555,6 +4565,14 @@ function destinations_prepare():bool{
         $f[]="// $ID Type = $json->Type";
         if($json->Type==4){
             $text=base64_encode(destinations_artica());
+            $f[]="tempdata=base64_decode('$text');";
+            $f[]="\tif( document.getElementById('$idDiv') ){";
+            $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
+            $f[]="}\n";
+            continue;
+        }
+        if($json->Type==19){
+            $text=base64_encode($tpl->_ENGINE_parse_body("{local}"));
             $f[]="tempdata=base64_decode('$text');";
             $f[]="\tif( document.getElementById('$idDiv') ){";
             $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";

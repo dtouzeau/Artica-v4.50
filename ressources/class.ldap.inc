@@ -885,39 +885,6 @@ class clladp{
         return array();
     }
 
-
-
-
-    function Hash_all_kav_settings(){
-        $arr=array("gidNumber","KasperkyAVScanningDatas");
-        $sr =@ldap_search($this->ldap_connection,$this->suffix,'(&(objectclass=ArticaSettings)(KasperkyAVScanningDatas=*))',$arr);
-        if ($sr) {
-            $hash=ldap_get_entries($this->ldap_connection,$sr);
-
-            for($i=0;$i<$hash["count"];$i++){
-                $gidnumber=$hash[$i]["gidnumber"][0];
-                $kas=$hash[$i]["kasperkyavscanningdatas"][0];
-                if($kas==null){
-                    writelogs("there is no datas here, try to get the default value",__FUNCTION__,__FILE__);
-                    $def=file_get_contents(dirname(__FILE__) . "/databases/kav4mailserver.default.conf");
-                    $def="[smtpscan.group:$gidnumber]\n$def";
-                    $kas=$def;
-                }
-
-                $res[$gidnumber]=$kas;
-            }
-
-            return $res;
-        }
-
-    }
-
-
-
-
-
-
-
     function ArticaDatas(){
         return array();
     }
@@ -1045,61 +1012,6 @@ class clladp{
         if(!$this->ExistsDN("cn=artica,$this->suffix")){$this->ArticaBranchCorrupted=true;}
 
     }
-
-    function IFcn_notexists_CreateIt($name){
-        return;
-        $DebugThis=false;
-        if($GLOBALS["DEBUG_TEMPLATE"]){$DebugThis=true;}
-
-        $update_array=array();
-
-        if($this->ldapFailed){return null;}
-        if($DebugThis){error_log("[{$_SESSION["uid"]}]::{$GLOBALS["CURRENT_PAGE"]}:: @ldap_search($this->ldap_connection,$this->suffix,(cn=$name))".__FUNCTION__.' in '.__FILE__. " in line ". __LINE__);}
-        $sr =@ldap_search($this->ldap_connection,$this->suffix,"(cn=$name)");
-        if($DebugThis){error_log("[{$_SESSION["uid"]}]::{$GLOBALS["CURRENT_PAGE"]}:: @ldap_search -> $sr".__FUNCTION__.' in '.__FILE__. " in line ". __LINE__);}
-        if ($sr) {
-            if($DebugThis){error_log("[{$_SESSION["uid"]}]::{$GLOBALS["CURRENT_PAGE"]}: @ldap_get_entries($this->ldap_connection,$sr) ".__FUNCTION__.' in '.__FILE__. " in line ". __LINE__);}
-            $hash=@ldap_get_entries($this->ldap_connection,$sr);
-            if($hash["count"]==0){
-                $dn=$this->dn_escape("cn=artica,$this->suffix");
-                writelogs("Creating $dn",__CLASS__.'/'.__FUNCTION__,__FILE__);
-                $update_array["cn"][]='artica';
-                $update_array["objectClass"][]='organizationalRole';
-                $update_array["objectClass"][]='ArticaSettings';
-                $update_array["objectClass"][]='top';
-                if($DebugThis){error_log("[{$_SESSION["uid"]}]::{$GLOBALS["CURRENT_PAGE"]}: this->ldap_add($dn,$update_array) ".__FUNCTION__.' in '.__FILE__. " in line ". __LINE__);}
-                $this->ldap_add($dn,$update_array);
-            }
-        }else{
-            if($DebugThis){error_log("[{$_SESSION["uid"]}]::{$GLOBALS["CURRENT_PAGE"]}:: FAILED ".__FUNCTION__.' in '.__FILE__. " in line ". __LINE__);}
-        }
-    }
-
-
-    function _HashAllBlackWhites(){
-        $sr =@ldap_search($this->ldap_connection,$this->suffix,'(KasperkyASDatasAllow=*)',array('KasperkyASDatasAllow'));
-        if ($sr) {
-            $hash=ldap_get_entries($this->ldap_connection,$sr);
-            foreach ($hash as $num=>$ligne){
-                for($i=0;$i<$ligne["kasperkyasdatasallow"]["count"];$i++){
-                    $allow[$ligne["kasperkyasdatasallow"][$i]]=$ligne["kasperkyasdatasallow"][$i];
-                }
-            }
-        }
-        //--------------------------------------------------------------------------------------------------------------------------------------------------------------
-        $sr =@ldap_search($this->ldap_connection,$this->suffix,'(KasperkyASDatasDeny=*)',array('KasperkyASDatasDeny'));
-        if ($sr) {
-            $hash=ldap_get_entries($this->ldap_connection,$sr);
-            foreach ($hash as $num=>$ligne){
-                for($i=0;$i<$ligne["kasperkyasdatasdeny"]["count"];$i++){
-                    $deny[$ligne["kasperkyasdatasdeny"][$i]]=$ligne["kasperkyasdatasdeny"][$i];
-                }
-            }
-        }
-
-        return array("allows"=>$allow,"deny"=>$deny);
-    }
-
 
 
 
@@ -2345,19 +2257,7 @@ class clladp{
 
     }
 
-    function AllGroupsKavSettings(){
-        $fl=array('KasperkyAVScanningDatas');
-        $sr =@ldap_search($this->ldap_connection,$this->suffix,"(&(objectClass=posixGroup)(KasperkyAVScanningDatas=*))",$fl);
-        if($sr){
-            $result = ldap_get_entries($this->ldap_connection, $sr);
-            for($i=0;$i<$result["count"];$i++){
-                $conf[]=$result[$i]["kasperkyavscanningdatas"][0];
-            }
-        }else{writelogs("ldap_search return null for filter (&(objectClass=posixGroup)(KasperkyAVScanningDatas=*))");}
 
-        return $conf;
-
-    }
 
     function CyrusPassword($uid="cyrus"){
         $sr =@ldap_search($this->ldap_connection,"dc=organizations,$this->suffix","(cn=$uid)");
@@ -2413,10 +2313,6 @@ class clladp{
         if($classes["ArticaSettings"]==null){$upd["objectClass"][]="ArticaSettings";}
 
 
-        if($res["ARRAY_KEYS"]["KasperkyASDatasRules"]==null){
-            $upd["KasperkyASDatasRules"][0]="DEFAULT";
-            $this->Ldap_add_mod($dn,$upd);
-        }
         if($res["ARRAY_KEYS"]["ArticaUserFilterRule"]==null){
             unset($upd);
             $upd["ArticaUserFilterRule"][]="DEFAULT";
@@ -2481,7 +2377,6 @@ class clladp{
         $res["town"]=$attrs["l"][0];
         $res["BP"]=$attrs["postOfficeBox"];
         $res["SieveScriptsUser"]=$attrs["SieveScriptsUser"][0];
-        $res["KasperkyASDatasRules"]=$attrs["KasperkyASDatasRules"];
         $res["homeDirectory"]=$attrs["homeDirectory"][0];
 
 
@@ -2491,15 +2386,6 @@ class clladp{
         }
 
         $res["fetchmail"]=$fetch;
-
-        for($i=0;$i<$attrs["KasperkyASDatasAllow"]["count"];$i++){
-            $whitel[]=$attrs["KasperkyASDatasAllow"][$i];
-        }
-        $res["WhiteList"]=$whitel;
-        for($i=0;$i<$attrs["KasperkyASDatasDeny"]["count"];$i++){
-            $Blackl[]=$attrs["KasperkyASDatasDeny"][$i];
-        }
-
         $res["blacklist"]=$Blackl;
         return $res;
     }
@@ -2960,139 +2846,8 @@ class clladp{
     }
 
 
-    function WhitelistsFromDomain($domain=null){
-        if($domain==null){$domain="*";}
-        $mainF="*@$domain";
-        if($mainF=="*@*"){$mainF="*";}
-        $filter="(&(objectClass=ArticaSettings)(mail=$mainF)(amavisWhitelistSender=*))";
-        $sr=@ldap_search($this->ldap_connection,$this->suffix,$filter,array("mail","amavisWhitelistSender"));
-        if ($sr) {
-            $hash=ldap_get_entries($this->ldap_connection,$sr);
-            if($GLOBALS["VERBOSE"]){echo "$filter -> {$hash["count"]}\n";}
-            for($i=0;$i<$hash["count"];$i++){
-                $mail=$hash[$i]["mail"][0];
-                for($j=0;$j<$hash[$i][strtolower("amavisWhitelistSender")]["count"];$j++){
-                    $res[$mail][]=$hash[$i][strtolower("amavisWhitelistSender")][$j];
-                }
-            }
-        }
 
-
-        $filter="(&(objectClass=ArticaSettings)(objectClass=PostFixStructuralClass)(cn=$domain)(kasperkyasdatasallow=*))";
-        $sr=@ldap_search($this->ldap_connection,$this->suffix,$filter,array("cn","KasperkyASDatasAllow"));
-        if ($sr) {
-            $hash=ldap_get_entries($this->ldap_connection,$sr);
-            if($GLOBALS["VERBOSE"]){echo "$filter -> {$hash["count"]}\n";}
-            for($i=0;$i<$hash["count"];$i++){
-                $mail=$hash[$i]["cn"][0];
-                for($j=0;$j<$hash[$i]["kasperkyasdatasallow"]["count"];$j++){
-                    $res[$mail][]=$hash[$i]["kasperkyasdatasallow"][$j];
-                }
-            }
-        }
-
-        return $res;
-    }
 //-------------------------------------------------------------------------------------------------------------------------------------
-    function BlackListFromDomain($domain=null){
-        if($domain==null){$domain="*";}
-
-        $filter="(&(objectClass=ArticaSettings)(mail=*@$domain)(amavisBlacklistSender=*))";
-        $sr=@ldap_search($this->ldap_connection,$this->suffix,$filter,array("mail","amavisBlacklistSender"));
-        if ($sr) {
-            $hash=ldap_get_entries($this->ldap_connection,$sr);
-            for($i=0;$i<$hash["count"];$i++){
-                $mail=$hash[$i]["mail"][0];
-                for($j=0;$j<$hash[$i][strtolower("amavisBlacklistSender")]["count"];$j++){
-                    $res[$mail][]=$hash[$i][strtolower("amavisBlacklistSender")][$j];
-                }
-            }
-        }
-
-
-        $filter="(&(objectClass=ArticaSettings)(objectClass=PostFixStructuralClass)(cn=$domain)(KasperkyASDatasDeny=*))";
-        $sr=@ldap_search($this->ldap_connection,$this->suffix,$filter,array("cn","KasperkyASDatasDeny"));
-        if ($sr) {
-            $hash=ldap_get_entries($this->ldap_connection,$sr);
-            for($i=0;$i<$hash["count"];$i++){
-                $mail=$hash[$i]["cn"][0];
-                for($j=0;$j<$hash[$i][strtolower("KasperkyASDatasDeny")]["count"];$j++){
-                    $res[$mail][]=$hash[$i][strtolower("KasperkyASDatasDeny")][$j];
-                }
-            }
-        }
-
-        return $res;
-    }
-
-    function WhiteListsAddDomain($domain,$whitelist,$wbl=0){
-        if(!$this->ExistsDN("cn=wlbl,cn=artica,$this->suffix")){
-            $upd["objectClass"][]='top';
-            $upd["objectClass"][]="PostFixStructuralClass";
-            $upd["cn"]="wlbl";
-            $this->ldap_add("cn=wlbl,cn=artica,$this->suffix",$upd);
-            unset($upd);
-        }
-
-        if(!$this->ExistsDN("cn=$domain,cn=wlbl,cn=artica,$this->suffix")){
-            $upd["objectClass"][]='top';
-            $upd["objectClass"][]='ArticaSettings';
-            $upd["objectClass"][]="PostFixStructuralClass";
-            $upd["cn"]="$domain";
-            $this->ldap_add("cn=$domain,cn=wlbl,cn=artica,$this->suffix",$upd);
-            unset($upd);
-        }
-
-        if($wbl==0){
-            $up["KasperkyASDatasAllow"]=$whitelist;
-        }else{
-            $up["KasperkyASDatasDeny"]=$whitelist;
-        }
-        if($this->Ldap_add_mod("cn=$domain,cn=wlbl,cn=artica,$this->suffix",$up)){
-            if($wbl==0){$this->WhiteListsDelete($domain,$whitelist,1);}
-            if($wbl==1){$this->WhiteListsDelete($domain,$whitelist,0);}
-        }
-
-    }
-
-
-    function WhiteListsAddUser($uid,$whitelist,$wbl=0){
-        include_once(dirname(__FILE__) . '/class.user.inc');
-        $user=new user($uid);
-
-        if($wbl==0){
-            $user->add_whitelist($whitelist);
-
-        }else{
-            $user->add_blacklist($whitelist);
-        }
-
-    }
-
-
-    function WhiteListsDelete($to,$from,$wbl=0){
-        include_once(dirname(__FILE__) . '/class.user.inc');
-
-
-        if($wbl==0){
-            $upd["KasperkyASDatasAllow"]=$from;
-        }else{
-            $upd["KasperkyASDatasDeny"]=$from;
-        }
-
-        writelogs("cn=$to,cn=wlbl,cn=artica,$this->suffix ?",__CLASS__ . '/' . __FUNCTION__,__FILE__);
-
-        if($this->ExistsDN("cn=$to,cn=wlbl,cn=artica,$this->suffix")){
-            writelogs("Yes, delete $from",__CLASS__ . '/' . __FUNCTION__,__FILE__);
-            $this->Ldap_del_mod("cn=$to,cn=wlbl,cn=artica,$this->suffix",$upd);
-            return ;
-        }
-        $uid=$this->uid_from_email($to);
-        if($uid==null){return null;}
-        $user=new user($uid);
-        if($wbl==0){$user->del_whitelist($from);}else{$user->del_blacklist($from);}
-    }
-
     function getobjectDNClass($dn,$fulldn=0){
         $ld =$this->ldap_connection;
         $bind =$this->ldapbind;

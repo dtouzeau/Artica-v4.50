@@ -2633,7 +2633,9 @@ function APP_MATTERMOST($UPDATES_ARRAY):string{
     $bton="<span class='label label-default'>{unavailable}</span>";
     $VERSION=$tpl->icon_nothing();
     $warn_ico="";
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_INSTALLED"))==1){$VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_INSTALLED");}
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_INSTALLED"))==1){
+        $VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_VERSION");
+    }
 
     if(isset($UPDATES_ARRAY["APP_MATTERMOST"])){
         $bton=$tpl->button_autnonome("{install_upgrade2}",

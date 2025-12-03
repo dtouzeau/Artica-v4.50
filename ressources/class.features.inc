@@ -2016,6 +2016,22 @@ class features{
         return $this->build_paragraph($config);
     }
 
+    public function APP_MATTERMOST():string{
+        $config["SECURITY"]="AsSystemAdministrator";
+        $config["TOKEN_INSTALLED"]="APP_MATTERMOST_INSTALLED";
+        $config["TITLE"]="{APP_MATTERMOST}";
+        $config["EXPLAIN"]="{APP_MATTERMOST_EXPLAIN}";
+        $config["TOKEN"]="EnableMattermost";
+        $config["CMD_ON"]="/mattermost/install";
+        $config["CMD_OFF"]="/mattermost/uninstall";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/mattermost.install";
+        $config["LOG_FILE"]=PROGRESS_DIR."/mattermost.install.log";
+        $config["WIKI"]="https://wiki.articatech.com/en/reverse-proxy/mattermost";
+        $config["MEMMIN"]="2500";
+        return $this->build_paragraph($config);
+    }
+
+
 
 
 

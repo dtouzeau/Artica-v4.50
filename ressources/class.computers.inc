@@ -58,7 +58,6 @@ class computers{
 	var $dhcpHWAddress;
 	var $dhcpStatements;
 	var $dhcpfixed=0;
-	var $KasperkyAVScanningDatas=null;
 	var $VolatileIPAddress=1;
 	var $ComputerScanSchedule;
 	var $userPassword;
@@ -173,7 +172,6 @@ private function LoadDatas(){
 		$this->ComputerCPU=$attrs["ComputerCPU"][0];
 		if(isset($attrs['DnsMXLength'][0])){$this->DnsMXLength=$attrs["DnsMXLength"][0];}
 		if(isset($attrs['ComputerCryptedInfos'][0])){$this->ComputerCryptedInfos=$attrs["ComputerCryptedInfos"][0];}
-		if(isset($attrs['KasperkyAVScanningDatas'][0])){$this->KasperkyAVScanningDatas=$attrs["KasperkyAVScanningDatas"][0];}
 		if(isset($attrs['VolatileIPAddress'][0])){$this->VolatileIPAddress=$attrs['VolatileIPAddress'][0];}
 		if(isset($attrs['ComputerScanSchedule'][0])){$this->ComputerScanSchedule=$attrs['ComputerScanSchedule'][0];}
 		if($this->VolatileIPAddress==null){$this->VolatileIPAddress=1;}

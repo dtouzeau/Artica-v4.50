@@ -356,10 +356,8 @@ private function seems_utf8($Str) {
 			$res["description"]=stripslashes($attrs["description"][0]);
 			$res["ArticaDansGuardianGroupRuleEnabled"]=null;
 			
-			if(isset($attrs["KasperkyAVScanningDatas"][0])){$res["KasperkyAVScanningDatas"]=$attrs["KasperkyAVScanningDatas"][0];}
+
 			if(isset($attrs["DefaultGroupPassword"][0])){$this->DefaultGroupPassword=$attrs["DefaultGroupPassword"][0];}
-			if(isset($attrs["KasperkyASDatas"][0])){$res["KasperkyASDatas"]=$attrs["KasperkyASDatas"][0];}
-			if(isset($attrs["KasperkyASDatas"][0])){$this->KasperkyASDatas=$attrs["KasperkyASDatas"][0];}
 			if(isset($attrs["ArticaDansGuardianGroupRuleEnabled"][0])){$res["ArticaDansGuardianGroupRuleEnabled"]=$attrs["ArticaDansGuardianGroupRuleEnabled"][0];}
 			
 			

@@ -60,7 +60,6 @@ if(isset($_POST["restart-needed"])){restart_needed_perform();exit;}
 if(isset($_GET["doh-params"])){doh_parameters();exit;}
 if(isset($_GET["www-hosts"])){www_hosts();exit;}
 if(isset($_GET["www-hosts2"])){www_hosts2();exit;}
-if(isset($_GET["www-host-edit"])){www_hosts_edit_js();exit;}
 if(isset($_GET["www-host-edit-popup"])){www_hosts_edit_popup();exit;}
 if(isset($_GET["www-host-delete"])){www_hosts_delete();exit;}
 if(isset($_POST["hosts-delete"])){www_hosts_delete_perform();exit;}
@@ -2523,6 +2522,16 @@ function new_www():bool{
     if(!isAlready14()) {
         $Types[14] = "{DEFAULT_SERVER_BLOCK}";
     }
+    $APP_MATTERMOST_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_INSTALLED"));
+    $EnableMattermost=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMattermost"));
+    if($APP_MATTERMOST_INSTALLED==0){
+        $EnableMattermost=0;
+    }
+    if($EnableMattermost==1) {
+        $Types[19] = "{CREATE_MATTERMOST_SERVICE}";
+    }
+
+
     $q=new lib_sqlite(NginxGetDB());
     $results=$q->QUERY_SQL("SELECT *  FROM nginx_templates");
 
@@ -2531,7 +2540,6 @@ function new_www():bool{
         $tpname = $ligne["tpname"];
         $tpdate = $ligne["tpdate"];
         $tpdesc = $ligne["tpdesc"];
-
         $Types["tpl:$ID"]="<strong>$tpname</strong>&nbsp;({template})<br>$tpdesc<br><small>{created_at}: ".$tpl->time_to_date($tpdate)."</small>";
 
     }

@@ -2867,6 +2867,31 @@ class left_menus{
 
     }
 
+    public function Mattermost():string{
+        $APP_MATTERMOST_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MATTERMOST_INSTALLED"));
+        $EnableMattermost=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMattermost"));
+        if($APP_MATTERMOST_INSTALLED==0){
+            $EnableMattermost=0;
+        }
+        if($EnableMattermost==0){
+            return "";
+        }
+        $tpl=new template_admin();
+        $f[]="<!-- MATTERMOST START  -->";
+        $f[]="                <li id='left-menu'>";
+        $f[]="                    <a href='#' ><i class=\"mattermostMenu\"></i> <span class=\"nav-label\">Mattermost</span> </a>";
+        $f[]="                    <ul class='nav nav-second-level'>";
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.mattermost.status.php","ICO"=>"fas fa-tachometer-alt","TEXT"=>"{status}",) );
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.mattermost.users.php","ICO"=>ico_users,"TEXT"=>"{members}",) );
+        //--------------------------- NGINX - END
+        $f[]="					 </ul>";
+        $f[]="                </li>";
+        $f[]="<!-- MATTERMOST END  -->";
+        return @implode("\n",$f);
+
+    }
+
+
     public function nginx():string{
         $tpl=new template_admin();
         $EnableWordpressManagement=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWordpressManagement"));
@@ -2957,6 +2982,8 @@ class left_menus{
 
         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.fw.status.php",
             "ICO" => "fas fa-tachometer-alt", "TEXT" => "{status}",));
+
+       // $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.DecisionIP.php","ICO" => "fas fa-helmet-battle", "TEXT" => "DecisionIP",));
 
 
 

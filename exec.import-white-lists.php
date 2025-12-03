@@ -50,9 +50,7 @@ function WhiteListsAddDomain($domain,$whitelist,$ldap){
 		unset($upd);		
 	}
 	
-	
-		$up["KasperkyASDatasAllow"]=$whitelist;
-		$ldap->ldap_add_mod("cn=$domain,cn=wlbl,cn=artica,$ldap->suffix",$up);
+        $ldap->ldap_add_mod("cn=$domain,cn=wlbl,cn=artica,$ldap->suffix",$up);
 	
 }
 

@@ -606,6 +606,7 @@ function xgen(){
     $f[]=$leftmenus->WanProxy();
     $f[]=$leftmenus->ZipProxy();
     $f[]=$leftmenus->Privoxy();
+    $f[]=$leftmenus->Mattermost();
     $f[] = "<!-- WEB-FILTERING START  -->";
 
     if(method_exists($leftmenus,"KSRN")) {

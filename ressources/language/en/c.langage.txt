@@ -3308,3 +3308,14 @@ Install it if you want to use it.</filebeat_not_enabled_ids>
 <APP_MATTERMOST_POSTGRES>PostgreSQL for Mattermost</APP_MATTERMOST_POSTGRES>
 <build_indexes>Build indexes</build_indexes>
 <ids_categories_explain>This section lets you list the rule categories enabled in the IDS engine.[br]You will find both the active rules and the available rules for each category here.</ids_categories_explain>
+<decisionIPAbout>DecisionIP is a service provided by Lemnia.[br]Lemnia’s infrastructure intelligently aggregates reputation feeds of illegitimate IP addresses.[br]When you enable this service, your firewall (or this Artica server’s firewall) is automatically enriched with these threat-intelligence feeds.[br]This enhances the protection and performance of your services while improving the user experience.</decisionIPAbout>
+<decisionIPAboutErr1>To activate feed retrieval, you must register first.[br]Click the button to open the registration form.</decisionIPAboutErr1>
+<freeintegration>Free integration with Artica</freeintegration>
+<registereMailVerif>To register, enter a valid email address here.[br]This address will be verified by email.[br]A confirmation message will be sent to this address.</registereMailVerif>
+<CREATE_MATTERMOST_SERVICE>[b]Publish the Mattermost service[/b][br]Create a site rule to publish the [b]Mattermost[/b] web application.</CREATE_MATTERMOST_SERVICE>
+<error_pass8>Your password must contain at least 8 characters</error_pass8>
+<commands_count>Number of commands</commands_count>
+<teams_count>Number of teams</teams_count>
+<bots_count>Number of bots</bots_count>
+<posts_count>Number of posts</posts_count>
+<remove_user_ask>You are about to permanently delete this user.[br]Please confirm this action.</remove_user_ask>

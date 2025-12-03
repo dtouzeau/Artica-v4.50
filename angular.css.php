@@ -31,6 +31,43 @@ $html=$html."	font-size: 13px;
 h1, h2, h3, h4, h5, h6 {
     font-weight: normal;
 }
+.mattermostMenu {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+
+  /* Use the logo as a mask */
+  -webkit-mask-image: url(\"/img/mattermost.webp\");
+  mask-image: url(\"/img/mattermost.webp\");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+
+  /* Color of the logo */
+  background-color: rgb(167, 177, 194); /* white */
+}
+.mattermostTitle {
+  display: inline-block;
+  width: 104px;
+  height: 104px;
+
+  /* Mask using your WebP icon */
+  -webkit-mask-image: url(\"/img/mattermost.webp\");
+  mask-image: url(\"/img/mattermost.webp\");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+
+  /* Logo color */
+  background-color: rgb(103, 106, 108); /* black */
+}
 		
 .ui-menu-item-wrapper{
 	font-weight: bolder;

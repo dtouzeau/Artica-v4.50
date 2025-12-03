@@ -270,6 +270,7 @@ function features():bool{
     $APP_MIMEDEFANG=$features->APP_MIMEDEFANG();
     $APP_RBLDNSD=$features->APP_RBLDNSD();
     $APP_NGINX=$features->APP_NGINX();
+    $APP_MATTERMOST=$features->APP_MATTERMOST();
 
     $APP_GREENSQL=$features->APP_GREENSQL();
     $APP_MYSQL=$features->APP_MYSQL();
@@ -557,6 +558,7 @@ function features():bool{
     $network_services[]=$APP_WORDPRESS;
     $network_services[]=$PULSEREVERSE;
     $network_services[]=$APP_NGINX;
+    $network_services[]=$APP_MATTERMOST;
     $network_services[]=$APP_PHP_REVERSE;
     $network_services[]=$APP_HAMRP;
     $network_services[]=$MOD_SECURITY;

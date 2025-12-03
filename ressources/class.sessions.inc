@@ -264,7 +264,8 @@ function safe_session_start():bool{
         } catch (Throwable $e) {
             // Unix socket failed, try TCP fallback
             if (!$hasLoggedMemcacheTcpFallback) {
-                error_log("Memcached Unix socket failed, attempting TCP fallback: " . $e->getMessage());
+                $line=__LINE__;
+                error_log("($line): Memcached Unix socket failed, attempting TCP fallback: " . $e->getMessage());
                 $hasLoggedMemcacheTcpFallback = true;
             }
 
