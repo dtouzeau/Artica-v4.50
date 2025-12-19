@@ -262,9 +262,9 @@ function search():bool{
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{name}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{containers}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text' colspan='2'>{scope}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{network}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{gateway}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>DEL</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{network}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{gateway}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>DEL</th>";
     $html[]="</tr>";
     $html[]="</thead>";
     $html[]="<tbody>";

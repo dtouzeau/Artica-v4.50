@@ -293,19 +293,19 @@ function fw_database_status_popup(){
     if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
     $html[]="<tr>";
     $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='vertical-align: middle' width=1% nowrap><strong>{last_update}:</strong></td>";
+    $html[]="<td style='vertical-align: middle' style='width:1%' nowrap><strong>{last_update}:</strong></td>";
     $html[]="<td style='vertical-align: middle;padding-left:20px' width=100% nowrap>$cate</td>";
     $html[]="</tr>";
 
     if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
     $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='vertical-align: middle' width=1% nowrap><strong>{records}:</strong></td>";
+    $html[]="<td style='vertical-align: middle' style='width:1%' nowrap><strong>{records}:</strong></td>";
     $html[]="<td style='vertical-align: middle;padding-left:20px' width=100% nowrap>$items</td>";
     $html[]="</tr>";
 
     if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
     $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='vertical-align: middle' width=1% nowrap><strong>{size}:</strong></td>";
+    $html[]="<td style='vertical-align: middle' style='width:1%' nowrap><strong>{size}:</strong></td>";
     $html[]="<td style='vertical-align: middle;padding-left:20px' width=100% nowrap>$size</td>";
     $html[]="</tr>";
 
@@ -574,7 +574,7 @@ function dnsdist_status_center(){
         $html[]="<td colspan=$colspan style='vertical-align: middle'>";
         $html[]="<table style='width:100%'>";
         $html[]="<tr>";
-        $html[]="<td style='vertical-align: middle' width=1% nowrap>";
+        $html[]="<td style='vertical-align: middle' style='width:1%' nowrap>";
         $html[]="$pie";
         $html[]="</td>";
         $html[]="<td style='vertical-align: middle;padding-left:20px' width=100% nowrap>";

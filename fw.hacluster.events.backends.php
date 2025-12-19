@@ -200,9 +200,9 @@ function search():bool{
         $line=str_replace("[exec.lighttpd.php}]:","<span class='label $label_class'>Web Console</span>&nbsp;",$line);
 		$line=$tpl->_ENGINE_parse_body($line);
 		$html[]="<tr>
-				<td width=1% nowrap>$FTime</td>
-				<td width=1% nowrap>$pid</td>
-				<td width=1% nowrap>{$hostname}</td>
+				<td style='width:1%' nowrap>$FTime</td>
+				<td style='width:1%' nowrap>$pid</td>
+				<td style='width:1%' nowrap>{$hostname}</td>
 				<td>$label$line</td>
 				</tr>";
 		

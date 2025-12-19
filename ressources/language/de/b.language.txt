@@ -675,7 +675,7 @@ After clicking on the "build feature" the process will create your MySQL service
 </amavis_wizard_rule_per_user_expain2>
 <amavis_wizard_rule_per_user_text>Give access to anti-spam settings for each user defined in Artica.</amavis_wizard_rule_per_user_text>
 <analyzed>Analysiert</analyzed>
-<analyzed_flow>Analyzed flow</analyzed_flow>
+<analyzed_flow>Analysierter Datenfluss</analyzed_flow>
 <analyze_caches>Analyze caches</analyze_caches>
 <analyze_database>Analyze database</analyze_database>
 <analyze_ftp_requests>Check requests in FTP protocol</analyze_ftp_requests>
@@ -3172,7 +3172,7 @@ If defined, fixed computers in Artica database will be added in the DHCP configu
 <welcome_to_dhcp_wizard_3>Under the defined subnet, choose here the adresses range that the DHCP service will provide.[br]
 For example if your subnet is 192.168.1.0/255.255.255.0, you should use from 192.168.1.50 to 192.168.1.254</dhcp_wizard_4>
 <dialer>Websites providing information about dialers</dialer>
-<didyouknow>Did you know ?</didyouknow>
+<didyouknow>Wussten Sie das?</didyouknow>
 <didyouknow_acl_delegation>The ACL delegation object allows you to delegate a proxy rule part to specific members.</didyouknow_acl_delegation>
 <didyouknow_mailing_list>You can be notified about new releases, new videos, documentation...[br]Subscribe to the Artica Proxy mailing list</didyouknow_mailing_list>
 <didyouknow_unbound>Der DNS-Dienst mit lokalem Cache soll den Internetzugang beschleunigen, indem er die Latenzzeit f%C3%BCr DNS-Anfragen verringert.</didyouknow_unbound>
@@ -3635,8 +3635,8 @@ The Proxy is turned in ClamAV emergency mode and runnning without any Antivirus 
 <edit_report>Edit report</edit_report>
 <educational_games>Websites provides online games for education</educational_games>
 <effective_cache_size>Effektive Cache-Gr%C3%B6%C3%9Fe</effective_cache_size>
-<elasticsearch_address>Remote Elasticsearch server address</elasticsearch_address>
-<elasticsearch_remote_port>Remote Elasticsearch server port</elasticsearch_remote_port>
+<elasticsearch_address>Adresse des entfernten Elasticsearch-Servers</elasticsearch_address>
+<elasticsearch_remote_port>Port des entfernten Elasticsearch-Servers</elasticsearch_remote_port>
 <elastic_cluster_explain>In order to join a cluster, a node needs to know the hostname or IP address of at least some of the other nodes in the cluster.[br]This setting provides the initial list of addresses this node will try to contact.[br] Accepts IP addresses or hostnames.[br] If a hostname lookup resolves to multiple IP addresses then each IP address will be used for discovery</elastic_cluster_explain>
 <elements>Eintr%C3%A4ge</elements>
 <Elements_hiding_rules>Elements hiding rules</Elements_hiding_rules>
@@ -4414,7 +4414,7 @@ During this time the Proxy service should have troubles...
 <exec_time>Ausf%C3%BChrungszeit</exec_time>
 <exlude_mimetype_explain>This section will exclude content filtering such as antivirus from elements by mime type.[br]
 These items will not be excluded from the URLs filtering engine</exlude_mimetype_explain>
-<expand>Expand</expand>
+<expand>Ausklappen</expand>
 <expect_whitelist>Expect for whitelists</expect_whitelist>
 <expire>Ablaufen</expire>
 <expiredate>Verfallsdatum</expiredate>
@@ -4895,7 +4895,7 @@ Put here your Account with right credentials.</gateway_explain_login>
 <gateway_services>Gateway services</gateway_services>
 <generated_on>Generated on</generated_on>
 <generated_page>generated_page</generated_page>
-<generated_rules>Generated rules</generated_rules>
+<generated_rules>Generierte Regeln</generated_rules>
 <generate_csr>Erzeugen Sie die Zertifikatsanforderung</generate_csr>
 <generate_new_uid>Generate a new uidNumber</generate_new_uid>
 <generate_pfx>Generate PFX</generate_pfx>
@@ -5346,7 +5346,7 @@ Default is disabled (0).
 More you add databases, more the IDS service needs performance according the TCP flow</ids_categories_explain>
 <ids_events>Intrusion Detection System threats</ids_events>
 <ids_events_explain>Here it is threats detected bu your Intrusion Detection System service</ids_events_explain>
-<ids_firewall_rules_explain>Deny List of auto-generated rules by the Intrusion Detection System</ids_firewall_rules_explain>
+<ids_firewall_rules_explain>Blockliste automatisch erzeugter IDS-Regeln</ids_firewall_rules_explain>
 <ids_rules_explain>Here rules detected by your current IDS service.[br]
 You can disable/enable rule detection and enable/disable Firewall.[br]
 When enabling the FireWall option, Artica is able to automatically create a deny rule for the detected source IP address
@@ -5473,7 +5473,7 @@ This upgrade will re-create a new freshed database. This means datas will be rem
 To upgrade, just click on the upgrade button.
 </incompatible_bigdata_engine_explain2>
 <incompatible_browser>Incompatible browser</incompatible_browser>
-<incompatible_feature>Incompatible feature</incompatible_feature>
+<incompatible_feature>Inkompatible Funktion</incompatible_feature>
 <incompatible_proxy_version>Proxy version %s incompatible!! click to upgrade</incompatible_proxy_version>
 <incorrect_email_address>Incorrect eMail address</incorrect_email_address>
 <incorrect_email_address_cloud>We have tried to contact you by eMail but it seems your eMail address is invalid</incorrect_email_address_cloud>
@@ -6386,7 +6386,7 @@ Your local network will not be visible and the hosts appear as a single address 
 <MaxPacketCacheEntries>Max. Eintr%C3%A4ge im Cache</MaxPacketCacheEntries>
 <maxquota>Max Quota</maxquota>
 <MaxRateBw>Max transfer rate</MaxRateBw>
-<maxretries>MAX retries</maxretries>
+<maxretries>Maximale Anzahl von Versuchen</maxretries>
 <maxretry>Max. retry</maxretry>
 <MaxRotation>Max rotation</MaxRotation>
 <maxsitesize>Site size limit</maxsitesize>
@@ -7443,7 +7443,7 @@ In this case, your proxy will not accept any connection</no_listening_port_proxy
 <no_monitoring>No monitoring</no_monitoring>
 <no_more_network_card>No more Network Interface</no_more_network_card>
 <no_mx>No MX item</no_mx>
-<no_network_defined>No network set</no_network_defined>
+<no_network_defined>Kein Netzwerk festgelegt</no_network_defined>
 <no_new_updates>Keine neuen Aktualisierungen</no_new_updates>
 <no_organization_found_for_this_domain>No organization found for this domain</no_organization_found_for_this_domain>
 <no_organization_selected>No selected organization</no_organization_selected>
@@ -8472,7 +8472,7 @@ internet bandwidth.
 <realtime>Echtzeit</realtime>
 <realtime_events_squid>Ereignisse in Echtzeit</realtime_events_squid>
 <realtime_flow>Real-time flow</realtime_flow>
-<realtime_graphs>Echtzeit-Diagramme</realtime_graphs>
+<realtime_graphs>Diagramme in Echtzeit</realtime_graphs>
 <realtime_monitor>Realtime monitor</realtime_monitor>
 <realtime_requests>Echtzeit-Anfragen</realtime_requests>
 <realtime_requests_text>Anzeige von Echtzeitanforderungen, die %C3%BCber den Proxy-Dienst weitergeleitet werden</realtime_requests_text>
@@ -8770,7 +8770,7 @@ Do you want to carry out this operation ?
 </remove_dns_service_ask>
 <remove_entry_from_database>Remove entry from database</remove_entry_from_database>
 <remove_feature>Remove feature</remove_feature>
-<remove_from_menu>Remove from menu</remove_from_menu>
+<remove_from_menu>Aus dem Men%C3%BC entfernen</remove_from_menu>
 <remove_hardcoded_categories>Remove hard-coded categories</remove_hardcoded_categories>
 <remove_hardcoded_categories_explain>Populars websites are Hard-coded inside Artica.[br]This allow Artica to get official categories from the most popular websites without need to query remote database.[br]
 If you need to change categories of some web sites, you need to enable this feature in order to force Artica to not use it's local engine for categorization.</remove_hardcoded_categories_explain>
@@ -9458,7 +9458,7 @@ To handle more than 45.000.000 of categorized websites, your server require memo
 <server_load_this_hour>Server load this hour</server_load_this_hour>
 <server_load_this_week>Server load this week</server_load_this_week>
 <server_load_today>Server load today</server_load_today>
-<server_memory_consumption>Server memory consumption</server_memory_consumption>
+<server_memory_consumption>Speicherverbrauch des Servers</server_memory_consumption>
 <server_persistent_connections>Server persistent connections</server_persistent_connections>
 <server_persistent_connections_explain>Wenn diese Direktive aktiv ist, wird die Unterst%C3%BCtzung f%C3%BCr persistente Verbindungen zu Servern aktiviert, wenn dies von den Zielservern erlaubt wird.[br]
 Diese Direktive steuert, ob der Proxy persistente HTTP-Verbindungen zu Ursprungsservern und Nachbarn verwendet oder nicht.[br]
@@ -10661,7 +10661,7 @@ Click on the link bellow in order to see how to install/use a statistics Applian
 <supported_websites>Supported Websites</supported_websites>
 <support_and_debug>Support & debug</support_and_debug>
 <support_package>Support-Paket</support_package>
-<SuricataPfRing>Use PF RING Packer Parser</SuricataPfRing>
+<SuricataPfRing>PF_RING-Paketparser verwenden</SuricataPfRing>
 <SuricataPurges>Dies ist die Anzahl der Aufbewahrungstage, um Ereignisse in der Statistikdatenbank zu speichern.</SuricataPurges>
 <suricata_firewall>Wenn aktiviert, wird Artica automatisch eine Firewall-Regel erstellen, wenn der IDS-Dienst diese Regel meldet.</suricata_firewall>
 <swap_alert>SWAP-Alarm</swap_alert>
@@ -12095,7 +12095,8 @@ By using this WebFilter SaaS feature:[br]
 </WebFilter_SaaS_Explain>
 <webfunlocked>Unlocked from Web-Filtering</webfunlocked>
 <webinterface_check>Checks the Web interface health</webinterface_check>
-<webinterface_check_explain>This task checks the Artica Web interface engine.[br]If the Web engine is down or crash (eg: error 500), it try to restart it</webinterface_check_explain>
+<webinterface_check_explain>Diese Aufgabe %C3%BCberwacht die Web-Engine der Artica-Oberfl%C3%A4che.[br]
+Wenn die Web-Engine ausf%C3%A4llt oder abst%C3%BCrzt (z. B. Fehler 500), wird sie versuchen, sie neu zu starten.</webinterface_check_explain>
 <webmail2>Webmail</webmail2>
 <webmail_type>WebMail type</webmail_type>
 <webpages>Web Pages</webpages>
@@ -12112,7 +12113,7 @@ This section allows you to manage the Web server engine in order to provide Web 
 <webservice>Web service</webservice>
 <webservice_splashscreen>Web service for the Splash screen</webservice_splashscreen>
 <webservice_status>Web service status</webservice_status>
-<websites_families>Websites families</websites_families>
+<websites_families>Website-Familien</websites_families>
 <websites_heavy_cat>Multimedia websites</websites_heavy_cat>
 <websites_heavy_cat_explain>These websites are considered as content storage outside the company production such as video, 
 music, movies.[br]They consume many bandwidth and could affect the production

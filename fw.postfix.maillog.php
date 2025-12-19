@@ -200,7 +200,7 @@ function RTMMail_search(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $stime=$tpl->time_to_date($sdate,true);
         $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td width=1% nowrap>$stime</td>";
+        $html[]="<td style='width:1%' nowrap>$stime</td>";
         $html[]="<td style='width:1%;' nowrap class='$class'>{$MAIN["ipaddr"]}</td>";
         $html[]="<td style='width:1%;' nowrap class='$class'>{$MAIN["from"]}</td>";
         $html[]="<td width=1% class='$class'>$recipients</td>";
@@ -374,7 +374,7 @@ VERBOSE("$finalfile = ".filesize($finalfile));
             $service="Policy server";
             $text=scanispam($text);
             $html[]="<tr class='$TRCLASS'>";
-            $html[]="<td width=1% nowrap>{$status}</td>";
+            $html[]="<td style='width:1%' nowrap>{$status}</td>";
             $html[]="<td style='width:1%;' nowrap class='$class'>$date</td>";
             $html[]="<td style='width:1%;' nowrap class='$class'>$service</td>";
             $html[]="<td style='width:1%;' nowrap class='$class'>$pid</td>";
@@ -541,7 +541,7 @@ VERBOSE("$finalfile = ".filesize($finalfile));
         //Loadjs('fw.postfix.transactions.php?second-query=V0hFUkUgbXNnaWQ9J0Q3NEZGMjgwMEQxJw==&title=%7Bsee_messages_with%7D%3AD74FF2800D1')
 		
 		$html[]="<tr class='$TRCLASS'>";
-		$html[]="<td width=1% nowrap>{$status}</td>";
+		$html[]="<td style='width:1%' nowrap>{$status}</td>";
 		$html[]="<td style='width:1%;' nowrap class='$class'>$date</td>";
 		$html[]="<td style='width:1%;' nowrap class='$class'>$service</td>";
         $html[]="<td style='width:1%;' nowrap class='$class'>$pid</td>";

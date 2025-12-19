@@ -1919,7 +1919,7 @@ This restriction is useful at the end of a restriction list, to make the default
 <PubkeyAuthentication_text>Public-key authentication lets you prove your identity to a remote host using a cryptographic key instead of a login password.</PubkeyAuthentication_text>
 <StrictModes>Strict modes</StrictModes>
 <StrictModes_text>specifies whether ssh should check user's permissions in their home directory and rhosts files before accepting login. This option must always be set to yes because sometimes users may accidentally leave their directory or files world-writable.</StrictModes_text> 
-<APP_MSKTUTIL_NOT_INSTALLED>msktutil is not installed, use the setup center in order to install this tool</APP_MSKTUTIL_NOT_INSTALLED>
+<APP_MSKTUTIL_NOT_INSTALLED>The MS Active Directory Keytab client is not installed.[br]Please use the Software Center to install this component.</APP_MSKTUTIL_NOT_INSTALLED>
 <ADNETBIOSDOMAIN>Netbios AD Domain</ADNETBIOSDOMAIN>
 <howto_ADNETBIOSDOMAIN>This is your Active directory Workgroup/DOMAIN used when you log into the server like DOMAIN\username</howto_ADNETBIOSDOMAIN>
 <main_interface>Main interface</main_interface>

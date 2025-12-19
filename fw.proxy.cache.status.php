@@ -435,8 +435,8 @@ function statistics_table(){
 		
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
 		$html[]="<td nowrap><i class=\"fas fa-globe\"></i>&nbsp;$familysite</td>";
-		$html[]="<td width=1% nowrap>$size</td>";
-		$html[]="<td width=1% nowrap>$hits</td>";
+		$html[]="<td style='width:1%' nowrap>$size</td>";
+		$html[]="<td style='width:1%' nowrap>$hits</td>";
 		$html[]="</tr>";
 	
 	}
@@ -513,7 +513,7 @@ function statistics_urls_table(){
 	
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
 		$html[]="<td nowrap>{$domain}$path</td>";
-		$html[]="<td width=1% nowrap>$size</td>";
+		$html[]="<td style='width:1%' nowrap>$size</td>";
 		$html[]="</tr>";
 	
 	}
@@ -574,8 +574,8 @@ function statistics_domain_table(){
 	
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
 		$html[]="<td nowrap>$familysite</td>";
-		$html[]="<td width=1% nowrap>$size</td>";
-		$html[]="<td width=1% nowrap>$hits</td>";
+		$html[]="<td style='width:1%' nowrap>$size</td>";
+		$html[]="<td style='width:1%' nowrap>$hits</td>";
 		$html[]="</tr>";
 	
 	}

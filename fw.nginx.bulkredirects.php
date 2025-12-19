@@ -546,8 +546,8 @@ function popup_table2():bool{
     $html[]="<tr id='$md'>
 				<td width=50%>$Src</td>
 				<td width=50%>$Dest ($code_text)</td>
-				<td width=1%  nowrap >$enable</td>
-				<td width=1%  nowrap >$delete</td>
+				<td style='width:1%' nowrap>$enable</td>
+				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }

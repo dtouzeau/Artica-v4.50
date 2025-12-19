@@ -170,8 +170,8 @@ function search(){
 
 		
 		$html[]="<tr>
-				<td width=1% nowrap>{$ins[strtolower($re[2])]}</td>
-				<td width=1% nowrap>$FTime</td>
+				<td style='width:1%' nowrap>{$ins[strtolower($re[2])]}</td>
+				<td style='width:1%' nowrap>$FTime</td>
 				<td>$line</td>
 				</tr>";
 		

@@ -136,10 +136,10 @@ function search(){
 
 		
 		$html[]="<tr>
-				<td width=1% nowrap><span class='label $state'>{$re[4]}</span></td>
-				<td width=1% nowrap>$FTime</td>
-				<td width=1% nowrap>$pid</td>
-				<td width=1% nowrap>$service</td>
+				<td style='width:1%' nowrap><span class='label $state'>{$re[4]}</span></td>
+				<td style='width:1%' nowrap>$FTime</td>
+				<td style='width:1%' nowrap>$pid</td>
+				<td style='width:1%' nowrap>$service</td>
 				<td >$line</td>
 				</tr>";
 		

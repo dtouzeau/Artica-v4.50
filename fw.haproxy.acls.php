@@ -511,10 +511,10 @@ $sql="SELECT haproxy_acls_link.groupid,
 		$html[]="<td width=1% class='center' nowrap>{$ligne["torder"]}</center></td>";
 		$html[]="<td>{$arrayF["ROW"]}</td>";
 		$html[]="<td width=1% class='center' nowrap>$negation</center></td>";
-		$html[]="<td width=1% nowrap><center >$operator</center></td>";
-		$html[]="<td width=1% nowrap>{$arrayF["ITEMS"]}</td>";
-		$html[]="<td width=1% nowrap>&nbsp;$up&nbsp;$down&nbsp;</td>";
-		$html[]="<td width=1% nowrap>$del</td>";
+		$html[]="<td style='width:1%' nowrap><center >$operator</center></td>";
+		$html[]="<td style='width:1%' nowrap>{$arrayF["ITEMS"]}</td>";
+		$html[]="<td style='width:1%' nowrap>&nbsp;$up&nbsp;$down&nbsp;</td>";
+		$html[]="<td style='width:1%' nowrap>$del</td>";
 		$html[]="</tr>";
 		$html[]="";
 	}
@@ -756,8 +756,8 @@ function table_sub(){
 		$html[]="<tr id='$md'>";
 		$html[]="<td style='$color'>". $tpl->td_href($rulename,"{click_to_edit}",$js)."</td>";
 		$html[]="<td style='$color'>$EXPLAIN</td>";
-		$html[]="<td width=1% nowrap>&nbsp;$up&nbsp;$down&nbsp;</td>";
-		$html[]="<td width=1% nowrap>&nbsp;$del&nbsp;</td>";
+		$html[]="<td style='width:1%' nowrap>&nbsp;$up&nbsp;$down&nbsp;</td>";
+		$html[]="<td style='width:1%' nowrap>&nbsp;$del&nbsp;</td>";
 		$html[]="</tr>";
 		$html[]="";
 	}

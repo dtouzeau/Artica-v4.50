@@ -6,6 +6,11 @@ include_once(dirname(__FILE__)."/ressources/class.smtpd.notifications.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 
+if(isset($_GET["mattermost-js"])){mattermost_js();exit;}
+if(isset($_GET["mattermost-start"])){mattermost_start();exit;}
+if(isset($_GET["mattermost-step1"])){mattermost_step1();exit;}
+if(isset($_POST["MattermostNotifs"])){mattermost_save();exit;}
+
 if(isset($_GET["gmail-js"])){gmail_js();exit;}
 if(isset($_GET["gmail-start"])){gmail_start();exit;}
 if(isset($_GET["gmail-step1"])){gmail_step1();exit;}
@@ -100,12 +105,61 @@ function gmail_js():bool{
     $page=CurrentPageName();
     return  $tpl->js_dialog2("GMail","$page?gmail-start=yes");
 }
-function gmail_start(){
+function mattermost_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return  $tpl->js_dialog2("{APP_MATTERMOST}","$page?mattermost-start=yes");
+}
+function gmail_start():bool{
     $page=CurrentPageName();
     echo "<div id='gmail-wizard'></div>
     <script>LoadAjax('gmail-wizard','$page?gmail-step1=yes');</script>";
+    return true;
 }
-function gmail_step1(){
+function mattermost_start():bool{
+    $page=CurrentPageName();
+    echo "<div id='mattermost-wizard'></div>
+    <script>LoadAjax('mattermost-wizard','$page?mattermost-step1=yes');</script>";
+    return true;
+}
+function mattermost_step1():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $MattermostNotifs=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MattermostNotifs"));
+    $MattermostNotifsWarning=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MattermostNotifsWarning"));
+    $MattermostNotifsChannel=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MattermostNotifsChannel"));
+    $MattermostNotifsAPI=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MattermostNotifsAPI"));
+    $MattermostNotifsURL=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MattermostNotifsURL"));
+    $MattermostUseProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MattermostUseProxy"));
+
+    if(strlen($MattermostNotifsURL)<3){
+        $MattermostNotifsURL="https://mattermost.infra.lan";
+    }
+
+    $jsafter="dialogInstance2.close();LoadAjaxSilent('smtp-notifs-form','$page?smtp-static=yes');";
+    $form[]=$tpl->field_checkbox("MattermostNotifs","{enable}",$MattermostNotifs,true);
+    $form[]=$tpl->field_text("MattermostNotifsURL","{server_url}",$MattermostNotifsURL,true);
+    $form[]=$tpl->field_checkbox("MattermostUseProxy","{UseProxyServer}",$MattermostUseProxy);
+    $form[]=$tpl->field_checkbox("MattermostNotifsWarning","{warning}",$MattermostNotifsWarning);
+    $form[]=$tpl->field_text("MattermostNotifsChannel","{channel_id}",$MattermostNotifsChannel,true);
+    $form[]=$tpl->field_text("MattermostNotifsAPI","{token}",$MattermostNotifsAPI,true);
+    echo $tpl->form_outside("", $form,null,"{apply}",$jsafter,"AsSystemAdministrator");
+    return true;
+}
+function mattermost_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $tpl->SAVE_POSTs();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/mattermost/client/testnotif"));
+    if(!$json->Status){
+        echo $tpl->post_error($json->Error);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("MattermostNotifs",0);
+        return false;
+    }
+    return admin_tracks_post("Saving notifications using Matermost");
+
+}
+function gmail_step1():bool{
     $UfdbguardSMTPNotifs=smtp_defaults();
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -128,7 +182,7 @@ function gmail_step1(){
         return true;
     }
 
-
+    return true;
 
 }
 function gmail_json():bool{
@@ -182,7 +236,7 @@ function smtp_import_popup():bool{
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
-function smtp_import_file_uploaded(){
+function smtp_import_file_uploaded():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $file=$_GET["file-uploaded"];
@@ -210,7 +264,7 @@ function smtp_import_file_uploaded(){
     $newparam=base64_encode(serialize($UfdbguardSMTPNotifs));
     $GLOBALS["CLASS_SOCKETS"]->SaveConfigFile($newparam, "UfdbguardSMTPNotifs");
 
-    $jsrestart=$tpl->framework_buildjs("articasmtp.php?restart=yes",
+    $jsrestart=$tpl->framework_buildjs("/articanotifs/restart",
         "articanotifs.progress",
         "articanotifs.log","progress-notifications-restart",
         "LoadAjaxSilent('smtp-notifs-form','$page?smtp-static=yes');"
@@ -452,6 +506,7 @@ function smtp_static():bool{
     $page=CurrentPageName();
 
     $UfdbguardSMTPNotifs=smtp_defaults();
+    $MattermostNotifs=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MattermostNotifs"));
 
     $proto[]="smtp";
     if($UfdbguardSMTPNotifs["tls_enabled"]==1){
@@ -462,6 +517,18 @@ function smtp_static():bool{
     }
     if($UfdbguardSMTPNotifs["smtp_proxy_outgoing"]==null){
         $UfdbguardSMTPNotifs["smtp_proxy_outgoing"]="{none}";
+    }
+
+    $tpl->table_form_field_js("Loadjs('$page?mattermost-js=yes')","AsSystemAdministrator");
+
+    if($MattermostNotifs==0){
+        $tpl->table_form_field_bool("{APP_MATTERMOST}",0,ico_check);
+    }else{
+        $MattermostNotifsChannel=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MattermostNotifsChannel"));
+        $MattermostNotifsURL=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MattermostNotifsURL"));
+        $zurl="$MattermostNotifsURL/$MattermostNotifsChannel";
+        $zurl=str_replace("//","/",$zurl);
+        $tpl->table_form_field_text("{APP_MATTERMOST}","<small style='text-transform:none'>$zurl</small>","mattermostTable");
     }
 
     $tpl->table_form_field_js("Loadjs('$page?smtp-main-js=yes')","AsSystemAdministrator");
@@ -658,7 +725,6 @@ function status(){
 
     $tpl            = new template_admin();
     $jsRestart      = restart_js();
-    $page=CurrentPageName();
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/articanotifs/status"));
     $bsini = new Bs_IniHandler();
     $bsini->loadString($json->Info);
@@ -739,14 +805,22 @@ function events(){
 }
 
 function events_search(){
-    $time=null;
-    $sock=new sockets();
     $tpl=new template_admin();
-    $date=null;
-    $MAIN=$tpl->format_search_protocol($_GET["search"],false,true);
-    $line=base64_encode(serialize($MAIN));
-    $sock->getFrameWork("articasmtp.php?artica-notifs-events=$line");
-    $filename=PROGRESS_DIR."/smtpd.syslog";
+    $MAIN=$tpl->format_search_protocol($_GET["search"]);
+    $rp=intval($MAIN["MAX"]);
+    $search=trim($MAIN["TERM"]);
+    if(strlen($search)<3){$search="NONE";}
+
+    $data=$GLOBALS["CLASS_SOCKETS"]->REST_API("/articanotifs/events/$rp/$search");
+
+    $json=json_decode($data);
+    if (json_last_error()> JSON_ERROR_NONE) {
+        echo $tpl->div_error("{error}<hr>".json_last_error_msg());
+    }
+    if(!$json->Status){
+        echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
+    }
+
     $date_text=$tpl->_ENGINE_parse_body("{date}");
     $events=$tpl->_ENGINE_parse_body("{events}");
     $html[]="
@@ -759,13 +833,7 @@ function events_search(){
   	</thead>
 	<tbody>
 ";
-
-    $data=explode("\n",@file_get_contents($filename));
-    if(count($data)>3){$_SESSION["SMTP_NOTIFS_SEARCH"]=$_GET["search"];}
-    rsort($data);
-
-
-    foreach ($data as $line){
+    foreach ($json->Logs as $line){
         $MAIN=array();
         $msg=array();
         $text_class="text-success";
@@ -805,6 +873,10 @@ function events_search(){
         if(isset($MAIN["from"])){
             $msg[]="&nbsp;/&nbsp;{smtp_sender}: ".$MAIN["from"];
         }
+        if(isset($MAIN["func"])){
+            $msg[]="&nbsp;/&nbsp;{function}: ".$MAIN["func"];
+        }
+
 
 
 
@@ -812,14 +884,13 @@ function events_search(){
 
 
         $html[]="<tr>
-				<td width=1% nowrap>$FTime</td>
+				<td style='width:1%' nowrap>$FTime</td>
 				<td>$line</td>
 				</tr>";
 
     }
 
     $html[]="</tbody></table>";
-    $html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/smtpd.syslog.pattern")."</i></div>";
     echo $tpl->_ENGINE_parse_body($html);
 
 

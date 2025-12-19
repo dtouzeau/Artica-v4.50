@@ -84,7 +84,7 @@ function search()
         $subject=$ligne["subject"];
 
         $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td class=\"$text_class\" width=1% nowrap><div class='label $severity_class' style='font-size:13px;padding:10px;width:100%' $curs OnClick=\"blur()\" >$zdate</a></div></td>";
+        $html[]="<td class=\"$text_class\" style='width:1%' nowrap><div class='label $severity_class' style='font-size:13px;padding:10px;width:100%' $curs OnClick=\"blur()\" >$zdate</a></div></td>";
         $html[]="<td class=\"$text_class\">$subject</td>";
         $html[]="</tr>";
 

@@ -218,12 +218,12 @@ function ip_popup(){
     $html[]="<tr>";
     if($ID==0) {
         $html[] = "<td><strong>{follow_this_address}</strong><br><small>{acl_follow_this_address}</small></td>";
-        $html[] = "<td width=1% nowrap>" . $tpl->button_autnonome("{enable_filter}", "Loadjs('$page?ip-view=$ipencode')",
+        $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{enable_filter}", "Loadjs('$page?ip-view=$ipencode')",
                 "fas fa-eye", "AsProxyMonitor", 180, "btn-info") . "</td>";
 
     }else{
         $html[] = "<td><strong>{unfollow_this_address}</strong><br><small>{acl_follow_this_address}</small></td>";
-        $html[] = "<td width=1% nowrap>" . $tpl->button_autnonome("{disable}", "Loadjs('$page?ip-view=$ipencode')",
+        $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{disable}", "Loadjs('$page?ip-view=$ipencode')",
                 "fas fa-eye", "AsProxyMonitor", 180, "btn-danger") . "</td>";
 
 

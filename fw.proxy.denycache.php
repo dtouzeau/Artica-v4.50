@@ -181,8 +181,8 @@ function main(){
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td nowrap>$item</td>";
-		$html[]="<td width=1% nowrap>".$GLOBALS["ztype"][intval($ligne["ztype"])]."</td>";
-		$html[]="<td width=1% nowrap>".$tpl->icon_delete("Loadjs('$page?deny-cache-delete=$itemenc&md=$md')","AsSquidAdministrator")."</td>";
+		$html[]="<td style='width:1%' nowrap>".$GLOBALS["ztype"][intval($ligne["ztype"])]."</td>";
+		$html[]="<td style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?deny-cache-delete=$itemenc&md=$md')","AsSquidAdministrator")."</td>";
 		$html[]="</tR>";
 	}
 

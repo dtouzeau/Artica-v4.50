@@ -448,12 +448,12 @@ function directory_monitor_table(){
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td class=\"$text_class\">".$tpl->td_href($lastscan,"{click_to_edit}",$jslink)."$distance</td>";
 		$html[]="<td>".$tpl->td_href($directory,"{click_to_edit}",$jslink)."</td>";
-		$html[]="<td class=\"$text_class\" width=1% nowrap>{$partition}</td>";
-		$html[]="<td class=\"$text_class\" width=1% nowrap>{$hd}</td>";
-		$html[]="<td class=\"$text_class\" width=1% nowrap>{$USED}</td>";
-		$html[]="<td class=\"$text_class\" width=1% nowrap>{$FREEMB}</td>";
-		$html[]="<td class=\"center\" width=1% nowrap>$icon</td>";
-		$html[]="<td class=\"center\" width=1% nowrap>$delete</td>";
+		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>{$partition}</td>";
+		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>{$hd}</td>";
+		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>{$USED}</td>";
+		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>{$FREEMB}</td>";
+		$html[]="<td class=\"center\" style='width:1%' nowrap>$icon</td>";
+		$html[]="<td class=\"center\" style='width:1%' nowrap>$delete</td>";
 		
 
 	}

@@ -99,10 +99,10 @@ function table_main(){
         $phpinivals=$ligne["phpinivals"];
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap>$instancename</td>";
-        $html[]="<td width=1% nowrap>{$zstatus[$ligne["block"]]}</td>";
-        $html[]="<td width=1% nowrap>$dbuser</td>";
-        $html[]="<td  width=1% nowrap>$userip</td>";
+        $html[]="<td style='width:1%' nowrap>$instancename</td>";
+        $html[]="<td style='width:1%' nowrap>{$zstatus[$ligne["block"]]}</td>";
+        $html[]="<td style='width:1%' nowrap>$dbuser</td>";
+        $html[]="<td  style='width:1%' nowrap>$userip</td>";
         $html[]="<td>$query<br><small>$reason</small></td>";
         $html[]="</tr>";
     }

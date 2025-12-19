@@ -259,7 +259,8 @@ Hamachi is managed and maintained from anywhere via the web, securely.
 <APP_LXC_TEXT>Create and manage Virtual Private servers with Linux Containers technology</APP_LXC_TEXT>
 <APP_MOD_PAGESPEED>modulo de optimizaci&oacute;n de p&aacute;ginas web</APP_MOD_PAGESPEED>
 <APP_MSKTUTIL>keytab client for MS Active Directory</APP_MSKTUTIL>
-<APP_MSKTUTIL_NOT_INSTALLED>msktutil is not installed, use the setup center in order to install this tool</APP_MSKTUTIL_NOT_INSTALLED>
+<APP_MSKTUTIL_NOT_INSTALLED>El cliente Keytab para Microsoft Active Directory no est%C3¡ instalado.[br]
+Utilice el Centro de software para instalar esta herramienta.</APP_MSKTUTIL_NOT_INSTALLED>
 <APP_MYSQL1>Servicio Mysql</APP_MYSQL1>
 <APP_NETATALK>Networking Apple Macintosh</APP_NETATALK>
 <APP_NOIP>Servicio DNS No-IP</APP_NOIP>
@@ -1028,7 +1029,7 @@ When a user add/delete/modify a file in a Samba folder, greyhole will saved it a
 <enable_imap>Enable IMAP service</enable_imap>
 <enable_imaps>Enable IMAP SSL</enable_imaps>
 <enable_ipblocks>Enable block countries service</enable_ipblocks>
-<enable_ipv6>Enable IPv6</enable_ipv6>
+<enable_ipv6>Habilitar IPv6</enable_ipv6>
 <enable_ipv6_text>Si se activa, Artica habilitar%C3¡ IPv6 en el n%C3%BAcleo del sistema y podr%C3¡ configurar redes con caracter%C3%ADsticas IPv6</enable_ipv6_text>
 <enable_kill_proc>Kill processes</enable_kill_proc>
 <enable_ldap_authentication>Activar la autenticaci%C3%B3n LDAP</enable_ldap_authentication>
@@ -2482,7 +2483,7 @@ click on the link below
 <september>Septiembre</september>
 <server_time2>System clock</server_time2>
 <server_time2_text>Modify manually the system clock</server_time2_text>
-<server_url>Server URL</server_url>
+<server_url>URL del servidor</server_url>
 <SERVICESS_OK>Todos los servicios est%C3¡n funcionando</SERVICESS_OK>
 <SERVICESS_OK_TEXT>Todos los servicios est%C3¡n funcionando correctamente, puede hacer clic aqu%C3%AD para ver los detalles</SERVICESS_OK_TEXT>
 <SERVICESS_STOPPED>stopped service(s), click here to see details</SERVICESS_STOPPED>

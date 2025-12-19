@@ -574,6 +574,7 @@ exec.klnagent.php
 exec.keepup2date.php
 exec.squid.cmdline.finduser.php
 exec.web-community-filter.php.old
+exec.service.postfix-logger.php
 exec.updateutility.install.php
 exec.updateutility.uninstall.php
 exec.updateutility.wizard.php
@@ -587,6 +588,7 @@ framework/vmtools.php
 framework/syno.php
 framework/klnagent.php
 framework/autofs.php
+framework/articasmtp.php
 exec.computer.scan.php
 framework/jabber.php
 access-log-parser.py
@@ -670,6 +672,7 @@ ressources/class.squid.ecap.inc
 ressources/class.status.rsync.inc
 ressources/class.status.vmware.inc
 ressources/class.kav4proxy.inc
+ressources/class.postfix.maillog.inc
 ressources/class.kav4samba.inc
 ressources/class.apache.inc
 ressources/class.ufdb.updateutility.inc
@@ -683,6 +686,10 @@ framework/klms.php
 framework/ntpd.php
 squid.parent.proxy.php
 DynamicGroupsAcls.events.php
+exec.postfix.transcations.maintenance.php
+exec.postfix.recompile.task.php
+exec.postfix.stats.clean.php
+exec.postfix.vacuum.php
 dansguardian2.backuped.databases.php
 dansguardian2.explodeadgroup.php
 dansguardian2.update.php
@@ -1809,3 +1816,5 @@ ubound.outgoing-interface.php
 ubound.SafeSearch.php
 ubound.dashboard.php
 ubound.events.php
+bin/siege
+bin/siege-deb12

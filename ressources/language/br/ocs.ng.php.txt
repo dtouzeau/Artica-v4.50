@@ -13,7 +13,7 @@ If you want to disable this feature, set parameter to 0</automatic_computers_inj
 <download_certificate>Download certificate</download_certificate>
 <EXECUTE>Execute</EXECUTE>
 <last_com>%C3%9Altima conex%C3£o</last_com>
-<LAUNCH>Launch</LAUNCH>
+<LAUNCH>Iniciar</LAUNCH>
 <OCS_ADD_PACKAGE_EXPLAIN>OCS Agents requires that you package is in zip compressed format, you can specify 2 orders about a zip package.[br]
 [b]Store[/b] will extract only the package in the specified path.[br]
 [b]Execute[/b]Will extract package and execute the specified command lines tokens.[br]

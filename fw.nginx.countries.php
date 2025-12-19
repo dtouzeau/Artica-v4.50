@@ -355,9 +355,9 @@ function popup_table2():bool{
 
 
     $html[]="<tr id='$md'>
-                <td width=1%  nowrap ><img src='img/$flag'></td>
-				<td width=100%>$Names</td>
-				<td width=1%  nowrap >$enable</td>
+                <td style='width:1%' nowrap><img src='img/$flag'></td>
+				<td style='width:100%'>$Names</td>
+				<td style='width:1%' nowrap>$enable</td>
 				</tr>";
 
     }

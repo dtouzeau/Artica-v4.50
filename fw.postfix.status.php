@@ -327,6 +327,13 @@ function left_postfix_status_master(){
     $bsini->loadString($json->Info);
     $postfix_restart="Loadjs('$page?restart-postfix-js=0')";
     $html[]=$tpl->SERVICE_STATUS($bsini, "APP_POSTFIX",$postfix_restart);
+
+    $restart_js=$tpl->framework_buildjs("/postfix/artica/maillog/restart","articamail.progress",
+        "articamail.progress.log",
+        "progress-postfix-restart"
+    );
+
+    $html[]=$tpl->SERVICE_STATUS($bsini, "APP_ARTICA_MAILLOG",$restart_js);
     $html[]="<script>";
     $html[]="LoadAjaxSilent('socks-connection-0','$page?socks-connection=yes&instance-id=0')";
     $html[]="</script>";

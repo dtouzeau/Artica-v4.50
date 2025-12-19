@@ -162,7 +162,8 @@ function table(){
 	$results=$q->QUERY_SQL("SELECT signature FROM suricata_sig WHERE enabled=1 and firewall=1");
 	if(!$q->ok){
         echo $tpl->div_error($q->mysql_error);
-        writelogs($q->mysl_error,__FUNCTION__,__FILE__,__LINE__);
+        writelogs($q->mysql_error,__FUNCTION__,__FILE__,__LINE__);
+        return;
     }
 	while ($ligne = pg_fetch_assoc($results)) {
 		$GLOBALS["FIREWALL"][$ligne["signature"]]=true;

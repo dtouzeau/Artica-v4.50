@@ -674,7 +674,7 @@ function table(){
             $html[]="<td class=\"\">". $tpl->icon_nothing()."</td>";
             $html[]="<td class=\"\">". $tpl->icon_nothing()."</td>";
             $html[]="<td class=\"\">$NumBerOfusers {members}</td>";
-            $html[]="<td class=\"\" width=1% nowrap>$delete</td>";
+            $html[]="<td class=\"\" style='width:1%' nowrap>$delete</td>";
             $html[]="</tr>";
             continue;
         }
@@ -737,7 +737,7 @@ function table(){
         $html[]="<td class=\"$text_class\">". $tpl->td_href(@implode("", $email_address),"{click_to_edit}",$js)."</td>";
         $html[]="<td class=\"$text_class\">". @implode("", $telephonenumber)."</td>";
         $html[]="<td class=\"$text_class\">$GroupsTableau</td>";
-        $html[]="<td class=\"$text_class\" width=1% nowrap>$delete</td>";
+        $html[]="<td class=\"$text_class\" style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";
 
 

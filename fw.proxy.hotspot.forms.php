@@ -298,9 +298,9 @@ function table():bool{
         //
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap><i class='fa-solid fa-pen-field'></i></td>";
+        $html[]="<td style='width:1%' nowrap><i class='fa-solid fa-pen-field'></i></td>";
         $html[]="<td width=99%>".$tpl->td_href("$label",null,"Loadjs('$page?edit=$ID')")."</td>";
-        $html[]="<td width=1% nowrap>$format$values_link</td>";
+        $html[]="<td style='width:1%' nowrap>$format$values_link</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>$mandatory_ico</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>".$tpl->icon_check($enabled,
                 "Loadjs('$page?uncheck=$ID')","AsHotSpotManager")."</td>";

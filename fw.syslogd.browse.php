@@ -132,8 +132,8 @@ function all_table_list():bool{
         $html[]="<tr class='$TRCLASS'>";
         $html[]="<td class=\"$text_class\"><strong>$hostname_text</strong></td>";
         $html[]="<td class=\"$text_class\">$ipaddr</a></td>";
-        $html[]="<td class=\"$text_class\" width=1% nowrap>{$date}</a></td>";
-        $html[]="<td class=\"$text_class\" width=1% nowrap><strong>$size</strong></td>";
+        $html[]="<td class=\"$text_class\" style='width:1%' nowrap>{$date}</a></td>";
+        $html[]="<td class=\"$text_class\" style='width:1%' nowrap><strong>$size</strong></td>";
         $html[]="</tr>";
 
     }

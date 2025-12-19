@@ -185,12 +185,12 @@ if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
         $psize=FormatBytes($psize/1024);
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td class=\"\"  width=1% nowrap><i class=\"fas fa-film\"></i>&nbsp;$created</td>";
+        $html[]="<td class=\"\"  style='width:1%' nowrap><i class=\"fas fa-film\"></i>&nbsp;$created</td>";
         $html[]="<td class=\"\" nowrap>$path&nbsp;<small>$psize</small></td>";
         $html[]="<td class=\"\" width='1%'  nowrap>$rule_name</td>";
         $html[]="<td class=\"\" width='1%'  nowrap>$username</td>";
         $html[]="<td class=\"\" width='1%'  nowrap>$hostname</td>";
-        $html[]="<td class=\"\" width=1% nowrap>". $tpl->icon_delete("Loadjs('$page?remove=$ID&md=$md')","AsSquidAdministrator")."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>". $tpl->icon_delete("Loadjs('$page?remove=$ID&md=$md')","AsSquidAdministrator")."</td>";
         $html[]="</tr>";
 
 

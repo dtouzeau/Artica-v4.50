@@ -412,15 +412,15 @@ function search()
         }
 
         $html[] = "<tr>
-					<td width=1% nowrap><span style='color:$color'>$month $day | $yime</span></td>
-					<td width=1% nowrap><span style='color:$color'>$client</span></td>
-					<td width=1% nowrap><span style='color:$color'>{$HTTP_CODE}</span></td>
-					<td width=1% nowrap><span style='color:$color'>{$PROTO}</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>$month $day | $yime</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>$client</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>{$HTTP_CODE}</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>{$PROTO}</span></td>
 					<td><span style='color:$color'>$URI_column</span></td>
 					<td style='width:1%;' nowrapclass=center><center>{$loupe}&nbsp;&nbsp;{$link}</center></td>
-					<td width=1% nowrap>$backend_column</td>
-					<td width=1% nowrap><span style='color:$color'>{$size}</span></td>
-					<td width=1% nowrap><span style='color:$color'>$duration_column</span></td>
+					<td style='width:1%' nowrap>$backend_column</td>
+					<td style='width:1%' nowrap><span style='color:$color'>{$size}</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>$duration_column</span></td>
 					</tr>";
 
     }

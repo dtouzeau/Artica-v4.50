@@ -121,8 +121,8 @@ function search(){
 
 		
 		$html[]="<tr>
-				<td width=1% nowrap>$date</td>
-				<td width=1% nowrap>$service</td>
+				<td style='width:1%' nowrap>$date</td>
+				<td style='width:1%' nowrap>$service</td>
 				<td>$line</td>
 				</tr>";
 		

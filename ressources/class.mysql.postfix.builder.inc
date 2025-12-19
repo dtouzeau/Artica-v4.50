@@ -19,8 +19,7 @@ class mysql_postfix_builder{
 	var $MysqlFailed=false;
 	var $SocketName=null;
 	var $EnableRemoteStatisticsAppliance=0;
-	
-	
+
 	function __construct(){
 		$this->ClassSQL=new mysql();
 		$this->UseMysql=$this->ClassSQL->UseMysql;

@@ -104,9 +104,9 @@ function domains_search():bool{
         $zmd5=md5(serialize($ligne));
         $html[]="<tr class='$TRCLASS' id='$zmd5'>";
         $html[]="<td width=99% nowrap><i class=\"$ico\"></i>&nbsp;&nbsp;$domain</td>";
-        $html[]="<td width=1% nowrap>$category</td>";
+        $html[]="<td style='width:1%' nowrap>$category</td>";
         $html[]="<td  width=1% >". $tpl->FormatNumber($hits)."</td>";
-        $html[]="<td width=1% nowrap></td>";
+        $html[]="<td style='width:1%' nowrap></td>";
         $html[]="</tr>";
 
     }

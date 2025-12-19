@@ -171,8 +171,8 @@ function table(){
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td><strong>". $tpl->td_href($ligne["pattern"],null,$editjs)."</strong></td>";
-        $html[]="<td width=1% nowrap>{$type[$ligne["type"]]}</center></td>";
-        $html[]="<td width=1% nowrap>$check</td>";
+        $html[]="<td style='width:1%' nowrap>{$type[$ligne["type"]]}</center></td>";
+        $html[]="<td style='width:1%' nowrap>$check</td>";
         $html[]="<td width=1% class='center' nowrap>$delete</center></td>";
         $html[]="</tr>";
 

@@ -327,10 +327,10 @@ function ps_report():string{
 		}
 
 		$TT[]="<tr>";
-		$TT[]="<td width=1% nowrap><strong>$PERC_CPU</strong></td>";
-		$TT[]="<td width=1% nowrap><strong>$PERC_MEM</strong></td>";
-		$TT[]="<td width=1% nowrap>$VSZ</td>";
-		$TT[]="<td width=1% nowrap>$RSS</td>";
+		$TT[]="<td style='width:1%' nowrap><strong>$PERC_CPU</strong></td>";
+		$TT[]="<td style='width:1%' nowrap><strong>$PERC_MEM</strong></td>";
+		$TT[]="<td style='width:1%' nowrap>$VSZ</td>";
+		$TT[]="<td style='width:1%' nowrap>$RSS</td>";
 		$TT[]="<td width=99%>$CMD</td>";
 		$TT[]="</tr>";
 

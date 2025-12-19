@@ -3319,3 +3319,35 @@ Install it if you want to use it.</filebeat_not_enabled_ids>
 <bots_count>Number of bots</bots_count>
 <posts_count>Number of posts</posts_count>
 <remove_user_ask>You are about to permanently delete this user.[br]Please confirm this action.</remove_user_ask>
+<channel_id>Channel ID</channel_id>
+<records_per_db>Records per database</records_per_db>
+<records_per_db_decision_ip>This setting lets you define how many IP addresses to fetch per category.[br]The higher this number, the more RAM the firewall will use.[br]By default, the value is set to 10,000 addresses.[br]The maximum allowed value is 100,000 addresses.</records_per_db_decision_ip>
+<total_blocked>Total blocked</total_blocked>
+<last_5_minutes>Last 5 minutes</last_5_minutes>
+<blocked_by_categories>Blocked by categories</blocked_by_categories>
+<realtime_blocked_events>Realtime blocked events</realtime_blocked_events>
+<unique_ips>Unique IPs</unique_ips>
+<DecisionIP_statistics_explain>This section lets you monitor real-time statistics for source IP addresses blocked by the DecisionIP categories you have enabled.</DecisionIP_statistics_explain>
+<active_categories>Active categories</active_categories>
+<renew_license>Renew the license</renew_license>
+<trap_files>Trap files</trap_files>
+<nginx_trap_files_explain>Trap files are virtual links.[br]They do not physically exist; their purpose is to detect malicious systems.[br]If bots or users attempt to access them while no page on your site uses or references these links, countermeasures are triggered: the source IP address is blocked for a defined period, and an alert is sent to the DecisionIP intelligence center (if enabled).</nginx_trap_files_explain>
+<http_error_code_403>Error 403 – Forbidden:[br][i]HTTP 403 means the server understood the request but refuses to authorize it.[/i]</http_error_code_403>
+<http_error_code_404>Error 404 – Not Found:[br][i]HTTP 404 indicates that the server cannot find the requested resource[/i]</http_error_code_404>
+<http_error_code_405>Error 405 – Method Not Allowed:[br][i]HTTP 405 means the server recognizes the requested resource but does not allow the HTTP method used (e.g., POST, PUT, DELETE).[/i]</http_error_code_405>
+<http_error_code_496>Error 496 – SSL Certificate Required (a non-standard reverse-proxy-specific code):[br][i]HTTP 496 is returned by the reverse-proxy when the client connects to an HTTPS port without providing a required client SSL certificate.[/i]</http_error_code_496>
+<http_error_code_400>Error 400 – Bad Request:[br][i]HTTP 400 means the server cannot process the request because it is malformed or invalid.[/i]</http_error_code_400>
+<http_error_code_500>Error 500 – Internal Server Error:[br][i]HTTP 500 indicates that the server encountered an unexpected condition that prevented it from fulfilling the request.[/i]</http_error_code_500>
+<http_error_code_502>Error 502 – Bad Gateway:[br][i]HTTP 502 means a server acting as a gateway or reverse proxy received an invalid response from an upstream server.[/i]</http_error_code_502>
+<http_error_code_503>Error 503 – Service Unavailable:[br][i]HTTP 503 means the server is temporarily unable to handle the request.[/i]</http_error_code_503>
+<http_error_code_504>Error 504 – Gateway Timeout:[br][i]HTTP 504 means a server acting as a gateway or reverse proxy did not receive a timely response from an upstream server.[/i]</http_error_code_504>
+<http_error_code_504>Error 444 – No Response: HTTP 444 is a non-standard reverse-proxy status used to close a connection without sending any response to the client.[/i]</http_error_code_444>
+<Latency_events>Latency events</Latency_events>
+<Latency_events_reverse>This option allows Artica to write a dedicated trace file whenever the reverse-proxy or backend latency exceeds a given threshold in milliseconds.[br]
+If the value is set to 0, the tracing feature is disabled.[br]You will see a specific dropdown filter for this in the real-time events view.</Latency_events_reverse>
+<APP_ARTICA_MAILLOG>Artica Mail.Log</APP_ARTICA_MAILLOG>
+<APP_SIEGE>Proxy stress service</APP_SIEGE>
+<APP_SIEGE_EXPLAIN>Siege Daemon is an enterprise-grade load testing solution.[br]It provides a modern REST API to orchestrate HTTP load tests, with real-time monitoring, Kerberos authentication support, and seamless integration capabilities.[br]Whether you are stress-testing internal applications behind corporate proxies or validating public-facing APIs, Siege Daemon delivers the insights required to ensure your infrastructure can sustain production workloads.</APP_SIEGE_EXPLAIN>
+<delay_between_requests>Delay between requests</delay_between_requests>
+<new_stress_test>New stress test</new_stress_test>
+

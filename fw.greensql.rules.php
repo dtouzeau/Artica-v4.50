@@ -299,10 +299,10 @@ function table(){
 		
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td width=1% nowrap><strong style='font-family:Courier New'>".$tpl->td_href($ligne["pattern"],null,"Loadjs('$page?rule-js=$ID&tbl={$_GET["table"]}&zcommand=".urlencode($_GET["zcommand"])."');")."</strong></td>";
+		$html[]="<td style='width:1%' nowrap><strong style='font-family:Courier New'>".$tpl->td_href($ligne["pattern"],null,"Loadjs('$page?rule-js=$ID&tbl={$_GET["table"]}&zcommand=".urlencode($_GET["zcommand"])."');")."</strong></td>";
 		$html[]="<td><strong>".$tpl->td_href($ligne["explain"],null,"Loadjs('$page?rule-js=$ID&tbl={$_GET["table"]}&zcommand=".urlencode($_GET["zcommand"])."');")."</td>";
-		$html[]="<td  width=1% nowrap>$enabled</td>";
-		$html[]="<td  width=1% nowrap>$delete</td>";
+		$html[]="<td  style='width:1%' nowrap>$enabled</td>";
+		$html[]="<td  style='width:1%' nowrap>$delete</td>";
 		$html[]="</tr>";
 		
 		

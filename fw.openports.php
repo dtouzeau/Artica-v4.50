@@ -95,10 +95,10 @@ function list_ports(){
         $md=md5($listen_port.serialize($array));
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td nowrap style='width:1%;text-align: right;vertical-align: top !important;'><strong style='font-size:18px'>$listen_port</strong></td>";
-        $html[]="<td width=1% nowrap><strong style='font-size:18px'>".@implode(",&nbsp;",$protos)."</strong></td>";
-        $html[]="<td width=1% nowrap>".@implode("<br>",$ipaddrs)."</td>";
+        $html[]="<td style='width:1%' nowrap><strong style='font-size:18px'>".@implode(",&nbsp;",$protos)."</strong></td>";
+        $html[]="<td style='width:1%' nowrap>".@implode("<br>",$ipaddrs)."</td>";
         $html[]="<td width=50% nowrap>".@implode(", ",$prs)."</td>";
-        $html[]="<td width=1% nowrap>".@implode(", ",$pids)."</td>";
+        $html[]="<td style='width:1%' nowrap>".@implode(", ",$pids)."</td>";
         $html[]="</tr>";
 
     }

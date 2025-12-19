@@ -127,9 +127,9 @@ $xServe["pdns_recursor"]="{APP_PDNS_RECURSOR}";
 
 		
 		$html[]="<tr>
-				<td width=1% nowrap>$FTime</td>
-				<td width=1% nowrap>$pid</td>
-				<td width=1% nowrap>{$xServe[$service]}</td>
+				<td style='width:1%' nowrap>$FTime</td>
+				<td style='width:1%' nowrap>$pid</td>
+				<td style='width:1%' nowrap>{$xServe[$service]}</td>
 				<td>$line</td>
 				</tr>";
 		

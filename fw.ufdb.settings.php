@@ -220,9 +220,9 @@ function notifications_add_popup():bool{
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='width:1%'><img src='$img' alt=''></td>";
-        $html[]="<td width=1% nowrap>".$tpl->_ENGINE_parse_body($categoryname)."</td>";
+        $html[]="<td style='width:1%' nowrap>".$tpl->_ENGINE_parse_body($categoryname)."</td>";
         $html[]="<td>".$tpl->_ENGINE_parse_body("{$ligne['description']} $license$elements")."</td>";
-        $html[]=$tpl->_ENGINE_parse_body("<td width=1% nowrap>$button</td>");
+        $html[]=$tpl->_ENGINE_parse_body("<td style='width:1%' nowrap>$button</td>");
         $html[]="</tr>";
 
     }

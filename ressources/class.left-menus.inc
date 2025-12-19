@@ -11,6 +11,20 @@ class left_menus{
         $this->users=new usersMenus();
 
     }
+    public function Siege():string{
+        $EnableSiege=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSiege"));
+        if($EnableSiege==0){return "";}
+        $users=new usersMenus();
+        if(!$users->AsProxyMonitor){return "";}
+        $tpl=new template_admin();
+        $f[] = "<li id='left-menu'>";
+        $f[] = "<a href='#' ><i class=\"fas fa-axe-battle\"></i> <span class=\"nav-label\">{APP_SIEGE}</span> </a>";
+        $f[] = "<ul class='nav nav-second-level'>";
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.siege.php", "ICO"=>ico_dashboard,"TEXT"=>"{status}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.siege.events.php", "ICO"=>ico_eye,"TEXT"=>"{events}"));
+        $f[] = "</ul>";
+        return @implode("\n", $f);
+    }
 
     public function harmpManaged():string{
         $EnableManagedReverseProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableManagedReverseProxy"));
@@ -1386,7 +1400,10 @@ class left_menus{
         if($EnableCrowdSec==1){return 1;}
         $ArticaPSnifferDaemon=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaPSnifferDaemon"));
         if($ArticaPSnifferDaemon==1){return 1;}
-
+        $EnableDecisionIP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDecisionIP"));
+        if($EnableDecisionIP==1){
+            return 1;
+        }
         $FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
         if($FireHolEnable==0){return 0;}
 
@@ -1399,6 +1416,7 @@ class left_menus{
         $FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
         $EnableCrowdSec=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableCrowdSec"));
         $ArticaPSnifferDaemon=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaPSnifferDaemon"));
+        $EnableDecisionIP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDecisionIP"));
         $CrowdSecAdded=false;
 
         $f[]="<!-- FIREWALL START -->";
@@ -1419,6 +1437,18 @@ class left_menus{
             $CrowdSecAdded=true;
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.crowdsec.php", "ICO" => "far fa-shield-cross", "TEXT" => "CrowdSec"));
+        }
+
+        if($EnableDecisionIP==1) {
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.nginx.DecisionIP.php",
+                    "ICO" => "fas fa-helmet-battle",
+                    "TEXT" => "DecisionIP",
+                    "LEVEL3" => array(
+                        "ID" => "fw-left-menus-DecisionIP",
+                        "PAGE" => "fw-left-menus-DecisionIP.php")
+                )
+            );
         }
 
         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ipfeeds.php", "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
@@ -2982,11 +3012,6 @@ class left_menus{
 
         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.fw.status.php",
             "ICO" => "fas fa-tachometer-alt", "TEXT" => "{status}",));
-
-       // $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.DecisionIP.php","ICO" => "fas fa-helmet-battle", "TEXT" => "DecisionIP",));
-
-
-
 
         if($EnableModSecurityIngix==1){
 

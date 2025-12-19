@@ -1,42 +1,214 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+include_once(dirname(__FILE__)."/ressources/class.siege-daemon.inc");
+$GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+if(isset($_GET["pdf-report"])){report_pdf();exit;}
+if(isset($_GET["status-ids"])){td_states();exit;}
 if(isset($_GET["file-uploaded"])){import_uploaded_js();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["urls"])){urls();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["params"])){settings();exit;}
+if(isset($_GET["search-top"])){search_top();exit;}
+if(isset($_GET["search"])){search();exit;}
 if(isset($_POST["REMOTE_PROXY"])){Save();exit;}
 if(isset($_POST["SIEGE_URLS"])){SaveUrls();exit;}
 if(isset($_GET["reports"])){reports();exit;}
 if(isset($_GET["report"])){report_js();exit;}
 if(isset($_GET["report-popup"])){report_popup();exit;}
+if(isset($_GET["create-test-js"])){create_tests_js();exit;}
+if(isset($_GET["create-test-popup"])){create_tests_popup();exit;}
+if(isset($_POST["create-test-save"])){create_tests_save();exit;}
+
 if(isset($_GET["delete-js"])){delete_js();exit;}
 if(isset($_POST["delete"])){delete();exit;}
+if(isset($_GET["delete-test-js"])){delete_test_js();exit;}
+if(isset($_POST["delete-test"])){delete_test();exit;}
+if(isset($_GET["edit-test-js"])){edit_test_js();exit;}
+if(isset($_GET["edit-test-popup"])){edit_test_popup();exit;}
+if(isset($_GET["edit-test-tabs"])){edit_test_tabs();exit;}
+if(isset($_POST["edit-test"])){edit_test_save();exit;}
+if(isset($_GET["edit-test-kerberos-popup"])){edit_test_kerberos_popup();exit;}
+if(isset($_POST["edit-test-kerberos"])){edit_test_kerberos_save();exit;}
+if(isset($_GET["edit-test-urls-popup"])){edit_test_urls_popup();exit;}
+if(isset($_POST["edit-test-urls"])){edit_test_urls_save();exit;}
+
+if(isset($_GET["create-keytab"])){create_keytab_popup();exit;}
+if(isset($_POST["create-keytab"])){create_keytab_save();exit;}
+if(isset($_POST["update-keytab"])){update_keytab();exit;}
+if(isset($_GET["kerberos-status"])){kerberos_status();exit;}
+if(isset($_POST["kinit"])){kinit();exit;}
 if(isset($_GET["subject-js"])){subject_js();exit;}
 if(isset($_GET["subject-popup"])){subject_popup();exit;}
 if(isset($_GET["subject-fill"])){subject_fill();exit;}
 if(isset($_POST["subject_edit"])){subject_edit();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["stop-js"])){stop_js();exit;}
+if(isset($_GET["start-test-js"])){start_test_js();exit;}
+if(isset($_GET["stop-test-js"])){stop_test_js();exit;}
+
+if(isset($_GET["report-html"])){report_html();exit;}
+if(isset($_GET["report-html-js"])){report_html_js();exit;}
+if(isset($_GET["report-html-popup"])){report_html_popup();exit;}
+if(isset($_GET["report-json"])){report_json();exit;}
 if(isset($_GET["import-table"])){import_table();exit;}
 if(isset($_GET["import-upload-js"])){import_js();exit;}
 if(isset($_GET["import-popup"])){import_popup();exit;}
 if(isset($_GET["import-executed"])){import_executed();exit;}
 page();
 
-function tabs(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $array["{parameters}"]="$page?table=yes";
-    $array["{urls}"]="$page?urls=yes";
-    $array["{reports}"]="$page?reports=yes";
-    echo $tpl->tabs_default($array);
 
-}
 function stop_js(){
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/siege/stop");
 
+}
+
+function start_test_js(){
+    $testId = $_GET["start-test-js"];
+    $page = CurrentPageName();
+    $siege = new SiegeDaemon();
+    $result = $siege->startTest($testId);
+    $tpl=new template_admin();
+    if($result === null){
+       return $tpl->js_error($siege->getLastError());
+    }
+    return admin_tracks("Starting Proxy test stress (Siege) id $testId");
+}
+
+function stop_test_js(){
+    $testId = $_GET["stop-test-js"];
+    $md = $_GET["md"] ?? '';
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+
+    $siege = new SiegeDaemon();
+    $result = $siege->stopTest($testId);
+
+    if($result === null){
+        echo "alert('" . addslashes($siege->getLastError()) . "');";
+        return;
+    }
+
+    // Refresh the search results
+    echo "LoadAjax('siege-search','$page?search=yes');";
+}
+
+function td_progress($testId):string{
+
+    $tpl=new template_admin();
+    $siege = new SiegeDaemon();
+    $progress = $siege->getTestProgress($testId);
+
+    if($progress === null){
+
+        return  "&nbsp;";
+    }
+
+    // Add running flag based on state
+    $state = $progress['state'] ?? '';
+
+
+    if($state=="running"){
+        $progressPrc=$progress["progress"];
+        $transactions=intval($progress["transactions"]);
+        $rps=0;
+        if (isset($progress['current_rps'])) {
+            $rps = round($progress['current_rps'], 1);
+
+        }
+        $itext=array();
+        if($transactions>0) {
+            $itext[] = "rqs: $transactions";
+        }
+        if($rps>0) {
+            $itext[] = "$rps req/sec";
+        }
+        $text=@implode("&nbsp;&nbsp;-&nbsp;&nbsp;",$itext);
+        return $tpl->progress_barr_static($progressPrc,$text,true);
+    }
+    return "&nbsp;";
+}
+
+/**
+ * Display HTML report directly (full page)
+ */
+function report_html(){
+    $testId = $_GET["report-html"] ?? '';
+
+    if(empty($testId)){
+        echo "<h1>Error: Test ID required</h1>";
+        return;
+    }
+
+    $siege = new SiegeDaemon();
+    $html = $siege->getTestReportHtml($testId);
+
+    if($html === null){
+        echo "<h1>Error: " . htmlspecialchars($siege->getLastError()) . "</h1>";
+        return;
+    }
+
+    // Output the HTML report directly
+    header('Content-Type: text/html; charset=utf-8');
+    echo $html;
+}
+
+/**
+ * Display HTML report in a popup/modal
+ */
+function report_html_popup(){
+    $testId = $_GET["report-html-popup"] ?? '';
+    $tpl = new template_admin();
+    $page = CurrentPageName();
+
+    if(empty($testId)){
+        echo $tpl->div_error("Test ID required");
+        return;
+    }
+
+    $siege = new SiegeDaemon();
+    $html = $siege->getTestReportHtml($testId);
+
+    if($html === null){
+        echo $tpl->div_error(__LINE__." ".$siege->getLastError());
+        return;
+    }
+
+    // Wrap in iframe for popup display
+    $iframeSrc = "$page?report-html=$testId";
+
+    $output = [];
+    $output[] = "<div style='width:100%;height:600px;'>";
+    $output[] = "<iframe src='$iframeSrc' style='width:100%;height:100%;border:none;'></iframe>";
+    $output[] = "</div>";
+
+    echo $tpl->_ENGINE_parse_body(implode("\n", $output));
+}
+
+/**
+ * Get JSON report data for a test
+ */
+function report_json(){
+    header('Content-Type: application/json');
+
+    $testId = $_GET["report-json"] ?? '';
+
+    if(empty($testId)){
+        echo json_encode(['error' => 'Test ID required']);
+        return;
+    }
+
+    $siege = new SiegeDaemon();
+    $report = $siege->getTestReport($testId);
+
+    if($report === null){
+        echo json_encode(['error' => $siege->getLastError()]);
+        return;
+    }
+
+    echo json_encode($report);
 }
 
 function import_popup(){
@@ -77,6 +249,182 @@ function import_js(){
     $tpl=new template_admin();
     $tpl->js_dialog2("{import} access.log","$page?import-popup=yes");
 }
+function create_tests_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $function = $_GET["function"] ?? '';
+    return $tpl->js_dialog1("{create_test}","$page?create-test-popup=yes&function=".urlencode($function));
+}
+
+function create_tests_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $function = $_GET["function"] ?? "LoadAjax('siege-search','$page?search=yes')";
+
+    // Duration options
+    $durations = [
+        "30s" => "30 {seconds}",
+        "60s" => "1 {minute}",
+        "120s" => "2 {minutes}",
+        "300s" => "5 {minutes}",
+        "600s" => "10 {minutes}",
+        "1800s" => "30 {minutes}",
+        "3600s" => "1 {hour}",
+    ];
+
+    // Keep-alive options
+    $keepalive = [
+        "1" => "{yes}",
+        "0" => "{no}",
+    ];
+
+    // Build form
+    $form[] = $tpl->field_hidden("create-test-save", "yes");
+    $form[] = $tpl->field_hidden("auto_start", "0");
+
+    // Basic settings
+    $form[] = $tpl->field_text("test_name", "{name}", "", true);
+    $form[] = $tpl->field_interfaces("source_interface","{outgoing_interface}","");
+
+
+    $form[] = $tpl->field_numeric("concurrent_users", "{members}", 50);
+    $form[] = $tpl->field_array_hash($durations, "duration", "{duration}", "60s");
+
+    $form[] = $tpl->field_text("delay", "{delay_between_requests}", "0s");
+    $form[] = $tpl->field_text("timeout", "{timeout}", "30s");
+    $form[] = $tpl->field_array_hash($keepalive, "keepalive", "Keep-Alive", "1");
+    $form[] = $tpl->field_text("user_agent", "User-Agent", "siege-daemon/1.1");
+
+    // Proxy settings (optional)
+    $form[] = $tpl->field_section("{your_proxy}");
+    $form[] = $tpl->field_text("proxy_address", "{proxy_address}", "");
+    $form[] = $tpl->field_numeric("proxy_port", "{proxy_port}", 3128);
+    $form[] = $tpl->field_text("proxy_username", "{username}", "");
+    $form[] = $tpl->field_password("proxy_password", "{password}", "");
+    $form[] = "<hr>";
+
+
+    $js = "dialogInstance1.close();$function";
+    echo $tpl->form_outside("{create_test}", @implode("\n", $form), null, "{create}", $js, "AsProxyMonitor");
+    return true;
+}
+
+function create_tests_save():bool{
+    $tpl = new template_admin();
+    $tpl->CLEAN_POST();
+
+    $siege = new SiegeDaemon();
+
+    // Validate required fields
+    $testName = trim($_POST["test_name"] ?? '');
+    $urlsRaw = trim($_POST["test_urls"] ?? '');
+    $concurrentUsers = intval($_POST["concurrent_users"] ?? 10);
+    $duration = trim($_POST["duration"] ?? '60s');
+    if(strlen($urlsRaw)<5){
+        $urlsRaw=@file_get_contents("/usr/share/artica-postfix/bin/install/squid/urls.txt");
+    }
+
+    if(empty($testName)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: {name} {required}");
+        return false;
+    }
+
+    if(empty($urlsRaw)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: URLs {required}");
+        return false;
+    }
+
+    // Parse URLs (one per line)
+    $urlLines = array_filter(array_map('trim', explode("\n", $urlsRaw)));
+    $urls = [];
+    foreach($urlLines as $url){
+        if(!empty($url)){
+            // Support format: URL or METHOD|URL or METHOD|URL|BODY
+            $parts = explode("|", $url);
+            $urlConfig = ['url' => $parts[0]];
+            if(isset($parts[1])){
+                $urlConfig = ['method' => $parts[0], 'url' => $parts[1]];
+            }
+            if(isset($parts[2])){
+                $urlConfig['body'] = $parts[2];
+                $urlConfig['content_type'] = 'application/json';
+            }
+            // Default to GET if only URL provided
+            if(!isset($urlConfig['method'])){
+                $urlConfig['method'] = 'GET';
+            }
+            $urls[] = $urlConfig;
+        }
+    }
+
+    if(empty($urls)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: {invalid} URLs");
+        return false;
+    }
+
+    // Build test configuration
+    $config = [
+        'name' => $testName,
+        'urls' => $urls,
+        'concurrent_users' => $concurrentUsers,
+        'duration' => $duration,
+        'delay' => $_POST["delay"] ?? '0s',
+        'timeout' => $_POST["timeout"] ?? '30s',
+        'keepalive' => ($_POST["keepalive"] ?? '1') === '1',
+        'user_agent' => $_POST["user_agent"] ?? 'siege-daemon/1.1',
+        'source_interface'=>$_POST["source_interface"] ?? '',
+    ];
+
+    // Add proxy settings if provided
+    $proxyAddress = trim($_POST["proxy_address"] ?? '');
+    $proxyPort = intval($_POST["proxy_port"] ?? 3128);
+    if(!empty($proxyAddress)){
+        // Build proxy URL from address and port
+        $proxyUrl = "http://{$proxyAddress}:{$proxyPort}";
+        $config['proxy_url'] = $proxyUrl;
+
+        $proxyUsername = trim($_POST["proxy_username"] ?? '');
+        $proxyPassword = trim($_POST["proxy_password"] ?? '');
+        if(!empty($proxyUsername)){
+            $config['proxy_auth'] = [
+                'type' => 'basic',
+                'username' => $proxyUsername,
+                'password' => $proxyPassword,
+            ];
+        }
+    }
+
+    // Create the test
+    $test = $siege->createTest($config);
+
+    if($test === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    $testId = $test['id'] ?? '';
+    if(empty($testId)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: {failed} - No test ID returned");
+        return false;
+    }
+
+    // Auto-start if requested
+    $autoStart = ($_POST["auto_start"] ?? '0') === '1';
+    if($autoStart){
+        $startResult = $siege->startTest($testId);
+        if($startResult === null){
+            // Test created but failed to start
+            admin_tracks("Created Siege test '$testName' (ID: $testId) but failed to start: " . $siege->getLastError());
+            echo "jserror:" . $tpl->javascript_parse_text("{warning}: Test created but failed to start - " . $siege->getLastError());
+            return false;
+        }
+        admin_tracks("Created and started Siege test '$testName' (ID: $testId) with $concurrentUsers users for $duration");
+    } else {
+        admin_tracks("Created Siege test '$testName' (ID: $testId) with $concurrentUsers users for $duration");
+    }
+
+    return true;
+}
 function import_uploaded_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -90,6 +438,12 @@ function import_uploaded_js(){
 
    echo $js;
 
+}
+function search_top():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    echo $tpl->search_block($page);
+    return true;
 }
 
 
@@ -126,8 +480,586 @@ function delete(){
     return true;
 }
 
+function delete_test_js(){
+    $testId = $_GET["delete-test-js"];
+    $md = $_GET["md"] ?? '';
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+
+    // Get test name from daemon API
+    $siege = new SiegeDaemon();
+    $test = $siege->getTest($testId);
+    $testName = $test['name'] ?? $testId;
+
+    $tpl->js_confirm_delete($testName, "delete-test", $testId, "\$('#$md').remove()");
+}
+
+function delete_test(){
+    $tpl = new template_admin();
+    $testId = $_POST["delete-test"];
+
+    if(empty($testId)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Test ID {required}");
+        return false;
+    }
+
+    $siege = new SiegeDaemon();
+
+    // Get test name for logging
+    $test = $siege->getTest($testId);
+    $testName = $test['name'] ?? $testId;
+
+    // Delete the test
+    $result = $siege->deleteTest($testId);
+
+    if($result === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    admin_tracks("Deleted siege stress test '$testName' (ID: $testId)");
+    return true;
+}
+function report_html_js(){
+    $testId = $_GET["report-html-js"];
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $siege = new SiegeDaemon();
+    $test = $siege->getTest($testId);
+    $testName = $test['name'] ?? $testId;
+    $tpl->js_dialog1("{report}: $testName", "$page?report-html-popup=$testId",1024);
+}
+function edit_test_js(){
+    $testId = $_GET["edit-test-js"];
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $function=urlencode($_GET["function"]);
+    $siege = new SiegeDaemon();
+    $test = $siege->getTest($testId);
+    $testName = $test['name'] ?? $testId;
+    $tpl->js_dialog1("{edit}: $testName", "$page?edit-test-tabs=$testId&function=$function");
+}
+function edit_test_tabs():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $testId = $_GET["edit-test-tabs"];
+    $function=urlencode($_GET["function"]);
+    $siege = new SiegeDaemon();
+    $test = $siege->getTest($testId);
+    $testName = $test['name'] ?? $testId;
+    $array[$testName]="$page?edit-test-popup=$testId&function=$function";
+    $array["Kerberos"]="$page?create-keytab=$testId&function=$function";
+    $array["URls"]="$page?edit-test-urls-popup=$testId&function=$function";
+    echo $tpl->tabs_default($array);
+    return true;
+}
+function edit_test_popup(){
+    $testId = $_GET["edit-test-popup"];
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $function=$_GET["function"];
+
+    $siege = new SiegeDaemon();
+    $test = $siege->getTest($testId);
+
+    if($test === null){
+        echo $tpl->div_error("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    // Extract current values
+    $testName = $test['name'] ?? '';
+    $concurrentUsers = intval($test['concurrent_users'] ?? 10);
+    $duration = $test['duration'] ?? '60s';
+    $delay = $test['delay'] ?? '0s';
+    $timeout = $test['timeout'] ?? '30s';
+    $source_interface=$test['source_interface'] ?? '';
+    $keepalive = isset($test['keepalive']) && $test['keepalive'] ? '1' : '0';
+    $userAgent = $test['user_agent'] ?? 'siege-daemon/1.1';
+
+    // Extract proxy settings
+    $proxyUrl = $test['proxy_url'] ?? '';
+    $proxyAddress = '';
+    $proxyPort = 3128;
+    if(!empty($proxyUrl)){
+        $parsed = parse_url($proxyUrl);
+        $proxyAddress = $parsed['host'] ?? '';
+        $proxyPort = $parsed['port'] ?? 3128;
+    }
+    $proxyUsername = $test['proxy_auth']['username'] ?? '';
+    $proxyPassword = $test['proxy_auth']['password'] ?? '';
+
+    // Extract URLs
+    $urls = $test['urls'] ?? [];
+    $urlLines = [];
+    foreach($urls as $urlConfig){
+        if(isset($urlConfig['method']) && $urlConfig['method'] !== 'GET'){
+            $line = $urlConfig['method'] . '|' . $urlConfig['url'];
+            if(isset($urlConfig['body'])){
+                $line .= '|' . $urlConfig['body'];
+            }
+            $urlLines[] = $line;
+        } else {
+            $urlLines[] = $urlConfig['url'] ?? '';
+        }
+    }
+    $urlsText = implode("\n", $urlLines);
+
+    // Duration options
+    $durations = [
+        "30s" => "30 {seconds}",
+        "60s" => "1 {minute}",
+        "120s" => "2 {minutes}",
+        "300s" => "5 {minutes}",
+        "600s" => "10 {minutes}",
+        "1800s" => "30 {minutes}",
+        "3600s" => "1 {hour}",
+    ];
+
+    // Keep-alive options
+    $keepaliveOpts = [
+        "1" => "{yes}",
+        "0" => "{no}",
+    ];
+
+    // Build form
+    $form[] = $tpl->field_hidden("edit-test", $testId);
+    $form[] = $tpl->field_text("test_name", "{name}", $testName, true);
+    $form[] = $tpl->field_interfaces("source_interface", "{outgoing_interface}", $source_interface, true);
 
 
+    $form[] = $tpl->field_numeric("concurrent_users", "{members}", $concurrentUsers);
+    $form[] = $tpl->field_array_hash($durations, "duration", "{duration}", $duration);
+    $form[] = $tpl->field_text("delay", "{delay_between_requests}", $delay);
+    $form[] = $tpl->field_text("timeout", "{timeout}", $timeout);
+    $form[] = $tpl->field_array_hash($keepaliveOpts, "keepalive", "Keep-Alive", $keepalive);
+    $form[] = $tpl->field_text("user_agent", "User-Agent", $userAgent);
+
+    // Proxy settings
+    $form[] = $tpl->field_section("{your_proxy}");
+    $form[] = $tpl->field_text("proxy_address", "{proxy_address}", $proxyAddress);
+    $form[] = $tpl->field_numeric("proxy_port", "{proxy_port}", $proxyPort);
+    $form[] = $tpl->field_text("proxy_username", "{username}", $proxyUsername);
+    $form[] = $tpl->field_password("proxy_password", "{password}", $proxyPassword);
+    $js = "dialogInstance1.close();$function();";
+    echo $tpl->form_outside("{edit}: $testName", @implode("\n", $form), null, "{save}", $js, "AsProxyMonitor");
+    return true;
+}
+
+function edit_test_save(){
+    $tpl = new template_admin();
+    $tpl->CLEAN_POST();
+
+    $testId = $_POST["edit-test"];
+    if(empty($testId)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Test ID {required}");
+        return false;
+    }
+
+    $siege = new SiegeDaemon();
+
+    // Get current test to preserve unchanged fields
+    $currentTest = $siege->getTest($testId);
+    if($currentTest === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    // Validate required fields
+    $testName = trim($_POST["test_name"] ?? '');
+    $urlsRaw = trim($_POST["test_urls"] ?? '');
+    $concurrentUsers = intval($_POST["concurrent_users"] ?? 10);
+    $duration = trim($_POST["duration"] ?? '60s');
+
+    if(empty($testName)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: {name} {required}");
+        return false;
+    }
+
+    // Use default URLs if empty
+    if(strlen($urlsRaw) < 5){
+        $urlsRaw = @file_get_contents("/usr/share/artica-postfix/bin/install/squid/urls.txt");
+    }
+
+    if(empty($urlsRaw)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: URLs {required}");
+        return false;
+    }
+
+    // Parse URLs
+    $urlLines = array_filter(array_map('trim', explode("\n", $urlsRaw)));
+    $urls = [];
+    foreach($urlLines as $url){
+        if(!empty($url)){
+            $parts = explode("|", $url);
+            $urlConfig = ['url' => $parts[0]];
+            if(isset($parts[1])){
+                $urlConfig = ['method' => $parts[0], 'url' => $parts[1]];
+            }
+            if(isset($parts[2])){
+                $urlConfig['body'] = $parts[2];
+                $urlConfig['content_type'] = 'application/json';
+            }
+            if(!isset($urlConfig['method'])){
+                $urlConfig['method'] = 'GET';
+            }
+            $urls[] = $urlConfig;
+        }
+    }
+
+    if(empty($urls)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: {invalid} URLs");
+        return false;
+    }
+
+    // Build updated config
+    $config = [
+        'name' => $testName,
+        'urls' => $urls,
+        'concurrent_users' => $concurrentUsers,
+        'duration' => $duration,
+        'delay' => $_POST["delay"] ?? '0s',
+        'timeout' => $_POST["timeout"] ?? '30s',
+        'keepalive' => ($_POST["keepalive"] ?? '1') === '1',
+        'user_agent' => $_POST["user_agent"] ?? 'siege-daemon/1.1',
+        'source_interface'=>$_POST["source_interface"] ?? '',
+    ];
+
+    // Proxy settings
+    $proxyAddress = trim($_POST["proxy_address"] ?? '');
+    $proxyPort = intval($_POST["proxy_port"] ?? 3128);
+    if(!empty($proxyAddress)){
+        $proxyUrl = "http://{$proxyAddress}:{$proxyPort}";
+        $config['proxy_url'] = $proxyUrl;
+
+        $proxyUsername = trim($_POST["proxy_username"] ?? '');
+        $proxyPassword = trim($_POST["proxy_password"] ?? '');
+        if(!empty($proxyUsername)){
+            $config['proxy_auth'] = [
+                'type' => 'basic',
+                'username' => $proxyUsername,
+                'password' => $proxyPassword,
+            ];
+        }
+    }
+
+    // Preserve Kerberos settings if they exist
+    if(isset($currentTest['proxy_auth']['type']) && $currentTest['proxy_auth']['type'] === 'kerberos'){
+        if(empty($proxyAddress) || empty($_POST["proxy_username"])){
+            $config['proxy_auth'] = $currentTest['proxy_auth'];
+        }
+    }
+
+    // Update test via API (delete and recreate with same ID is not possible, so we delete and create new)
+    $deleteResult = $siege->deleteTest($testId);
+    if($deleteResult === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    $newTest = $siege->createTest($config);
+    if($newTest === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    admin_tracks("Updated siege stress test '$testName'");
+    return true;
+}
+
+function edit_test_kerberos_popup():bool{
+    $testId = $_GET["edit-test-kerberos-popup"];
+    $tpl = new template_admin();
+    $MSKTUTIL_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MSKTUTIL_INSTALLED"));
+    if($MSKTUTIL_INSTALLED==0){
+        echo $tpl->div_error("{APP_MSKTUTIL}||{APP_MSKTUTIL_NOT_INSTALLED}");
+        return true;
+    }
+
+    $page = CurrentPageName();
+
+    $function=$_GET["function"];
+    $siege = new SiegeDaemon();
+    $test = $siege->getTest($testId);
+
+    if($test === null){
+        echo $tpl->div_error("{error}: " . $siege->getLastError());
+        return false;
+    }
+    //$keytabPath = $test['proxy_auth']['keytab_path'] ?? '/etc/siege-daemon/siege.keytab';
+    $principal = $test['proxy_auth']['principal'] ?? php_uname("n");
+    $realm = $test['proxy_auth']['realm'] ?? '';
+    $kdcHost = $test['proxy_auth']['kdc_host'] ?? '';
+
+    // Build form
+    $form[] = $tpl->field_hidden("edit-test-kerberos", $testId);
+    $form[] = $tpl->field_text("hostname", "{hostname}", $principal, true,"The Kerberos principal for authentication, format: HTTP/hostname@REALM (e.g., HTTP/siegetest.mydomain.local@MYDOMAIN.LOCAL)");
+    $form[] = $tpl->field_text("realm", "{activedirectory_domain}", $realm, true);
+    $form[] = $tpl->field_text("kdc_host", "{activedirectory_server}", $kdcHost);
+
+    $js = "$function();";
+    echo $tpl->form_outside("", @implode("\n", $form), null, "{save}", $js, "AsProxyMonitor");
+    return true;
+}
+function edit_test_kerberos_save():bool{
+    $tpl = new template_admin();
+    $tpl->CLEAN_POST();
+
+    $keytabPath = "/etc/siege-daemon/siege.keytab";
+    $testId = $_POST["edit-test-kerberos"];
+
+    if(empty($testId)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Test ID {required}");
+        return false;
+    }
+
+    $siege = new SiegeDaemon();
+    $currentTest = $siege->getTest($testId);
+    if($currentTest === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    // Validate required fields
+    $hostname = trim($_POST["hostname"] ?? '');
+    $realm = trim($_POST["realm"] ?? '');
+    $kdcHost = trim($_POST["kdc_host"] ?? '');
+
+    if(preg_match("#^HTTP:\/\/(.+?)@#i",$hostname,$re)){
+        $hostname=$re[1];
+    }
+
+    if(empty($hostname) || empty($realm)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Hostname {and} Realm {required}");
+        return false;
+    }
+
+    // Step 1: Create/Update keytab using msktutil
+    // Extract computer name from principal (e.g., HTTP/hostname@REALM -> hostname)
+    $computerName = $hostname;
+
+
+    $msktutilConfig = [
+        'keytab_path' => $keytabPath,
+        'computer_name' => strtoupper(str_replace('.', '', $computerName)),
+        'realm' => $realm,
+        'upn' => $computerName . '@' . $realm,
+        'service' => 'HTTP',
+    ];
+
+    if(!empty($kdcHost)){
+        $msktutilConfig['server'] = $kdcHost;
+    }
+
+    // Try to create keytab first, if fails try update
+    $keytabResult = $siege->createKeytab($msktutilConfig);
+    if($keytabResult === null || !($keytabResult['success'] ?? false)){
+        // Try update instead
+        $keytabResult = $siege->updateKeytab($msktutilConfig);
+        if($keytabResult === null || !($keytabResult['success'] ?? false)){
+            $error = $keytabResult['error'] ?? $siege->getLastError();
+            echo "jserror:" . $tpl->javascript_parse_text("{error}: msktutil {failed}: " . $error);
+            return false;
+        }
+    }
+    $principal="HTTP/$computerName@".strtoupper($realm);
+    // Step 2: Validate the keytab
+    $validateConfig = [
+        'keytab_path' => $keytabPath,
+        'principal' => $principal,
+        'realm' => $realm,
+    ];
+
+    if(!empty($kdcHost)){
+        $validateConfig['kdc_host'] = $kdcHost;
+    }
+
+    $validateResult = $siege->post('/api/v1/kerberos/validate', $validateConfig);
+
+    if($validateResult === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: {validation} {failed}: " . $siege->getLastError());
+        return false;
+    }
+
+    if(!($validateResult['valid'] ?? false)){
+        // Build error message from failed checks
+        $failedChecks = [];
+        foreach(($validateResult['checks'] ?? []) as $check){
+            if(!($check['passed'] ?? true)){
+                $failedChecks[] = $check['message'] ?? $check['name'];
+            }
+        }
+        $errorMsg = !empty($failedChecks) ? implode('; ', $failedChecks) : ($validateResult['error'] ?? 'Unknown error');
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Kerberos {validation} {failed}: " . $errorMsg);
+        return false;
+    }
+
+    // Step 3: Obtain a ticket (kinit) to ensure everything works
+    $kinitConfig = [
+        'keytab_path' => $keytabPath,
+        'principal' => $principal . '@' . $realm,
+        'lifetime' => '24h',
+        'renewable' => '7d',
+    ];
+
+    $kinitResult = $siege->kinit($principal . '@' . $realm, $keytabPath, '24h', '7d');
+
+    if($kinitResult === null || !($kinitResult['success'] ?? false)){
+        $error = $kinitResult['error'] ?? $siege->getLastError();
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: kinit {failed}: " . $error);
+        return false;
+    }
+
+    // Step 4: Update test configuration with Kerberos auth
+    $config = $currentTest;
+    unset($config['id']);
+    unset($config['created_at']);
+
+    $config['proxy_auth'] = [
+        'type' => 'kerberos',
+        'keytab_path' => $keytabPath,
+        'principal' => $principal,
+        'realm' => $realm,
+    ];
+
+    if(!empty($kdcHost)){
+        $config['proxy_auth']['kdc_host'] = $kdcHost;
+    }
+
+    // Delete old and create new
+    $siege->deleteTest($testId);
+    $newTest = $siege->createTest($config);
+
+    if($newTest === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    $testName = $config['name'] ?? $testId;
+    admin_tracks("Updated Kerberos settings for siege test '$testName' (keytab created and validated)");
+    return true;
+}
+
+function edit_test_urls_popup(){
+    $testId = $_GET["edit-test-urls-popup"];
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $function = $_GET["function"] ?? "LoadAjax('siege-search','$page?search=yes')";
+
+    $siege = new SiegeDaemon();
+    $test = $siege->getTest($testId);
+
+    if($test === null){
+        echo $tpl->div_error("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    $testName = $test['name'] ?? $testId;
+
+    // Extract URLs from test config
+    $urls = $test['urls'] ?? [];
+    $urlLines = [];
+    foreach($urls as $urlConfig){
+        if(isset($urlConfig['method']) && $urlConfig['method'] !== 'GET'){
+            $line = $urlConfig['method'] . '|' . $urlConfig['url'];
+            if(isset($urlConfig['body'])){
+                $line .= '|' . $urlConfig['body'];
+            }
+            $urlLines[] = $line;
+        } else {
+            $urlLines[] = $urlConfig['url'] ?? '';
+        }
+    }
+    $urlsText = implode("\n", $urlLines);
+    $urlCount = count($urls);
+
+    // Build form
+    $form[] = $tpl->field_hidden("edit-test-urls", $testId);
+    $form[] = $tpl->div_explain("{urls_format_explain}");
+    $form[] = $tpl->field_textarea_normal("test_urls", "URLs ($urlCount)", $urlsText, "100%", 15);
+
+    $js = "dialogInstance1.close();$function";
+    echo $tpl->form_outside("URLs: $testName", @implode("\n", $form), null, "{save}", $js, "AsProxyMonitor");
+    return true;
+}
+
+function edit_test_urls_save(){
+    $tpl = new template_admin();
+    $tpl->CLEAN_POST();
+
+    $testId = $_POST["edit-test-urls"];
+    if(empty($testId)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Test ID {required}");
+        return false;
+    }
+
+    $siege = new SiegeDaemon();
+    $currentTest = $siege->getTest($testId);
+    if($currentTest === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    // Get URLs from POST
+    $urlsRaw = trim($_POST["test_urls"] ?? '');
+
+    // Use default URLs if empty
+    if(strlen($urlsRaw) < 5){
+        $urlsRaw = @file_get_contents("/usr/share/artica-postfix/bin/install/squid/urls.txt");
+    }
+
+    if(empty($urlsRaw)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: URLs {required}");
+        return false;
+    }
+
+    // Parse URLs (one per line)
+    // Format: URL or METHOD|URL or METHOD|URL|BODY
+    $urlLines = array_filter(array_map('trim', explode("\n", $urlsRaw)));
+    $urls = [];
+    foreach($urlLines as $url){
+        if(!empty($url)){
+            $parts = explode("|", $url);
+            $urlConfig = ['url' => $parts[0]];
+            if(isset($parts[1])){
+                $urlConfig = ['method' => $parts[0], 'url' => $parts[1]];
+            }
+            if(isset($parts[2])){
+                $urlConfig['body'] = $parts[2];
+                $urlConfig['content_type'] = 'application/json';
+            }
+            if(!isset($urlConfig['method'])){
+                $urlConfig['method'] = 'GET';
+            }
+            $urls[] = $urlConfig;
+        }
+    }
+
+    if(empty($urls)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: {invalid} URLs");
+        return false;
+    }
+
+    // Build updated config - only change URLs
+    $config = $currentTest;
+    unset($config['id']);
+    unset($config['created_at']);
+    $config['urls'] = $urls;
+
+    // Delete old and create new
+    $siege->deleteTest($testId);
+    $newTest = $siege->createTest($config);
+
+    if($newTest === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    $testName = $config['name'] ?? $testId;
+    $urlCount = count($urls);
+    admin_tracks("Updated URLs ($urlCount) for siege test '$testName'");
+    return true;
+}
 
 function subject_popup(){
     $ID=intval($_GET["subject-popup"]);
@@ -256,8 +1188,7 @@ function SaveUrls(){
 }
 
 
-function status()
-{
+function status(){
     $page = CurrentPageName();
     $tpl = new template_admin();
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/siege/status"));
@@ -268,20 +1199,12 @@ function status()
 
     $ini = new Bs_IniHandler();
     $ini->loadString($json->Info);
-
-
-    $running = intval($ini->get("APP_SIEGE", "running"));
-    if ($running == 0){
-        $html[] = $tpl->widget_grey("{sleeping}", "{stopped}");
-    }else{
-        $btn[0]["name"]="{stop}";
-        $btn[0]["icon"]="far fa-stop";
-        $btn[0]["js"]="Loadjs('$page?stop-js=yes');";
-        $uptime=$ini->get("APP_SIEGE","uptime");
-        $memory=FormatBytes($ini->get("APP_SIEGE","master_memory"));
-        $html[]=$tpl->widget_vert("{running}","<small style='color:white'>{since}: $uptime Mem: $memory</small>",$btn);
-    }
-    echo $tpl->_ENGINE_parse_body($html);
+    $jsrestart=$tpl->framework_buildjs(
+        "/siege/restart","siege.install.progress",
+        "siege.install.progress.logs",
+        "progress-siege-restart");
+    echo $tpl->SERVICE_STATUS($ini,"APP_SIEGE",$jsrestart);
+    return true;
 }
 
 
@@ -289,11 +1212,11 @@ function page():bool{
    $page=CurrentPageName();
     $tpl=new template_admin();
 
-    $html=$tpl->page_header("{mysql_benchmark}",ico_performance,
-        "{squid_siege_explain}","$page?tabs=yes","siege","progress-siege-restart",false,"table-siege-status");
+    $html=$tpl->page_header("{APP_SIEGE}",ico_performance,
+        "{APP_SIEGE_EXPLAIN}","$page?table=yes","siege","progress-siege-restart",false,"table-siege-status");
 
     if(isset($_GET["main-page"])){
-        $tpl=new template_admin("Artica:{mysql_benchmark}",$html);
+        $tpl=new template_admin("Artica:{APP_SIEGE}",$html);
         echo $tpl->build_firewall();
         return true;
     }
@@ -312,16 +1235,273 @@ function table(){
 	$html[]="<td style='width:260px;vertical-align: top'>";
 	$html[]="<div id='siege-status'></div></td>";
     $html[]="<td style='width:99%;vertical-align:top;padding-left:15px'>";
-    $html[]="<div id='siege-params'></div>";
+    $html[]="<div id='siege-search'></div>";
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</table>";
     $html[]="<script>";
-    $html[]="LoadAjax('siege-params','$page?params=yes');";
-    $html[]="";
+    $js=$tpl->RefreshInterval_js("siege-status",$page,"status=yes");
+
+    $html[]="LoadAjax('siege-search','$page?search-top=yes');";
+    $html[]=$js;
     $html[]="</script>";
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 	
+}
+function search(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $t = time();
+
+    $siege=new SiegeDaemon();
+    $function = $_GET["function"] ?? "LoadAjax('siege-search','$page?search=yes')";
+    $functionEncoded = urlencode($function);
+
+    if(!$siege->isHealthy()){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{daemon_not_running}: " . $siege->getLastError()));
+        return;
+    }
+
+    // Get running tests for status indication
+    $runningTests = $siege->getRunningTests();
+    $html[]="<table id='table-siege-after-search' class=\"footable table table-stripped\" data-page-size=\"50\" data-paging=\"true\">";
+    $html[]="<thead>";
+    $html[]="<tr>";
+    $html[]="<th data-sortable=true class='text-capitalize'>{name}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize'>URLs</th>";
+    $html[]="<th data-sortable=true class='text-capitalize'>{members}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize'>{duration}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize'>&nbsp;</th>";
+    $html[]="<th data-sortable=true class='text-capitalize'>&nbsp;</th>";
+    $html[]="<th data-sortable=true class='text-capitalize'>&nbsp;</th>";
+    $html[]="<th data-sortable=true class='text-capitalize'>{status}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize'>&nbsp;</th>";
+    $html[]="</tr>";
+    $html[]="</thead>";
+    $html[]="<tbody>";
+
+    $results=$siege->listTests();
+    $AllID[]=0;
+    if($results === null){
+        $html[]="<tr><td colspan='6'>".$tpl->div_error($siege->getLastError())."</td></tr>";
+    } elseif(empty($results)){
+        $html[]="<tr><td colspan='6' class='text-center'><em>{no_data}</em></td></tr>";
+    } else {
+        $TRCLASS=null;
+
+        foreach ($results as $index=>$ligne){
+            $md=md5(serialize($ligne));
+            if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+
+            $testId = $ligne["id"] ?? '';
+            $testName = $ligne["name"] ?? $testId;
+            $concurrentUsers = intval($ligne["concurrent_users"] ?? 10);
+            $duration = $ligne["duration"] ?? '-';
+            $urlCount = count($ligne["urls"] ?? []);
+            $AllID[]=$testId;
+
+            $status=td_status($testId,$runningTests);
+            $delete=$tpl->icon_delete("Loadjs('$page?delete-test-js=$testId&md=$md')");
+            $html[]="<tr class='$TRCLASS' id='$md' data-testid='$testId'>";
+            $html[]="<td style='width:1%' nowrap>".$tpl->td_href($testName,null,"Loadjs('$page?edit-test-js=$testId&function=$functionEncoded');")."<span id='error-$testId'></span></td>";
+            $html[]="<td style='width:1%' nowrap><span class='badge'>$urlCount</span></td>";
+            $html[]="<td style='width:1%' nowrap>$concurrentUsers</td>";
+            $html[]="<td style='width:1%' nowrap>$duration</td>";
+            $html[]="<td style='width:1%' nowrap><span id='report-$testId'></span></td>";
+            $html[]="<td style='width:1%' nowrap><span id='pdf-$testId'></span></td>";
+            $html[]="<td style='width:10%' nowrap><span id='progress-$testId'></span></td>";
+            $html[]="<td style='width:1%' nowrap><span id='status-$testId'>$status</span></td>";
+            $html[]="<td style='width:1%' nowrap><span id='delete-$testId'>$delete</span></td>";
+
+            $html[]="</tr>";
+        }
+    }
+
+    $html[]="</tbody>";
+    $html[]="<tfoot>";
+    $html[]="<tr>";
+    $html[]="<td colspan='9'>";
+    $html[]="<ul class='pagination pull-right'></ul>";
+    $html[]="</td>";
+    $html[]="</tr>";
+    $html[]="</tfoot>";
+    $html[]="</table>";
+
+    $jsrestart=$tpl->framework_buildjs(
+        "/siege/restart","siege.install.progress",
+        "siege.install.progress.logs",
+        "progress-siege-restart");
+
+    $version=$siege->getVersionString();
+
+    $topbuttons[] = array($jsrestart, ico_retweet,"{restart}");
+    $topbuttons[] = array("Loadjs('$page?create-test-js=yes&function=$function')", ico_plus, "{new_stress_test}");
+    $TINY_ARRAY["TITLE"]="{APP_SIEGE} v.$version";
+    $TINY_ARRAY["ICO"]="ico_performance";
+    $TINY_ARRAY["EXPL"]="{APP_SIEGE_EXPLAIN}";
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
+    $ids=@implode("|",$AllID);
+    $refreshjs=$tpl->RefreshInterval_Loadjs("table-siege-after-search",$page,"status-ids=$ids");
+
+    $html[]="<script>";
+    $html[]="NoSpinner();";
+    $html[]="$(document).ready(function() { ";
+    $html[]="  $('#table-siege-after-search').footable({ ";
+    $html[]="    \"filtering\": { \"enabled\": false }, ";
+    $html[]="    \"sorting\": { \"enabled\": true }, ";
+    $html[]="    \"paging\": { \"size\": 50 } ";
+    $html[]="  }); ";
+    $html[]=$refreshjs;
+    $html[]="});";
+    $html[]="$jstiny";
+
+
+
+
+    $html[]="</script>";
+
+    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+}
+function td_states(){
+    header("content-type: application/x-javascript");
+    $ids=explode("|",$_GET["status-ids"]);
+    $siege=new SiegeDaemon();
+    $runningTests = $siege->getRunningTests();
+
+    foreach ($ids as $testId){
+        if($testId==0){
+            continue;
+        }
+        echo "// $testId ?\n";
+        $status=base64_encode(td_status($testId,$runningTests));
+        $progress=base64_encode(td_progress($testId));
+        $report=base64_encode(td_reports($testId,$runningTests));
+        $reportpdf=base64_encode(td_pdf($testId,$runningTests));
+        $error_report=base64_encode(td_error($testId,$runningTests));
+        $f[]="if ( document.getElementById('status-$testId') ){";
+        $f[]="\tdocument.getElementById('status-$testId').innerHTML=base64_decode('$status');";
+        $f[]="}";
+        $f[]="if ( document.getElementById('progress-$testId') ){";
+        $f[]="\tdocument.getElementById('progress-$testId').innerHTML=base64_decode('$progress');";
+        $f[]="}";
+        $f[]="if ( document.getElementById('report-$testId') ){";
+        $f[]="\tdocument.getElementById('report-$testId').innerHTML=base64_decode('$report');";
+        $f[]="}";
+        $f[]="if ( document.getElementById('pdf-$testId') ){";
+        $f[]="\tdocument.getElementById('pdf-$testId').innerHTML=base64_decode('$reportpdf');";
+        $f[]="}";
+        $f[]="if ( document.getElementById('error-$testId') ){";
+        $f[]="\tdocument.getElementById('error-$testId').innerHTML=base64_decode('$error_report');";
+        $f[]="}";
+        // status-$testId report-$testId //error-$testId
+    }
+    echo @implode("\n",$f);
+}
+
+function isRunning($testId,$runningTests):bool{
+    $isRunning=false;
+    if($GLOBALS["VERBOSE"]){
+        echo "-- > $testId\n";
+        print_r($runningTests);
+    }
+    $runningIds = array();
+    if($runningTests !== null && isset($runningTests['count'])){
+
+        if($runningTests["count"]>0){
+            foreach ($runningTests['running_tests'] as $key){
+                $runningIds[$key]=true;
+            }
+
+        }
+    }
+    if(isset($runningIds[$testId])){
+        return true;
+    }
+    return false;
+}
+
+function td_status($testId,$runningTests):string{
+    $page=CurrentPageName();
+    $tpl = new template_admin();
+
+    if(isRunning($testId,$runningTests)){
+        $OnMouse[]= "OnClick=\"Loadjs('$page?stop-test-js=$testId');\"";
+        $OnMouse[]="OnMouseOver=\";this.style.cursor='pointer';\"";
+        $OnMouse[]="OnMouseOut=\";this.style.cursor='default';\"";
+        $js=@implode(" ",$OnMouse);
+        return $tpl->_ENGINE_parse_body("<span class='label label-success' $js><i class='fas fa-play'></i> {running}</span>");
+    } 
+        $OnMouse[]= "OnClick=\"Loadjs('$page?start-test-js=$testId');\"";
+        $OnMouse[]="OnMouseOver=\";this.style.cursor='pointer';\"";
+        $OnMouse[]="OnMouseOut=\";this.style.cursor='default';\"";
+        $js=@implode(" ",$OnMouse);
+        return $tpl->_ENGINE_parse_body("<span class='label label-default' $js><i class='fas fa-stop'></i> {stopped}</span>");
+
+
+}
+function td_error($testId,$runningTests):string{
+
+    if (isRunning($testId,$runningTests)){
+        return "&nbsp;";
+    }
+
+    $siege = new SiegeDaemon();
+
+    // Check if it failed to start
+    if ($siege->hasTestStartupError($testId)) {
+        $error = $siege->getTestStartupErrorMessage($testId);
+        $error=str_replace(":",":<br>",$error);
+        return "<br><span class='text-danger'>$error</span>";
+    }
+    return "";
+
+
+}
+function td_reports($testId,$runningTests):string{
+    $tpl = new template_admin();
+    if (isRunning($testId,$runningTests)){
+        return "&nbsp;";
+    }
+
+    if(!hasReport($testId)){
+        return "&nbsp;";
+    }
+    $page=CurrentPageName();
+
+    return $tpl->icon_stats("s_PopUpFull('$page?report-html=$testId',1024,1024)");
+}
+function td_pdf($testId,$runningTests):string{
+    $tpl = new template_admin();
+    if (isRunning($testId,$runningTests)){
+        return "&nbsp;";
+    }
+
+    if(!hasReport($testId)){
+        return "&nbsp;";
+    }
+    $page=CurrentPageName();
+
+    return $tpl->icon_pdf("document.location.href='$page?pdf-report=$testId'");
+}
+function report_pdf():bool{
+    $siege = new SiegeDaemon();
+    $testId = $_GET["pdf-report"];
+
+    $pdf = $siege->getTestReportPdf($testId);
+
+    if ($pdf !== null) {
+        // Send to browser for download
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="siege-report-' . $testId . '.pdf"');
+        header('Content-Length: ' . strlen($pdf));
+        echo $pdf;
+        exit;
+    } else {
+        echo "Error: " . $siege->getLastError();
+    }
+    return true;
 }
 
 function reports(){
@@ -376,13 +1556,13 @@ function reports(){
             $delete=$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$md')","AsProxyMonitor");
             $edit=$tpl->icon_parameters("Loadjs('$page?subject-js=$ID&md=$md')");
             $html[] = "<tr class='$TRCLASS' id='$md'>";
-            $html[] = "<td width=1% nowrap>{$date_text}</td>";
-            $html[] = "<td width=1% nowrap>{$duration}</td>";
-            $html[] = "<td width=1% nowrap>$users</td>";
-            $html[] = "<td  width=1% nowrap>$target</td>";
+            $html[] = "<td style='width:1%' nowrap>{$date_text}</td>";
+            $html[] = "<td style='width:1%' nowrap>{$duration}</td>";
+            $html[] = "<td style='width:1%' nowrap>$users</td>";
+            $html[] = "<td  style='width:1%' nowrap>$target</td>";
             $html[] = "<td  width=99% nowrap><span id='subject-$md'>$subject</span></td>";
-           $html[] = "<td  width=1% nowrap>$edit</td>";
-           $html[] = "<td  width=1% nowrap>$delete</td>";
+           $html[] = "<td  style='width:1%' nowrap>$edit</td>";
+           $html[] = "<td  style='width:1%' nowrap>$delete</td>";
             $html[] = "</tr>";
 
         }
@@ -460,5 +1640,257 @@ function Save(){
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidSiegeConfig",$newval);
 
 }
+function hasReport(string $testId): bool {
+    $siege = new SiegeDaemon();
+    return ($siege->getTestReport($testId) !== null);
+}
 
+/**
+ * Create a keytab using ktutil from username/password
+ * POST parameters:
+ *   - principal: Username (without @REALM)
+ *   - password: User password
+ *   - realm: Kerberos realm (uppercase)
+ *   - kdc_host: KDC/AD server hostname or IP (optional, for validation)
+ *   - keytab_path: Output keytab path (optional)
+ */
+
+function create_keytab_popup(){
+    $testId = $_GET["create-keytab"];
+    $tpl = new template_admin();
+    $page = CurrentPageName();
+
+    $function=$_GET["function"];
+    $siege = new SiegeDaemon();
+    $test = $siege->getTest($testId);
+
+    if($test === null){
+        echo $tpl->div_error("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    //$keytabPath = $test['proxy_auth']['keytab_path'] ?? '/etc/siege-daemon/siege.keytab';
+    $principal = $test['proxy_auth']['principal'] ?? '';
+    $realm = $test['proxy_auth']['realm'] ?? '';
+    $kdcHost = $test['proxy_auth']['kdc_host'] ?? '';
+    $password = $test['proxy_auth']['password'] ?? '';
+
+    // Build form
+    $form[] = $tpl->field_hidden("create-keytab", $testId);
+    $form[] = $tpl->field_text("principal", "{username}", $principal, true,"");
+    $form[] = $tpl->field_password("password", "{password}", $password, true,"");
+    $form[] = $tpl->field_text("realm", "{activedirectory_domain}", $realm, true);
+    $form[] = $tpl->field_text("kdc_host", "{activedirectory_server}", $kdcHost);
+
+    $js = "dialogInstance1.close();$function();";
+    echo $tpl->form_outside("", @implode("\n", $form), null, "{save}", $js, "AsProxyMonitor");
+    return true;
+}
+function create_keytab_save():bool{
+    $tpl = new template_admin();
+    $tpl->CLEAN_POST();
+
+    $testId=$_POST["create-keytab"];
+    $principal = isset($_POST['principal']) ? trim($_POST['principal']) : '';
+    $password = isset($_POST['password']) ? $_POST['password'] : '';
+    $realm = isset($_POST['realm']) ? trim(strtoupper($_POST['realm'])) : '';
+    $kdcHost = isset($_POST['kdc_host']) ? trim($_POST['kdc_host']) : '';
+    $keytabPath = isset($_POST['keytab_path']) ? trim($_POST['keytab_path']) : "/etc/siege-daemon/$testId.keytab";
+
+    // Validate required fields
+    if(empty($principal)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Principal/Username {required}");
+        return false;
+    }
+
+    if(empty($password)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Password {required}");
+        return false;
+    }
+
+    if(empty($realm)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Realm {required}");
+        return false;
+    }
+
+    $siege = new SiegeDaemon();
+
+    // Check if daemon is healthy
+    if(!$siege->isHealthy()){
+        echo $tpl->post_error($tpl->javascript_parse_text("{error}: Siege daemon {not_running}"));
+        return false;
+    }
+
+    // Create keytab using ktutil
+    $result = $siege->createKeytabWithKtutil(
+        $principal,
+        $password,
+        $realm,
+        $keytabPath
+    );
+
+    if($result === null){
+        echo $tpl->post_error($tpl->javascript_parse_text("{error}: " . $siege->getLastError()));
+        return false;
+    }
+
+    if(!isset($result['success']) || !$result['success']){
+        $error = isset($result['error']) ? $result['error'] : 'Unknown error';
+        echo $tpl->post_error($tpl->javascript_parse_text("{error}: " . $error));
+        return false;
+    }
+
+    // If KDC host provided, validate the keytab
+    if(!empty($kdcHost)){
+        $validateResult = $siege->validateKeytab(
+            $keytabPath,
+            $principal,
+            $realm,
+            $kdcHost
+        );
+
+        if($validateResult === null || !isset($validateResult['valid']) || !$validateResult['valid']){
+            $validationError = '';
+            if($validateResult !== null && isset($validateResult['checks'])){
+                foreach($validateResult['checks'] as $check){
+                    if(!isset($check['passed']) || !$check['passed']){
+                        $validationError .= (isset($check['message']) ? $check['message'] : $check['name']) . '; ';
+                    }
+                }
+            }
+            if(empty($validationError) && $validateResult !== null && isset($validateResult['error'])){
+                $validationError = $validateResult['error'];
+            }
+            echo $tpl->post_error($tpl->javascript_parse_text("{warning}: Keytab created but validation failed: " . $validationError));
+            return false;
+        }
+    }
+
+    // Update the test configuration with Kerberos proxy_auth settings
+    if(!empty($testId)){
+        $currentTest = $siege->getTest($testId);
+        if($currentTest !== null){
+            // Build updated config - preserve existing settings
+            $config = $currentTest;
+            unset($config['id']);
+            unset($config['created_at']);
+
+            // Set Kerberos proxy authentication
+            $config['proxy_auth'] = array(
+                'type' => 'kerberos',
+                'keytab_path' => $keytabPath,
+                'principal' => $principal,
+                'realm' => $realm
+            );
+
+            // Add KDC host if provided
+            if(!empty($kdcHost)){
+                $config['proxy_auth']['kdc_host'] = $kdcHost;
+            }
+
+            // Delete old and create new test with updated config
+            $siege->deleteTest($testId);
+            $newTest = $siege->createTest($config);
+
+            if($newTest === null){
+                $tpl->post_error($tpl->javascript_parse_text("{error}: Keytab created but failed to update test: " . $siege->getLastError()));
+                return false;
+            }
+
+            $testName = isset($config['name']) ? $config['name'] : $testId;
+            return admin_tracks("Created Kerberos keytab and updated test '$testName' with Kerberos proxy auth for $principal@$realm");
+
+        }
+    }
+
+    return admin_tracks("Created Kerberos keytab for $principal@$realm using ktutil");
+
+}
+
+/**
+ * Update/recreate a keytab using ktutil
+ * Same as create_keytab but designed for updating existing keytabs
+ */
+function update_keytab(){
+    // For ktutil-based keytabs, update is the same as create
+    // (we regenerate the keytab with the new password)
+    return create_keytab();
+}
+
+/**
+ * Get Kerberos status (keytab and ticket cache)
+ */
+function kerberos_status(){
+    header('Content-Type: application/json');
+
+    $keytabPath = isset($_GET['keytab_path']) ? trim($_GET['keytab_path']) : null;
+
+    $siege = new SiegeDaemon();
+
+    if(!$siege->isHealthy()){
+        echo json_encode(array('error' => 'Siege daemon not running'));
+        return;
+    }
+
+    $status = $siege->getKerberosStatus($keytabPath);
+
+    if($status === null){
+        echo json_encode(array('error' => $siege->getLastError()));
+        return;
+    }
+
+    echo json_encode($status);
+}
+
+/**
+ * Obtain a Kerberos ticket using kinit
+ * POST parameters:
+ *   - principal: Full principal (user@REALM)
+ *   - keytab_path: Path to keytab file (optional)
+ *   - lifetime: Ticket lifetime (optional, e.g., "24h")
+ *   - renewable: Renewable lifetime (optional, e.g., "7d")
+ */
+function kinit(){
+    $tpl = new template_admin();
+    $tpl->CLEAN_POST();
+
+    $principal = isset($_POST['principal']) ? trim($_POST['principal']) : '';
+    $keytabPath = isset($_POST['keytab_path']) ? trim($_POST['keytab_path']) : null;
+    $lifetime = isset($_POST['lifetime']) ? trim($_POST['lifetime']) : '24h';
+    $renewable = isset($_POST['renewable']) ? trim($_POST['renewable']) : '7d';
+
+    if(empty($principal)){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Principal {required}");
+        return false;
+    }
+
+    $siege = new SiegeDaemon();
+
+    if(!$siege->isHealthy()){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: Siege daemon {not_running}");
+        return false;
+    }
+
+    $result = $siege->kinit($principal, $keytabPath, $lifetime, $renewable);
+
+    if($result === null){
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: " . $siege->getLastError());
+        return false;
+    }
+
+    if(!isset($result['success']) || !$result['success']){
+        $error = isset($result['error']) ? $result['error'] : 'Unknown error';
+        echo "jserror:" . $tpl->javascript_parse_text("{error}: kinit {failed}: " . $error);
+        return false;
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode(array(
+        'success' => true,
+        'message' => isset($result['message']) ? $result['message'] : 'Ticket obtained successfully',
+        'principal' => isset($result['principal']) ? $result['principal'] : $principal
+    ));
+
+    return true;
+}
 

@@ -331,10 +331,10 @@ function main(){
 			$sql="SELECT id FROM pdnsutil_dnssec WHERE domain_id=$domain_id";
 			$ligne2=mysqli_fetch_array($q->QUERY_SQL($sql));
 			if($ligne2["id"]>0){
-				$dnssec_row="<td width=1% nowrap><a href=\"javascript:blur();\" 
+				$dnssec_row="<td style='width:1%' nowrap><a href=\"javascript:blur();\" 
 						OnClick=\"Loadjs('fw.pdns.dnssec.php?domain_id=$domain_id');\"><span class='label label-primary'>{enabled}</span></a></td>";
 			}else{
-				$dnssec_row="<td width=1% nowrap><span class='label'>{error}</span></td>";
+				$dnssec_row="<td style='width:1%' nowrap><span class='label'>{error}</span></td>";
 			}
 		}
 		VERBOSE("PDNSStatus == $PDNSStatus",__LINE__);
@@ -368,8 +368,8 @@ function main(){
 		$html[]="<td><strong>$domain</strong>{$duplicate}$addTodomain_text</td>";
 		$html[]=$PDNSStatus_row;
 		$html[]=$dnssec_row;
-		if($UnboundEnabled==0){$html[]="<td width=1% nowrap>$metadata</td>";}
-		$html[]="<td width=1% nowrap>".FormatNumber($items)."</td>";
+		if($UnboundEnabled==0){$html[]="<td style='width:1%' nowrap>$metadata</td>";}
+		$html[]="<td style='width:1%' nowrap>".FormatNumber($items)."</td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$delete_icon</center></td>";
 		$html[]="</tr>";
 	}
@@ -426,12 +426,12 @@ function isPdnsError($domain_id):string{
 
 
         if (!$q->ok) {
-            return "<td width=1% nowrap><i class=\"fas fa-exclamation-circle\"></i><span class='text-danger'>" . $tpl->td_href("MySQL Error", $q->mysql_error) . "</span></td>";
+            return "<td style='width:1%' nowrap><i class=\"fas fa-exclamation-circle\"></i><span class='text-danger'>" . $tpl->td_href("MySQL Error", $q->mysql_error) . "</span></td>";
         }
 
         $zcount = $ligne2["tcount"];
         if ($zcount > 0) {
-            return "<td width=1% nowrap><a href=\"javascript:blur();\" 
+            return "<td style='width:1%' nowrap><a href=\"javascript:blur();\" 
 						OnClick=\"Loadjs('fw.pdns.domains.status.php?domain_id=$domain_id');\"
 						><span class='label label-warning'>{$zcount} {errors}</span></a></td>";
         }
@@ -441,7 +441,7 @@ function isPdnsError($domain_id):string{
     $ligne  = $q->mysqli_fetch_array("SELECT * FROM dnsinfos WHERE domain_id=$domain_id");
 
     if(!$q->ok){
-        return "<td width=1% nowrap><i class=\"fas fa-exclamation-circle\"></i><span class='text-danger'>".
+        return "<td style='width:1%' nowrap><i class=\"fas fa-exclamation-circle\"></i><span class='text-danger'>".
             $tpl->td_href("MySQL Error",$q->mysql_error)."</span></td>";
     }
 
@@ -471,20 +471,20 @@ function isPdnsError($domain_id):string{
                 if (trim($re[1]) == null) {
                     continue;
                 }
-                return "<td width=1% nowrap><span class='label label-danger'>{error}</span></a></td>";
+                return "<td style='width:1%' nowrap><span class='label label-danger'>{error}</span></a></td>";
 
             }
             if (preg_match("#[0-9]+\s+Error(.+)#i", $line)) {
                 if (trim($re[1]) == null) {
                     continue;
                 }
-                return "<td width=1% nowrap><span class='label label-danger'>{error}</span></a></td>";
+                return "<td style='width:1%' nowrap><span class='label label-danger'>{error}</span></a></td>";
 
             }
         }
     }
 
-    return "<td width=1% nowrap><span class='label label-primary'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OK&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></a></td>";
+    return "<td style='width:1%' nowrap><span class='label label-primary'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OK&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></a></td>";
 }
 
 

@@ -207,6 +207,7 @@ class compile_ufdbguard{
 		$unix=new unix();
 		$major=$unix->UFDBGUARDD_MAJOR();
 		$minor=$unix->UFDBGUARDD_MINOR();
+        $revision=$unix->UFDBGUARDD_REVISION();
         $RedirectorsArray=array();
         $OutArray=$this->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidClientParams"));
         if(is_array($OutArray)){
@@ -238,7 +239,7 @@ class compile_ufdbguard{
         
         
 		$ufdbguardConfig=$this->SetDefaultsConfig($ufdbguardConfig);
-		$datas=$ufdbguardConfig;
+
 
 
 		$UfdbGuardInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbGuardInterface"));
@@ -261,7 +262,7 @@ class compile_ufdbguard{
 		
 		if(!$this->Is31){$ufdbguardConfig["Notrefreshdomainlist"]=1;}
 		$this->Notrefreshdomainlist=$ufdbguardConfig["Notrefreshdomainlist"];
-		echo "Starting......: ".date("H:i:s")." ufdbguardd: Major:$major, Minor:$minor\n";
+		echo "Starting......: ".date("H:i:s")." ufdbguardd: Major:$major Minor:$minor, revision:$revision\n";
 		
 		
 		$redirect_loading_database="$this->SquidGuardIPWeb?loading-database=yes";
@@ -324,24 +325,26 @@ class compile_ufdbguard{
 		$conf[]="refreshdomainlist $RefreshDomainList";
 		$conf[]="safe-search off";
 		
-		
-		$ufdbguardConfig=$this->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ufdbguardConfig"));
-		
-		if($UfdbGuardInterface<>null){
+        if($UfdbGuardInterface<>null){
 			$NETWORK_ALL_INTERFACES=$unix->NETWORK_ALL_INTERFACES();
 			$UfdbGuardListen=$NETWORK_ALL_INTERFACES[$UfdbGuardInterface]["IPADDR"];
 		}
 		if($UfdbGuardListen==null){$UfdbGuardListen="all";}
-		$UfdbGuardPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbGuardPort"));if($UfdbGuardPort==0){$UfdbGuardPort=3977;}
-		
+		$UfdbGuardPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbGuardPort"));
+        if($UfdbGuardPort==0){$UfdbGuardPort=3977;}
 
-		
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PythonUfdbPort", $UfdbGuardPort);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PythonUfdbServer", $UfdbGuardListen);
 		
 		$conf[]="port $UfdbGuardPort";
 		$conf[]="interface $UfdbGuardListen";
-		
+		if($major>0){
+            if($minor>34){
+                if($revision>6){
+                    $conf[]="socket-type tcp";
+                }
+            }
+        }
 		
 
 		$conf[]="category safesearch {";

@@ -814,6 +814,19 @@ class features{
         return $this->build_paragraph($config);
 
     }
+
+    public function APP_SIEGE():string{
+        $config["SECURITY"]="AsSystemAdministrator";
+        $config["TITLE"]="{APP_SIEGE}";
+        $config["EXPLAIN"]="{APP_SIEGE_EXPLAIN}";
+        $config["TOKEN"]="EnableSiege";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/siege.install.progress";
+        $config["LOG_FILE"]=PROGRESS_DIR."/siege.install.progress.log";
+        $config["CMD_ON"]="/siege/install";
+        $config["CMD_OFF"]="/siege/uninstall";
+        return $this->build_paragraph($config);
+
+    }
     public function FAIL2BAN():string{
         if($this->ASReverseProxyAppliance){
             return "";
@@ -1999,7 +2012,19 @@ class features{
         $config["MEMMIN"]="1000";
         return $this->build_paragraph($config);
     }
-
+    public function APP_DECISION_IP():string{
+        $config["SECURITY"]="AsFirewallManager";
+        $config["TITLE"]="DecisionIP";
+        $config["EXPLAIN"]="{decisionIPAbout}";
+        $config["TOKEN"]="EnableDecisionIP";
+        $config["CMD_ON"]="/decisionip/install";
+        $config["CMD_OFF"]="/decisionip/uninstall";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/decisionip.progress";
+        $config["LOG_FILE"]=PROGRESS_DIR."/decisionip.log";
+       // $config["WIKI"]="https://wiki.articatech.com/en/reverse-proxy";
+        $config["MEMMIN"]="500";
+        return $this->build_paragraph($config);
+    }
 
     public function APP_NGINX():string{
         $config["SECURITY"]="AsSystemAdministrator";

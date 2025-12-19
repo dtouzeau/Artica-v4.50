@@ -165,12 +165,12 @@ function table(){
 		$delete=$tpl->icon_delete("Loadjs('$page?delete-js=$id&md=$md')","AsSystemAdministrator");
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td width=1% nowrap><span style='font-weight:bold'>". $tpl->td_href($icon_user."&nbsp;&nbsp;".$ligne['userid'],null,"Loadjs('$page?member-js=$id');")."</span></td>";
-		$html[]="<td width=1% nowrap><span style='font-weight:bold'>". $tpl->td_href($REALUSERS[$zuid],null,"Loadjs('$page?member-js=$id');")."</span></td>";
+		$html[]="<td style='width:1%' nowrap><span style='font-weight:bold'>". $tpl->td_href($icon_user."&nbsp;&nbsp;".$ligne['userid'],null,"Loadjs('$page?member-js=$id');")."</span></td>";
+		$html[]="<td style='width:1%' nowrap><span style='font-weight:bold'>". $tpl->td_href($REALUSERS[$zuid],null,"Loadjs('$page?member-js=$id');")."</span></td>";
 		$html[]="<td><span style='font-weight:bold'>{$ligne["homedir"]}</span></td>";
-		$html[]="<td width=1% nowrap>$accessed_time</td>";
-		$html[]="<td width=1% nowrap>$requests</td>";
-		$html[]="<td width=1% nowrap>$delete</td>";
+		$html[]="<td style='width:1%' nowrap>$accessed_time</td>";
+		$html[]="<td style='width:1%' nowrap>$requests</td>";
+		$html[]="<td style='width:1%' nowrap>$delete</td>";
 		
 		$html[]="</tr>";
 

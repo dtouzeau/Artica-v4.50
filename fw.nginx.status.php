@@ -991,6 +991,12 @@ function get_servicename($ID):string{
     if($ID==0){return "Unknown";}
     $q                          = new lib_sqlite(NginxGetDB());
     $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
+    if(!$q->ok){
+        writelogs("SELECT servicename FROM nginx_services WHERE ID=$ID $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);
+    }
+    if(!isset($ligne["servicename"])){
+        return "Unknown";
+    }
     return strval($ligne["servicename"]);
 }
 function isHarmpID():bool{

@@ -286,8 +286,8 @@ function table(){
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{router}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{type}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{databases}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' width=1% nowrap>{packets_from}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' width=1% nowrap>{should_be_forwarded_to}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' style='width:1%' nowrap>{packets_from}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' style='width:1%' nowrap>{should_be_forwarded_to}</th>";
 	$html[]="<th data-sortable=false>{delete}</th>";
 
 	$html[]="</tr>";
@@ -322,12 +322,12 @@ function table(){
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td width=1% class='center' nowrap>{$status}</center></td>";
-		$html[]="<td width=1% nowrap><strong>".$tpl->td_href($proxyname,null,"Loadjs('$page?proxyid-js=$proxyid');")."</strong></td>";
-		$html[]="<td width=1% nowrap>{$DBTYPES[$dbtype]}</td>";
+		$html[]="<td style='width:1%' nowrap><strong>".$tpl->td_href($proxyname,null,"Loadjs('$page?proxyid-js=$proxyid');")."</strong></td>";
+		$html[]="<td style='width:1%' nowrap>{$DBTYPES[$dbtype]}</td>";
 		$html[]="<td>{$dbs_text}</td>";
 		$html[]="<td>$frontend_ip:$frontend_port</td>";
 		$html[]="<td>$backend_ip:$backend_port</td>";
-		$html[]="<td  width=1% nowrap>$delete</td>";
+		$html[]="<td  style='width:1%' nowrap>$delete</td>";
 		$html[]="</tr>";
 		
 		
@@ -424,7 +424,7 @@ function proxyid_databases_list(){
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td width=1% class='center' nowrap>{$status}</center></td>";
 		$html[]="<td><strong>".$tpl->td_href($db_name,null,"Loadjs('$page?dbpid-js=$dbpid');")."</strong></td>";
-		$html[]="<td  width=1% nowrap>$delete</td>";
+		$html[]="<td  style='width:1%' nowrap>$delete</td>";
 		$html[]="</tr>";
 		
 		

@@ -61,7 +61,7 @@ SpamAssassin uses a variety of mechanisms including header and text analysis, Ba
 SpamAssassin runs on a server, and filters spam before it reaches your mailbox</spamassassin_about>
 <title1>Basic Message Tagging Options</title1>
 <To>To Header</To>
-<trusted_networks>Trusted Networks</trusted_networks>
+<trusted_networks>Zaufane sieci</trusted_networks>
 <trusted_networks_text>
 What networks or hosts are 'trusted' in your setup.[br]
 Trusted in this case means that relay hosts on these networks are considered to not be potentially operated by spammers,

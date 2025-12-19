@@ -205,7 +205,7 @@ function link_item_search(){
         $html[] = "<tr class='$TRCLASS' id='$md'>";
         $html[] = "<td class=\"$class\" width=50% nowrap>$GroupIcon$GroupName</td>";
         $html[] = "<td class=\"$class\" width=50% nowrap>$GrText <small>($GroupType)</small></td>";
-        $html[] = "<td class=\"$class\" width=1% nowrap>$button</td>";
+        $html[] = "<td class=\"$class\" style='width:1%' nowrap>$button</td>";
 
     }
     $html[]="</tbody>";
@@ -475,7 +475,7 @@ function table(){
         if($ico2<>null){$ico2="<span class='$ico2'></span>&nbsp;&nbsp;";}
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap>{$GroupName}</td>";
+        $html[]="<td style='width:1%' nowrap>{$GroupName}</td>";
         $html[]="<td nowrap>$ico2<strong>$GroupTypeText</strong></td>";
         $html[]="<td style='width:1%;' nowrap class='center'>$enable</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>$delete</td>";

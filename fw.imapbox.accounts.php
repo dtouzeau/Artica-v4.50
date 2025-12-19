@@ -170,13 +170,13 @@ function member_mailboxes_table(){
         if($remote_folder=="__ALL__"){$remote_folder="{all_folders}";}
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap><span style='font-weight:bold'>".
+        $html[]="<td style='width:1%' nowrap><span style='font-weight:bold'>".
             $tpl->td_href("$hostname:$remote_port",null,"Loadjs('$page?mailbox-js=$id&userid=$userid');")."</span></td>";
         $html[]="<td width=99% nowrap><span style='font-weight:bold'>". $tpl->td_href($username,null,"Loadjs('$page?mailbox-js=$id');")."</span></td>";
-        $html[]="<td width=1% nowrap><span style='font-weight:bold'>$remote_folder</span></td>";
-        $html[]="<td width=1% nowrap>$database_size</td>";
-        $html[]="<td width=1% nowrap>$enabled</td>";
-        $html[]="<td width=1% nowrap>$delete</td>";
+        $html[]="<td style='width:1%' nowrap><span style='font-weight:bold'>$remote_folder</span></td>";
+        $html[]="<td style='width:1%' nowrap>$database_size</td>";
+        $html[]="<td style='width:1%' nowrap>$enabled</td>";
+        $html[]="<td style='width:1%' nowrap>$delete</td>";
 
         $html[]="</tr>";
 
@@ -422,10 +422,10 @@ function table(){
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td width=99% nowrap><i class='fas fa-user'></i>&nbsp;&nbsp;<span style='font-weight:bold'>". $tpl->td_href($ligne['userid'],null,"Loadjs('$page?member-js=$id');")."</span></td>";
-        $html[]="<td width=1% nowrap>$mailboxes_count</td>";
-        $html[]="<td width=1% nowrap>$msize</td>";
-        $html[]="<td width=1% nowrap>$enabled</td>";
-        $html[]="<td width=1% nowrap>$delete</td>";
+        $html[]="<td style='width:1%' nowrap>$mailboxes_count</td>";
+        $html[]="<td style='width:1%' nowrap>$msize</td>";
+        $html[]="<td style='width:1%' nowrap>$enabled</td>";
+        $html[]="<td style='width:1%' nowrap>$delete</td>";
 
         $html[]="</tr>";
 

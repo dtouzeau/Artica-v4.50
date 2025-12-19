@@ -174,7 +174,7 @@ function table(){
 	$html[]="<table id='table-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{ID}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{ID}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1%>{date}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' width=1%>{pattern}</th>";
 	$html[]="<th data-sortable=false width=1%>{delete}</th>";
@@ -193,7 +193,7 @@ function table(){
 		$pattern=$ligne["pattern"];
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td width=1%><center>$ID</center></td>";
-		$html[]="<td width=1% nowrap>$date</td>";
+		$html[]="<td style='width:1%' nowrap>$date</td>";
 		$html[]="<td width=99%><strong>". $tpl->td_href($pattern,null,"Loadjs('$page?rule-js={$ligne['ID']}')")."</strong></td>";
 		$html[]="<td width=1% class='center' nowrap>". $tpl->icon_delete("Loadjs('$page?rule-delete={$ligne['ID']}&md=$md')","AsPostfixAdministrator")."</center></td>";
 		$html[]="</tr>";

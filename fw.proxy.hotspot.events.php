@@ -123,8 +123,8 @@ function search(){
         }
 
 		$html[]="<tr>
-				<td width=1% nowrap><span style='color:$color;'>$date $TIME</td>
-				<td width=1% nowrap><span style='color:$color;' width=1% nowrap>$PID</td>
+				<td style='width:1%' nowrap><span style='color:$color;'>$date $TIME</td>
+				<td style='width:1%' nowrap><span style='color:$color;' style='width:1%' nowrap>$PID</td>
                 <td width=99%><span style='color:$color'  >$LINE</span></td>  
                </tr>";
 		

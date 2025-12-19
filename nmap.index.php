@@ -100,7 +100,7 @@ function events(){
 		$html=$html."
 		<tr class=$classtr>
 			<td style='font-size:12px;font-weight:bold;color:$color'style='width:1%;' nowrap colspan=2>{$ligne["zDate"]}</a></td>
-			<td style='font-size:12px;font-weight:bold;color:$color' width=1% nowrap>$view</a></td>
+			<td style='font-size:12px;font-weight:bold;color:$color' style='width:1%' nowrap>$view</a></td>
 			<td style='font-size:12px;font-weight:bold;color:$color' width=99% nowrap colspan=2>$link{$ligne["subject"]}</a></td>
 		</tr>
 		";

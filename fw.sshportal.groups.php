@@ -231,7 +231,7 @@ function table(){
         $html[]="<td class=\"\" width='1%' nowrap><i class='fas fa-users'></i>&nbsp;".$tpl->td_href("<span id='$ID-gname'>$name</span>","{click_to_edit}",$js)."</td>";
         $html[]="<td class=\"\"><span id='$ID-gcomment'>$comment</span></td>";
         $html[]="<td class=\"\" width='1%' nowrap><i class='fa fa-user'></i>&nbsp;<span id='$ID-gusername'>$Users</span></td>";
-        $html[]="<td class=\"center\" width=1% nowrap>$delete</td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";
 
 

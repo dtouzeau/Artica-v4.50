@@ -319,7 +319,7 @@ function table(){
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
 		$html[]="<td><strong>". $tpl->td_href($mailfrom,null,$js)."</strong></td>";
 		$html[]="<td><strong>". $tpl->td_href($mailto,null,$js)."</strong></td>";
-		$html[]="<td width=1% nowrap>". $tpl->td_href($zexplain,null,$js)."</td>";
+		$html[]="<td style='width:1%' nowrap>". $tpl->td_href($zexplain,null,$js)."</td>";
 		$html[]="<td width=1% class='center' nowrap>".$tpl->icon_delete("Loadjs('$page?delete-rule-js=$zmd5')","AsPostfixAdministrator") ."</center></td>";
 		$html[]="</tr>";		
 		
@@ -357,7 +357,7 @@ function table(){
 	$html[]="<tr class='$TRCLASS' id='$zmd5'>";
 	$html[]="<td><strong>{default} {everyone}</strong></td>";
 	$html[]="<td><strong>{default} {everyone}</strong></td>";
-	$html[]="<td width=1% nowrap>$zexplain</td>";
+	$html[]="<td style='width:1%' nowrap>$zexplain</td>";
 	$html[]="<td width=1% class='center' nowrap>".$tpl->icon_nothing() ."</center></td>";
 	$html[]="</tr>";
 	

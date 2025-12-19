@@ -227,11 +227,11 @@ function main(){
         $explain=td_explain($ligne);
 
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap><i class='fas fa-scroll'></i></td>";
-        $html[]="<td width=1% nowrap>$ID</td>";
-		$html[]="<td width=1% nowrap>$rulename</td>";
+        $html[]="<td style='width:1%' nowrap><i class='fas fa-scroll'></i></td>";
+        $html[]="<td style='width:1%' nowrap>$ID</td>";
+		$html[]="<td style='width:1%' nowrap>$rulename</td>";
 		$html[]="<td width=99%><div id='openvpn-profile-$ID'>$explain</div></td>";
-		$html[]="<td width=1% nowrap>$delete</td>";
+		$html[]="<td style='width:1%' nowrap>$delete</td>";
 		$html[]="</tr>";
 	}
 	

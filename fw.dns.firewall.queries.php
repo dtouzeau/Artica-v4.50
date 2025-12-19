@@ -262,9 +262,9 @@ function search(){
         }
 
         $html[]="<tr id='$md'>
-				<td style='color:$color' width=1% nowrap>$date</span></td>
-				<td style='color:$color' width=1% nowrap>$CLIENT_IP</span></td>
-				<td style='color:$color' width=1% nowrap>$type</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$date</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$CLIENT_IP</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$type</span></td>
                 <td style='color:$color' width=99%>$query</td>            
  
 

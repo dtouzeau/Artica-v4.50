@@ -1037,8 +1037,8 @@ function DefaultSplash($ChilliConf){
 	$f[]="<div style=\"postition:absolute;top:0px;left:80%;width:100%\">";
 	$f[]="<table style='width:100%;padding:0px;margin:0px'>";
 	$f[]="<tbody><tr>";
-	$f[]="<td width=100%>&nbsp;<td>";
-	$f[]="<td width=1% nowrap><div id=\"user_info\" style='text-align:right;width:90px'>";
+	$f[]="<td style='width:100%'>&nbsp;<td>";
+	$f[]="<td style='width:1%' nowrap><div id=\"user_info\" style='text-align:right;width:90px'>";
 	$f[]=" <div id=\"langs\" style=\"text-align:right;\">";
 	$f[]="";
 	$f[]=" </div>";

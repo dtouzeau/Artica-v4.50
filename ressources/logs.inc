@@ -100,7 +100,11 @@ function VERBOSE($text,$line=0,$forceFunc=""):bool{
 
 function writelogs($text="",$function="",$file_source="",$line=""):bool{
 	$arr=array();
-	if(strlen($text)>2000){$text=substr($text, 0,2000);}
+	if(!is_null($text)) {
+		if (strlen($text) > 2000) {
+			$text = substr($text, 0, 2000);
+		}
+	}
 	if(!isset($GLOBALS["MEMORY_LOGS"])){$GLOBALS["MEMORY_LOGS"]=array();}
 	if(!isset($GLOBALS["ARTICA"]["EVENTS"])){$GLOBALS["ARTICA"]["EVENTS"]=array();}
 	if(count($GLOBALS["ARTICA"]["EVENTS"])>100){$GLOBALS["ARTICA"]["EVENTS"]=array();}

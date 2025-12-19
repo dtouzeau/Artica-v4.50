@@ -151,7 +151,9 @@ class ip2host{
         $VALS[]="'".gethostbyaddr($MAIN["ipaddr"])."'";
 
         foreach ($MAIN as $key=>$val){
-            $MAIN[$key]=str_replace("'","`", $val);
+            if(!is_null($val)){
+                $MAIN[$key]=str_replace("'","`", $val);
+            }
         }
         if(!isset($MAIN["continentCode"])){$MAIN["continentCode"]="";}
         if(!isset($MAIN["countryName"])){$MAIN["countryName"]="";}

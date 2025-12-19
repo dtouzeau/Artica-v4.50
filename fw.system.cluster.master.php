@@ -62,16 +62,18 @@ function page():bool{
     return true;
 
 }
-function remove_node():bool{
-    $uuid=$_GET["remove-node"];
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterMasterNodes"));
+function remove_node(): bool {
+    $uuid = $_GET["remove-node"] ?? '';
+    if ($uuid === '') { return false; }
 
-    if(!property_exists($json,"nodes")){
-        return  false;
+    $data = json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterMasterNodes"), true);
+    if (!is_array($data) || !isset($data["nodes"]) || !is_array($data["nodes"])) {
+        return false;
     }
 
-    unset($json->nodes[$uuid]);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterMasterNodes",json_encode($json));
+    unset($data["nodes"][$uuid]);
+
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterMasterNodes", json_encode($data));
     return admin_tracks("Remove cluster slave $uuid");
 }
 function interface_js():bool{

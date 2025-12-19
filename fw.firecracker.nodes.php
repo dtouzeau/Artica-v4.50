@@ -483,9 +483,9 @@ function connect_container_popup():bool{
     $html[]="<th  colspan='2'>{driver}</th>";
     $html[]="<th >{name}</th>";
     $html[]="<th  colspan='2'>{scope}</th>";
-    $html[]="<th  width=1% nowrap>{network}</th>";
-    $html[]="<th  width=1% nowrap>{gateway}</th>";
-    $html[]="<th  width=1% nowrap>&nbsp;</th>";
+    $html[]="<th  style='width:1%' nowrap>{network}</th>";
+    $html[]="<th  style='width:1%' nowrap>{gateway}</th>";
+    $html[]="<th  style='width:1%' nowrap>&nbsp;</th>";
     $html[]="</tr>";
     $html[]="</thead>";
     $html[]="<tbody>";

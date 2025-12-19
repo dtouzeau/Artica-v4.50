@@ -129,7 +129,7 @@ class system_tasks{
         $this->tasks_array[32]="{synchronize_mailboxes}";
         $this->tasks_array[33]="{system_load_task}";
         $this->tasks_array[34]="{whitelist_zarafa_contacts}";
-        $this->tasks_array[35]="{recompile_postfix_parameters}";
+        //$this->tasks_array[35]="{recompile_postfix_parameters}";
         $this->tasks_array[36]="{restart_mysql_server}";
         $this->tasks_array[37]="{scan_mailattachments_queue_explain}";
         $this->tasks_array[38]="{artica_install_watchdog}";
@@ -212,7 +212,7 @@ class system_tasks{
         $this->tasks_explain_array[32]="{synchronize_mailboxes_explain}";
         $this->tasks_explain_array[33]="{system_load_task_explain}";
         $this->tasks_explain_array[34]="{whitelist_zarafa_contacts_explain}";
-        $this->tasks_explain_array[35]="{recompile_postfix_parameters_explain}";
+        //$this->tasks_explain_array[35]="{recompile_postfix_parameters_explain}";
         $this->tasks_explain_array[36]="{restart_mysql_server_explain}";
         $this->tasks_explain_array[37]="{scan_mailattachments_queue}";
         $this->tasks_explain_array[38]="{artica_install_watchdog_explain}";
@@ -285,7 +285,7 @@ class system_tasks{
         $this->tasks_processes[32]="exec.mailbox.migration.php --schedules";
         //$this->tasks_processes[33]="exec.syslog-engine.php --loadavg";
         $this->tasks_processes[34]="exec.mapiContacts.php";
-        $this->tasks_processes[35]="exec.postfix.recompile.task.php";
+        //$this->tasks_processes[35]="exec.postfix.recompile.task.php";
         $this->tasks_processes[36]="exec.mysql-restart.php";
         $this->tasks_processes[37]="exec.mimedefang.mysql.php";
         $this->tasks_processes[38]="bin:artica-install -watchdog daemon";

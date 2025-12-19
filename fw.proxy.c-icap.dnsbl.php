@@ -260,7 +260,7 @@ function table(){
 
 		
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
-		$html[]="<td width=1% nowrap><strong>".
+		$html[]="<td style='width:1%' nowrap><strong>".
             $tpl->td_href($dnsbl,null,$js)."</strong>&nbsp;<small>($uri)</small></td>";
 		$html[]="<td>". $tpl->td_href($name,null,$js)."</td>";
 		$html[]="<td width=1% class='center' nowrap>$check</td>";

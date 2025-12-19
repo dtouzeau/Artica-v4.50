@@ -44,7 +44,6 @@ function install(){
     system("/usr/sbin/artica-phpfpm-service -stop-proxy");
 	create_postfix_service();
 	build_progress_restart("{installing}...",30);
-	create_postfix_logger_service();
 	build_progress_restart("{installing}...",31);
 	create_postfix_monit();
 	build_progress_restart("{installing}...",32);
@@ -63,14 +62,6 @@ function install(){
 	$unix->Popuplate_cron_make("postfix-dashboard",
         "*/5 * * * *","exec.postfix.dashboard.php");
 
-
-
-      $unix->Popuplate_cron_make("postfix-dashboard",
-          "*/5 * * * *","exec.postfix.dashboard.php");
-
-
-
-
       $unix->Popuplate_cron_make("postfix-ipsets",
           "*/15 * * * *","exec.postfix.ipsets.php");
 
@@ -79,7 +70,6 @@ function install(){
     system("/usr/sbin/artica-phpfpm-service -install-postfix");
 
 	build_progress_restart("{configuring} {please_wait}...",50);
-    system("$php /usr/share/artica-postfix/exec.postfix.vacuum.php");
 	system("$php /usr/share/artica-postfix/exec.postfix.maincf.php --others-values");
 	build_progress_restart("{configuring} {please_wait}...",51);
 	system("$php /usr/share/artica-postfix/exec.postfix.maincf.php --smtp-sender-restrictions");
@@ -306,73 +296,7 @@ function create_postfix_service(){
 
 }
 
-function create_postfix_logger_service(){
-	$unix=new unix();
-	$php=$unix->LOCATE_PHP5_BIN();
-	$INITD_PATH="/etc/init.d/postfix-logger";
-	$php5script="exec.service.postfix-logger.php";
-	$daemonbinLog="Artica-postfix Realtime Logs";
 
-
-
-	$f[]="#!/bin/sh";
-	$f[]="### BEGIN INIT INFO";
-	$f[]="# Provides:         ".basename($INITD_PATH);
-	$f[]="# Required-Start:    \$local_fs \$syslog \$postfix";
-	$f[]="# Required-Stop:     \$local_fs \$syslog \$postfix";
-	$f[]="# Should-Start:";
-	$f[]="# Should-Stop:";
-	$f[]="# Default-Start:     3 4 5";
-	$f[]="# Default-Stop:      0 1 6";
-	$f[]="# Short-Description: $daemonbinLog";
-	$f[]="# chkconfig: - 80 75";
-	$f[]="# description: $daemonbinLog";
-	$f[]="### END INIT INFO";
-
-	$f[]="case \"\$1\" in";
-	$f[]=" start)";
-	$f[]="    $php /usr/share/artica-postfix/$php5script --start \$2 \$3";
-	$f[]="    ;;";
-	$f[]="";
-	$f[]="  stop)";
-	$f[]="    $php /usr/share/artica-postfix/$php5script --stop \$2 \$3";
-	$f[]="    ;;";
-	$f[]="";
-	$f[]=" restart)";
-	$f[]="    $php /usr/share/artica-postfix/$php5script --restart \$2 \$3";
-	$f[]="    ;;";
-	$f[]="";
-	$f[]=" reconfigure)";
-	$f[]="    $php /usr/share/artica-postfix/$php5script --reload \$2 \$3";
-	$f[]="    ;;";
-	$f[]="";
-	$f[]=" reload)";
-	$f[]="    $php /usr/share/artica-postfix/$php5script --reload \$2 \$3";
-	$f[]="    ;;";
-	$f[]="";
-	$f[]="  *)";
-	$f[]="    echo \"Usage: \$0 {start|stop|restart|reconfigure|reload} (+ '--verbose' for more infos)\"";
-	$f[]="    exit 1";
-	$f[]="    ;;";
-	$f[]="esac";
-	$f[]="exit 0\n";
-
-
-	echo "$daemonbinLog: [INFO] Writing $INITD_PATH with new config\n";
-	@unlink($INITD_PATH);
-	@file_put_contents($INITD_PATH, @implode("\n", $f));
-	@chmod($INITD_PATH,0755);
-
-	if(is_file('/usr/sbin/update-rc.d')){
-		shell_exec("/usr/sbin/update-rc.d -f " .basename($INITD_PATH)." defaults >/dev/null 2>&1");
-	}
-
-	if(is_file('/sbin/chkconfig')){
-		shell_exec("/sbin/chkconfig --add " .basename($INITD_PATH)." >/dev/null 2>&1");
-		shell_exec("/sbin/chkconfig --level 345 " .basename($INITD_PATH)." on >/dev/null 2>&1");
-	}
-
-}
 function remove_service($INITD_PATH){
 	if(!is_file($INITD_PATH)){return;}
 	system("$INITD_PATH stop");

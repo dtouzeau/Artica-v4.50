@@ -543,13 +543,14 @@ class sockets{
             $array["Error"] = "Error curl_init No such function available";
             return json_encode($array);
         }
-
         $cURLConnection=$this->GENERIC_API_CLIENT("/run/reverse-proxy.sock",$endpoint);
         $resp = curl_exec($cURLConnection);
         $curl_error_num=curl_errno($cURLConnection);
         $HTTP_CODE=curl_getinfo($cURLConnection,CURLINFO_HTTP_CODE);
 
-        curl_close($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
         if ($curl_error_num>0){
             writelogs("$endpoint Error $curl_error_num",__FUNCTION__,__FILE__,__LINE__);
         }

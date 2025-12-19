@@ -270,11 +270,11 @@ function table():bool{
         //
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap>$ico</td>";
-        $html[]="<td width=1% nowrap>$created</td>";
+        $html[]="<td style='width:1%' nowrap>$ico</td>";
+        $html[]="<td style='width:1%' nowrap>$created</td>";
         $html[]="<td width=99%>$host</td>";
-        $html[]="<td width=1% nowrap>$category_text</td>";
-        $html[]="<td width=1% nowrap>$categorized_text$categorized_distance</td>";
+        $html[]="<td style='width:1%' nowrap>$category_text</td>";
+        $html[]="<td style='width:1%' nowrap>$categorized_text$categorized_distance</td>";
         $html[]="</tr>";
 
     }

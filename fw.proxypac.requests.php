@@ -118,12 +118,12 @@ function search(){
         if(trim($RuleName)==null){$RuleName="{failed} {unknown}";}
 
 		$html[]="<tr>
-				<td width=1% nowrap>$zdate</td>
-				<td width=1% nowrap>$pid</td>
-				<td width=1% nowrap>$ipaddr</td>
+				<td style='width:1%' nowrap>$zdate</td>
+				<td style='width:1%' nowrap>$pid</td>
+				<td style='width:1%' nowrap>$ipaddr</td>
 				<td>$RuleName</td>
 				<td><small>$UserAgent</small></td>
-				<td width=1% nowrap>$Size $unit</td>
+				<td style='width:1%' nowrap>$Size $unit</td>
 				</tr>";
 		
 	}

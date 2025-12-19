@@ -139,7 +139,7 @@ function table(){
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td width=1%>$id</td>";
-		$html[]="<td width=1% nowrap><strong>$kind</strong></td>";
+		$html[]="<td style='width:1%' nowrap><strong>$kind</strong></td>";
 		$html[]="<td nowrap>$content</td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$delete_icon</center></td>";
 		$html[]="</tr>";

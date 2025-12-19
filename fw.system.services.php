@@ -203,6 +203,10 @@ function features():bool{
     if(method_exists($features,"APP_CYBERCRIMEIPFEEDS")) {
         $APP_CYBERCRIMEIPFEEDS=$features->APP_CYBERCRIMEIPFEEDS();
     }
+    $APP_DECISION_IP=null;
+    if(method_exists($features,"APP_DECISION_IP")) {
+        $APP_DECISION_IP=$features->APP_DECISION_IP();
+    }
 
     $APP_NAGIOS_CLIENT=null;
     if(method_exists($features,"APP_NAGIOS_CLIENT")) {
@@ -252,7 +256,7 @@ function features():bool{
     $ELASTICSEARCH=$features->ELASTICSEARCH();
     $KIBANA=$features->KIBANA();
     $PROXY_PAC=$features->PROXY_PAC();
-
+    $APP_SIEGE=$features->APP_SIEGE();
 
 
     $APP_VNSTAT=$features->APP_VNSTAT();
@@ -610,6 +614,7 @@ function features():bool{
     //$network_monitoring[]=$APP_CISCO_REPORTER;
     $network_monitoring[]=$APP_WAZHU;
    // $network_monitoring[]=$APP_LOKI;
+    $network_monitoring[]=$APP_SIEGE;
     $network_monitoring[]=$APP_NAGIOS_CLIENT;
     $network_monitoring[]=$APP_RUSTDESK;
     $network_monitoring[]=$APP_PRADS;
@@ -656,6 +661,7 @@ function features():bool{
     }
     $network_security[]=$APP_CROWDSEC;
     $network_security[]=$APP_CYBERCRIMEIPFEEDS;
+    $network_security[]=$APP_DECISION_IP;
     $network_security[]=$FAIL2BAN;
     $network_security[]=$APP_NDPI;
     VERBOSE("APP_IPAUDIT: ".strlen($APP_IPAUDIT),__LINE__);

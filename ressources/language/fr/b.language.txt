@@ -531,7 +531,7 @@ Si vous activez cette fonctionnalit&eacute;, vous serez en mesure d'ajouter ces 
 <allow_user_to_be_selfregistred>Autoriser l'utilisateur &agrave; s'auto-enregistrer</allow_user_to_be_selfregistred>
 <AllPorts>Tous ports</AllPorts>
 <AllSystems>Tous syst&egrave;mes</AllSystems>
-<AllSystemsDansExpl>Cette r&egrave;gle est une r&egrave;gle qui englobe tous les noeuds de votre r&eacute;seau.[br]
+<AllSystemsDansExpl>Cette r&egrave;gle est une r&egrave;gle qui englobe tous les n?uds de votre r&eacute;seau.[br]
 Elle devrait &ecirc;tre toujours plac&eacute;e &agrave; la fin du tableau comme la derni&egrave;re r&egrave;gle pour &ecirc;tre utilis&eacute;e uniquement si les autres r&egrave;gles ne correspondent pas.</AllSystemsDansExpl>
 <all_browsers>Tous les navigateurs</all_browsers>
 <all_cache_method_are_globally_disabled>Toutes les m&eacute;thodes de caches sont d&eacute;sactiv&eacute;es.[br]Il n'y a pas de sens &agrave; afficher cette section.</all_cache_method_are_globally_disabled>
@@ -7797,7 +7797,7 @@ Voulez-vous effectuer l'op&eacute;ration ?</remove_disabled_items_warn>
 Voulez-vous effectuer cette op&eacute;ration ?</remove_dns_service_ask>
 <remove_entry_from_database>Supprimer l'entr&eacute;e dans la base</remove_entry_from_database>
 <remove_feature>Suppression de la fonctionnalit&eacute;</remove_feature>
-<remove_from_menu>Remove from menu</remove_from_menu>
+<remove_from_menu>Retirer du menu</remove_from_menu>
 <remove_hardcoded_categories>Supprime les catégories fixées</remove_hardcoded_categories>
 <remove_hardcoded_categories_explain>Les sites les plus populaires sont directement catégorisés dans le moteur interne avec les catégories officielles Artica.Cela permet à Artica de catégoriser les sites les plus demandés sans avoir à effectuer des requêtes externes.[br]
 Si vous désirez forcer la catégorisation vers vos catégories, vous devrez activer cette fonctionnalité.</remove_hardcoded_categories_explain>

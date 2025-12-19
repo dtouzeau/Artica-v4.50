@@ -51,7 +51,7 @@ function popup(){
 		<tr>
 			<td><strong style='font-size:16px'>{unblock}: {$_GET["www-popup"]}</strong></td>
 			<td>&nbsp;</td>
-			<td width=1% nowrap>". button("Go","Save$t('{$_GET["www-popup"]}')",16)."</td>
+			<td style='width:1%' nowrap>". button("Go","Save$t('{$_GET["www-popup"]}')",16)."</td>
 		</tR>
 	";
 	if($familysite<>$_GET["www-popup"]){
@@ -59,7 +59,7 @@ function popup(){
 		<tr>
 			<td><strong style='font-size:16px'>{or} {unblock}: $familysite</strong></td>
 			<td>&nbsp;</td>
-			<td width=1% nowrap>". button("Go","Save$t('$familysite')",16)."</td>
+			<td style='width:1%' nowrap>". button("Go","Save$t('$familysite')",16)."</td>
 		</tR>";
 		
 	}
@@ -68,7 +68,7 @@ if($CountDecat>0){
 			<tr>
 			<td><strong style='font-size:16px'>{or} {move_to_category}:</strong></td>
 			<td>".Field_array_Hash($array, "categories-$t",null,"style:font-size:16px")."</td>
-			<td width=1% nowrap>". button("Go","Move$t('$familysite')",16)."</td>
+			<td style='width:1%' nowrap>". button("Go","Move$t('$familysite')",16)."</td>
 			</tR>
 ";
 	}

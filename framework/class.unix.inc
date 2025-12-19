@@ -70,9 +70,6 @@ function UNIX_RESTART_CRON():bool{
 
    return true;
 }
-
-
-
 class unix {
     public $mysql_error=null;
     public $proc_status;
@@ -8547,29 +8544,39 @@ class unix {
     }
 
 
-    public function UFDBGUARDD_MINOR(){
+    public function UFDBGUARDD_MINOR():int{
         if(isset($GLOBALS["UFDBGUARDD_MINOR"])){return $GLOBALS["UFDBGUARDD_MINOR"];}
         $this->UFDBGUARDD_MAJOR();
-        return $GLOBALS["UFDBGUARDD_MINOR"];
+        return intval($GLOBALS["UFDBGUARDD_MINOR"]);
+    }
+    public function UFDBGUARDD_REVISION():int{
+        if(isset($GLOBALS["UFDBGUARDD_REVISION"])){return $GLOBALS["UFDBGUARDD_REVISION"];}
+        $this->UFDBGUARDD_MAJOR();
+        return intval($GLOBALS["UFDBGUARDD_REVISION"]);
     }
 
-    public function UFDBGUARDD_MAJOR(){
+    public function UFDBGUARDD_MAJOR():int{
         if(!isset($GLOBALS["UFDBGUARDD_MAJOR"])){$GLOBALS["UFDBGUARDD_MAJOR"]=null;}
         if(is_numeric($GLOBALS["UFDBGUARDD_MAJOR"])){if($GLOBALS["UFDBGUARDD_MAJOR"]>0){return $GLOBALS["UFDBGUARDD_MAJOR"];}}
         $ufdbguarddd=$this->find_program("ufdbguardd");
         exec("$ufdbguarddd -v 2>&1",$results);
-
+        $revision=0;
         foreach ($results as $ligne){
             $ligne=trim($ligne);
             if($ligne==null){continue;}
+            if(preg_match("#^ufdbguardd.*?([0-9]+)\.([0-9]+)\.([0-9]+)#",$ligne,$re)){
+                $major=$re[1];$minor=$re[2];$revision=$re[3];break;
+            }
             if(preg_match("#^ufdbguardd.*?([0-9]+)\.([0-9]+)#",$ligne,$re)){
                 $major=$re[1];$minor=$re[2];break;
             }
+
         }
 
         $GLOBALS["UFDBGUARDD_MAJOR"]=$major;
         $GLOBALS["UFDBGUARDD_MINOR"]=$minor;
-        return $GLOBALS["UFDBGUARDD_MAJOR"];
+        $GLOBALS["UFDBGUARDD_REVISION"]=$revision;
+        return intval($GLOBALS["UFDBGUARDD_MAJOR"]);
     }
 
     private function internal_find_program($strProgram):string{

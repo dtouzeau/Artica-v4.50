@@ -134,11 +134,10 @@ b]Unidades de tempo: s (segundos), m (minutos), h (horas), d (dias), w (semanas)
 <address_verify_poll_count_text>How many times to query the verify service for the completion of an address verification request in progress.[br]
 [strong]The default poll count is 3.[/strong][br]
 Specify [strong]1[/strong] to implement a crude form of [strong]greylisting[/strong], that is, always defer the first delivery request for a never seen before address</address_verify_poll_count_text>
-<address_verify_poll_delay>Delay between queries for the completion</address_verify_poll_delay>
-<address_verify_poll_delay_text>The delay between queries for the completion of an address verification request in progress.[br]
-[strong]The default polling delay is 3 seconds.[/strong][br]
-[strong]Time units: s (seconds), m (minutes), h (hours), d (days), w (weeks). [/strong]
-</address_verify_poll_delay_text>
+<address_verify_poll_delay>Intervalo entre as consultas até à conclus%C3£o</address_verify_poll_delay>
+<address_verify_poll_delay_text>Intervalo entre as consultas de polling enquanto uma solicitaç%C3£o de verificaç%C3£o de endereço est%C3¡ em execuç%C3£o.[br]
+[strong]O intervalo de polling predefinido é de 3 segundos.[/strong][br]
+[strong]Unidades de tempo: s (segundos), m (minutos), h (horas), d (dias), w (semanas).[/strong]</address_verify_poll_delay_text>
 <address_verify_positive_expire_time>Tempo ap%C3%B3s o qual uma sonda bem sucedida expira</address_verify_positive_expire_time>
 <address_verify_positive_expire_time_text>O tempo ap%C3%B3s o qual uma sonda bem sucedida expira a partir da cache de verificaç%C3£o de endereços [br].
 [b]Unidades de tempo: s (segundos), m (minutos), h (horas), d (dias), w (semanas). [/b]</address_verify_positive_expire_time_text>
@@ -2458,7 +2457,7 @@ Com o limite de processo padr%C3£o de 100 SMTP server, &quot;in flow delay as 1
 <last_mails>Last routing mails</last_mails>
 <last_update>%C3%9Altima actualizaç%C3£o</last_update>
 <last_week>Na semana passada</last_week>
-<launch>Launch</launch>
+<launch>Iniciar</launch>
 <launch_ad_import_now>Run ActiveDirectory importation task now</launch_ad_import_now>
 <lax-hashed-ip>Lax hashed ip</lax-hashed-ip>
 <ldap admin>Administrador LDAP</ldap admin>
@@ -2926,7 +2925,7 @@ don't forget to - Save & Apply settings - to make them in production mode</notif
 <no_privileges>N%C3£o tem privilégios suficientes para realizar esta operaç%C3£o</no_privileges>
 <no_rules>No rules saved..</no_rules>
 <NO_RULESNUMBER_DANS_EXPLAIN>You need to create at least one Dansguardian rule to use this option</NO_RULESNUMBER_DANS_EXPLAIN>
-<no_squid_network>No network set</no_squid_network>
+<no_squid_network>Nenhuma rede definida</no_squid_network>
 <no_squid_network_text>Currently, no network set in the main configuration, Squid will refuse any connection</no_squid_network_text>
 <no_usb_devices_connected>There is no USB devices connected on this computer</no_usb_devices_connected>
 <nsAIMid>AOL Instant Messenger (AIM)</nsAIMid>

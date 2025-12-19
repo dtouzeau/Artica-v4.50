@@ -318,12 +318,12 @@ function search(){
 		
 		
 		$html[]="<tr id='$md'>
-				<td><span style='color:$color' width=1% nowrap>$date $TIME</span></td>
-				<td><span style='color:$color' width=1% nowrap>$CLIENT_IP</span></td>
+				<td><span style='color:$color' style='width:1%' nowrap>$date $TIME</span></td>
+				<td><span style='color:$color' style='width:1%' nowrap>$CLIENT_IP</span></td>
 				<td <span style='color:$color'>$RULE/$CATEGORY</span></td>
-                <td><span style='color:$color'width=1% nowrap>{$ALLOW}</span></td>            
+                <td><span style='color:$color'style='width:1%' nowrap>{$ALLOW}</span></td>            
                 <td><span style='color:$color'>$familysite <small>({$hostname})</small></span></td>
-                <td><span style='color:$color' width=1% nowrap><center id='btn-$md'>$bt</center></td>
+                <td><span style='color:$color' style='width:1%' nowrap><center id='btn-$md'>$bt</center></td>
 
                 </tr>";
 		

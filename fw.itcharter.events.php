@@ -118,8 +118,8 @@ function search(){
         }
 
 		$html[]="<tr>
-				<td width=1% nowrap>$FTime</td>
-				<td width=1% nowrap>$pid</td>
+				<td style='width:1%' nowrap>$FTime</td>
+				<td style='width:1%' nowrap>$pid</td>
 				<td width=99%>$line</td>
 				</tr>";
 		

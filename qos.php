@@ -814,9 +814,9 @@ function class_rules_list(){
 			<tr class=$classtr>
 				
 				<td><strong style='font-size:14px;text-decoration:underline;color:$color' $pointer OnClick=\"javascript:$edit\">{$ligne["name"]}</td>
-				<td align=center width=1% nowrap><strong style='font-size:14px;text-decoration:underline;color:$color' $pointer OnClick=\"javascript:$edit\">{$ligne["sip"]}:{$ligne["sport"]} ({$ligne["proto"]})</td>
+				<td align=center style='width:1%' nowrap><strong style='font-size:14px;text-decoration:underline;color:$color' $pointer OnClick=\"javascript:$edit\">{$ligne["sip"]}:{$ligne["sport"]} ({$ligne["proto"]})</td>
 				<td width=1%><img src='img/fw_bold.gif'></td>
-				<td align=center width=1% nowrap><strong style='font-size:14px;text-decoration:underline;color:$color' $pointer OnClick=\"javascript:$edit\">{$ligne["dip"]}:{$ligne["dport"]} ({$ligne["proto"]})</td>
+				<td align=center style='width:1%' nowrap><strong style='font-size:14px;text-decoration:underline;color:$color' $pointer OnClick=\"javascript:$edit\">{$ligne["dip"]}:{$ligne["dport"]} ({$ligne["proto"]})</td>
 				<td width=1%>$delete</td>
 			</tr>
 			";

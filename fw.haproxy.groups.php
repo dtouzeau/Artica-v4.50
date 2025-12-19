@@ -105,11 +105,11 @@ function table(){
 		
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td width=1% nowrap>". $tpl->td_href($ligne["groupname"],null,"Loadjs('fw.haproxy.acls.php?groupid-js={$ligne["ID"]}',true)")."</td>";
-		$html[]="<td width=1% nowrap>$GroupTypeText</td>";
+		$html[]="<td style='width:1%' nowrap>". $tpl->td_href($ligne["groupname"],null,"Loadjs('fw.haproxy.acls.php?groupid-js={$ligne["ID"]}',true)")."</td>";
+		$html[]="<td style='width:1%' nowrap>$GroupTypeText</td>";
 		$html[]="<td>$rules_list</td>";
-		$html[]="<td width=1% nowrap>". FormatNumber($CountDeMembers)."</td>";
-		$html[]="<td width=1% nowrap>". $tpl->icon_delete("Loadjs('$page?delete-js={$ligne['ID']}&md=$md')","AsDansGuardianAdministrator")."</td>";
+		$html[]="<td style='width:1%' nowrap>". FormatNumber($CountDeMembers)."</td>";
+		$html[]="<td style='width:1%' nowrap>". $tpl->icon_delete("Loadjs('$page?delete-js={$ligne['ID']}&md=$md')","AsDansGuardianAdministrator")."</td>";
 		$html[]="</tr>";
 	}
 	

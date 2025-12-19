@@ -68,6 +68,7 @@ function failed_license_server_popup(){
 function tabs():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
+    if(!isset($_GET["scriptname"])){$_GET["scriptname"]="";}
     $array["{system_events}"]="$page?sys-events=yes&scriptname={$_GET["scriptname"]}";
     $TrackAdmins=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TrackAdmins"));
     if($TrackAdmins==1) {

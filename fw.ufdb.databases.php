@@ -232,9 +232,9 @@ function database_status(){
 		}
 		$html[]="<tr class='$TRCLASS' id='row-parent-$category_id'>";
 		$html[]="<td>$status</td>";
-		$html[]="<td width=1% nowrap><img src='$category_icon'></td>";
+		$html[]="<td style='width:1%' nowrap><img src='$category_icon'></td>";
 		$html[]="<td>$categoryname</td>";
-		$html[]="<td width=1% nowrap>$type</td>";
+		$html[]="<td style='width:1%' nowrap>$type</td>";
 		$html[]="<td align='right'>$ROWS</td>";
 		$html[]="<td width=1% nowrap align='right'>$LOCALSIZE_TEXT</td>";
 		$html[]="<td>$timeversion_text</td>";

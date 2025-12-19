@@ -59,7 +59,7 @@ $error
 	<td colspan=2>$pp</td>
 	</tr>
 <tr>
-	<td class=legend style='font-size:24px' width=1% nowrap>{video_quality}:</td>
+	<td class=legend style='font-size:24px' style='width:1%' nowrap>{video_quality}:</td>
 	<td width=99%>". Field_array_Hash($RESOLUTIONS,"YoutubeLockerSize-$t",$YoutubeLockerSize,"style:font-size:24px;width:240px")."</td>
 </tr>
 	<tr>

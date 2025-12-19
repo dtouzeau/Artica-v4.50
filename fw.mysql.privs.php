@@ -289,7 +289,7 @@ function table(){
 		$Host=str_replace("%", "*", $Host);
 		if($Host=="*"){$Host="{AllSystems}";}
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td width=1% nowrap>$Host</td>";
+		$html[]="<td style='width:1%' nowrap>$Host</td>";
 		$html[]="<td><i class='".ico_admin."'></i>&nbsp;".$tpl->td_href($User,null,$js)."</td>";
 		$html[]="<td width=1%><center>$write</center></td>";
 		$html[]="<td width=1%><center>$read</center></td>";

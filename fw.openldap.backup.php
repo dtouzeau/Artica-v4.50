@@ -230,7 +230,7 @@ function table(){
 
             $html[] = "<tr class='$TRCLASS' id='$md'>";
             $html[] = "<td><strong>{$ico}$item</strong></td>";
-            $html[] = "<td width=1% nowrap><strong>$date</strong></td>";
+            $html[] = "<td style='width:1%' nowrap><strong>$date</strong></td>";
             $html[] = "<td width=1%><strong>$size</strong></td>";
             $html[] = "<td style='vertical-align:middle' width=1%>$restore</td>";
             $html[] = "<td style='vertical-align:middle' width=1%>$remove</td>";

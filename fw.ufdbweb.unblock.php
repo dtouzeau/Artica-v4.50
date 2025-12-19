@@ -100,9 +100,9 @@ function table(){
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
 		$html[]="<td><strong>$www</strong></td>";
 		$html[]="<td>$uid/$ipaddr</td>";
-		$html[]="<td width=1% nowrap>".$tpl->time_to_date($logintime,true)."</td>";
-		$html[]="<td width=1% nowrap>".$tpl->time_to_date($finaltime,true)."</td>";
-		$html[]="<td width=1% nowrap>".distanceOfTimeInWords(time(),$finaltime)."</td>";
+		$html[]="<td style='width:1%' nowrap>".$tpl->time_to_date($logintime,true)."</td>";
+		$html[]="<td style='width:1%' nowrap>".$tpl->time_to_date($finaltime,true)."</td>";
+		$html[]="<td style='width:1%' nowrap>".distanceOfTimeInWords(time(),$finaltime)."</td>";
 		$html[]="<td width=1% class='center' nowrap>$delete</center></td>";
 		$html[]="</tr>";
 		

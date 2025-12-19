@@ -313,11 +313,11 @@ function search_reports(){
         }
 
         $html[]="<tr id='$md'>
-				<td style='color:$color' width=1% nowrap>$date</td>
-				<td style='color:$color' width=1% nowrap>$severity - #$ruleid</td>
-				<td style='color:$color' width=1% nowrap>$phase</td>
-				<td style='color:$color' width=1% nowrap>$domain <strong>($method)</strong></span></td>
-				<td style='color:$color' width=1% nowrap>$srcip</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$date</td>
+				<td style='color:$color' style='width:1%' nowrap>$severity - #$ruleid</td>
+				<td style='color:$color' style='width:1%' nowrap>$phase</td>
+				<td style='color:$color' style='width:1%' nowrap>$domain <strong>($method)</strong></span></td>
+				<td style='color:$color' style='width:1%' nowrap>$srcip</span></td>
                 <td style='color:$color' width=99% nowrap>$query$rule_explain_text</span></td>
                 <td style='color:$color'style='width:1%;' nowrap class='center'>$allow</span></td>                      
                 </tr>";
@@ -476,15 +476,15 @@ function search(){
         $allow=$tpl->icon_run("Loadjs('fw.modsecurity.white.php?ruleid-js=0&domain=$sdomain&query=$squery')");
 
         $html[]="<tr id='$md'>
-				<td style='color:$color' width=1% nowrap>$date</td>
-				<td style='color:$color' width=1% nowrap>$report_icon</td>
-				<td style='color:$color' width=1% nowrap>$domain</span></td>
-				<td style='color:$color' width=1% nowrap>$srcip</span></td>
-                <td style='color:$color' width=1% nowrap>$HTTP_CODE</td>
-                <td style='color:$color' width=1% nowrap>$proto</td>
+				<td style='color:$color' style='width:1%' nowrap>$date</td>
+				<td style='color:$color' style='width:1%' nowrap>$report_icon</td>
+				<td style='color:$color' style='width:1%' nowrap>$domain</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$srcip</span></td>
+                <td style='color:$color' style='width:1%' nowrap>$HTTP_CODE</td>
+                <td style='color:$color' style='width:1%' nowrap>$proto</td>
                 <td style='color:$color' width=99% nowrap>$query</span></td>
-                <td style='color:$color' width=1% nowrap>$size</span></td>
-                <td style='color:$color' width=1% nowrap>$allow</span></td>                      
+                <td style='color:$color' style='width:1%' nowrap>$size</span></td>
+                <td style='color:$color' style='width:1%' nowrap>$allow</span></td>                      
                 </tr>";
 
     }

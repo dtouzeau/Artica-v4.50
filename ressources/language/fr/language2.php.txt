@@ -106,7 +106,7 @@ Rafra&icirc;chissez cette page ou bien visualisez les &eacute;v&egrave;nements a
 <less_than_time>moins de</less_than_time>
 <loading>Chargement</loading>
 <log_connections>Enregistrer les connexions</log_connections>
-<low>faible</low>
+<low>Faible</low>
 <MaxEventsPerServer>Max &eacute;v&egrave;nements par serveur</MaxEventsPerServer>
 <medium_server>Serveur moyen</medium_server>
 <meta-console>Console Globale de management</meta-console>

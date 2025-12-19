@@ -347,20 +347,20 @@ function table(){
 		
 		
 		$html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
-		$html[]="<td class=\"center\" width=1% nowrap>{$ligne["zorder"]}</td>";
-		$html[]="<td style='vertical-align:middle' width=1% nowrap>". $tpl->td_href($ligne["rulename"],"{click_to_edit}",$js)."</td>";
+		$html[]="<td class=\"center\" style='width:1%' nowrap>{$ligne["zorder"]}</td>";
+		$html[]="<td style='vertical-align:middle' style='width:1%' nowrap>". $tpl->td_href($ligne["rulename"],"{click_to_edit}",$js)."</td>";
 		$html[]="<td style='vertical-align:middle'>$explain</td>";
-		$html[]="<td class='center' width=1% nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')")."</td>";
+		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')")."</td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$delete</center></td>";
 		$html[]="</tr>";
 	
 	}
     $html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
-    $html[]="<td class=\"center\" width=1% nowrap>999999</td>";
-    $html[]="<td style='vertical-align:middle' width=1% nowrap>{default}</td>";
+    $html[]="<td class=\"center\" style='width:1%' nowrap>999999</td>";
+    $html[]="<td style='vertical-align:middle' style='width:1%' nowrap>{default}</td>";
     $html[]="<td style='vertical-align:middle'>{for} {all} {then} {provide_auth_sheme} &laquo;&laquo;kerberos,ntlm,basic,digest&raquo;&raquo;</td>";
-    $html[]="<td class='center' width=1% nowrap>".$tpl->icon_nothing()."</td>";
+    $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_nothing()."</td>";
     $html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>".$tpl->icon_nothing()."</td>";
     $html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>".$tpl->icon_nothing()."</center></td>";
     $html[]="</tr>";

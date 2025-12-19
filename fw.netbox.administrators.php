@@ -148,7 +148,7 @@ function search(){
         }
         $dele=$tpl->icon_delete("Loadjs('$page?delete=$id&account=$username&md=$md5')");
         $html[]="<tr class='$TRCLASS' id='$md5'>";
-        $html[]="<td width=1% nowrap><i class='$img' class='$color'></td>";
+        $html[]="<td style='width:1%' nowrap><i class='$img' class='$color'></td>";
         $html[]="<td><strong style=';color:$color;'>$username $tt_text</strong></td>";
         $html[]="<td style='width:1%;color:$color;text-align:right' nowrap>$email</td>";
         $html[]="<td style='width:1%;color:$color;text-align:right' nowrap>$date_joined</td>";

@@ -105,7 +105,7 @@ if(system_is_overloaded(basename(__FILE__))){
 		$html=$html. "
 		<tr  $roll>
 		<td width=1%>" . imgtootltip($country_img,$flag_infos)."</td>
-		<td width=1% nowrap><strong>$time</strong></td>
+		<td style='width:1%' nowrap><strong>$time</strong></td>
 		<td nowrap><strong>$mailfrom</td>
 		<td width=1%><img src='img/fw_bold.gif'></td>
 		<td nowrap><strong>{$ligne["remote_ip"]}</td>

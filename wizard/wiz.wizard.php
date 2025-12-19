@@ -92,7 +92,12 @@ function body_step():bool{
     $timezone=$wiz->timezone();
     $wiz->field_array_hash($timezone,"{timezone}","timezones",$wiz->timezone_def);
     $wiz->field_array_hash($lang,"{mylanguage}",  "lang2",$wiz->DetectedLanguage);
-    $wiz->form_after("$page?step-network=yes");
+    $FIRECRACKER_VM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIRECRACKER_VM"));
+    if($FIRECRACKER_VM==1) {
+        $wiz->form_after("$page?step-products=yes");
+    }else{
+        $wiz->form_after("$page?step-network=yes");
+    }
 
     $wiz->StepNumber(1);
     $html[]=$wiz->build_form();
@@ -171,6 +176,7 @@ function step_network():bool{
         $wiz->multi_fieldtext($MAINFORMS);
 
     }
+
     $wiz->StepNumber(2);
     $wiz->form_previous("$page?body-step=yes");
     $FormAfter="$page?step-products=yes";
@@ -249,7 +255,14 @@ function step_products():bool{
     $page=CurrentPageName();
 
     $wiz->StepNumber(3);
-    $wiz->form_previous("$page?step-network=yes=yes");
+
+    $FIRECRACKER_VM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIRECRACKER_VM"));
+    $form_previous="$page?step-network=yes";
+    if($FIRECRACKER_VM==1){
+        $form_previous="$page?body-step=yes";
+    }
+
+    $wiz->form_previous($form_previous);
     $wiz->form_after("$page?step-manager=yes");
 
     $LIST[0]=array(

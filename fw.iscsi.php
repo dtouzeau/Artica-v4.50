@@ -432,7 +432,7 @@ function mode_client_iscsi_results(){
 			
 			$html[]="<tr class='$TRCLASS' id='$md'>";
 			$html[]="<td class=\"\" nowrap><i class='".ico_hd."'></i>&nbsp;{$hostname} [{$subarray2["IP"]}]$notif</td>";
-			$html[]="<td width=1% nowrap>{$subarray2["PORT"]}</td>";
+			$html[]="<td style='width:1%' nowrap>{$subarray2["PORT"]}</td>";
 			$html[]="<td>{$subarray2["ISCSI"]}</td>";
 			$html[]="<td>{$subarray2["FOLDER"]}</td>";
 			$html[]="<td>$select</td>";
@@ -702,11 +702,11 @@ function mode_server_popup_table(){
 		$md=md5(serialize($ligne));
 	
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td class=\"center\" width=1% nowrap><i class='{$class}".ico_hd."'></i>&nbsp;{$ligne["ID"]}</td>";
-		$html[]="<td width=1% nowrap>". $tpl->td_href("$shared_folder ($type)","{click_to_edit}","Loadjs('$page?mode-server-js={$ligne["ID"]}');")."</td>";
+		$html[]="<td class=\"center\" style='width:1%' nowrap><i class='{$class}".ico_hd."'></i>&nbsp;{$ligne["ID"]}</td>";
+		$html[]="<td style='width:1%' nowrap>". $tpl->td_href("$shared_folder ($type)","{click_to_edit}","Loadjs('$page?mode-server-js={$ligne["ID"]}');")."</td>";
 		$html[]="<td>{$hostname} ($iqn)</td>";
 		$html[]="<td>{$size_text}</td>";
-		$html[]="<td width=1% nowrap>$status</td>";
+		$html[]="<td style='width:1%' nowrap>$status</td>";
 		$html[]="<td>". $tpl->icon_delete("Loadjs('$page?mode-server-delete=$ID&md=$md')")."</td>";
 		$html[]="</tr>";
 	
@@ -804,12 +804,12 @@ function mode_client_popup_table(){
 		$md=md5($Params);
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td class=\"center\" width=1% nowrap><i class='{$class}".ico_hd."'></i>&nbsp;{$ligne["ID"]}</td>";
-		$html[]="<td width=1% nowrap>". $tpl->td_href("{$subarray2["IP"]}:{$subarray2["PORT"]}","{click_to_edit}","Loadjs('$page?mod-client-fiche-js=$aclid')")."</td>";
+		$html[]="<td class=\"center\" style='width:1%' nowrap><i class='{$class}".ico_hd."'></i>&nbsp;{$ligne["ID"]}</td>";
+		$html[]="<td style='width:1%' nowrap>". $tpl->td_href("{$subarray2["IP"]}:{$subarray2["PORT"]}","{click_to_edit}","Loadjs('$page?mod-client-fiche-js=$aclid')")."</td>";
 		$html[]="<td>{$subarray2["ISCSI"]}</td>";
 		$html[]="<td>{$system}</td>";
 		$html[]="<td>{$subarray2["FOLDER"]}</td>";
-		$html[]="<td width=1% nowrap>$status</td>";
+		$html[]="<td style='width:1%' nowrap>$status</td>";
 		$html[]="<td>". $tpl->icon_delete("Loadjs('$page?mode-client-delete=$aclid&md=$md')")."</td>";
 		$html[]="</tr>";
 	

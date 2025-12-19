@@ -126,7 +126,7 @@ function search(){
 		if(preg_match("#ERROR:#", $line)){$color="text-danger";}
 		
 		$html[]="<tr>
-				<td width=1% nowrap>$FTime</td>
+				<td style='width:1%' nowrap>$FTime</td>
 				<td><span class='$color'>$line</span></td>
 				</tr>";
 		

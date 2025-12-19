@@ -373,10 +373,10 @@ function table(){
 		
 		
 		$html[]="<tr class='$TRCLASS{$MUTED}' id='$md'>";
-		$html[]="<td class=\"center\" width=1% nowrap>{$ligne["zorder"]}</td>";
-		$html[]="<td style='vertical-align:middle' width=1% nowrap>". $tpl->td_href($ligne["rulename"],"{click_to_edit}",$js)."</td>";
+		$html[]="<td class=\"center\" style='width:1%' nowrap>{$ligne["zorder"]}</td>";
+		$html[]="<td style='vertical-align:middle' style='width:1%' nowrap>". $tpl->td_href($ligne["rulename"],"{click_to_edit}",$js)."</td>";
 		$html[]="<td style='vertical-align:middle'>$explain</td>";
-		$html[]="<td class='center' width=1% nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsSquidAdministrator")."</td>";
+		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsSquidAdministrator")."</td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$up&nbsp;&nbsp;$down</td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$delete</td>";
 		$html[]="</tr>";

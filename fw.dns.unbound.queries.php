@@ -191,16 +191,16 @@ function search(){
 
 
         $html[]="<tr id='$md'>
-				<td style='color:$color' width=1% nowrap>$loupe</span></td>
-				<td style='color:$color' width=1% nowrap>$date</span></td>
-				<td style='color:$color' width=1% nowrap>$IpSrcEDNS</span></td>
-				<td style='color:$color' width=1% nowrap>$IpSrc</span></td>
-				<td style='color:$color' width=1% nowrap>$IpDst</span></td>
-				<td style='color:$color' width=1% nowrap>$type</span></td>
-                <td style='color:$color' width=1% nowrap>$tooltip_text</span></td>     
+				<td style='color:$color' style='width:1%' nowrap>$loupe</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$date</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$IpSrcEDNS</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$IpSrc</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$IpDst</span></td>
+				<td style='color:$color' style='width:1%' nowrap>$type</span></td>
+                <td style='color:$color' style='width:1%' nowrap>$tooltip_text</span></td>     
                 <td style='color:$color' width=50%>$query</td>
                 <td style='color:$color' width=50%>".@implode(", ",$ANSWERS)."</td>
-                <td style='color:$color' width=1% nowrap>$Latency</td>                       
+                <td style='color:$color' style='width:1%' nowrap>$Latency</td>                       
  
 
                 </tr>";

@@ -299,9 +299,9 @@ function table(){
 		$html[]="<tr class='$TRCLASS'>";
 		$html[]="<td class=\"$text_class\">$zDate</a></td>";
 		$html[]="<td class=\"$text_class\">$src_ip</td>";
-		$html[]="<td class=\"$text_class\" width=1% nowrap>{$services[$service]}</td>";
+		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>{$services[$service]}</td>";
 		$html[]="<td class=\"$text_class\">$hostname</td>";
-		$html[]="<td class=\"$text_class\" width=1% nowrap><img src='img/$flaf'></td>";
+		$html[]="<td class=\"$text_class\" style='width:1%' nowrap><img src='img/$flaf'></td>";
 		$html[]="<td class=\"$text_class\">$country</td>";
 		$html[]="<td class=\"$text_class\">$cirty</td>";
 		$html[]="</tr>";

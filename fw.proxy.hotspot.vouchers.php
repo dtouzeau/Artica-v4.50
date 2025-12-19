@@ -383,11 +383,11 @@ function table():bool{
         $js="Loadjs('$page?start-schedule=$ID');";
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap>".$tpl->time_to_date($ligne["created"],true)."</td>";
+        $html[]="<td style='width:1%' nowrap>".$tpl->time_to_date($ligne["created"],true)."</td>";
         $html[]="<td width=99%>".$tpl->td_href("$member",null,"Loadjs('$page?edit=$ID')")." $tooltip</td>";
         $html[]="<td width=1%>".$tpl->button_autnonome("{schedule}",$js,"fa fa-clock","AsHotSpotManager",0,$bt_class,"small")."</td>";
-        $html[]="<td width=1% nowrap>".$distancettl."</td>";
-        $html[]="<td width=1% nowrap>".$expire_text."</td>";
+        $html[]="<td style='width:1%' nowrap>".$distancettl."</td>";
+        $html[]="<td style='width:1%' nowrap>".$expire_text."</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>".$tpl->icon_check($enabled,
                 "Loadjs('$page?uncheck=$ID')","AsHotSpotManager")."</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>".$tpl->icon_delete("Loadjs('$page?remove=$ID&md=$md')",

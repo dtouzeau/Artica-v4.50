@@ -263,7 +263,7 @@ function table(){
 		$req_tot=FormatNumber($req_tot);
 		
 		$html[]="<tr class='$TRCLASS' id='$md5'>";
-		$html[]="<td width=1% nowrap>$img</td>";
+		$html[]="<td style='width:1%' nowrap>$img</td>";
 		$html[]="<td><strong style=';color:$color;$padding'>$h2$ico$servicename_text$h22</strong></td>";
 		$html[]="<td style='width:1%;color:$color' nowrap>$svname_label ($type - $status)</a></td>";
 		$html[]="<td style='width:1%;color:$color;text-align:right' nowrap>$bin</td>";

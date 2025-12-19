@@ -135,11 +135,10 @@ When this feature is disabled, Postfix will generate an address probe for every 
 <address_verify_poll_count_text>How many times to query the verify service for the completion of an address verification request in progress.[br]
 [strong]The default poll count is 3.[/strong][br]
 Specify [strong]1[/strong] to implement a crude form of [strong]greylisting[/strong], that is, always defer the first delivery request for a never seen before address</address_verify_poll_count_text>
-<address_verify_poll_delay>Delay between queries for the completion</address_verify_poll_delay>
-<address_verify_poll_delay_text>The delay between queries for the completion of an address verification request in progress.[br]
-[strong]The default polling delay is 3 seconds.[/strong][br]
-[strong]Time units: s (seconds), m (minutes), h (hours), d (days), w (weeks). [/strong]
-</address_verify_poll_delay_text>
+<address_verify_poll_delay>Verz%C3%B6gerung zwischen den Abfragen bis zum Abschluss</address_verify_poll_delay>
+<address_verify_poll_delay_text>Verz%C3%B6gerung zwischen den Abfrageintervallen w%C3%A4hrend eine Adress%C3%BCberpr%C3%BCfungsanforderung ausgef%C3%BChrt wird.[br]
+[strong]Das standardm%C3%A4%C3%9Fige Abfrageintervall betr%C3%A4gt 3 Sekunden.[/strong][br]
+[strong]Zeiteinheiten: s (Sekunden), m (Minuten), h (Stunden), d (Tage), w (Wochen).[/strong]</address_verify_poll_delay_text>
 <address_verify_positive_expire_time>Time after which a successful probe expires</address_verify_positive_expire_time>
 <address_verify_positive_expire_time_text>
 The time after which a successful probe expires from the address verification cache.[br]
@@ -2499,7 +2498,7 @@ With the default 100 SMTP server process limit, "in flow delay as 1s" limits the
 <last_mails>Last routing mails</last_mails>
 <last_update>Letzte Aktualisierung</last_update>
 <last_week>Letzte Woche</last_week>
-<launch>Launch</launch>
+<launch>Starten</launch>
 <launch_ad_import_now>Run ActiveDirectory importation task now</launch_ad_import_now>
 <lax-hashed-ip>Lax hashed ip</lax-hashed-ip>
 <ldap admin>LDAP Administrator</ldap admin>
@@ -2972,7 +2971,7 @@ don't forget to - Save & Apply settings - to make them in production mode</notif
 <no_privileges>Sie haben nicht gen%C3%BCgend Berechtigungen, um diesen Vorgang durchzuf%C3%BChren</no_privileges>
 <no_rules>No rules saved..</no_rules>
 <NO_RULESNUMBER_DANS_EXPLAIN>You need to create at least one Dansguardian rule to use this option</NO_RULESNUMBER_DANS_EXPLAIN>
-<no_squid_network>No network set</no_squid_network>
+<no_squid_network>Kein Netzwerk festgelegt</no_squid_network>
 <no_squid_network_text>Currently, no network set in the main configuration, Squid will refuse any connection</no_squid_network_text>
 <no_usb_devices_connected>There is no USB devices connected on this computer</no_usb_devices_connected>
 <nsAIMid>AOL Instant Messenger (AIM)</nsAIMid>

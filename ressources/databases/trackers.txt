@@ -2574,7 +2574,6 @@ api-os-takumi.mihoyo.com
 api-ott-prod-fe.mediaset.net
 api-p1.phoenix.razer.com.cdn.cloudflare.net
 api-prod.nrwlokalradios.com
-api-prod.secureprivacy.ai
 api-production-xtra-booksecure.ezyflight.se
 api-sdk.datadome.co
 api-semana-semana-prod.arc-dns.net
@@ -2963,7 +2962,6 @@ app.revprotect.com
 app.satismeter.com
 app.scibyl.com
 app.searchine.net
-app.secureprivacy.ai
 app.securiti.ai
 app.sephora.com
 app.shopbox.ai
@@ -5484,8 +5482,6 @@ cableone.speedtestcustom.com
 cabletrack.com.au
 cabletracks.com
 cabrerainsights.com
-cache-ssl.celtra.com
-cache-ssl.celtra.io
 cachecachecache.apolloduck.com
 cache.betweendigital.com
 cache.blogads.com
@@ -5901,7 +5897,6 @@ cazooltd.my.salesforce.com
 cb2.attn.tv
 cb2insights.com
 cba.demdex.net
-cbassets.botnation.ai
 cbc-prod.ada.support
 cbcaminsights.com
 cbcca.hb.omtrdc.net
@@ -6630,8 +6625,6 @@ chatbot.alturing.eu
 chatbot.artifacts.gordonnow.com
 chatbot.woolworths.com.au.edgekey.net
 chatbotbase.com
-chatbox.botnation.ai
-chatplugin.responsum.ai
 chatserver1.comm100.io
 chatserver12.comm100.io
 chatserver17.comm100.io
@@ -13388,7 +13381,6 @@ fr.mobilitybot.software
 fr.promo.skf.com
 fr.rc-cdn.community.thermomix.com
 fr.sharpmarketing.eu
-fr.shopping.rakuten.com
 fr.zettle.com
 fra-col.eum-appdynamics.com
 fracking.velaw.com
@@ -32309,7 +32301,6 @@ ssl.comodo.com
 ssl.connextra.com
 ssl.delti.com
 ssl.dilcdn.disney.com.c.footprint.net
-ssl.directferries.com
 ssl.geoplugin.net
 ssl.gft2.de
 ssl.google-
@@ -33264,7 +33255,6 @@ storage.buzzsprout.com
 storage.cloud.kargo.com
 storage.elfsight.com
 storage.glancecdn.net
-storage.gra.cloud.ovh.net
 storage.icorp.ro
 storage.journaldemontreal.com.edgekey.net
 storage.journaldequebec.com.edgekey.net
@@ -34814,7 +34804,6 @@ tiles.ast-server.eu
 tiles.distance.to
 tiles.monotch.com
 tiles.tcol.it
-tiles.touristicmaps.com
 tili.sanoma.fi
 tilt.ecglb.bac.com
 tim.hb-api.omtrdc.net

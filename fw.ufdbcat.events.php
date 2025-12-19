@@ -208,7 +208,7 @@ function search(){
 		if(preg_match("#FATAL#i", $line)){$line=str_replace("<span class='text-warning'>", "", $line);$line=str_replace("</span>", "", $line);$line="<span class='text-danger'>$line</span>";}
 		
 		$html[]="<tr>
-				<td width=1% nowrap>$datetext</span></td>
+				<td style='width:1%' nowrap>$datetext</span></td>
 				<td>$line</td>
 				</tr>";
 		

@@ -175,7 +175,7 @@ function server_groups_link_table(){
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-users'></i>&nbsp;$name <small>$comment</small></td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?server-groups-link-perform=$id&md=$md&hostid=$hostid&groupid=$groupid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?server-groups-link-perform=$id&md=$md&hostid=$hostid&groupid=$groupid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
 
@@ -244,7 +244,7 @@ function host_link_table(){
         $gps=array();
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-user'></i>&nbsp;$username <small>$comment</small></td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?host-link-perform=$ID&md=$md&gpid=$gpid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?host-link-perform=$ID&md=$md&gpid=$gpid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
 
@@ -569,7 +569,7 @@ function server_groups_table(){
         $html[] = "<tr class='$TRCLASS' id='$md'>";
         $html[] = "<td class=\"\" width='1%' nowrap><i class='fas fa-server'></i>&nbsp;<strong>$name</strong></td>";
         $html[] = "<td class=\"\">$comment</td>";
-        $html[] = "<td class=\"center\" width=1% nowrap>$delete</td>";
+        $html[] = "<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[] = "</tr>";
 
     }
@@ -681,7 +681,7 @@ function table(){
         $html[]="<td class=\"\"><span id='$ID-cmdline'>$cmdline</span></td>";
         $html[]="<td class=\"\" width='1%' nowrap>". $tpl->td_href("<span id='$ID-hostname'>$hostname</span>","{click_to_edit}",$js)."</td>";
         $html[]="<td class=\"\" width='1%' nowrap><i class='fa fa-user'></i>&nbsp;<span id='$ID-username'>$username</span></td>";
-        $html[]="<td class=\"center\" width=1% nowrap>$delete</td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";
 
 

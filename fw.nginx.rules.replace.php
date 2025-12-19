@@ -179,8 +179,8 @@ function popup_table(){
     $html[]="<tr id='$num'>
 				<td width=50%>$pattern{$description}</td>
 				<td width=50% >$replace</td>
-				<td width=1%  nowrap >$enable</td>
-				<td width=1%  nowrap >$delete</td>
+				<td style='width:1%' nowrap>$enable</td>
+				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }

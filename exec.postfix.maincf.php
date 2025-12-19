@@ -90,15 +90,15 @@ if($argv[1]=='--ssl'){SMTP_SASL_PROGRESS(true);exit();}
 if($argv[1]=='--ssl-on'){MasterCFBuilder(true);exit();}
 if($argv[1]=='--ssl-off'){MasterCFBuilder(true);exit();}
 if($argv[1]=='--ssl-none'){MasterCFBuilder(false);exit();}
-if($argv[1]=='--imap-sockets'){imap_sockets();MailBoxTransport();ReloadPostfix(true);exit();}
+if($argv[1]=='--imap-sockets'){imap_sockets();ReloadPostfix(true);exit();}
 if($argv[1]=='--restricted'){exit();}
 if($argv[1]=='--banner'){smtp_banner(true);exit();}
 
 
 if($argv[1]=='--myhostname'){ CleanMyHostname();ReloadPostfix(true);}
 if($argv[1]=='--others-values'){OthersValues_start();}
-if($argv[1]=='--interfaces'){inet_interfaces();MailBoxTransport();exec("{$GLOBALS["postfix"]} stop");exec("{$GLOBALS["postfix"]} start");ReloadPostfix(true);exit();}
-if($argv[1]=='--mailbox-transport'){MailBoxTransport();ReloadPostfix(true);exit();}
+if($argv[1]=='--interfaces'){inet_interfaces();exec("{$GLOBALS["postfix"]} stop");exec("{$GLOBALS["postfix"]} start");ReloadPostfix(true);exit();}
+if($argv[1]=='--mailbox-transport'){ReloadPostfix(true);exit();}
 if($argv[1]=='--disable-smtp-sasl'){disable_smtp_sasl();ReloadPostfix(true);exit();}
 if($argv[1]=='--perso-settings'){perso_settings();exit();}
 if($argv[1]=='--luser-relay'){luser_relay();exit();}
@@ -339,7 +339,7 @@ function _DefaultSettings(){
 
 	$start=5;
 	$functions=array("CleanUpMainCf","debug_peer_list",
-		"cleanMultiplesInstances","SetTLS","inet_interfaces","imap_sockets","MailBoxTransport",
+		"cleanMultiplesInstances","SetTLS","inet_interfaces","imap_sockets",
 		"mime_header_checks",
 		"smtpd_sasl_exceptions_networks","CleanMyHostname","OthersValues",
 		"perso_settings","remove_virtual_mailbox_base","postscreen",
@@ -1260,7 +1260,25 @@ function OthersValues(){
 	postconf("queue_run_delay",$queue_run_delay);	
 	postconf("smtp_fallback_relay",$smtp_fallback_relay);
 	postconf("ignore_mx_lookup_error",$ignore_mx_lookup_error);
-	postconf("disable_dns_lookups",$disable_dns_lookups);
+
+    $POSTFIX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_VERSION");
+    $tb=explode(".",$POSTFIX_VERSION);
+    $Major=$tb[0];
+    $Minor=$tb[1];
+    if ($Major>2){
+        if($Minor>8){
+            postconf_X("disable_dns_lookups");
+            if ($disable_dns_lookups=="no"){
+                postconf("smtp_dns_support_level","disabled");
+            }else{
+                postconf("smtp_dns_support_level","enabled");
+
+            }
+        }else{
+            postconf("disable_dns_lookups",$disable_dns_lookups);
+        }
+    }
+
 	postconf("smtpd_banner",$smtpd_banner);
 	postconf("undisclosed_recipients_header","$undisclosed_recipients_header");
 	postconf("enable_original_recipient","$enable_original_recipient");
@@ -1278,116 +1296,9 @@ function OthersValues(){
 
 
 function inet_interfaces(){
-	$newarray=array();
-	$unix=new unix();
-	
-	include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
-	if(!isset($GLOBALS["CLASS_SOCKETS"])){$GLOBALS["CLASS_SOCKETS"]=new sockets();$sock=$GLOBALS["CLASS_SOCKETS"];}else{$sock=$GLOBALS["CLASS_SOCKETS"];}
-	if($sock->GET_INFO("EnablePostfixMultiInstance")==1){
-        return;
-    }
-	$EnableipV6=intval($sock->GET_INFO("EnableipV6"));
-	
-	
-	
-	$finale="all";
-	$NewIP=array();
-	$PostfixBinInterfaces=trim($sock->GET_INFO("PostfixBinInterfaces"));
-	if($PostfixBinInterfaces<>null){
-		$Interfaces=explode(",",$PostfixBinInterfaces);
-		foreach ($Interfaces as $nic){
-			$ipaddr=$unix->InterfaceToIPv4($nic);
-			if($ipaddr<>null){$NewIP[]=$ipaddr;}
-		}
-		
-		if(count($NewIP)>0){$finale=@implode(",", $NewIP);}
-		
-	}
-	
-	postconf("inet_interfaces",$finale);
-	postconf("inet_protocols","ipv4");
-	postconf("smtp_bind_address6","");
-	$smtp_bind_address6=$sock->GET_INFO("smtp_bind_address6");
-	
-	
-	if($EnableipV6==1){
-		if(trim($smtp_bind_address6)<>null){
-			echo "Starting......: ".date("H:i:s")." Postfix Listen ipv6 \"$smtp_bind_address6\"\n";
-			postconf("inet_protocols","all");
-			postconf("smtp_bind_address6",$smtp_bind_address6);
-		}
-	}
-	
-	
-	
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/postfix/maincf/interfaces");
 }
 
-function MailBoxTransport(){
-	$main=new maincf_multi($GLOBALS["POSTFIX_INSTANCE_ID"]);
-	if(!isset($GLOBALS["CLASS_SOCKETS"])){$GLOBALS["CLASS_SOCKETS"]=new sockets();$sock=$GLOBALS["CLASS_SOCKETS"];}else{$sock=$GLOBALS["CLASS_SOCKETS"];}
-	if(!isset($GLOBALS["CLASS_USERS_MENUS"])){$users=new usersMenus();$GLOBALS["CLASS_USERS_MENUS"]=$users;}else{$users=$GLOBALS["CLASS_USERS_MENUS"];}
-	
-	echo "Starting......: ".date("H:i:s")." Postfix get mailbox transport\n";
-	$mailbox_transport=trim($main->GET("mailbox_transport"));
-	echo "Starting......: ".date("H:i:s")." Postfix get mailbox transport = \"$mailbox_transport\"\n";
-	
-	if($mailbox_transport<>null){
-		postconf("mailbox_transport",$mailbox_transport);
-		postconf("zarafa_destination_recipient_limit",1);
-		return;	
-	}
-	
-	
-
-	$default=$main->getMailBoxTransport();
-	
-	if($default==null){
-		postconf_X("mailbox_transport");
-		postconf_X("virtual_transport");
-		return;
-	}
-	
-	postconf("zarafa_destination_recipient_limit",1);
-	echo "Starting......: ".date("H:i:s")." Postfix mailbox_transport=`$default`\n";
-	postconf("mailbox_transport",$default);
-	postconf("virtual_transport","\$mailbox_transport");
-	postconf("local_transport","local");
-	postconf("lmtp_sasl_auth_enable","no");
-	postconf("lmtp_sasl_password_maps","");
-	postconf("lmtp_sasl_mechanism_filter","plain, login");
-	postconf("lmtp_sasl_security_options",null);
-	
-	if(!$users->ZARAFA_INSTALLED){
-		if(!$users->cyrus_imapd_installed){
-			echo "Starting......: ".date("H:i:s")." Postfix None of Zarafa or cyrus imap installed on this server\n";
-			return null;
-		}
-	}
-
-	
-	if(preg_match("#lmtp:(.+?):([0-9]+)#",$default,$re)){
-		echo "Starting......: ".date("H:i:s")." Postfix \"LMTP\" is enabled ($default)\n";
-		$ldap=new clladp();
-		$CyrusLMTPListen=$re[1].":".$re[2];
-		$cyruspass=$ldap->CyrusPassword();
-		@file_put_contents("{$GLOBALS["MAINCF_ROOT"]}/lmtpauth","$CyrusLMTPListen\tcyrus:$cyruspass");
-		shell_exec("{$GLOBALS["postmap"]} hash:{$GLOBALS["MAINCF_ROOT"]}/lmtpauth");
-		postconf("lmtp_sasl_auth_enable","yes");
-		postconf("lmtp_sasl_password_maps","hash:{$GLOBALS["MAINCF_ROOT"]}/lmtpauth");
-		postconf("lmtp_sasl_mechanism_filter","plain, login");
-		postconf("lmtp_sasl_security_options","noanonymous");
-		}
-	}
-	
-	
-	
-function disable_lmtp_sasl(){
-	echo "Starting......: ".date("H:i:s")." Postfix LMTP is disabled\n";
-	postconf("lmtp_sasl_auth_enable","no");
-	
-			
-}
-	
 function disable_smtp_sasl(){
 	postconf("smtp_sasl_password_maps","");
 	postconf("smtp_sasl_auth_enable","no");
@@ -2352,8 +2263,6 @@ function SMTP_SASL_PROGRESS(){
 	smtpd_sasl_exceptions_networks();
 	SMTP_SASL_PROGRESS_LOG("Build Master.cf",60);
 	MasterCFBuilder();
-	SMTP_SASL_PROGRESS_LOG("Checks transport table",70);
-	MailBoxTransport();
 	SMTP_SASL_PROGRESS_LOG("{reloading} SMTP MTA",80);
 	ReloadPostfix(true);
 	SMTP_SASL_PROGRESS_LOG("{reloading} SaslAuthd",90);

@@ -274,7 +274,7 @@ Hamachi is managed and maintained from anywhere via the web, securely.
 <APP_LXC_TEXT>Create and manage Virtual Private servers with Linux Containers technology</APP_LXC_TEXT>
 <APP_MOD_PAGESPEED>Modulo di ottimizzazione delle pagine web</APP_MOD_PAGESPEED>
 <APP_MSKTUTIL>keytab client for MS Active Directory</APP_MSKTUTIL>
-<APP_MSKTUTIL_NOT_INSTALLED>msktutil is not installed, use the setup center in order to install this tool</APP_MSKTUTIL_NOT_INSTALLED>
+<APP_MSKTUTIL_NOT_INSTALLED>Il client Keytab per Microsoft Active Directory non è installato.[br]Utilizza il Centro software per installare questo strumento.</APP_MSKTUTIL_NOT_INSTALLED>
 <APP_MYSQL1>Mysql service</APP_MYSQL1>
 <APP_NETATALK>Networking Apple Macintosh</APP_NETATALK>
 <APP_NOIP>No-IP DNS service</APP_NOIP>
@@ -1074,7 +1074,7 @@ When a user add/delete/modify a file in a Samba folder, greyhole will saved it a
 <enable_imap>Enable IMAP service</enable_imap>
 <enable_imaps>Enable IMAP SSL</enable_imaps>
 <enable_ipblocks>Enable block countries service</enable_ipblocks>
-<enable_ipv6>Enable IPv6</enable_ipv6>
+<enable_ipv6>Abilitare IPv6</enable_ipv6>
 <enable_ipv6_text>If turn to green, Artica will enable IPv6 on the system kernel and you will be able to configure networks with IPv6 features</enable_ipv6_text>
 <enable_kill_proc>Kill processes</enable_kill_proc>
 <enable_ldap_authentication>Enable LDAP Authentication</enable_ldap_authentication>
@@ -2551,7 +2551,7 @@ click on the link below
 <september>Settembre</september>
 <server_time2>System clock</server_time2>
 <server_time2_text>Modify manually the system clock</server_time2_text>
-<server_url>Server URL</server_url>
+<server_url>URL del server</server_url>
 <SERVICESS_OK>All services is running</SERVICESS_OK>
 <SERVICESS_OK_TEXT>All services are running correctly, you can click here in order to see details</SERVICESS_OK_TEXT>
 <SERVICESS_STOPPED>stopped service(s), click here to see details</SERVICESS_STOPPED>

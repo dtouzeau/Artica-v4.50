@@ -16,6 +16,7 @@ class postgres_sql{
     private $PgBouncerEnabled=0;
 
     public $mysql_error;
+
     public function __construct($check=false){
         $this->DisablePostGres=intval($this->GET_INFO("DisablePostGres"));
         $this->PgBouncerEnabled=intval($this->GET_INFO("PgBouncerEnabled"));
@@ -360,10 +361,7 @@ class postgres_sql{
         $sql="SELECT
 		relname AS objectname,
 		relkind AS objecttype,
-		reltuples AS \"#entries\", relpages::bigint AS size
-		FROM pg_class
-		WHERE relpages >= 8 AND relname LIKE '{$table}%'
-				ORDER BY relpages DESC;";
+		reltuples AS \"#entries\", relpages::bigint AS size FROM pg_class WHERE relpages >= 8 AND relname LIKE '$table%' ORDER BY relpages DESC;";
 
         $results = @pg_query ($this->connection, $sql);
         $size=0;
@@ -393,6 +391,7 @@ class postgres_sql{
 
         try {
             $this->connection = @pg_connect("host=$this->host user='$user' dbname='$database' connect_timeout='5'");
+            $this->connection_string="host=$this->host user='$user' dbname='$database' connect_timeout='5'";
         }Catch (Exception $e) {
             $this->VERBOSE($e->getMessage(),__LINE__);
         }

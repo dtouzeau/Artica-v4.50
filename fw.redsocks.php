@@ -235,13 +235,13 @@ function rules_table(){
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{service2}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' width=1% nowrap>{listen_port}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' width=1% nowrap>{transparent_method}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' width=1% nowrap>{transparent_ports}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' width=1% nowrap>{destination}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' width=1% nowrap>{enable}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' width=1% nowrap>{move}</th>";
-	$html[]="<th data-sortable=false width=1% nowrap>{delete}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' style='width:1%' nowrap>{listen_port}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' style='width:1%' nowrap>{transparent_method}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' style='width:1%' nowrap>{transparent_ports}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' style='width:1%' nowrap>{destination}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' style='width:1%' nowrap>{enable}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' style='width:1%' nowrap>{move}</th>";
+	$html[]="<th data-sortable=false style='width:1%' nowrap>{delete}</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
 	$html[]="<tbody>";
@@ -275,10 +275,10 @@ function rules_table(){
 				
 			$html[]="<tr class='$TRCLASS' id='$md'>";
 			$html[]="<td><strong>". $tpl->td_href($servicename,null,"Loadjs('fw.3proxy.services.php?service-js={$ligne['ID']}')")."</strong></td>";
-			$html[]="<td width=1% nowrap>$local_port</td>";
-			$html[]="<td width=1% nowrap>$transparent_type</td>";
-			$html[]="<td width=1% nowrap>$hooked_ports</td>";
-			$html[]="<td width=1% nowrap>$proxy_type://$listen_interface:$nexthope_port</td>";
+			$html[]="<td style='width:1%' nowrap>$local_port</td>";
+			$html[]="<td style='width:1%' nowrap>$transparent_type</td>";
+			$html[]="<td style='width:1%' nowrap>$hooked_ports</td>";
+			$html[]="<td style='width:1%' nowrap>$proxy_type://$listen_interface:$nexthope_port</td>";
 			$html[]="<td width=1% class='center' nowrap>$icon_nothing</center></td>";
 			$html[]="<td width=1% class='center' nowrap>$icon_nothing</center></td>";
 			$html[]="<td width=1% class='center' nowrap>$icon_nothing</center></td>";
@@ -308,10 +308,10 @@ function rules_table(){
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td><strong>". $tpl->td_href($servicename,null,"Loadjs('$page?service-js={$ligne['ID']}')")."</strong></td>";
-		$html[]="<td width=1% nowrap>{$redsocks_interface}:{$ligne["redsocks_port"]}</td>";
-		$html[]="<td width=1% nowrap>{$GLOBALS["transparentmethod"][$transparentmethod]}</td>";
-		$html[]="<td width=1% nowrap>{$hooked_ports}</td>";
-		$html[]="<td width=1% nowrap>$proxy_type://{$ligne["target_ip"]}:{$ligne["target_port"]}</td>";
+		$html[]="<td style='width:1%' nowrap>{$redsocks_interface}:{$ligne["redsocks_port"]}</td>";
+		$html[]="<td style='width:1%' nowrap>{$GLOBALS["transparentmethod"][$transparentmethod]}</td>";
+		$html[]="<td style='width:1%' nowrap>{$hooked_ports}</td>";
+		$html[]="<td style='width:1%' nowrap>$proxy_type://{$ligne["target_ip"]}:{$ligne["target_port"]}</td>";
 		$html[]="<td width=1% class='center' nowrap>". $tpl->icon_check($ligne["enabled"],"Loadjs('$page?service-enable=$ID')",null,"AsFirewallManager")."</center></td>";
 		$html[]="<td width=1% class='center' nowrap>$up&nbsp;$down</center></td>";
 		$html[]="<td width=1% class='center' nowrap>". $tpl->icon_delete("Loadjs('$page?service-delete={$ligne['ID']}&md=$md')","AsFirewallManager")."</center></td>";

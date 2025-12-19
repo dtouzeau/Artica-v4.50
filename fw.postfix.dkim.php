@@ -325,8 +325,8 @@ function database(){
         $iddiv=md5(serialize($ligne));
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='$iddiv'>";
-        $html[]="<td style='vertical-align:middle' width=1% nowrap><strong>$domain</strong></td>";
-        $html[]="<td style='vertical-align:middle' width=1% nowrap>{$private_key}</td>";
+        $html[]="<td style='vertical-align:middle' style='width:1%' nowrap><strong>$domain</strong></td>";
+        $html[]="<td style='vertical-align:middle' style='width:1%' nowrap>{$private_key}</td>";
         $html[]="<td style='vertical-align:middle' width=99%>".$tpl->td_href($dns_item,null,"Loadjs('$page?dkimkey-dns=$id')")."</td>";
         $html[]="<td style='vertical-align:middle' class='center' width=1%>".$tpl->icon_delete("Loadjs('$page?delete=$id&id=$iddiv')","AsPostfixAdministrator")."</td>";
         $html[]="</tr>";

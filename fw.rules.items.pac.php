@@ -275,7 +275,7 @@ function proxies_table() {
 
         $html[]="<tr class='$TRCLASS' id='$zmd5'>";
         $html[]="<td><strong>{$proxyserver}:{$proxyport}{$secure_ico}</strong></td>";
-        $html[]="<td width=1% nowrap>$secure</td>";
+        $html[]="<td style='width:1%' nowrap>$secure</td>";
         $html[]="<td width=1% class='center' nowrap>$delete</center></td>";
         $html[]="</tr>";
 

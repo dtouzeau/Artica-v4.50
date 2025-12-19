@@ -280,7 +280,7 @@ function popup_table2():bool{
 				<td width=1%  nowrap>$zTime</td>
 				<td width=1%  nowrap>$duration</td>
 				<td width=99%  nowrap >$path</td>
-				<td width=1%  nowrap >$sizebytes</td>
+				<td style='width:1%' nowrap>$sizebytes</td>
 				</tr>";
 
     }

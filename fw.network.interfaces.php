@@ -2573,6 +2573,7 @@ function nic_config_tab(){
     $md=$_GET["md"];
 	$MIITOOLS=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->getFrameWork("system.php?mii-tools=yes&eth=$eth"));
     $EnableVLANs=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableVLANs");
+    $FIRECRACKER_VM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIRECRACKER_VM"));
 	$bonding = false;
     if(preg_match("#^bond[0-9]+#", $eth)){
         $bonding = true;
@@ -2582,33 +2583,37 @@ function nic_config_tab(){
     if($EnableipV6==1){
         $array["IPv6"]="fw.network.interfaces.ipv6.php?nic=$eth&md=$md";
     }
+    if($FIRECRACKER_VM==1){
+        $bonding=false;
 
+    }
 
     if($bonding) {
         $array["{bond}"]="$page?nic-bond=$eth&md=$md";
     }
 
-	if(preg_match("#^(wlan|wlp)[0-9]+#", $eth)){
-		$array["Wifi"]="fw.network.wifi.php?nic=$eth&md=$md";
-	}
-
-	$array["Multipath"]="$page?multipath-section=$eth&md=$md";
-	$array["{security}"]="$page?nic-security=$eth&md=$md";
-	$array["{features}"]="$page?nic-features=$eth&md=$md";
-    if(!$bonding) {
-        $array["{ip_aliasing}"] = "$page?nic-virtuals=$eth&md=$md";
+    if($FIRECRACKER_VM==0) {
+        if (preg_match("#^(wlan|wlp)[0-9]+#", $eth)) {
+            $array["Wifi"] = "fw.network.wifi.php?nic=$eth&md=$md";
+        }
     }
 
-    $array["{mirror}"] = "fw.network.interfaces.mirror.php?eth=$eth&md=$md";
+    if($FIRECRACKER_VM==0) {
+        $array["Multipath"] = "$page?multipath-section=$eth&md=$md";
+        $array["{security}"] = "$page?nic-security=$eth&md=$md";
+        $array["{features}"] = "$page?nic-features=$eth&md=$md";
+        if (!$bonding) {
+            $array["{ip_aliasing}"] = "$page?nic-virtuals=$eth&md=$md";
+        }
+        $array["{mirror}"] = "fw.network.interfaces.mirror.php?eth=$eth&md=$md";
+        if ($EnableVLANs == 1) {
+            $array["VLAN"] = "$page?nic-vlans=$eth&md=$md";
+        }
 
-
-	if($EnableVLANs==1){
-        $array["VLAN"]="$page?nic-vlans=$eth&md=$md";
-    }
-
-	if(isset($MIITOOLS["{flow_control}"])) {
-        if ($MIITOOLS["{flow_control}"]) {
-            $array[$eth] = "$page?mii-tools=$eth&md=$md";
+        if (isset($MIITOOLS["{flow_control}"])) {
+            if ($MIITOOLS["{flow_control}"]) {
+                $array[$eth] = "$page?mii-tools=$eth&md=$md";
+            }
         }
     }
 	
@@ -3001,7 +3006,7 @@ function nic_gateway_save():bool{
 function nic_config2():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-
+    $FIRECRACKER_VM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIRECRACKER_VM"));
     $security="AsSystemAdministrator";
     $md=$_GET["md"];
     $eth=$_GET["nic-config2"];
@@ -3064,9 +3069,16 @@ function nic_config2():bool{
         return true;
     }
     $tpl->table_form_field_js("Loadjs('$page?nic-disable-interface=$eth&md=$md');",$security);
+    if($FIRECRACKER_VM==1){
+        $tpl->table_form_field_js("",$security);
+    }
+
     $tpl->table_form_field_bool("{enabled}",1,ico_check);
 
     $tpl->table_form_field_js("Loadjs('$page?nic-name-interface=$eth&md=$md');",$security);
+    if($FIRECRACKER_VM==1){
+        $tpl->table_form_field_js("",$security);
+    }
     $tpl->table_form_field_text("{name}","$nic->NICNAME - $nic->netzone",ico_nic);
 
     $tpl->table_form_field_js("");
@@ -3081,16 +3093,29 @@ function nic_config2():bool{
     }
 
     $tpl->table_form_field_js("Loadjs('$page?nic-use-span-enable=$eth&md=$md');",$security);
+    if($FIRECRACKER_VM==1){
+        $tpl->table_form_field_js("",$security);
+    }
     $tpl->table_form_field_bool("{free_mode} (SPAN)",0,ico_check);
 
 
 
     if($nic->dhcp==1) {
         $tpl->table_form_field_js("Loadjs('$page?nic-disable-dhcp=$eth&md=$md');",$security);
+        if($FIRECRACKER_VM==1){
+            $tpl->table_form_field_js("",$security);
+        }
         $tpl->table_form_field_bool("{use_dhcp}",1,ico_check);
         $tpl->table_form_field_js("Loadjs('$page?nic-checksum-offloading=$eth&md=$md');",$security);
+        if($FIRECRACKER_VM==1){
+            $tpl->table_form_field_js("",$security);
+        }
         $tpl->table_form_field_bool("TCP/IP Checksum Offloading",$nic->checksum_offloading,ico_check);
         $tpl->table_form_field_js("Loadjs('$page?nic-internet-check=$eth&md=$md');",$security);
+        if($FIRECRACKER_VM==1){
+            $tpl->table_form_field_js("",$security);
+        }
+
         $tpl->table_form_field_bool("{internet_access}",$InternetCheck,ico_check);
         echo $tpl->table_form_compile();
         return true;
@@ -3137,6 +3162,10 @@ function nic_config2():bool{
 
 
     $tpl->table_form_field_js("Loadjs('$page?nic-address=$eth&md=$md');",$security);
+    if($FIRECRACKER_VM==1){
+        $tpl->table_form_field_js("",$security);
+    }
+
     if(strlen($nic->IPADDR)==0){
         $tpl->table_form_field_bool("{address}",0,ico_nic);
     }else{
@@ -3153,6 +3182,9 @@ function nic_config2():bool{
         $nic->GATEWAY="";
     }
     $tpl->table_form_field_js("Loadjs('$page?nic-gateway=$eth&md=$md');",$security);
+    if($FIRECRACKER_VM==1){
+        $tpl->table_form_field_js("",$security);
+    }
     if($nic->GATEWAY==""){
         $tpl->table_form_field_bool("{gateway}",0,ico_sensor);
     }else{
@@ -3169,14 +3201,24 @@ function nic_config2():bool{
     }
 
     $tpl->table_form_field_js("Loadjs('$page?nic-enable-dhcp=$eth&md=$md');",$security);
+    if($FIRECRACKER_VM==1){
+        $tpl->table_form_field_js("",$security);
+    }
     $tpl->table_form_field_bool("{use_dhcp}",0,ico_check);
     $tpl->table_form_field_js("Loadjs('$page?nic-checksum-offloading=$eth&md=$md');",$security);
+    if($FIRECRACKER_VM==1){
+        $tpl->table_form_field_js("",$security);
+    }
     $tpl->table_form_field_bool("TCP/IP Checksum Offloading",$nic->checksum_offloading,ico_check);
     $tpl->table_form_field_js("Loadjs('$page?nic-internet-check=$eth&md=$md');",$security);
+    if($FIRECRACKER_VM==1){
+        $tpl->table_form_field_js("",$security);
+    }
     $tpl->table_form_field_bool("{internet_access}",$InternetCheck,ico_check);
 
-
-    $tpl->table_form_button("{apply}","Loadjs('$page?nic-apply=$eth&md=$md');",$security);
+    if($FIRECRACKER_VM==0) {
+        $tpl->table_form_button("{apply}", "Loadjs('$page?nic-apply=$eth&md=$md');", $security);
+    }
     echo $tpl->table_form_compile();
     return true;
 }

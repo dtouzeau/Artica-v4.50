@@ -633,8 +633,8 @@ if(is_array($chk->GreyCheckConnect)){
 		$table=$table . "<tr ".CellRollOver_jaune().">
 		<td width=1%><img src='img/fw_bold.gif'></td>
 		<td ".CellRollOver("GreyCheckConnectEdit('$num')")." width=90%><strong>$num</strong>
-		<td width=1% nowrap><strong>{gl_{$line[0]}}</td>
-		<td width=1% nowrap><strong>{{$line[1]}}</td>
+		<td style='width:1%' nowrap><strong>{gl_{$line[0]}}</td>
+		<td style='width:1%' nowrap><strong>{{$line[1]}}</td>
 		<td width=1%>" . imgtootltip('ed_delete.gif','{delete}',"GreyCheckConnect_del('$num');")."</td>
 		</tr>
 		";

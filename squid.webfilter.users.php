@@ -57,8 +57,8 @@ function popup_index(){
 	$html="<H3>{MAP_USERS_RULES}</h3><div style='float:right'>". help_icon("{filter_ip_group_explain}")."</div><div class=explain>{MAP_USERS_RULES_DANSGUARDIAN_TEXT}</div>
 	<table style='width:100%'>
 	<tr>
-		<td class=legend style='font-size:13px' width=1% nowrap>{rules}:</td>
-		<td width=1% nowrap>".Field_array_Hash($rules,"auth-rules",$_COOKIE["RefreshDansRulesIPList"],"RefreshDansRulesIPListSelected()",null,0,"font-size:13px;padding:3px")."</td>
+		<td class=legend style='font-size:13px' style='width:1%' nowrap>{rules}:</td>
+		<td style='width:1%' nowrap>".Field_array_Hash($rules,"auth-rules",$_COOKIE["RefreshDansRulesIPList"],"RefreshDansRulesIPListSelected()",null,0,"font-size:13px;padding:3px")."</td>
 	</tr>
 	</table>
 	<hr>

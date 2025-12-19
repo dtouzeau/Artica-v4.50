@@ -326,9 +326,14 @@ return implode(', ', $timeParts);
     }
 
     public function table_form_field_text($field,$value,$ico=null,$error=false):bool{
-
+        $NoRight=false;
         if($ico==null){$ico="fa-regular fa-ellipsis";}
         list($Button,$value,$color)=$this->table_form_field_text_button($value,$ico);
+        if(preg_match("#^noright:(.+)#",$field,$re)){
+            $NoRight=true;
+            $field=$re[1];
+        }
+
 
         if($this->TRCLASS=="footable-odd"){$this->TRCLASS=null;}else{$this->TRCLASS="footable-odd";}
         $edit=null;
@@ -385,7 +390,11 @@ return implode(', ', $timeParts);
             $INT[] = "</table>";
         }
         $INT[] = "</td>";
-        $INT[] = "<td style='width:1%;padding-left:10px;padding-right:10px;color:$color'>$edit</td>";
+        if(!$NoRight) {
+            $INT[] = "<td style='width:1%;padding-left:10px;padding-right:10px;color:$color'>$edit</td>";
+        }else{
+            $INT[] = "<td style='width:0'></td>";
+        }
         $INT[] = "</tr>";
 
         $this->TABLE_FORM[]=@implode("\n",$INT);
@@ -1037,6 +1046,11 @@ return implode(', ', $timeParts);
         $Button=null;
         $color="#333";
         $Grey[0]=true;
+        $NoRight=false;
+        if(preg_match("#^noright:(.+)#",$field,$re)){
+            $NoRight=true;
+            $field=$re[1];
+        }
 
 
         if(is_array($value)){
@@ -1103,7 +1117,11 @@ return implode(', ', $timeParts);
             $INT[] = "</tr>";
             $INT[] = "</table>";
         }
-        $INT[] = "<td style='width:1%;padding-left:10px;padding-right:10px;color:$color'>$edit</td>";
+        if(!$NoRight) {
+            $INT[] = "<td style='width:1%;padding-left:10px;padding-right:10px;color:$color'>$edit</td>";
+        }else{
+            $INT[] = "<td style='width:0%;'></td>";
+        }
         $INT[] = "</tr>";
 
         $this->TABLE_FORM[]=@implode("\n",$INT);
@@ -3551,14 +3569,20 @@ $jsb[]="}";
 		";
     }
 
-    public function progress_barr_static($currentvalue,$textbarr):string{
+    public function progress_barr_static($currentvalue,$textbarr,$nocolor=false):string{
         $currentvalue=round($currentvalue,2);
         $class="progress-bar-default";
-        if($currentvalue>80){$class="progress-bar-warning";}
-        if($currentvalue>95){$class="progress-bar-danger";}
+        if(!$nocolor) {
+            if ($currentvalue > 80) {
+                $class = "progress-bar-warning";
+            }
+            if ($currentvalue > 95) {
+                $class = "progress-bar-danger";
+            }
+        }
         $html[]="<div class=\"progress\" style='margin-bottom:0;background-color: #00000024 !important'>";
-        $html[]="\t<div style=\"width: {$currentvalue}%\" aria-valuemax=\"100\" aria-valuemin=\"0\" aria-valuenow=\"$currentvalue\" role=\"progressbar\" class=\"progress-bar $class\">";
-        $html[]="\t\t<span class=\"\">{$currentvalue}% $textbarr</span>";
+        $html[]="\t<div style=\"width: $currentvalue%;padding-left:5px\" aria-valuemax=\"100\" aria-valuemin=\"0\" aria-valuenow=\"$currentvalue\" role=\"progressbar\" class=\"progress-bar $class\">";
+        $html[]="\t\t<span class=\"\">$currentvalue% $textbarr</span>";
         $html[]="\t</div>";
         $html[]="</div>";
 
@@ -4478,6 +4502,28 @@ $jsb[]="}";
             $js = "blur();";
         }
         return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" ><i class='fas fa-chart-bar' style='color:#1ab394'></i></button>";
+
+
+    }
+    public function icon_pdf($js = null, $security = null, $disable = false):string{
+        $ico="fas fa-file-pdf";
+        $color="#CCCCCC";
+        if (!$this->IsSecurity($security)) {
+            return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"blur()\" >
+            <i class='$ico' style='color:$color'></i></button>";
+        }
+        $color="#1ab394";
+        if ($js == null){
+            $color="#CCCCCC";
+            $js = "blur();";
+        }
+        if ($disable == true) {
+            $color="#CCCCCC";
+            $js = "blur();";
+        }
+
+        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" >
+        <i class='$ico' style='color:$color'></i></button>";
 
 
     }
@@ -5674,7 +5720,6 @@ if(typeof dialogInstance == 'object'){
         if($size==null){$size=900;}
         return $this->buildADialog($title,$ajax,$size,1);
     }
-
     public function js_restart_api($endpoint,$after=null):string{
         $MAIN["ENDPOINT"]=$endpoint;
         $MAIN["AFTER"]=$after;

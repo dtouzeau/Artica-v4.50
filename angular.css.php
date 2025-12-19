@@ -50,6 +50,25 @@ h1, h2, h3, h4, h5, h6 {
   /* Color of the logo */
   background-color: rgb(167, 177, 194); /* white */
 }
+.mattermostTable {
+  display: inline-block;
+  width: 22.74px;
+  height: 22.74px;
+  vertical-align: -0.125em;
+
+  /* Use the logo as a mask */
+  -webkit-mask-image: url(\"/img/mattermost.webp\");
+  mask-image: url(\"/img/mattermost.webp\");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+
+  /* Color of the logo */
+  background-color: rgb(51, 51, 51);
+}
 .mattermostTitle {
   display: inline-block;
   width: 104px;

@@ -124,9 +124,9 @@ function search(){
             if(preg_match("#SECURITY VIOLATION#i", $line)){$state="label-danger";$statex="SECURITY";}
 		
 		$html[]="<tr>
-				<td width=1% nowrap><span class='label $state'>$statex</span></td>
-				<td width=1% nowrap>$FTime</td>
-				<td width=1% nowrap>$pid</td>
+				<td style='width:1%' nowrap><span class='label $state'>$statex</span></td>
+				<td style='width:1%' nowrap>$FTime</td>
+				<td style='width:1%' nowrap>$pid</td>
 				<td >$line</td>
 				</tr>";
 		

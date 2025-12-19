@@ -344,7 +344,7 @@ function top_domains_list(){
 		$requests=FormatNumber($requests);
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td><strong>$domain</strong></td>";
-		$html[]="<td width=1% nowrap>$requests</td>";
+		$html[]="<td style='width:1%' nowrap>$requests</td>";
 		$html[]="</tr>";
 		
 	}
@@ -389,7 +389,7 @@ function top_ipaddr_list(){
 		$requests=FormatNumber($requests);
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td><strong>$domain</strong></td>";
-		$html[]="<td width=1% nowrap>$requests</td>";
+		$html[]="<td style='width:1%' nowrap>$requests</td>";
 		$html[]="</tr>";
 
 	}

@@ -532,7 +532,7 @@ function xgen(){
     }
 
 
-
+    $f[]=$leftmenus->Siege();
     $f[]=$leftmenus->FireCracker();
     $f[]=$leftmenus->reverse_proxys();
     $f[]=$leftmenus->FireQOS();

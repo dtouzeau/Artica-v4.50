@@ -60,7 +60,7 @@ Range goes from -20 (highest priority) to 19 (lowest).</nice_int_text>
 <refresh_cache>Refresh files caches</refresh_cache>
 <remote_foldersize>Tamanho de armazenamento remoto</remote_foldersize>
 <restore_choose_date>Escolha a data certa do recipiente para restaurar o seu ficheiro depende da data guardada</restore_choose_date>
-<restore_file_text>This operation will extract backup files from backup containers, define here where you want to restore this file.</restore_file_text>
+<restore_file_text>Esta operaç%C3£o ir%C3¡ extrair os ficheiros de backup dos contentores de backup. Indique aqui onde pretende restaurar o ficheiro.</restore_file_text>
 <restore_from_defined_path>Restore from defined path</restore_from_defined_path>
 <restore_from_original_path>Restore from original path</restore_from_original_path>
 <restoring_explain_operation>Success...

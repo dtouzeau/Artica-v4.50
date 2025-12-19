@@ -174,12 +174,12 @@ function table(){
 		}
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td width=1% nowrap>{$status[$int_status]}</td>";
-		$html[]="<td width=1% nowrap>$time</td>";
-		$html[]="<td width=1% nowrap>$size</td>";
+		$html[]="<td style='width:1%' nowrap>{$status[$int_status]}</td>";
+		$html[]="<td style='width:1%' nowrap>$time</td>";
+		$html[]="<td style='width:1%' nowrap>$size</td>";
 		$html[]="<td><code>$therms</code></td>";
-		$html[]="<td width=1% nowrap>$download</td>";
-		$html[]="<td width=1% nowrap>".$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$md')","AsPostfixAdministrator")."</td>";
+		$html[]="<td style='width:1%' nowrap>$download</td>";
+		$html[]="<td style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$md')","AsPostfixAdministrator")."</td>";
 		$html[]="</tr>";
 		
 	}

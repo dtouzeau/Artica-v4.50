@@ -206,7 +206,7 @@ function popup(){
 
 
         $html[]="<tr class='$TRCLASS' id='$idrow'>";
-        $html[]="<td width=1% nowrap><i class=\"fas fa-info-circle\"></i></td>";
+        $html[]="<td style='width:1%' nowrap><i class=\"fas fa-info-circle\"></i></td>";
         if(preg_match("#^DC#i",$suffix)){
             $html[]="<td><strong>$suffix</strong></td>";
         }else{

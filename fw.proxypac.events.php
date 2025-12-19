@@ -96,8 +96,8 @@ function search(){
         $line="<span class='$text'>$line</span>";
 
 		$html[]="<tr>
-				<td width=1% nowrap>$zdate</td>
-				<td width=1% nowrap>$pid</td>
+				<td style='width:1%' nowrap>$zdate</td>
+				<td style='width:1%' nowrap>$pid</td>
 				<td>$line</td>
 				</tr>";
 		

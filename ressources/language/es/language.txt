@@ -134,7 +134,7 @@ Cuando esta caracter%C3%ADstica est%C3¡ deshabilitada, Postfix generar%C3¡ una
 <address_verify_poll_count_text>Cu%C3¡ntas veces consultar el servicio de verificaci%C3%B3n para la finalizaci%C3%B3n de una solicitud de verificaci%C3%B3n de direcciones en curso.[br]
 [strong]El n%C3%BAmero de consultas por defecto es 3.[/strong][br]
 Especifique [strong]1[/strong] para implementar una forma cruda de [strong]greylisting[/strong], es decir, aplazar siempre la primera solicitud de entrega de una direcci%C3%B3n nunca vista.</address_verify_poll_count_text>
-<address_verify_poll_delay>Delay between queries for the completion</address_verify_poll_delay>
+<address_verify_poll_delay>Retraso entre las consultas hasta la finalizaci%C3%B3n</address_verify_poll_delay>
 <address_verify_poll_delay_text>El retraso entre consultas para la finalizaci%C3%B3n de una solicitud de verificaci%C3%B3n de direcciones en curso.[br]
 [strong]El retraso de sondeo por defecto es de 3 segundos.[/strong][br]
 [strong]Unidades de tiempo: s (segundos), m (minutos), h (horas), d (d%C3%ADas), w (semanas). [/strong]</address_verify_poll_delay_text>
@@ -2446,7 +2446,7 @@ Con el l%C3%ADmite predeterminado de 100 procesos del servidor SMTP, &quot;en el
 <last_mails>Last routing mails</last_mails>
 <last_update>%C3%9Altima actualizaci%C3%B3n</last_update>
 <last_week>La semana pasada</last_week>
-<launch>Launch</launch>
+<launch>Iniciar</launch>
 <launch_ad_import_now>Run ActiveDirectory importation task now</launch_ad_import_now>
 <lax-hashed-ip>Lax hashed ip</lax-hashed-ip>
 <ldap admin>LDAP Administrator</ldap admin>
@@ -2917,7 +2917,7 @@ don't forget to - Save & Apply settings - to make them in production mode</notif
 <no_privileges>No tiene suficientes privilegios para realizar esta operaci%C3%B3n</no_privileges>
 <no_rules>Ninguna regla salvada..</no_rules>
 <NO_RULESNUMBER_DANS_EXPLAIN>Es necesario crear al menos una regla para utilizar esta opci%C3%B3n</NO_RULESNUMBER_DANS_EXPLAIN>
-<no_squid_network>No network set</no_squid_network>
+<no_squid_network>Ninguna red configurada</no_squid_network>
 <no_squid_network_text>Currently, no network set in the main configuration, Squid will refuse any connection</no_squid_network_text>
 <no_usb_devices_connected>There is no USB devices connected on this computer</no_usb_devices_connected>
 <nsAIMid>AOL Instant Messenger (AIM)</nsAIMid>

@@ -65,12 +65,12 @@ function page(){
 	<tr>
 		<td class=legend style='font-size:26px'>{central_memory}:</td>
 		<td style='font-size:26px'>". Field_text("cache_mem-$t",$cache_mem,"font-size:26px;width:150px;font-weight:bold")."&nbsp;MB</td>
-		<td style='font-size:26px' width=1% nowrap>" . help_icon('{cache_mem_text}',true)."</td>
+		<td style='font-size:26px' style='width:1%' nowrap>" . help_icon('{cache_mem_text}',true)."</td>
 	</tr>
 	<tr>
 		<td class=legend style='font-size:26px'>{current}:</td>
 		<td style='font-size:26px'><span id='squid-cache-mem-current' style='font-size:26px;font-weight:bold'></span></td>
-		<td style='font-size:26px' width=1% nowrap>&nbsp;</td>
+		<td style='font-size:26px' style='width:1%' nowrap>&nbsp;</td>
 	</tr>					
 	<tr>
 	<td colspan=3 style='font-size:20px;margin-bottom:20px;color:#8E8E8E;text-align:right'>{server_memory}: ". FormatBytes($meminfo["MEMTOTAL"]/1024)." ({proposal}: {$proposal}MB)</div>

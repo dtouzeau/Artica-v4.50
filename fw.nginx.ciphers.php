@@ -261,7 +261,7 @@ function current_ciphers_table(){
 
         $html[]="<tr>
                     <td width=50%><strong>$cipher&nbsp;</strong></td>
-                    <td width=1% nowrap>$level</td>
+                    <td style='width:1%' nowrap>$level</td>
                     </tr>";
 
 
@@ -397,9 +397,9 @@ function popup_table(){
 
         $html[]="<tr>
                     <td width=50%><strong>$cipher&nbsp;</strong></td>
-                    <td width=1% nowrap>$level</td>
-                    <td width=1% nowrap>$notfor</td>
-                    <td width=1% nowrap>$enablebt</td>
+                    <td style='width:1%' nowrap>$level</td>
+                    <td style='width:1%' nowrap>$notfor</td>
+                    <td style='width:1%' nowrap>$enablebt</td>
                     </tr>";
 
         unset($ARRAY[$cipher]);
@@ -414,9 +414,9 @@ function popup_table(){
 
         $html[]="<tr id='$md'>
                     <td width=50%><strong>$cipher</strong></td>
-                    <td width=1% nowrap>&nbsp;</td>
-                    <td width=1% nowrap>$notforbt</td>
-                    <td width=1% nowrap>$delete</td>
+                    <td style='width:1%' nowrap>&nbsp;</td>
+                    <td style='width:1%' nowrap>$notforbt</td>
+                    <td style='width:1%' nowrap>$delete</td>
                     </tr>";
 
         

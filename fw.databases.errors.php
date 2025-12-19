@@ -132,9 +132,9 @@ function search(){
         $database=$ligne["database"];
 
         $html[]="<tr>
-				<td width=1% nowrap>$FTime</td>
+				<td style='width:1%' nowrap>$FTime</td>
 				<td width=99% >$subject</td>
-				<td width=1% nowrap>$database</td>
+				<td style='width:1%' nowrap>$database</td>
 				</tr>";
 
     }

@@ -20,6 +20,9 @@ class lib_memcached{
         return ValkeyClient::listKeys('*');
     }
     public function getKey($key): string{
+      if(strlen($key)<2){
+          return '';
+      }
       return ValkeyClient::getKey($key);
     }
     public function getSetting($Key):string{

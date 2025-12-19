@@ -76,7 +76,7 @@ function popup(){
         $func[]="";
 
         $html[]="<tr class='$TRCLASS' id='$idrow'>";
-        $html[]="<td width=1% nowrap><i class=\"fas fa-info-circle\"></i></td>";
+        $html[]="<td style='width:1%' nowrap><i class=\"fas fa-info-circle\"></i></td>";
         $html[]="<td><strong>$valuehtml</strong></td>";
         $html[]="<td width=1% nowrap >$button_select</td>";
     }

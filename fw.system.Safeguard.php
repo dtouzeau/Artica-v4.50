@@ -388,7 +388,8 @@ function events_search(){
     $date=null;
     $MAIN=$tpl->format_search_protocol($_GET["search"],false,true);
     $line=base64_encode(serialize($MAIN));
-    $sock->getFrameWork("articasmtp.php?artica-notifs-events=$line");
+    echo $tpl->div_error("Not coded ??");
+    return false;
     $filename=PROGRESS_DIR."/smtpd.syslog";
     $date_text=$tpl->_ENGINE_parse_body("{date}");
     $events=$tpl->_ENGINE_parse_body("{events}");
@@ -450,7 +451,7 @@ function events_search(){
 
 
         $html[]="<tr>
-				<td width=1% nowrap>$FTime</td>
+				<td style='width:1%' nowrap>$FTime</td>
 				<td>$line</td>
 				</tr>";
 

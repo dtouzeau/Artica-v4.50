@@ -424,10 +424,10 @@ function popup_table2():bool{
         if($c>250){break;}
 
     $html[]="<tr id='$md'>
-                <td width=1%  nowrap >$status</td>
-				<td width=100%>$pattern</td>
-				<td width=1%  nowrap >$enable</td>
-				<td width=1%  nowrap >$delete</td>
+                <td style='width:1%' nowrap>$status</td>
+				<td style='width:100%'>$pattern</td>
+				<td style='width:1%' nowrap>$enable</td>
+				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }

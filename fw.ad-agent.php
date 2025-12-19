@@ -548,14 +548,14 @@ function search()
         }
 
         $html[] = "<tr>
-					<td width=1% nowrap><span style='color:$color'>$month $day | $yime</span></td>
-					<td width=1% nowrap><span style='color:$color'>$client</span></td>
-					<td width=1% nowrap><span style='color:$color'>{$PROTO}</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>$month $day | $yime</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>$client</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>{$PROTO}</span></td>
 					<td><span style='color:$color'>$URI_column</span></td>
-					<td width=1% nowrap>$backend_column</td>
-					<td width=1% nowrap><span style='color:$color'>{$HTTP_CODE}</span></td>
-					<td width=1% nowrap><span style='color:$color'>{$size}</span></td>
-					<td width=1% nowrap><span style='color:$color'>$duration_column</span></td>
+					<td style='width:1%' nowrap>$backend_column</td>
+					<td style='width:1%' nowrap><span style='color:$color'>{$HTTP_CODE}</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>{$size}</span></td>
+					<td style='width:1%' nowrap><span style='color:$color'>$duration_column</span></td>
 					</tr>";
 
     }
@@ -814,7 +814,7 @@ function backends(){
         $req_tot=FormatNumber($req_tot);
 
         $html[]="<tr class='$TRCLASS' id='$md5'>";
-        $html[]="<td width=1% nowrap>$img</td>";
+        $html[]="<td style='width:1%' nowrap>$img</td>";
         $html[]="<td><strong style=';color:$color;$padding'>$h2$ico$servicename_text$h22</strong></td>";
         $html[]="<td style='width:1%;color:$color' nowrap>$svname_label ($type - $status)</a></td>";
         $html[]="<td style='width:1%;color:$color;text-align:right' nowrap>$bin</td>";

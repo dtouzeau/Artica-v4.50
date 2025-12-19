@@ -107,9 +107,9 @@ function search(){
 
 		
 		$html[]="<tr>
-				<td width=1% nowrap><span class='$class'>$FTime</span></td>
-				<td width=1% nowrap><span class='$class'>$Binary</span></td>
-				<td width=1% nowrap><span class='$class'>$pid</span></td>
+				<td style='width:1%' nowrap><span class='$class'>$FTime</span></td>
+				<td style='width:1%' nowrap><span class='$class'>$Binary</span></td>
+				<td style='width:1%' nowrap><span class='$class'>$pid</span></td>
 				<td>$line</td>
 				</tr>";
 		

@@ -7,6 +7,9 @@ if(isset($_GET["enable-js"])){enable_js();exit;}
 if(isset($_GET["main-js"])){main_js();exit;}
 if(isset($_GET["statistics-js"])){statistics_js();exit;}
 
+if(isset($_GET["mattermost"])){mattermost();exit;}
+if(isset($_POST["MattermostNotifs"])){mattermost_save();exit;}
+
 if(isset($_GET["update-js"])){update_js();exit;}
 if(isset($_GET["updates-parameters"])){updates_parameters();exit;}
 
@@ -185,6 +188,7 @@ function log_types_tabs():bool{
     $array["{traffic_logging}"]="$page?log-types-parameters=yes";
     $array["{APP_WAZHU}"]="$page?wazuh=yes";
     $array["{APP_FILEBEAT}"]="$page?filebeat=yes";
+    $array["{APP_MATTERMOST}"]="$page?mattermost=yes";
     echo $tpl->tabs_default($array);
     return true;
 }
@@ -589,6 +593,53 @@ function filebeat():bool{
 
 }
 
+function mattermost():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/status"));
+    if(!$json->Status){
+        $html[]=$tpl->div_error("{error} API||$json->Error");
+        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        return false;
+    }
+
+    $Params=$json->Info->mattermost;
+
+    $MattermostNotifsChannel=$Params->channel;
+    $MattermostNotifsAPI=$Params->token;
+    $MattermostNotifsURL=$Params->ServerURL;
+    $MattermostUseProxy=intval($Params->UseProxy);
+
+    if(strlen($MattermostNotifsURL)<3){
+        $MattermostNotifsURL="https://mattermost.infra.lan";
+    }
+    $jsafter="dialogInstance1.close();";
+    $form[]=$tpl->field_checkbox("MattermostNotifs","{enable}",$Params->Enable,true);
+    $form[]=$tpl->field_text("MattermostNotifsURL","{server_url}",$MattermostNotifsURL,true);
+    $form[]=$tpl->field_checkbox("MattermostUseProxy","{UseProxyServer}",$MattermostUseProxy);
+    $form[]=$tpl->field_text("MattermostNotifsChannel","{channel_id}",$MattermostNotifsChannel,true);
+    $form[]=$tpl->field_text("MattermostNotifsAPI","{token}",$MattermostNotifsAPI,true);
+    echo $tpl->form_outside("", $form,null,"{apply}",$jsafter,"AsSystemAdministrator");
+    return true;
+}
+function mattermost_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $Notifs=intval($_POST["MattermostNotifs"]);
+    $NotifsURL=urlencode($_POST["MattermostNotifsURL"]);
+    $UseProxy=intval($_POST["MattermostUseProxy"]);
+    $Channel=urlencode($_POST["MattermostNotifsChannel"]);
+    $API=urlencode($_POST["MattermostNotifsAPI"]);
+    $url="/config/mattermost/$Notifs/$NotifsURL/$UseProxy/$Channel/$API";
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA($url));
+    if(!$json->Status){
+        echo $tpl->post_error($json->Error);
+        return false;
+    }
+    return admin_tracks_post("Saving Mattermost configuration for IDS.");
+}
+
 function wazuh():bool{
     $tpl=new template_admin();
 
@@ -603,7 +654,8 @@ function wazuh():bool{
         return true;
     }
     if($EnableWazhuCLient==0){
-        $js=$tpl->framework_buildjs("/wazuh/install","wazhu.client.progress","wazhu.client.progress.log","wazuh-install");
+        $js=$tpl->framework_buildjs("/wazuh/install","wazhu.client.progress","wazhu.client.progress.log",
+            "wazuh-install");
         $btn=$tpl->button_autnonome("{install} {APP_WAZHU}",$js,ico_cd,"AsSquidAdministrator",350,"btn-primary",80);
 
         $html[]= "<div id='wazuh-install'></div>";

@@ -112,7 +112,7 @@ function search(){
 
 
         $html[]="<tr>
-				<td width=1% nowrap>$zdate</td>
+				<td style='width:1%' nowrap>$zdate</td>
 				<td>$line</td>
 				</tr>";
 

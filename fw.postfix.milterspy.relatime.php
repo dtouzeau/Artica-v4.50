@@ -141,10 +141,10 @@ function search(){
 			$subject=imapUtf8($subject);
 			$size=FormatBytes($size/1024);
 			$html[]="<tr>";
-			$html[]="<td width=1% nowrap>$date</td>";
-			$html[]="<td width=1% nowrap>$from</td>";
-			$html[]="<td width=1% nowrap>$to</td>";
-			$html[]="<td width=1% nowrap>$size</td>";
+			$html[]="<td style='width:1%' nowrap>$date</td>";
+			$html[]="<td style='width:1%' nowrap>$from</td>";
+			$html[]="<td style='width:1%' nowrap>$to</td>";
+			$html[]="<td style='width:1%' nowrap>$size</td>";
 			$html[]="<td>$subject</td>";
 			if(count($attach)>0){$attach_text=$tpl->td_href(count($attach),@implode("<br>", $attach)."<!-- $md5 -->");}
 			$html[]="<td>$attach_text</td>";

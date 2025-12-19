@@ -6,7 +6,7 @@
 <domain_iptext>Is this domain is a local domain ? If yes, just click on next button.[br]If this domain must be relayed to a server,put it the name or the IP address of the target server</domain_iptext>
 <domain_text>Define here the SMTP domain that will be used for your new organization.[br]The value should an Internet domain eg "domain.tld"</domain_text>
 <group_text>Now define a groupe name that will store your users, your users should be eMail users, Samba users, ftp users or Internet users</group_text>
-<launch>Launch</launch>
+<launch>Avvia</launch>
 <org_text>The first parameter is to set an Organization.[br]An Organization is an entity that store users, groups and mail domains.[br]
 Give the name of your first organization...
 </org_text>

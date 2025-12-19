@@ -372,7 +372,7 @@ function users_table(){
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='1%' nowrap><i class='fa fa-users'></i>&nbsp<strong>$name</strong></td>";
         $html[]="<td class=\"\">$comment</td>";
-        $html[]="<td class=\"center\" width=1% nowrap>$delete</td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";
     }
 
@@ -439,7 +439,7 @@ function hosts_table(){
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='1%' nowrap><i class='fa fa-server'></i>&nbsp<strong>$name</strong></td>";
         $html[]="<td class=\"\">$comment</td>";
-        $html[]="<td class=\"center\" width=1% nowrap>$delete</td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";
 
 
@@ -506,7 +506,7 @@ function users_link_table(){
         $gps=array();
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-users'></i>&nbsp;$hostname <small>$comment</small></td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?users-link-perform=$ID&md=$md&aclid=$aclid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?users-link-perform=$ID&md=$md&aclid=$aclid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
 
@@ -577,7 +577,7 @@ function hosts_link_table(){
         $gps=array();
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-server'></i>&nbsp;$hostname <small>$comment</small></td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?hosts-link-perform=$ID&md=$md&aclid=$aclid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?hosts-link-perform=$ID&md=$md&aclid=$aclid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
 
@@ -684,7 +684,7 @@ function table(){
         $html[]="<td class=\"\"><span id='$ID-rcomment'>$comment</span></td>";
         $html[]="<td class=\"\"><span id='$ID-rusergroup'>$icon_servers". @implode(", ",$HOSTS)."</span></td>";
         $html[]="<td class=\"\" ><span id='$ID-rhostgroup'>$icon_users". @implode(", ",$USERS)."</span></td>";
-        $html[]="<td class=\"center\" width=1% nowrap>$delete</td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";
 
 

@@ -316,7 +316,7 @@ if($users->AsAnAdministratorGeneric){
         );
     }
 
-    if($users->AsProxyMonitor) {
+    if($users->AsProxyMonitor OR $users->AsDnsAdministrator) {
         $f[] = line_icon("Loadjs('fw.curl.php');",
             "fa-question",
             "{request_simulation}",

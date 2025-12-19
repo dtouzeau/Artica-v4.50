@@ -795,78 +795,7 @@ private	function recipient_bcc_maps(){
 				return "sender_bcc_maps = hash:/etc/postfix-$this->myhostname/sender_bcc";
 		}		
 	}
-	
-	
-	
-
-	
-	public function getMailBoxTransport(){
-		include_once(dirname(__FILE__).'/class.cyrus.inc');
-		$users=new usersMenus();
-		$sock=new sockets();
-		$cyrus=new cyrus_conf();
-		$CyrusLMTPListenPattern=null;
-		$mailbox_transport=trim($this->GET("mailbox_transport"));
-		if($mailbox_transport<>null){return $mailbox_transport;}		
-		
-		$ListenAddress=$cyrus->main_array["CYRUS"]['ListenAddress'];
-		if(!is_numeric($cyrus->main_array["CYRUS"]["service_lmtp_listen"])){$cyrus->main_array["CYRUS"]["service_lmtp_listen"]=2005;}
-		if(!is_numeric($cyrus->main_array["CYRUS"]["service_lmtp_enabed"])){$cyrus->main_array["CYRUS"]["service_lmtp_enabed"]=1;}
-
-        $CyrusLMTPListen="";
-		$CyrusEnableLMTPUnix=$sock->GET_INFO("CyrusEnableLMTPUnix");
-		if(!is_numeric($CyrusEnableLMTPUnix)){$CyrusEnableLMTPUnix=1;}
-		
-		if($cyrus->main_array["CYRUS"]["service_lmtp_enabed"]==1){
-			
-			if($ListenAddress<>null){
-				$CyrusLMTPListen="$CyrusLMTPListen:{$cyrus->main_array["CYRUS"]["service_lmtp_listen"]}";}else{
-				$CyrusLMTPListen="127.0.0.1:{$cyrus->main_array["CYRUS"]["service_lmtp_listen"]}";
-			}
-		}
-		if(preg_match("#(.+?):([0-9]+)#", $CyrusLMTPListen)){
-			$CyrusLMTPListenPattern=$CyrusLMTPListen;
-		
-		}else{
-			$CyrusLMTPListenPattern="127.0.0.1:2005";
-		}
-		
-		
-		
-		$unixsocket=$users->cyrus_lmtp_path;
-		if($unixsocket==null){$unixsocket="/var/spool/postfix/var/run/cyrus/socket/lmtp";}
-		
-		@chown($unixsocket, "postfix");
-		@chgrp($unixsocket, "postfix");
-		@chmod($unixsocket,0777);
-		
-		if($users->cyrus_imapd_installed){
-			if(!$users->ZARAFA_INSTALLED){
-					if($CyrusLMTPListen<>null){
-						if(preg_match("#(.+?):(.+)#",$CyrusLMTPListen,$re)){
-							$ipaddr_listen=$re[1];$port=$re[2];}else{$ipaddr_listen="127.0.0.1";$port="2005";}
-							return "lmtp:$ipaddr_listen:$port";
-						}
-				
-				
-					if($CyrusEnableLMTPUnix==1){
-						return "lmtp:unix:$unixsocket";
-					}
-				}
-		}
-		
-		
-		if($users->ZARAFA_INSTALLED){
-			$ZarafaDeliverBind=$sock->GET_INFO("ZarafaDeliverBind");
-			if($ZarafaDeliverBind==null){$ZarafaDeliverBind="127.0.0.1";}
-			if($ZarafaDeliverBind=="0.0.0.0"){$ZarafaDeliverBind="127.0.0.1";}
-			$default="lmtp:$ZarafaDeliverBind:2003";}	
-			return $default;	
-		
-	}
-	
-	
-	private function cyruslmtp(){
+    private function cyruslmtp(){
 		$users=new usersMenus();
 		if($users->ZARAFA_INSTALLED){return null;}
 		if(!$users->cyrus_imapd_installed){return null;}
@@ -1269,7 +1198,7 @@ private	function recipient_bcc_maps(){
 			echo "Starting......: ".date("H:i:s")." Postfix \"$myhostname\" is a member of $this->ou IP $this->ip_addr\n";
 
 			
-			$mailbox_transport=$this->getMailBoxTransport();
+
 			$nets=unserialize($this->GET_BIGDATA("mynetworks"));
 			if(is_array($nets)){
                 foreach ($nets as $d=>$z){
@@ -1702,14 +1631,6 @@ private	function recipient_bcc_maps(){
 			}
 			
 			$conf[]=$this->mailbox_transport_maps();
-			
-			if(trim($mailbox_transport)<>null){
-				$conf[]="";
-				$conf[]="#  MAILBOXES ---------------------------------";
-				$conf[]="mailbox_transport = $mailbox_transport";
-				$conf[]="virtual_transport=\$mailbox_transport";
-				$conf[]="mailman_destination_recipient_limit = 1";
-			}
 			$conf[]="";
 					
 			$conf[]="disable_vrfy_command=yes";

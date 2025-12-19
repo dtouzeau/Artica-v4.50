@@ -53,10 +53,10 @@ function popup(){
 		<td valign='top'><div class=explain>{databases_maintenance_explain}</div>
 			<table style='width:100%'>
 			<tr>
-				<td valign='middle' class=legend style='font-size:16px' width=1% nowrap>{time}:</td>
-				<td valign='middle' class=legend style='font-size:16px' width=1% nowrap>".Field_array_Hash($cron->cron_hours,"DBH",$time["DBH"],null,null,0,"font-size:16px;padding:3px")."</td>
-				<td valign='middle' class=legend style='font-size:16px' width=1% nowrap>:</td>
-				<td valign='middle' class=legend style='font-size:16px' width=1% nowrap>".Field_array_Hash($cron->cron_mins,"DBM",$time["DBM"],null,null,0,"font-size:16px;padding:3px")."</td>
+				<td valign='middle' class=legend style='font-size:16px' style='width:1%' nowrap>{time}:</td>
+				<td valign='middle' class=legend style='font-size:16px' style='width:1%' nowrap>".Field_array_Hash($cron->cron_hours,"DBH",$time["DBH"],null,null,0,"font-size:16px;padding:3px")."</td>
+				<td valign='middle' class=legend style='font-size:16px' style='width:1%' nowrap>:</td>
+				<td valign='middle' class=legend style='font-size:16px' style='width:1%' nowrap>".Field_array_Hash($cron->cron_mins,"DBM",$time["DBM"],null,null,0,"font-size:16px;padding:3px")."</td>
 				<td valign='middle' class=legend width=99% nowrap>". button("{apply}","SaveDBM()")."</td>
 			</tr>
 			</table>

@@ -79,9 +79,9 @@ function popup():bool{
 
     $md5=md5(serialize($main));
     $html[]="<tr id='$md5'>";
-    $html[]="<td width=1% nowrap>".$tpl->time_to_date($time,true)."s</td>";
+    $html[]="<td style='width:1%' nowrap>".$tpl->time_to_date($time,true)."s</td>";
     $html[]="<td width=99% nowrap style='font-weight:bold'><a href=\"$URI\">$version</a></td>";
-	$html[]="<td width=1% nowrap>$size</td>";
+	$html[]="<td style='width:1%' nowrap>$size</td>";
 
         $jsrestart=$tpl->framework_buildjs("/system/artica/hotfix/update/devs/$vbin",
         "system.hotfix.progress","system.hotfix.progress.txt",
@@ -92,7 +92,7 @@ function popup():bool{
             "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
 
 
-    $html[]="<td width=1% nowrap>$bton</td>";
+    $html[]="<td style='width:1%' nowrap>$bton</td>";
 
 	$html[]="</tr>";
     $html[]="<tr>";

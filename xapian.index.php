@@ -205,11 +205,11 @@ function page(){
 		
 	}
 	
-	$langs[]="<td width=1% nowrap>$languageF:</td>";
-	$langs[]="<td width=1% nowrap>$language</td>";
+	$langs[]="<td style='width:1%' nowrap>$languageF:</td>";
+	$langs[]="<td style='width:1%' nowrap>$language</td>";
 	
 	if($XapianRemoveLangage==1){$langs=array();}
-	$infos="<td width=1% nowrap>$logon$info</td>";
+	$infos="<td style='width:1%' nowrap>$logon$info</td>";
 	if($XapianRemoveLogon==1){$infos=null;$scriptfel="Delete_Cookie('uid', '/', '');";}
 	
 	
@@ -295,7 +295,7 @@ function status_xapiandb(){
 		$size=FormatBytes($size/1024);
 		$html=$html."
 		<tr>
-			<td style='font-size:16px' width=1% nowrap>". basename($directory).":</td>
+			<td style='font-size:16px' style='width:1%' nowrap>". basename($directory).":</td>
 			<td style='font-size:16px;font-weight:bold'>$size</td>
 			
 		</tr>
@@ -307,7 +307,7 @@ function status_xapiandb(){
 		$size=FormatBytes($size/1024);
 		$html=$html."
 		<tr>
-			<td style='font-size:16px' width=1% nowrap>". basename($directory).":</td>
+			<td style='font-size:16px' style='width:1%' nowrap>". basename($directory).":</td>
 			<td style='font-size:16px;font-weight:bold'  align='left'>$size</td>
 			
 		</tr>

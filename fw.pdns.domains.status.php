@@ -77,7 +77,7 @@ function table(){
 
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td width=1%><span class='label label-$zerror'>{$error_typet[$ligne["error_type"]]}</span></td>";
-		$html[]="<td width=1% nowrap>$domainname</td>";
+		$html[]="<td style='width:1%' nowrap>$domainname</td>";
 		$html[]="<td width=99%>$content</td>";
 		$html[]="</tr>";
 		

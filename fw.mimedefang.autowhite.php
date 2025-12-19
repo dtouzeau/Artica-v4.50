@@ -240,7 +240,7 @@ function table(){
 
 
         $html[]="<tr class='$TRCLASS' id='$zmd5'>";
-        $html[]="<td width=1% nowrap>$xtime</td>";
+        $html[]="<td style='width:1%' nowrap>$xtime</td>";
         $html[]="<td><strong>$mailfrom</strong></td>";
         $html[]="<td><strong>$mailto</strong></td>";
         $html[]="<td width=1% class='center' nowrap>".$tpl->icon_delete("Loadjs('$page?delete-rule-js=$zmd5')","AsPostfixAdministrator") ."</center></td>";

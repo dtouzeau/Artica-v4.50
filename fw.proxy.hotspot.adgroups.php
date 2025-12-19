@@ -421,7 +421,7 @@ function table(){
 	$table[]="<table class='table table-hover' style='width:100%'>
     <thead>
 	<tr>
-	<th  width=1% nowrap></th>
+	<th  style='width:1%' nowrap></th>
 	<th>$title ($CountDeGroups)</th>
 	<th style='width:1%' nowrap>&nbsp;</th>
 	<th style='width:1%' nowrap>&nbsp;</th>

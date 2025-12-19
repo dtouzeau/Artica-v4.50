@@ -58,7 +58,7 @@ $error
 	<div style='width:98%' class=form>
 	<table style='width:100%'>
 <tr>
-	<td class=legend style='font-size:24px' width=1% nowrap>{remove_artica_version}:</td>
+	<td class=legend style='font-size:24px' style='width:1%' nowrap>{remove_artica_version}:</td>
 	<td width=99%>". Field_checkbox_design("SquidFTPTemplateNoVersion-$t",1,$xtpl->SquidFTPTemplateNoVersion)."</td>
 </tr>
 <tr>

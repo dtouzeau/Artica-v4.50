@@ -414,7 +414,7 @@ function popup(){
                 $js = "s_PopUpFull('http://articatech.net/categorization.php?report=$xmain',1024,768,'$familysite');";
                 $html[] = "<tr>";
                 $html[] = "<td><strong>$category_text</strong><br><small>{miscategory_explain}</small></td>";
-                $html[] = "<td width=1% nowrap>" . $tpl->button_autnonome("{report_category}", $js,
+                $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{report_category}", $js,
                         "fa fa-question", "AsProxyMonitor", 180, "btn-primary") . "</td>";
                 $html[] = "</tr>";
 
@@ -424,7 +424,7 @@ function popup(){
         if($SQUIDACLsEnabled==1){
             $html[]="<tr>";
             $html[]="<td><strong>{WAF_LEFT}</strong><br><small>{add_to_acl_object}</small></td>";
-            $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.acl.add.php?type=$acl_type&value=$familysite_encode')",
+            $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.acl.add.php?type=$acl_type&value=$familysite_encode')",
                     "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
             $html[]="</tr>";
         }
@@ -432,7 +432,7 @@ function popup(){
 
         $html[]="<tr>";
         $html[]="<td><strong>{categorize}</strong><br><small>{add_to_personal_category}</small></td>";
-        $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.category.add.php?type=$acl_type&value=$familysite_encode')",
+        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.category.add.php?type=$acl_type&value=$familysite_encode')",
                     "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
         $html[]="</tr>";
 
@@ -448,20 +448,20 @@ function popup(){
 
         $html[]="<tr>";
         $html[]="<td><strong>$whitetitle</strong><br><small>{whitelist_this_website_explain}</small></td>";
-        $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{apply}",
+        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}",
                 "Loadjs('$page?wbl=$familysite_encode$extension')", "fas fa-thumbs-up","AsProxyMonitor",180)."</td>";
         $html[]="</tr>";
 
         $html[]="<tr>";
         $html[]="<td><strong>$blacktitle</strong><br><small>{blacklist_this_website_explain}</small></td>";
-        $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{apply}", "Loadjs('$page?black=$familysite_encode$extension')",
+        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}", "Loadjs('$page?black=$familysite_encode$extension')",
                 "fas fa-thumbs-down","AsProxyMonitor",180,"btn-danger")."</td>";
         $html[]="</tr>";
 
 
          $html[]="<tr>";
          $html[]="<td><strong>{do_not_cache}</strong><br><small>{do_not_cache_this_web_site_explain}</small></td>";
-            $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{apply}", "Loadjs('$page?cache=$familysite_encode')",
+            $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}", "Loadjs('$page?cache=$familysite_encode')",
                     "fas fa-database","AsProxyMonitor",180,"btn-warning")."</td>";
             $html[]="</tr>";
 
@@ -489,7 +489,7 @@ function popup(){
         $bypass_webfilter_explain=str_replace("%s",$domain,$bypass_webfilter_explain);
         $html[]="<tr>";
         $html[]="<td><strong>{bypass_webfilter}</strong><br><small>$bypass_webfilter_explain</small></td>";
-        $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{select}", "Loadjs('$page?bypasswebf=$domain_encode')",
+        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('$page?bypasswebf=$domain_encode')",
                 "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
         $html[]="</tr>";
 
@@ -513,7 +513,7 @@ function popup(){
             $js = "s_PopUpFull('http://articatech.net/categorization.php?report=$xmain',1024,768,'$domain');";
             $html[] = "<tr>";
             $html[] = "<td><strong>$category_text</strong><br><small>{miscategory_explain}</small></td>";
-            $html[] = "<td width=1% nowrap>" . $tpl->button_autnonome("{report_category}", $js,
+            $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{report_category}", $js,
                     "fa fa-question", "AsProxyMonitor", 180, "btn-primary") . "</td>";
             $html[] = "</tr>";
 
@@ -522,7 +522,7 @@ function popup(){
     if($SQUIDACLsEnabled==1){
         $html[]="<tr>";
         $html[]="<td><strong>{WAF_LEFT}</strong><br><small>{add_to_acl_object}</small></td>";
-        $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.acl.add.php?type=$acl_type&value=$domain_encode')",
+        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.acl.add.php?type=$acl_type&value=$domain_encode')",
                 "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
         $html[]="</tr>";
     }
@@ -530,7 +530,7 @@ function popup(){
     if($EnablePersonalCategories==1){
         $html[]="<tr>";
         $html[]="<td><strong>{categorize}</strong><br><small>{add_to_personal_category}</small></td>";
-        $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.category.add.php?type=$acl_type&value=$domain_encode')",
+        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.category.add.php?type=$acl_type&value=$domain_encode')",
                 "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
         $html[]="</tr>";
 
@@ -540,13 +540,13 @@ function popup(){
 
     $html[]="<tr>";
     $html[]="<td><strong>$whitetitle</strong><br><small>{whitelist_this_website_explain}</small></td>";
-    $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{apply}",
+    $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}",
             "Loadjs('$page?wbl=$domain_encode$extension')", "fas fa-thumbs-up","AsProxyMonitor",180)."</td>";
     $html[]="</tr>";
 
     $html[]="<tr>";
     $html[]="<td><strong>$blacktitle</strong><br><small>{blacklist_this_website_explain}</small></td>";
-    $html[]="<td width=1% nowrap>".$tpl->button_autnonome("{apply}", "Loadjs('$page?black=$domain_encode$extension')",
+    $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}", "Loadjs('$page?black=$domain_encode$extension')",
             "fas fa-thumbs-down","AsProxyMonitor",180,"btn-danger")."</td>";
     $html[]="</tr>";
 
@@ -554,7 +554,7 @@ function popup(){
         if ($SquidCachesProxyEnabled == 1) {
             $html[] = "<tr>";
             $html[] = "<td><strong>{do_not_cache}</strong><br><small>{do_not_cache_this_web_site_explain}</small></td>";
-            $html[] = "<td width=1% nowrap>" . $tpl->button_autnonome("{apply}", "Loadjs('$page?cache=$domain_encode')",
+            $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{apply}", "Loadjs('$page?cache=$domain_encode')",
                     "fas fa-database", "AsProxyMonitor", 180, "btn-warning") . "</td>";
             $html[] = "</tr>";
 

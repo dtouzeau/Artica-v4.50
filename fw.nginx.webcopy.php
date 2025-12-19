@@ -295,7 +295,7 @@ function not_found_popup(){
 
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='vertical-align:middle;' class='center' width=1% nowrap><i class='fa-solid fa-bug'></i></td>";
+        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap><i class='fa-solid fa-bug'></i></td>";
         $html[]="<td style='vertical-align:middle;' width=99% nowrap>$url</td>";
         $html[]="</tr>";
 
@@ -506,9 +506,9 @@ function events_search(){
         if($www==null){$www=="{unknown}";}
 
         $html[]="<tr>
-				<td width=1% nowrap>$date</td>
-				<td width=1% nowrap>$pid</td>
-				<td width=1% nowrap>$www</td>
+				<td style='width:1%' nowrap>$date</td>
+				<td style='width:1%' nowrap>$pid</td>
+				<td style='width:1%' nowrap>$www</td>
 				<td>$line</td>
 				</tr>";
 
@@ -630,13 +630,13 @@ function list_table(){
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='vertical-align:middle;' width=99% nowrap>$enforceuri$notfound_ico$downloaded_status</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' width=1% nowrap>$view</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' width=1% nowrap>$size</td>";
-        $html[]="<td style='vertical-align:middle;' class='left' width=1% nowrap>$time_text</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' width=1% nowrap>$sync</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' width=1% nowrap>$enabled</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' width=1% nowrap>$icon_erase</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' width=1% nowrap>$delete</td>";
+        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$view</td>";
+        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$size</td>";
+        $html[]="<td style='vertical-align:middle;' class='left' style='width:1%' nowrap>$time_text</td>";
+        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$sync</td>";
+        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$enabled</td>";
+        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$icon_erase</td>";
+        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";
     }
 

@@ -28,7 +28,7 @@ et si votre trafic augmente trop, vous finirez par voir des messages se perdre &
 Les statistiques des messages perdus sont enregistr&eacute;s dans syslog toutes les 10 minutes, sauf si vous avez modifi&eacute; cela. [Br]
 La ligne statistiques vous permettra de savoir quelle destination perd des messages et leur nombre. [Br]
 Vous pouvez alors d&eacute;cider si vous devez augmenter la valeur globalement ou par destination, de m&ecirc;me que cela vous donne une id&eacute;e de la valeur &agrave; donner.</log_fifo_size_text>
-<low>bas</low>
+<low>Faible</low>
 <MaxtimeBackupMailSizeCalculate>Calcule l' espace de stockage tout les</MaxtimeBackupMailSizeCalculate>
 <MaxtimeBackupMailSizeCalculate_explain>Lorsque vous utilisez la zone de quarantaine et de sauvegarde avec la fonction &agrave; la vol&eacute;e, artica calculera p&eacute;riodiquement la consommation disque de ces zones.
 Ce traitement consomme des acc&egrave;s disques (I/O) et diminue les performances du serveur lors des calculs.

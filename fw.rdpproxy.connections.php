@@ -367,7 +367,7 @@ function target_link_table(){
         $gps=array();
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap>$icon_user&nbsp;$alias $target_host:$target_port ($target_device)</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?target-link-perform=$ID&md=$md&gpid=$gpid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?target-link-perform=$ID&md=$md&gpid=$gpid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
 
@@ -446,7 +446,7 @@ function member_link_table(){
         $gps=array();
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap>$icon_user&nbsp;$username</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?member-link-perform=$ID&md=$md&gpid=$gpid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?member-link-perform=$ID&md=$md&gpid=$gpid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
 
@@ -1084,7 +1084,7 @@ function members_table(){
        $html[]="<td class=\"\" width='1%' nowrap><i class='fas fa-alarm-clock'></i>&nbsp;". $tpl->td_href($finish,"{click_to_edit}",$js)."$status</td>";
 
         $html[]="<td class=\"\">".@implode(", ",$gps)."</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->icon_delete("Loadjs('$page?member-delete=$ID&md=$md')","AllowAddUsers") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?member-delete=$ID&md=$md')","AllowAddUsers") ."</td>";
         $html[]="</tr>";
 
 
@@ -1156,7 +1156,7 @@ function group_time_table(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fas fa-clock'></i>&nbsp;{every_day_every_time}</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->icon_nothing() ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->icon_nothing() ."</td>";
         $html[]="</tr>";
     }
 
@@ -1185,7 +1185,7 @@ function group_time_table(){
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fas fa-clock'></i>&nbsp;$pattern</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->icon_delete("Loadjs('$page?time-unlink=$ID&md=$md')","AllowAddUsers") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?time-unlink=$ID&md=$md')","AllowAddUsers") ."</td>";
         $html[]="</tr>";
 
 
@@ -1247,7 +1247,7 @@ $TRCLASS=null;
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='000'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fas fa-network-wired'></i>&nbsp;{refused_from_everyone}</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->icon_nothing() ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->icon_nothing() ."</td>";
         $html[]="</tr>";
 
     }
@@ -1262,7 +1262,7 @@ $TRCLASS=null;
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fas fa-network-wired'></i>&nbsp;$pattern</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->icon_delete("Loadjs('$page?network-unlink=$ID&md=$md')","AllowAddUsers") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?network-unlink=$ID&md=$md')","AllowAddUsers") ."</td>";
         $html[]="</tr>";
 
 
@@ -1345,7 +1345,7 @@ function group_targets_table(){
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap>$icon_user&nbsp;$alias<br><small>$designation</small></td>";
         $html[]="<td class=\"\" width='100%' nowrap>$target_host:$target_port ($target_device)</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->icon_unlink("Loadjs('$page?target-unlink=$ID&md=$md')","AllowAddUsers") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->icon_unlink("Loadjs('$page?target-unlink=$ID&md=$md')","AllowAddUsers") ."</td>";
         $html[]="</tr>";
 
 
@@ -1471,7 +1471,7 @@ function group_members_table(){
         $gps=array();
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap>$icon_user&nbsp;$username$status</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->icon_unlink("Loadjs('$page?member-unlink=$ID&md=$md')","AllowAddUsers") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->icon_unlink("Loadjs('$page?member-unlink=$ID&md=$md')","AllowAddUsers") ."</td>";
         $html[]="</tr>";
 
 
@@ -1803,7 +1803,7 @@ function targets_table(){
         $html[]="<td class=\"\" width='1%' nowrap>$proto_dest</td>";
         $html[]="<td class=\"\" width='1%' nowrap>$ico_user&nbsp;$target_login</td>";
         $html[]="<td class=\"\" width='1%' nowrap>". $tpl->icon_check($enabled,"Loadjs('$page?target-enable=$ID')","AllowAddUsers")."</td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->icon_delete("Loadjs('$page?target-delete=$ID&md=$md')","AllowAddUsers") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?target-delete=$ID&md=$md')","AllowAddUsers") ."</td>";
         $html[]="</tr>";
 
 

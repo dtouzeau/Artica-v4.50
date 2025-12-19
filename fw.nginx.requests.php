@@ -389,9 +389,16 @@ function search_form():bool{
     $tpl=new template_admin();
     $urltoadd="";
     $fileid=0;
+    $latencyID=0;
+    $Latencies=array();
     if(isset($_GET["fileid"])){
         $fileid=intval($_GET["fileid"]);-
         $urltoadd="&fileid=$fileid";
+
+    }
+    if(isset($_GET["latencyID"])){
+        $latencyID=intval($_GET["latencyID"]);-
+        $urltoadd="&latencyID=$latencyID";
 
     }
     $q=new lib_sqlite(NginxGetDB());
@@ -415,12 +422,16 @@ function search_form():bool{
 
     $proxy_upstream_name="";
     $status_code_saved="";
+    $proxy_latency_name="";
 
     if(isset($_SESSION["NGINXSEARCH"]["status"])){
         $status_code_saved=urlencode($_SESSION["NGINXSEARCH"]["status"]);
     }
     if(isset($_SESSION["NGINXSEARCH"]["proxy_upstream_name"])){
         $proxy_upstream_name=$_SESSION["NGINXSEARCH"]["proxy_upstream_name"];
+    }
+    if(isset($_SESSION["NGINXSEARCH"]["proxy_latency_name"])){
+        $proxy_latency_name=$_SESSION["NGINXSEARCH"]["proxy_latency_name"];
     }
 
 
@@ -455,6 +466,17 @@ function search_form():bool{
 
     }
 
+    $jsonTenants=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/events/latency/scan"));
+    if($jsonTenants->Status) {
+        if (count($jsonTenants->tenants) > 0) {
+            foreach ($jsonTenants->tenants as $tenant) {
+                if (isset($zids[$tenant])) {
+                    $Latencies[$tenant] = $zids[$tenant];
+                }
+            }
+        }
+    }
+
 
     if($fileid==0) {
         $ttlocal="";
@@ -468,8 +490,12 @@ function search_form():bool{
     $LINES[]=$tpl->field_text_online("remote_addr","0.0.0.0",$_SESSION["NGINXSEARCH"]["remote_addr"],150,"$page?save-field=remote_addr&value=%s");
 
     if($fileid==0) {
-        $LINES[] = $tpl->DropDown($AArry, $proxy_upstream_name, "{sitename}", "$page?save-field=proxy_upstream_name&value=%s$urltoadd");
+       $LINES[] = $tpl->DropDown($AArry, $proxy_upstream_name, "{sitename}", "$page?save-field=proxy_upstream_name&value=%s$urltoadd");
     }
+    if(count($Latencies)>0){
+        $LINES[] = $tpl->DropDown($Latencies, $proxy_latency_name, "{latency}", "$page?save-field=proxy_latency_name&value=%s$urltoadd");
+    }
+
 
 
     if(!isset($_SESSION["NGINXSEARCH"]["max_records"])){
@@ -499,9 +525,17 @@ function saveField(){
     $page=CurrentPageName();
     $field=$_GET["save-field"];
     $fileid=0;
+    $latencyID=0;
     if(isset($_GET["fileid"])){
         $fileid=$_GET["fileid"];
     }
+
+    if(isset($_GET["latencyID"])){
+        $latencyID=$_GET["latencyID"];
+    }
+
+
+
     $value=urldecode($_GET["value"]);
     if(is_null($value)){$value="";}
     unset( $_SESSION["NGINXSEARCH"]["request"]);
@@ -517,7 +551,7 @@ function saveField(){
     $Key="SearchNginx{$_SESSION["uid"]}";
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO($Key,serialize($_SESSION["NGINXSEARCH"]));
     header("content-type: application/x-javascript");
-    echo "LoadAjax('nginx-search-results','$page?search=&fileid=$fileid');";
+    echo "LoadAjax('nginx-search-results','$page?search=&fileid=$fileid&latencyid=$latencyID');";
 }
 
 function filter_bysite(){
@@ -538,10 +572,16 @@ function search():bool{
     $tpl=new template_admin();
     clean_xss_deep();
     if(!isset($_GET["search"])){$_GET["search"]="";}
+    $AddTitle="";
     $fileid=0;
     $index=0;
     if(isset($_GET["fileid"])){
         $fileid=intval($_GET["fileid"]);
+    }
+    $proxy_latency_name=0;
+    if(isset($_SESSION["NGINXSEARCH"]["proxy_latency_name"])){
+        $proxy_latency_name=intval($_SESSION["NGINXSEARCH"]["proxy_latency_name"]);
+
     }
 
     $MAIN=$tpl->format_search_protocol($_GET["search"]);
@@ -575,8 +615,14 @@ function search():bool{
     $PFile=PROGRESS_DIR."/nginx-search.pattern";
     $sock=new sockets();
     $sock->REST_API_TIMEOUT=30;
-    $json=json_decode($sock->REST_API_NGINX("/reverse-proxy/access/$line/$opts/$index/$fileid"));
-    if(!$json->Status){
+    $EnPoint="/reverse-proxy/access/$line/$opts/$index/$fileid";
+    if($proxy_latency_name>0){
+        $AddTitle="{latency}";
+        $EnPoint="/reverse-proxy/latencyaccess/$line/$opts/$index/$proxy_latency_name";
+    }
+
+    $json=json_decode($sock->REST_API_NGINX($EnPoint));
+    if(!$json->Status && strlen($json->Error)>1){
         echo $tpl->div_warning($json->Error);
     }
 
@@ -604,10 +650,15 @@ function search():bool{
 ";
     $GLOBALS["logfile_daemon"]=new logfile_daemon();
     $start = microtime(true);
+    $tb=array();
 
 
+    $logpath=$json->logpath;
 
-    foreach ($json->lines as $line){
+    if(!is_null($logpath)) {
+        $tb = explode("\n", file_get_contents($logpath));
+    }
+    foreach ($tb as $line){
         $html[]=ProcessLine($line);
     }
     $end = microtime(true);
@@ -615,7 +666,8 @@ function search():bool{
     $took=sprintf("Took %.6f seconds", $duration);
     writelogs("Processing : ".count($html)." lines $took",__FUNCTION__,__FILE__,__LINE__);
 
-    $TINY_ARRAY["TITLE"]="{APP_NGINX}: {requests} &laquo;{$_GET["search"]}&raquo;";
+    $TINY_ARRAY["TITLE"]="{APP_NGINX}: $AddTitle 
+    {requests} &laquo;{$_GET["search"]}&raquo;";
     $TINY_ARRAY["ICO"]=ico_eye;
     $TINY_ARRAY["EXPL"]="{APP_NGINX_REQUESTS_EXPLAIN}";
     $TINY_ARRAY["URL"]="nginx-requests";

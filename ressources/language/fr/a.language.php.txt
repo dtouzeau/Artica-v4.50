@@ -221,7 +221,7 @@ Patientez quelques secondes et rafra&icirc;chissez cette page.</apply_network_co
 <APP_LXC_TEXT>Cr&eacute;ez et administrez des serveurs virtuels gr&acirc;ce &agrave; l'utilisation de technologie Linux Containers</APP_LXC_TEXT>
 <APP_MOD_PAGESPEED>Module d'optimisation de pages Web</APP_MOD_PAGESPEED>
 <APP_MSKTUTIL>Client keytab  pour Active Directory</APP_MSKTUTIL>
-<APP_MSKTUTIL_NOT_INSTALLED>msktutil n'est pas install&eacute;, utilisez le centre d'installation d'application &agrave; cet effet.</APP_MSKTUTIL_NOT_INSTALLED>
+<APP_MSKTUTIL_NOT_INSTALLED>Le client Keytab pour Microsoft Active Directory nâ%80%99est pas installé.[br]Veuillez utiliser le centre des logiciels pour installer ce composant.</APP_MSKTUTIL_NOT_INSTALLED>
 <APP_MYSQL1>Service MySQL</APP_MYSQL1>
 <APP_NETATALK>R&eacute;seau Apple Macintosh</APP_NETATALK>
 <APP_NOIP>Service DNS No-IP</APP_NOIP>

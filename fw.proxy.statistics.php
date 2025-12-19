@@ -136,8 +136,8 @@ function page_hour(){
 		
 		$table[]="<tr>";
 		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td width=1% nowrap>$rqs</td>";
-		$table[]="<td width=1% nowrap>". FormatBytes($size)."</td>";
+		$table[]="<td style='width:1%' nowrap>$rqs</td>";
+		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
 		$table[]="</tr>";
 		
 		
@@ -183,8 +183,8 @@ function page_hour(){
 	
 		$table[]="<tr>";
 		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td width=1% nowrap>$rqs</td>";
-		$table[]="<td width=1% nowrap>". FormatBytes($size)."</td>";
+		$table[]="<td style='width:1%' nowrap>$rqs</td>";
+		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
 		$table[]="</tr>";
 	
 	
@@ -232,8 +232,8 @@ function page_hour(){
 	
 		$table[]="<tr>";
 		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td width=1% nowrap>$rqs</td>";
-		$table[]="<td width=1% nowrap>". FormatBytes($size)."</td>";
+		$table[]="<td style='width:1%' nowrap>$rqs</td>";
+		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
 		$table[]="</tr>";
 	
 	
@@ -347,8 +347,8 @@ function page_day(){
 	
 		$table[]="<tr>";
 		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td width=1% nowrap>$rqs</td>";
-		$table[]="<td width=1% nowrap>". FormatBytes($size)."</td>";
+		$table[]="<td style='width:1%' nowrap>$rqs</td>";
+		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
 		$table[]="</tr>";
 	
 	
@@ -397,8 +397,8 @@ function page_day(){
 	
 		$table[]="<tr>";
 		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td width=1% nowrap>$rqs</td>";
-		$table[]="<td width=1% nowrap>". FormatBytes($size)."</td>";
+		$table[]="<td style='width:1%' nowrap>$rqs</td>";
+		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
 		$table[]="</tr>";
 	
 	
@@ -447,8 +447,8 @@ function page_day(){
 	
 		$table[]="<tr>";
 		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td width=1% nowrap>$rqs</td>";
-		$table[]="<td width=1% nowrap>". FormatBytes($size)."</td>";
+		$table[]="<td style='width:1%' nowrap>$rqs</td>";
+		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
 		$table[]="</tr>";
 	
 	

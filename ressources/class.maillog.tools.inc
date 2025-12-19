@@ -1,7 +1,6 @@
 <?php
 include_once(dirname(__FILE__)."/class.memcached.inc");
 include_once(dirname(__FILE__)."/class.ccurl.inc");
-
 class maillog_tools{
 	var $buffer=null;	
 	private $ipClass;

@@ -84,7 +84,7 @@ Domains available are:
 <enable_freeweb_text>FreeWeb is a service that enable web free spaces for any users.[br]this is not the same of Artica Groupware that allows to install pre-defined groupwares.[br]
 FreeWeb just provides virtual domain, Mysql Database, FTP access in order to allow installing/Pushing any web content pages.[br]
 FreeWeb run on standard ports (80/443) and using the Apache server in order to provide the main service.</enable_freeweb_text>
-<enable_ipv6>Enable ipv6</enable_ipv6>
+<enable_ipv6>IPv6 aktivieren</enable_ipv6>
 <enable_ldap_sync_service>LDAP-Synchronisierungsdienst aktivieren</enable_ldap_sync_service>
 <enable_picasa_replication>Enable Picasa Web replication</enable_picasa_replication>
 <enable_qos_service>Enable this QOS service</enable_qos_service>
@@ -113,7 +113,7 @@ Refresh web page or check events in order to display task status.</install_app>
 <less_than_time>Weniger als</less_than_time>
 <loading>loading</loading>
 <log_connections>Log connections</log_connections>
-<low>low</low>
+<low>Niedrig</low>
 <MaxEventsPerServer>Max Events per server</MaxEventsPerServer>
 <medium_server>Medium server</medium_server>
 <meta-console>Global Management Console</meta-console>

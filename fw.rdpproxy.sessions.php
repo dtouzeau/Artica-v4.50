@@ -175,11 +175,11 @@ if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"center\" width='1%' nowrap>$status</td>";
         $html[]="<td class=\"\" width='1%' nowrap><i class='fa fa-desktop'></i>&nbsp;$created</td>";
-        $html[]="<td class=\"\" width=1% nowrap>$updated<br><small>$distance</small></td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>$updated<br><small>$distance</small></td>";
         $html[]="<td class=\"\" nowrap>$client</td>";
         $html[]="<td class=\"\" nowrap>$target</td>";
         $html[]="<td class=\"\" nowrap>$rulename</td>";
-        $html[]="<td class=\"\" width=1% nowrap>". $tpl->icon_unlink("Loadjs('$page?disconnect=$ID')")."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>". $tpl->icon_unlink("Loadjs('$page?disconnect=$ID')")."</td>";
         $html[]="</tr>";
 
 

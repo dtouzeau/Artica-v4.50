@@ -445,8 +445,7 @@ class settings_inc {
 		
 		
 	}
-	
-	
+
 	function __construct(){
 			$_GLOBAL=array();
 			if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}

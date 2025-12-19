@@ -195,9 +195,9 @@ function infos(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap>$icort<strong>$routerid/$router_ip</strong> ($interface - $localip ) </td>";
-        $html[]="<td class=\"\" width=1% nowrap>$expire</td>";
-        $html[]="<td class=\"\" width=1% nowrap>$prio</td>";
-        $html[]="<td class=\"\" width=1% nowrap>$status</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>$expire</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>$prio</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>$status</td>";
         $html[]="</tr>";
     }
     $html[]="</tbody>";
@@ -225,9 +225,9 @@ function infos(){
         $TIME       = $ligne["TIME"];
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td class=\"\" width=1% nowrap>$icors<strong>$net</strong></td>";
-        $html[]="<td class=\"\" width=1% nowrap>$INTERFACE</td>";
-        $html[]="<td class=\"\" width=1% nowrap>$TIME</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>$icors<strong>$net</strong></td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>$INTERFACE</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>$TIME</td>";
         $html[]="<td class=\"\" width=100% nowrap>$text</td>";
         $html[]="</tr>";
     }

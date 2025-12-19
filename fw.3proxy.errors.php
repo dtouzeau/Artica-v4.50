@@ -190,7 +190,7 @@ function table(){
 		$ID=$ligne["ID"];
 		$md=md5(serialize($ligne));
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td width=1% nowrap>". $tpl->td_href($ligne["explain"],null,"Loadjs('$page?error=$ID')")."</td>";
+		$html[]="<td style='width:1%' nowrap>". $tpl->td_href($ligne["explain"],null,"Loadjs('$page?error=$ID')")."</td>";
 		$html[]="<td>{$ligne["title"]}</td>";
 		$html[]="</tr>";
 	}

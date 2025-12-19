@@ -316,14 +316,14 @@ function table():bool{
 
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td width=99% nowrap><strong>$pattern</strong></td>";
-		$html[]="<td width=1% nowrap>{$ligne["editor"]}</td>";
-        $html[]="<td width=1% nowrap>{$ligne["category"]}</td>";
-		$html[]="<td class='center' width=1% nowrap>$enabled</td>";
-        $html[]="<td class='center' width=1% nowrap>$bypass</td>";
-        $html[]="<td class='center' width=1% nowrap>$deny</td>";
-        $html[]="<td class='center' width=1% nowrap>$bypassWebF</td>";
-        $html[]="<td class='center' width=1% nowrap>$bypassWebC</td>";
-		$html[]="<td class='center' width=1% nowrap>$delete</td>";
+		$html[]="<td style='width:1%' nowrap>{$ligne["editor"]}</td>";
+        $html[]="<td style='width:1%' nowrap>{$ligne["category"]}</td>";
+		$html[]="<td class='center' style='width:1%' nowrap>$enabled</td>";
+        $html[]="<td class='center' style='width:1%' nowrap>$bypass</td>";
+        $html[]="<td class='center' style='width:1%' nowrap>$deny</td>";
+        $html[]="<td class='center' style='width:1%' nowrap>$bypassWebF</td>";
+        $html[]="<td class='center' style='width:1%' nowrap>$bypassWebC</td>";
+		$html[]="<td class='center' style='width:1%' nowrap>$delete</td>";
 		$html[]="</tr>";
 	
 	}

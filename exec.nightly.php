@@ -1170,9 +1170,6 @@ function RestartDedicatedServices($aspid=false){
 		shell_exec("$nohup /etc/init.d/c-icap-access restart >/dev/null 2>&1 &");
 	}
 
-    if(is_file("/etc/init.d/postfix")) {
-        shell_exec("$php $Aroot/exec.postfix.vacuum.php >/dev/null 2>&1 &");
-    }
     if(is_file("/etc/init.d/unbound")) {
         shell_exec("$php $Aroot/exec.unbound.php --restart >/dev/null 2>&1 &");
     }

@@ -38,7 +38,7 @@ In the statistics line it will let you know which destination is dropping messag
 You can then make determinations there of whether to globally increase it or per destination,
 and also an idea of how much larger you need to make it.
 </log_fifo_size_text>
-<low>low</low>
+<low>Baixa</low>
 <MaxtimeBackupMailSizeCalculate>Calculate storages size each</MaxtimeBackupMailSizeCalculate>
 <MaxtimeBackupMailSizeCalculate_explain>When you use quarantine area and backup On the Fly feature, artica will calculate periodically these areas disk consumption.[br]
 This processing should consume I/O on your disk and should decrease server performance during the calculation.[br]

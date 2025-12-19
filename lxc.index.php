@@ -348,9 +348,9 @@ $tpl=new templates();
 	$html=$html."
 		<tr class=$classtr>
 		<td style='font-size:14px'width=99% nowrap>$filename</td>
-		<td style='font-size:14px' width=1% nowrap>{$arraytpl["TYPE"]}</td>
-		<td style='font-size:14px' width=1% nowrap>{$arraytpl["PROC"]}</td>
-		<td style='font-size:14px' width=1% nowrap>{$arraytpl["VERSION"]}</td>
+		<td style='font-size:14px' style='width:1%' nowrap>{$arraytpl["TYPE"]}</td>
+		<td style='font-size:14px' style='width:1%' nowrap>{$arraytpl["PROC"]}</td>
+		<td style='font-size:14px' style='width:1%' nowrap>{$arraytpl["VERSION"]}</td>
 		<td width=1%>$delete</td>
 		</tr>
 		";
@@ -1356,7 +1356,7 @@ while($ligne=mysqli_fetch_array($results,MYSQLI_ASSOC)){
 			<div><i style='color:black;font-size:12px'>{$ligne["ipaddr"]}&nbsp;&nbsp;|&nbsp;&nbsp;$org_state ({$ligne["state"]})&nbsp;&nbsp;|&nbsp;&nbsp;vps-{$ligne["ID"]}$isartica_text</i></div>
 		</td>
 		<td><span style='color:$color;font-size:14px'>$text_uid</span></td>
-		<td width=1% nowrap>$img_state</td>
+		<td style='width:1%' nowrap>$img_state</td>
 		<td width=1%>$delete</td>
 		</tr>
 		";

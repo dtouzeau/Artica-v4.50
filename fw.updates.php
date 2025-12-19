@@ -244,7 +244,7 @@ function history():bool{
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $md=md5(serialize($ligne));
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap>$date</td>";
+        $html[]="<td style='width:1%' nowrap>$date</td>";
         $html[]="<td><strong>$version</strong></td>";
         $html[]="<td width=1%>$asseen_js</td>";
         $html[]="</tr>";

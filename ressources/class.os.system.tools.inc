@@ -409,7 +409,7 @@ function html_load_usage($loadc=0,$tiny=0){
 if($tiny==1){
 return "
 <tr>
-	<td width=1% nowrap><strong style='font-size:12px'>{load_avg}:</strong></td>
+	<td style='width:1%' nowrap><strong style='font-size:12px'>{load_avg}:</strong></td>
 </tr>
 <tr>
 	<td align='left'>
@@ -421,7 +421,7 @@ return "
 	</td>
 </tr>
 <tr>
-	<td width=1% nowrap><strong>{load}: $org_load&nbsp;[$cpunum cpu(s)]$text</strong></td>
+	<td style='width:1%' nowrap><strong>{load}: $org_load&nbsp;[$cpunum cpu(s)]$text</strong></td>
 </tr>";		
 	
 }	
@@ -436,7 +436,7 @@ return "
 			</div>
 		</div>
 	</td>
-	<td width=1% nowrap><strong>{load}: $org_load&nbsp;[$cpunum cpu(s)]$text</strong></td>
+	<td style='width:1%' nowrap><strong>{load}: $org_load&nbsp;[$cpunum cpu(s)]$text</strong></td>
 </tr>";	
 	
 	 

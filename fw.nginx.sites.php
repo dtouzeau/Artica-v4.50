@@ -1625,8 +1625,6 @@ function www_parameters2_BotNetsEngine($tpl,$ID){
     $tpl->table_form_field_bool("{BotChecker}",$BotChecker, "fa-regular fa-user-robot");
     return $tpl;
 }
-
-
 function www_parameters2_auditFrontend($tpl,$ID){
     $q=new lib_sqlite(NginxGetDB());
     $page=CurrentPageName();
@@ -1642,6 +1640,22 @@ function www_parameters2_auditFrontend($tpl,$ID){
     $js="Loadjs('$page?monitored-frontend=$ID');";
     $tpl->table_form_field_js($js,"AsWebMaster");
     $tpl->table_form_field_bool("{audited_artica_cloud}",$monitored, ico_list);
+    return $tpl;
+}
+
+function www_parameters2_trap_files($tpl,$ID){
+    $q=new lib_sqlite(NginxGetDB());
+    $page=CurrentPageName();
+    $sockngix=new socksngix($ID);
+    $EnableTrapFiles=intval($sockngix->GET_INFO("EnableTrapFiles"));
+    $tpl->table_form_field_js("Loadjs('fw.nginx.trapfiles.php?service-js=$ID')","AsWebMaster");
+    if($EnableTrapFiles==0){
+        $tpl->table_form_field_bool("{trap_files}",0, ico_file);
+        return $tpl;
+    }
+    $data       = json_decode($sockngix->GET_INFO("trap_files"),true);
+    $tpl->table_form_field_text("{trap_files}",count($data)." {files}",ico_file);
+
     return $tpl;
 }
 function www_parameters2_isSSL($tpl,$ID){
@@ -2069,7 +2083,7 @@ function www_parameters2():bool{
 
     if(!isset($NoSecu[$type])) {
         $tpl->table_form_section("{security}");
-
+        $tpl=www_parameters2_trap_files($tpl,$ID);
         $tpl=www_parameters2_BotNetsEngine($tpl,$ID);
         $tpl=www_parameters2_SignedJSBC($tpl,$ID);
 
@@ -3032,7 +3046,7 @@ function td_destinations():bool{
             if($BackendAnalyzed==1) {
                 if ($BackendErr == 1) {
                     $js = "Loadjs('$page?backend-error-js=$ID')";
-                    $tootips = "<span class='label label-danger' $mouses OnClick=\"$js\">{error}</span>&nbsp;";
+                    $tootips = "<span class='label label-danger' $mouses OnClick=\"$js\">{error}</span><br>";
                 }
             }
         }
@@ -4039,9 +4053,10 @@ function table_peity($ID):array{
     }
 
     $xdata=array();
-    VERBOSE("$ID: ".pg_num_rows($results)." records",__LINE__);
+
 
     if($results) {
+        VERBOSE("$ID: ".pg_num_rows($results)." records",__LINE__);
         while ($ligne = @pg_fetch_assoc($results)) {
             $xdata[] = $ligne["tsum"];
             VERBOSE("$ID:{$ligne["tsum"]}", __LINE__);

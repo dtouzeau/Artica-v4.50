@@ -139,7 +139,7 @@ function table(){
 					if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 					$html[]="<tr class='$TRCLASS' id=''>";
 					$html[]="<td>{$hostname}</td>";
-					$html[]="<td style='vertical-align:middle' width=1% nowrap>&nbsp;</td>";
+					$html[]="<td style='vertical-align:middle' style='width:1%' nowrap>&nbsp;</td>";
 					$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>&nbsp;</td>";
 					$html[]="</tr>";
 					
@@ -159,7 +159,7 @@ function table(){
 					$serverenc=urlencode($ligne["ntp_servers"]);
 					$html[]="<tr class='$TRCLASS' id='$md'>";
 					$html[]="<td>{$ligne["ntp_servers"]}</td>";
-					$html[]="<td style='vertical-align:middle' width=1% nowrap>".
+					$html[]="<td style='vertical-align:middle' style='width:1%' nowrap>".
 					$tpl->icon_up("Loadjs('$page?ntpdservermove=$serverenc&direction=up')")."&nbsp;".
 					$tpl->icon_down("Loadjs('$page?ntpdservermove=$serverenc&direction=down')")."
 					

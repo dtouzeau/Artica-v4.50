@@ -88,8 +88,8 @@ function table(){
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{order}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{objects}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{items}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>Mv.</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{items}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>Mv.</th>";
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>Del.</center></th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
@@ -128,10 +128,10 @@ function table(){
 		$js="Loadjs('fw.rules.items.php?groupid={$ligne["ID"]}&js-after=$jsafter')";
 		
 		$html[]="<tr class=$TRCLASS id='$mkey'>";
-		$html[]="<td width=1% nowrap>{$ligne["zOrder"]}</td>";
+		$html[]="<td style='width:1%' nowrap>{$ligne["zOrder"]}</td>";
 		$html[]="<td>{$arrayF["ROW"]}</td>";
 		$html[]="<td>{$arrayF["ITEMS"]}</td>";
-		$html[]="<td width=1% nowrap>$mv_up&nbsp;$mv_down</td>";
+		$html[]="<td style='width:1%' nowrap>$mv_up&nbsp;$mv_down</td>";
 		$html[]="<td width=1%>$delete</td>";
 		$html[]="</tr>";
 	

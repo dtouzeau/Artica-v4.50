@@ -56,7 +56,7 @@ function popup(){
 		<tr>
 		<td colspan=2><table style='width:100%'>
 		<tr>	
-			<td valign='top' class=legend style='font-size:15px' width=1% nowrap>{string}:</td>
+			<td valign='top' class=legend style='font-size:15px' style='width:1%' nowrap>{string}:</td>
 			<td valign='top' class=legend width=99% align='left'>". Field_text("StringToAdd",null,"font-size:13px;padding:3px;width:500px")."</td>
 			<td width=1%>". button("{add}","UserAgentAdd()")."</td></tr>
 		</tr>

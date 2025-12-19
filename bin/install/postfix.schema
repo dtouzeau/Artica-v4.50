@@ -2157,15 +2157,6 @@ objectclass ( 1.3.6.1.4.1.15347.2.132
 	MAY(ArticaProxyServerName $ ArticaProxyServerPort $ ArticaProxyServerUsername $ ArticaProxyServerUserPassword $ ArticaProxyServerEnabled)
 	)
 #==========================================================
-objectclass ( 1.3.6.1.4.1.15347.2.133
-	NAME 'Kav4ProxyClass'
-    	DESC 'Kav4Proxy settings'
-	SUP top
-	STRUCTURAL
-	MUST ( cn )
-	MAY(Kav4ProxyMainConf $ Kav4ProxyGroupsConf)
-	)
-#==========================================================
 #objectclass ( 1.3.6.1.4.1.15347.2.134
 #	NAME 'SquidProxyClass'
 #    	DESC 'Squid global configuration'
@@ -2326,7 +2317,7 @@ objectclass (1.3.6.1.4.1.15347.2.151
 	SUP top
 	STRUCTURAL
 	MUST ( cn )
-	MAY(MysqlMaxEventsLogs $ ApacheConfig $ lighttpConfig $ ApacheArticaEnabled $ ArticaFirstWizard $ MysqlAdminAccount $ ClamavMilterEnabled $ SpamAssMilterEnabled $ spfmilterEnabled $ EnableSyslogMysql $ MimeDefangEnabled $ DkimFilterEnabled $ ArticaUsbBackupKeyID $ NmapScanEnabled $ RoundCubeLightHTTPD $  RoundCubeHTTPEngineEnabled $ RoundCubeArticaConfigurationFile $ RoundCubeConfigurationFile $ EnableMonitorix $ LighttpdUseLdap $ EnableFetchmail $ EnableFDMFetch $ MasterCFEnabled $ P3ScanEnabled $ SmtpNotificationConfig $ sTunnel4enabled $ MailArchiverEnabled $ EnableMilterBogom $ EnableMysqlFeatures $ MysqlServerName $ EnableVirtualDomainsInMailBoxes $ EnableCollectdDaemon $ EnableMilterSpyDaemon)
+	MAY(MysqlMaxEventsLogs $ lighttpConfig $ ApacheArticaEnabled $ ArticaFirstWizard $ MysqlAdminAccount $ ClamavMilterEnabled $ SpamAssMilterEnabled $ spfmilterEnabled $ EnableSyslogMysql $ MimeDefangEnabled $ DkimFilterEnabled $ ArticaUsbBackupKeyID $ NmapScanEnabled $ RoundCubeLightHTTPD $  RoundCubeHTTPEngineEnabled $ RoundCubeArticaConfigurationFile $ RoundCubeConfigurationFile $ EnableMonitorix $ LighttpdUseLdap $ EnableFetchmail $ EnableFDMFetch $ MasterCFEnabled $ P3ScanEnabled $ SmtpNotificationConfig $ sTunnel4enabled $ MailArchiverEnabled $ EnableMilterBogom $ EnableMysqlFeatures $ MysqlServerName $ EnableVirtualDomainsInMailBoxes $ EnableCollectdDaemon $ EnableMilterSpyDaemon)
 	)
 #=========================================================
 objectclass (1.3.6.1.4.1.15347.2.152

@@ -435,9 +435,9 @@ function interfaces(){
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{interface}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{tcp_address}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{ModemType}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{download_speed}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{upload_speed}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{ModemType}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{download_speed}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{upload_speed}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{enabled}</center></th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
@@ -453,7 +453,7 @@ function interfaces(){
 		$html[]="<tr class=$TRCLASS>";
 		$html[]="<td>". $tpl->td_href($nicz->NICNAME." ".$nicz->netzone ." ($Interface)","{click_to_edit}","Loadjs('$page?interface-config-js=$Interface')")."</td>";
 		$html[]="<td>".$nicz->IPADDR."</td>";
-		$html[]="<td width=1% nowrap>".$modemType[$nicz->ModemType]."</td>";
+		$html[]="<td style='width:1%' nowrap>".$modemType[$nicz->ModemType]."</td>";
 		$html[]="<td>".$nicz->InputSpeed." $nicz->SpeedUnit</td>";
 		$html[]="<td>".$nicz->OutputSpeed." $nicz->SpeedUnit</td>";
 		$html[]="<td width=1%>".$tpl->icon_check($FireQOS,"Loadjs('$page?qos-enabled=$Interface')",null,"AsFirewallManager")."</td>";
@@ -511,10 +511,10 @@ function containers_table(){
 	$html[]="<table id='table-fireqos-containers' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{priority}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{priority}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{containers}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{interface}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{guaranteed_rate}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{interface}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{guaranteed_rate}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{max_bandwidth}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{enabled}</center></th>";
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{move}</center></th>";
@@ -554,8 +554,8 @@ function containers_table(){
 		$html[]="<td>{$ligne["rate"]}{$ligne["rate_unit"]}</td>";
 		$html[]="<td>$cellule</td>";
 		$html[]="<td>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?container-enabled={$ligne["ID"]}')",null,"AsFirewallManager")."</td>";
-		$html[]="<td width=1% nowrap>$mv_up&nbsp;$mv_down</td>";
-		$html[]="<td width=1% nowrap>".$tpl->icon_delete("Loadjs('$page?container-delete={$ligne["ID"]}&md=$md')","AsFirewallManager")."</td>";
+		$html[]="<td style='width:1%' nowrap>$mv_up&nbsp;$mv_down</td>";
+		$html[]="<td style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?container-delete={$ligne["ID"]}&md=$md')","AsFirewallManager")."</td>";
 		$html[]="</tr>";
 	
 	}

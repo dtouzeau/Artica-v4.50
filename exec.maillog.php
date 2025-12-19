@@ -147,7 +147,7 @@ ini_set('error_append_string',null);
 ini_set("log_errors", 1);
 ini_set("error_log", "/var/log/postfix.log");
 error_log("Starting service...",0);
-$pipe = fopen("php://stdin", "r");
+/*$pipe = fopen("php://stdin", "r");
 while(!feof($pipe)){
 	$buffer=fgets($pipe, 4096);
 	if($GLOBALS["VERBOSE"]){echo "Parseline(".strlen($buffer)."bytes\n";}
@@ -171,6 +171,7 @@ while(!feof($pipe)){
 }
 
 fclose($pipe);
+*/
 error_log("Shutdown...",0);
 exit();
 

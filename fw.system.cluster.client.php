@@ -402,17 +402,14 @@ function unbound_client_status():string{
 
     }
     $tpl=new template_admin();
-    $json_string=json_decode(file_get_contents("/etc/artica-postfix/UnboundCluster.json"));
+    $json=json_decode(file_get_contents("/etc/artica-postfix/UnboundCluster.json"));
 
-    if ($json_string === false) {
+    if ($json === false) {
         return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}"));
     }
-    $json = json_decode($json_string);
-
     if (!is_object($json)) {
         return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}"));
     }
-
     if (!property_exists($json, "Time")) {
         return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-database","-","{APP_UNBOUND} {cluster_package}"));
     }

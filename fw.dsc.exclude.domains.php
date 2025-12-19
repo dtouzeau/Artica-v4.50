@@ -144,8 +144,8 @@ function popup_table(){
 
     $domainmd=md5($domain);
     $html[]="<tr id='$domainmd'>
-				<td width=100%>$domain</td>
-				<td width=1%  nowrap >$delete</td>
+				<td style='width:100%'>$domain</td>
+				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }

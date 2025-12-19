@@ -311,7 +311,7 @@ $html="
 	</tr>	
 	
 <tr>
-		<td align='right' width=1% nowrap><strong style='font-size:22px'>{infos}:</strong></td>
+		<td align='right' style='width:1%' nowrap><strong style='font-size:22px'>{infos}:</strong></td>
 	<td>
 	<textarea name='$t-infos' id='$t-infos' rows=1
 	style='width:100%;font-size:22px !important;'>{$ligne["description"]}</textarea>

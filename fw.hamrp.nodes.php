@@ -409,9 +409,9 @@ function search():bool{
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1%></th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>{groupname}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{groupname}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1%>{actions}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' width=1% nowrap>DEL</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>DEL</th>";
     $html[]="</tr>";
     $html[]="</thead>";
     $html[]="<tbody>";

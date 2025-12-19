@@ -456,12 +456,12 @@ function popup_table():bool{
     $pattern=$tpl->td_href($pattern,null,"Loadjs('fw.proxy.rotate.php?main-logsink-js=yes')");
     if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
     $html[]="<tr class='$TRCLASS' id='none'>";
-    $html[]="<td width=1% nowrap>0</td>";
+    $html[]="<td style='width:1%' nowrap>0</td>";
     $html[]="<td width=50% ><strong>$pattern</strong></td>";
-    $html[]="<td width=1% nowrap>{all}</td>";
+    $html[]="<td style='width:1%' nowrap>{all}</td>";
     $html[]="<td width=1% style='text-align: right' nowrap><span id='syslog-processed-0'>$PROCESSED</span></td>";
-    $html[]="<td width=1% nowrap>$enable</td>";
-    $html[]="<td width=1% nowrap>&nbsp;</td>";
+    $html[]="<td style='width:1%' nowrap>$enable</td>";
+    $html[]="<td style='width:1%' nowrap>&nbsp;</td>";
     $html[]="</tr>";
     $html[]=squid_remoteLogging($TRCLASS);
 
@@ -505,12 +505,12 @@ function popup_table():bool{
         $enable=$tpl->icon_check($enable,"Loadjs('$page?pattern-enable=$ID')","","AsSystemAdministrator");
         $delete=$tpl->icon_delete("Loadjs('$page?pattern-remove=$ID&md=$md')","AsSystemAdministrator");
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap>$ID</td>";
+        $html[]="<td style='width:1%' nowrap>$ID</td>";
         $html[]="<td width=50% ><strong>$pattern</strong>$ssltext$myhostname</td>";
-        $html[]="<td width=1% nowrap>$syslog_types[$type]</td>";
+        $html[]="<td style='width:1%' nowrap>$syslog_types[$type]</td>";
         $html[]="<td width=1% style='text-align: right' nowrap><span id='syslog-processed-$ID'>$PROCESSED</span></td>";
-        $html[]="<td width=1% nowrap>$enable</td>";
-        $html[]="<td width=1% nowrap>$delete</td>";
+        $html[]="<td style='width:1%' nowrap>$enable</td>";
+        $html[]="<td style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";
 
     }
@@ -571,12 +571,12 @@ function squid_remoteLogging($TRCLASS):string{
     $enable=$tpl->icon_check(1,"","","AsSystemAdministrator");
 
     $html[]="<tr class='$TRCLASS' id='none'>";
-    $html[]="<td width=1% nowrap>0</td>";
+    $html[]="<td style='width:1%' nowrap>0</td>";
     $html[]="<td width=50% ><strong>$pattern</strong></td>";
-    $html[]="<td width=1% nowrap>{APP_SQUID}</td>";
+    $html[]="<td style='width:1%' nowrap>{APP_SQUID}</td>";
     $html[]="<td width=1% style='text-align: right' nowrap><span id='syslog-processed-squid'></span></td>";
-    $html[]="<td width=1% nowrap>$enable</td>";
-    $html[]="<td width=1% nowrap>&nbsp;</td>";
+    $html[]="<td style='width:1%' nowrap>$enable</td>";
+    $html[]="<td style='width:1%' nowrap>&nbsp;</td>";
     $html[]="</tr>";
     return @implode("\n",$html);
 }

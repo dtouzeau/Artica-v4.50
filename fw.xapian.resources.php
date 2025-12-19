@@ -337,11 +337,11 @@ function table(){
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td width=1%>$ID</a></td>";
-		$html[]="<td width=1% nowrap>$status</td>";
+		$html[]="<td style='width:1%' nowrap>$status</td>";
 		$html[]="<td><H3>$href</H3>$resource</a>$error</td>";
 		$html[]="<td width=1% nowrap  align='right'>$SkippedFiles</a></td>";
 		
-		$html[]="<td width=1% nowrap>$ScannedTime</a></td>";
+		$html[]="<td style='width:1%' nowrap>$ScannedTime</a></td>";
 		$html[]="<td style='vertical-align:middle;width:1%' class='center'>".$tpl->icon_check($enabled,"Loadjs('$page?enable-js=$ID&id=$md')","AsDnsAdministrator")."</center></td>";
 		$html[]="<td style='vertical-align:middle;width:1%' class='center'>".$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$md')","AsDnsAdministrator")."</center></td>";
 		$html[]="</tr>";

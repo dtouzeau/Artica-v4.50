@@ -165,9 +165,9 @@ function table(){
 
             $html[] = "<tr class='$TRCLASS' id='$zmd5'>";
             $html[] = "<td nowrap><i class=\"fas fa-globe\"></i>&nbsp;$familysite</td>";
-            $html[] = "<td width=1% nowrap>$size</td>";
-            $html[] = "<td width=1% nowrap>$hits</td>";
-            $html[] = "<td width=1% nowrap>$delete</td>";
+            $html[] = "<td style='width:1%' nowrap>$size</td>";
+            $html[] = "<td style='width:1%' nowrap>$hits</td>";
+            $html[] = "<td style='width:1%' nowrap>$delete</td>";
             $html[] = "</tr>";
 
         }
@@ -237,8 +237,8 @@ function statistics_urls_table(){
 
         $html[]="<tr class='$TRCLASS' id='$zmd5'>";
         $html[]="<td nowrap>$path</td>";
-        $html[]="<td width=1% nowrap>$size</td>";
-        $html[]="<td width=1% nowrap>$del</td>";
+        $html[]="<td style='width:1%' nowrap>$size</td>";
+        $html[]="<td style='width:1%' nowrap>$del</td>";
         $html[]="</tr>";
 
     }
@@ -300,9 +300,9 @@ function statistics_domain_table(){
 
         $html[]="<tr class='$TRCLASS' id='$zmd5'>";
         $html[]="<td nowrap>$familysite</td>";
-        $html[]="<td width=1% nowrap>$size</td>";
-        $html[]="<td width=1% nowrap>$hits</td>";
-        $html[]="<td width=1% nowrap>$del</td>";
+        $html[]="<td style='width:1%' nowrap>$size</td>";
+        $html[]="<td style='width:1%' nowrap>$hits</td>";
+        $html[]="<td style='width:1%' nowrap>$del</td>";
         $html[]="</tr>";
 
     }

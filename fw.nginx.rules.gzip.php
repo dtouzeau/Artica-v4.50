@@ -212,9 +212,9 @@ function popup_table(){
         $pattern=$tpl->td_href($pattern,"","Loadjs('$page?rule-js=$num&serviceid=$serviceid');");
 
     $html[]="<tr id='$num'>
-				<td width=100%>$pattern</td>
-				<td width=1%  nowrap >$enable</td>
-				<td width=1%  nowrap >$delete</td>
+				<td style='width:100%'>$pattern</td>
+				<td style='width:1%' nowrap>$enable</td>
+				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }

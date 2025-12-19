@@ -391,11 +391,11 @@ function table(){
 		
 		
 		$html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
-        $html[]="<td class=\"center\" width=1% nowrap>$status</td>";
-        $html[]="<td class=\"center\" width=1% nowrap>{$ligne["zorder"]}</td>";
-		$html[]="<td style='vertical-align:middle' width=1% nowrap>". $tpl->td_href($ligne["rulename"],"{click_to_edit}",$js)."</td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap>$status</td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap>{$ligne["zorder"]}</td>";
+		$html[]="<td style='vertical-align:middle' style='width:1%' nowrap>". $tpl->td_href($ligne["rulename"],"{click_to_edit}",$js)."</td>";
 		$html[]="<td style='vertical-align:middle'>$explain</td>";
-		$html[]="<td class='center' width=1% nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')")."</td>";
+		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')")."</td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$delete</center></td>";
 		$html[]="</tr>";
@@ -415,22 +415,22 @@ function table(){
     //LoadAjaxSilent('icap-ssl-rule','$page?icap-ssl-rule=yes');
 
     $html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
-    $html[]="<td class=\"center\" width=1% nowrap><span class='label label-primary'>{active2}</span></td>";
-    $html[]="<td class=\"center\" width=1% nowrap>0</td>";
-    $html[]="<td style='vertical-align:middle' width=1% nowrap>{check_SSL_protocol}</td>";
+    $html[]="<td class=\"center\" style='width:1%' nowrap><span class='label label-primary'>{active2}</span></td>";
+    $html[]="<td class=\"center\" style='width:1%' nowrap>0</td>";
+    $html[]="<td style='vertical-align:middle' style='width:1%' nowrap>{check_SSL_protocol}</td>";
     $html[]="<td style='vertical-align:middle'><span id='icap-ssl-rule'>$icap_ssl_rule_span</span></td>";
-    $html[]="<td class='center' width=1% nowrap>$IcapForwardSSL_enable</td>";
+    $html[]="<td class='center' style='width:1%' nowrap>$IcapForwardSSL_enable</td>";
     $html[]="<td style='vertical-align:middle'style='width:1%;' nowrap class='center'>".$tpl->icon_nothing()."</td>";
     $html[]="<td style='vertical-align:middle'style='width:1%;' nowrap class='center'>".$tpl->icon_nothing()."</td>";
     $html[]="</tr>";
 
     if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
     $html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
-    $html[]="<td class=\"center\" width=1% nowrap><span class='label label-primary'>{active2}</span></td>";
-    $html[]="<td class=\"center\" width=1% nowrap>0</td>";
-    $html[]="<td style='vertical-align:middle' width=1% nowrap>{finally}</td>";
+    $html[]="<td class=\"center\" style='width:1%' nowrap><span class='label label-primary'>{active2}</span></td>";
+    $html[]="<td class=\"center\" style='width:1%' nowrap>0</td>";
+    $html[]="<td style='vertical-align:middle' style='width:1%' nowrap>{finally}</td>";
     $html[]="<td style='vertical-align:middle'><span id='icap-default-rule'>$icap_default_rule_span</span></td>";
-    $html[]="<td class='center' width=1% nowrap>$icap_default_rule_enable</td>";
+    $html[]="<td class='center' style='width:1%' nowrap>$icap_default_rule_enable</td>";
     $html[]="<td style='vertical-align:middle'style='width:1%;' nowrap class='center'>".$tpl->icon_nothing()."</td>";
     $html[]="<td style='vertical-align:middle'style='width:1%;' nowrap class='center'>".$tpl->icon_nothing()."</td>";
     $html[]="</tr>";

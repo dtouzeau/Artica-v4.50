@@ -22,7 +22,7 @@ include_once(dirname(__FILE__).'/class.files.inc');
 		<tr>
 			<td width=1% valign='middle'><img src='/img/arrow-right-16.png'></td>
 			<td style='font-size:16px;font-weight:bold' width=99% nowrap>{$ligne["category"]}:</td>
-			<td style='font-size:16px;font-weight:bold' width=1% nowrap>{$ligne["rowsnum"]} items</td>
+			<td style='font-size:16px;font-weight:bold' style='width:1%' nowrap>{$ligne["rowsnum"]} items</td>
 		</tr>
 		<tr><td colspan=3 style='border-top:1px solid #CCCCCC'>&nbsp;</td></tr>
 		

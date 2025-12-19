@@ -261,8 +261,8 @@ function search(){
         $line=str_replace("for server  failed","&nbsp;",$line);
         $line=str_replace("&nbsp; &nbsp;,","",$line);
             $html[]="<tr>
-				<td width=1% nowrap>$span$FTime</span></td>
-				<td width=1% nowrap>$span$pid</span></td>
+				<td style='width:1%' nowrap>$span$FTime</span></td>
+				<td style='width:1%' nowrap>$span$pid</span></td>
 				<td>$span$line</span></td>
 				</tr>";
 		

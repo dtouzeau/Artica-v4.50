@@ -185,7 +185,7 @@ function table(){
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td><strong>$backendname</strong></td>";
 		$html[]="<td><strong>$sitename</strong></td>";
-		$html[]="<td width=1% nowrap>$interface</td>";
+		$html[]="<td style='width:1%' nowrap>$interface</td>";
 		$html[]="<td style='width:1%' nowrap>{$ligne['bweight']}</a></td>";
 		$html[]="<td style='width:1%' nowrap>$disable</td>";
 		$html[]="<td style='width:1%' nowrap>$delete</td>";

@@ -481,13 +481,13 @@ function search():bool{
         $restore=$tpl->icon_restore("Loadjs('$page?restore-js=$ID&function=$function&function0=$function0')","AsWebMaster");
 
         $html[]="<tr id='$md'>
-				<td width=1% nowrap><i class='fas fa-file-alt'></i>&nbsp;$tpname ($bytes)</td>
+				<td style='width:1%' nowrap><i class='fas fa-file-alt'></i>&nbsp;$tpname ($bytes)</td>
 				<td width=99% ><i>$tpdesc</i></td>
-				<td width=1%  nowrap >$servicename</td>
-				<td width=1%  nowrap >".$tpl->time_to_date($tpdate)."</td>
-				<td width=1%  nowrap >$down</td>
-				<td width=1%  nowrap >$restore</td>
-				<td width=1%  nowrap >$delete</td>
+				<td style='width:1%' nowrap>$servicename</td>
+				<td style='width:1%' nowrap>".$tpl->time_to_date($tpdate)."</td>
+				<td style='width:1%' nowrap>$down</td>
+				<td style='width:1%' nowrap>$restore</td>
+				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }

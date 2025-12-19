@@ -115,7 +115,7 @@ function popup_table(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $bell="<i class='text-danger fas fa-bell'></i>&nbsp;";
         $html[]="<tr class='$TRCLASS' id='$index'>";
-        $html[]="<td width=1% nowrap>$bell</td>";
+        $html[]="<td style='width:1%' nowrap>$bell</td>";
         $html[]="<td width=99% nowrap><strong>$ligne</strong></td>";
         $html[]="</tr>";
 

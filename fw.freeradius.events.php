@@ -112,8 +112,8 @@ function search(){
         if(preg_match("#Success#i", $line)){$inf="Info";}
 
 		$html[]="<tr>
-				<td width=1% nowrap><span class='label {$labels[$inf]}'>$date</span></td>
-				<td width=1% nowrap>$pid</td>
+				<td style='width:1%' nowrap><span class='label {$labels[$inf]}'>$date</span></td>
+				<td style='width:1%' nowrap>$pid</td>
 				<td>$line ($inf)</td>
 				</tr>";
 		

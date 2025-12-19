@@ -176,10 +176,10 @@ function search(){
 
 
         $html[]="<tr id='$trid'>";
-        $html[]="<td class=\"center\" width=1% nowrap><i class='far fa-users'></i></td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap><i class='far fa-users'></i></td>";
         $html[]="<td nowrap>{$v["data"]["sAMAccountName"]}</span></td>";
         $html[]="<td nowrap>{$domain}</span></td>";
-        $html[]="<td class=center width=1% nowrap>$choose</center></span></td>";
+        $html[]="<td class=center style='width:1%' nowrap>$choose</center></span></td>";
         $html[]="</tr>";
 
 

@@ -103,8 +103,8 @@ function search(){
 
 		
 		$html[]="<tr>
-				<td width=1% nowrap>$date</td>
-				<td width=1% nowrap>$level</td>
+				<td style='width:1%' nowrap>$date</td>
+				<td style='width:1%' nowrap>$level</td>
 				<td><span class='$color'>$line</span></td>
 				</tr>";
 		

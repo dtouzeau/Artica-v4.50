@@ -183,7 +183,7 @@ function categories_search(){
 			<tr class=$classtr>
 			<td width=1%><img src='img/fw_bold.gif'></td>
 			
-			<td width=100%><strong style='font-size:14px'>{$ligne["pattern"]}</strong></td>
+			<td style='width:100%'><strong style='font-size:14px'>{$ligne["pattern"]}</strong></td>
 			<td nowrap style='width:1%;font-size:14px'><div style='font-size:11px'><i>{date}:{$ligne["zDate"]}<br>{category}:{$ligne["category"]}</i></strong></td>
 			<td nowrap style='width:1%;font-size:14px'>". imgtootltip("delete-32.png","{delete}","DansGuardianCommunityDeletePattern('{$ligne["category"]}','{$ligne["pattern"]}')")."</td>
 			</tr>

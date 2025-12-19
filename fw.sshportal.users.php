@@ -127,7 +127,7 @@ function member_link_table(){
         $gps=array();
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-user'></i>&nbsp;$username <small>$comment</small></td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?member-link-perform=$ID&md=$md&gpid=$gpid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?member-link-perform=$ID&md=$md&gpid=$gpid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
 
@@ -282,7 +282,7 @@ function users_groups_link_table(){
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-users'></i>&nbsp;$name <small>$comment</small></td>";
-        $html[]="<td class=\"\" width=1% nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?users-groups-link-perform=$id&md=$md&userid=$userid&groupid=$groupid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
+        $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?users-groups-link-perform=$id&md=$md&userid=$userid&groupid=$groupid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
 
@@ -356,7 +356,7 @@ function users_groups_table(){
         $html[] = "<tr class='$TRCLASS' id='$md'>";
         $html[] = "<td class=\"\" width='1%' nowrap><i class='fas fa-server'></i>&nbsp;<strong>$name</strong></td>";
         $html[] = "<td class=\"\">$comment</td>";
-        $html[] = "<td class=\"center\" width=1% nowrap>$delete</td>";
+        $html[] = "<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[] = "</tr>";
 
     }
@@ -626,7 +626,7 @@ function table(){
         $html[]="<td class=\"\" width='1%' nowrap><i class='fas fa-anchor'></i>&nbsp;<span id='$ID-invite'>invite:$invite_token</span></td>";
         $html[]="<td class=\"\"><span id='$ID-ucomment'>$comment</span></td>";
 
-        $html[]="<td class=\"center\" width=1% nowrap>$delete</td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";
 
 

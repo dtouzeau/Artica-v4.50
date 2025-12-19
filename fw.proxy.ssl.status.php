@@ -118,7 +118,7 @@ function powershell_popup():bool{
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td width=90% nowrap>$PortName ($nic:$port)</td>";
-        $html[]="<td width=1% nowrap><i class='". ico_certificate."'></i>&nbsp;$sslcertificate</td>";
+        $html[]="<td style='width:1%' nowrap><i class='". ico_certificate."'></i>&nbsp;$sslcertificate</td>";
         $html[]="<td width=1% class='center' nowrap>$download_cert</td>";
         $html[]="<td width=1% class='center' nowrap>$download</td>";
 

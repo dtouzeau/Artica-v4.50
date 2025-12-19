@@ -873,7 +873,7 @@ $line=$pure->ParseAcl($pure->acl[$id]);
 	
 		default:$form="<table style='width:100%'>
 			<tr>
-				<td align='right' width=1% nowrap>{pattern}:</strong></td>
+				<td align='right' style='width:1%' nowrap>{pattern}:</strong></td>
 				<td><textarea name='pattern' rows=3 style='width:100%'>{$line[3]}</textarea>
 			</tr>
 		</table>";

@@ -708,7 +708,7 @@ function table()
         $interface = $tpl->td_href($interface, "{$ligne["servicename"]}", "Loadjs('$page?balancer-js=$servicenameenc')");
         $servicename = $tpl->td_href($ligne["servicename"], "$listen_ip:$listen_port", "Loadjs('$page?balancer-js=$servicenameenc')");
         $html[] = "<tr class='$TRCLASS' id='$md'>";
-        $html[] = "<td width=1% nowrap>$interface</td>";
+        $html[] = "<td style='width:1%' nowrap>$interface</td>";
         $html[] = "<td><strong>$servicename</strong></td>";
         $html[] = "<td style='width:1%' nowrap>$method</a></td>";
         $html[] = "<td style='width:1%' nowrap>$Tcount</a></td>";

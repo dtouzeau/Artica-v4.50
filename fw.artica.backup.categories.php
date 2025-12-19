@@ -101,9 +101,9 @@ function table(){
 
         $filename=$tpl->td_href($filename,"{download}","s_PopUp('$page?download=$ID',550,250);");
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width=1% nowrap>$time</td>";
+        $html[]="<td style='width:1%' nowrap>$time</td>";
         $html[]="<td><div id='restore-task-$ID'>$filename</div></td>";
-        $html[]="<td width=1% nowrap>$size</td>";
+        $html[]="<td style='width:1%' nowrap>$size</td>";
         $html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>".$tpl->icon_run("Loadjs('$page?restore-js=$ID&md=$md')","AsDnsAdministrator")."</center></td>";
         $html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>".$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$md')","AsDnsAdministrator")."</center></td>";
         $html[]="</tr>";

@@ -351,11 +351,11 @@ function popup_table2():bool{
         $ClientName=$tpl->td_href($ClientName,"","Loadjs('$page?rule-js=$ID&serviceid=$serviceid&function=$function')");
 
     $html[]="<tr id='$md'>
-                <td width=1%  nowrap ><i class='".ico_user." fa-2x'></i></td>
+                <td style='width:1%' nowrap><i class='".ico_user." fa-2x'></i></td>
 				<td style='width:100%;font-size:18px'>$ClientName</td>
 				<td style='width:1%;font-size:18px' nowrap >$service</td>
-				<td width=1%  nowrap >$enable</td>
-				<td width=1%  nowrap >$delete</td>
+				<td style='width:1%' nowrap>$enable</td>
+				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }

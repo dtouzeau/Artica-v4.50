@@ -19272,7 +19272,6 @@ ca-lapresse-main.collector.snplow.net
 ca.iadsdk.apple.com
 ca4-bid.adsrvr.org
 cache-ha.pushwoosh.com
-cache-ssl.celtra.com
 cache.addthiscdn.com
 cache.celtra.com
 cache.send.microadinc.com

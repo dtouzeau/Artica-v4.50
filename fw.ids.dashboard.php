@@ -175,7 +175,7 @@ function pf_ring_popup(){
                 $value=trim($re[2]);
                 if($value==null){continue;}
                 $html[]="<tr>";
-                $html[]="<td width=1% nowrap><strong>". trim($re[1])."</strong></td>";
+                $html[]="<td style='width:1%' nowrap><strong>". trim($re[1])."</strong></td>";
                 $html[]="<td>$value</td>";
                 $html[]="</tr>";
 
@@ -536,6 +536,10 @@ function suricata_field_events($tpl,$json){
     $isFileBeat=isFileBeat($GlobalConfig);
     if(strlen($isFileBeat)>0){
         $forwd[]=$isFileBeat;
+    }
+    $Params=$GlobalConfig->mattermost;
+    if($Params->Enable==1){
+        $forwd[]="{APP_MATTERMOST}";
     }
 
     $text=sprintf("<small>%s %s</small>",implode(" {and} ",$tt),implode(" {and} ",$forwd));

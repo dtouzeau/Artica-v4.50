@@ -127,9 +127,9 @@ function nodes():bool{
             $html[]="<tr class='$TRCLASS' id='$index'>";
 
             $html[]="<td width=50% ><strong>$HostName</strong></td>";
-            $html[]="<td width=1% nowrap>$TailAddr</td>";
-            $html[]="<td width=1% nowrap>$TxBytes</td>";
-            $html[]="<td width=1% nowrap>$RxBytes</td>";
+            $html[]="<td style='width:1%' nowrap>$TailAddr</td>";
+            $html[]="<td style='width:1%' nowrap>$TxBytes</td>";
+            $html[]="<td style='width:1%' nowrap>$RxBytes</td>";
             $html[]="</tr>";
         }
         $html[]=$tpl->table_footer("table-$tableid",4,false);

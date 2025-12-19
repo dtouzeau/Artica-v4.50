@@ -264,7 +264,7 @@ function table_rules(){
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
 		$html[]="<td><strong>". $tpl->td_href($mailfrom,null,$js)."</strong></td>";
 		$html[]="<td><strong>". $tpl->td_href($mailto,null,$js)."</strong></td>";
-		$html[]="<td width=1% nowrap><strong>". $tpl->td_href($retention_text,null,$js)."</strong></td>";
+		$html[]="<td style='width:1%' nowrap><strong>". $tpl->td_href($retention_text,null,$js)."</strong></td>";
 		$html[]="<td width=1% class='center' nowrap>".$tpl->icon_delete("Loadjs('$page?delete-rule-js=$zmd5')","AsPostfixAdministrator") ."</center></td>";
 		$html[]="</tr>";		
 		

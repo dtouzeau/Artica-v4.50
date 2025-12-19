@@ -175,8 +175,8 @@ function popup_table(){
     $html[]="<tr id='$id'>
 				<td width=50%>$network</td>
 				<td width=50% >$realm</td>
-				<td width=1%  nowrap >$enable</td>
-				<td width=1%  nowrap >$delete</td>
+				<td style='width:1%' nowrap>$enable</td>
+				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }

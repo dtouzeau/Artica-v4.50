@@ -302,7 +302,7 @@ function servers_list():bool{
         $html[]="<tr id='$id'>";
         $html[]="<td width=1%><i class='".ico_server."'></i></td>";
         $html[]="<td width=99%>&nbsp;&nbsp;$hostname</td>";
-        $html[]="<td width=1% nowrap>". FormatBytes($array["SIZE"]/1024)."</td>";
+        $html[]="<td style='width:1%' nowrap>". FormatBytes($array["SIZE"]/1024)."</td>";
         $html[]="<td width=1%>".$tpl->icon_delete("Loadjs('$page?remove=$hostname_encode&id=$id')","AsSystemAdministrator")."</td>";
         $html[]="<tr>";
 
@@ -312,7 +312,7 @@ function servers_list():bool{
         $html[]="<tr id='$id'>";
         $html[]="<td width=1%>&nbsp;</td>";
         $html[]="<td width=99%>&nbsp;&nbsp;{none_connected_server}</td>";
-        $html[]="<td width=1% nowrap>&nbsp;</td>";
+        $html[]="<td style='width:1%' nowrap>&nbsp;</td>";
         $html[]="<td width=1% style='padding-left:10px'>&nbsp;</td>";
         $html[]="<tr>";
     }

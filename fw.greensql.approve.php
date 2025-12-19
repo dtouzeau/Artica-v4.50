@@ -94,12 +94,12 @@ function table(){
 		$js_query=$tpl->td_href($pattern,"{alerts}","Loadjs('fw.greensql.alerts.groups.php?agroupid={$ligne["agroupid"]}')");
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td width=1% nowrap>{$date_text}</td>";
-		$html[]="<td width=1% nowrap><span id='status-$md'>{$status_text}</span></td>";
-		$html[]="<td width=1% nowrap>{$proxyname}</td>";
-		$html[]="<td width=1% nowrap>$db_name</td>";
+		$html[]="<td style='width:1%' nowrap>{$date_text}</td>";
+		$html[]="<td style='width:1%' nowrap><span id='status-$md'>{$status_text}</span></td>";
+		$html[]="<td style='width:1%' nowrap>{$proxyname}</td>";
+		$html[]="<td style='width:1%' nowrap>$db_name</td>";
 		$html[]="<td>$js_query</td>";
-		$html[]="<td  width=1% nowrap><span id='btn-$md'>$btn</span></td>";
+		$html[]="<td  style='width:1%' nowrap><span id='btn-$md'>$btn</span></td>";
 		$html[]="</tr>";
                       
 	}
