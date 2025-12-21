@@ -82,11 +82,14 @@ function EnableGzip():bool{
     $servicename=get_servicename($serviceid);
     $sock=new socksngix($serviceid);
     $sock->SET_INFO("gzip",$EnableValue);
+    gzipTypesMimeDef($serviceid);
+
     $page=CurrentPageName();
     header("content-type: application/x-javascript");
     echo "LoadAjax('optimize-nginx-$serviceid','$page?www-parameters2=$serviceid');\n";
     echo "LoadAjax('www-parameters-$serviceid','fw.nginx.sites.php?www-parameters2=$serviceid');\n";
     echo "Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');\n";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
     return admin_tracks("Cache With Gzip compression enable=$EnableValue for reverse-proxy service $servicename");
 }
 
@@ -245,7 +248,7 @@ function www_parameters_browser_caching_flat($tpl,$socknginx){
 
 }
 function www_parameters_redis($tpl,$socknginx):array{
-    $tpl=www_parameters_redis($tpl,$socknginx);
+
     $proxy_cache_valid = intval($socknginx->GET_INFO("proxy_cache_valid"));
     if ($proxy_cache_valid == 0) {
         $proxy_cache_valid = 4320;
@@ -680,6 +683,7 @@ function EnableProxyBuffering():bool{
     header("content-type: application/x-javascript");
     echo "LoadAjax('optimize-nginx-$serviceid','$page?www-parameters2=$serviceid');\n";
     echo "LoadAjax('optimize-proxy-buffering-$serviceid','$page?www-proxy-buffering2=$serviceid');\n";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
     return admin_tracks("Cache With Proxy Buffering enable=$EnableValue for reverse-proxy service $servicename");
 }
 
@@ -818,4 +822,64 @@ function www_proxy_buffering2():bool{
     $html[]="</script>";
     echo $tpl->_ENGINE_parse_body($html);
     return true;
+}
+function gzipTypesMimeDef($serviceid):bool{
+
+    $sock       = new socksngix($serviceid);
+    $data       = unserialize(base64_decode($sock->GET_INFO("gzip_types")));
+    if(!$data OR !is_array($data)){
+        $data=array();
+    }
+    if(count($data)>1){
+        return true;
+    }
+
+
+
+    $f[]="text/plain";
+    $f[]="text/css";
+    $f[]="application/json";
+    $f[]="application/x-javascript";
+    $f[]="text/xml";
+    $f[]="application/xml";
+    $f[]="application/xml+rss";
+    $f[]="text/javascript";
+    $f[]="application/x-font-ttf";
+    $f[]="application/javascript";
+    $f[]="font/eot";
+    $f[]="font/opentype";
+    $f[]="image/svg+xml";
+    $f[]="image/x-icon";
+    $f[]="text/plain";
+    $f[]="text/css";
+    $f[]="text/plain";
+    $f[]="text/javascript";
+    $f[]="application/javascript";
+    $f[]="application/json";
+    $f[]="application/x-javascript";
+    $f[]="application/xml";
+    $f[]="application/xml+rss";
+    $f[]="application/xhtml+xml";
+    $f[]="application/x-font-ttf";
+    $f[]="application/x-font-opentype";
+    $f[]="application/vnd.ms-fontobject";
+    $f[]="image/svg+xml";
+    $f[]="image/x-icon";
+    $f[]="application/rss+xml";
+    $f[]="application/atom_xml";
+
+    foreach ($f as $index=>$item) {
+        $array[$item]=$item;
+    }
+
+    foreach ($array as $key=>$item) {
+        $array[$item]=$item;
+        $data[]=array( "mime"=>$key,"enable"=>1);
+
+
+    }
+    $encoded=serialize($data);
+    $sock->SET_INFO("gzip_types",base64_encode($encoded));
+    return true;
+
 }

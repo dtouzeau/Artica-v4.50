@@ -1104,7 +1104,7 @@ function www_parameters_JsBC_js():bool{
     return $tpl->js_dialog2("#$ID - $servicename", "$page?JsBC-popup=$ID");
 }
 
-function www_tabs(){
+function www_tabs():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $ID=$_GET["www-tabs"];
@@ -1159,6 +1159,7 @@ function www_tabs(){
     }
 
     echo $tpl->tabs_default($array);
+    return true;
 }
 
 function doh_parameters(){

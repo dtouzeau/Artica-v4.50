@@ -40,27 +40,35 @@ function rule_remove():bool{
     $serviceid=intval($_GET["serviceid"]);
     $sock       = new socksngix($serviceid);
     $data       = unserialize(base64_decode($sock->GET_INFO("gzip_types")));
+    $mime=$data[$ruleid]["mime"];
     unset($data[$ruleid]);
     $encoded=serialize($data);
     $sock->SET_INFO("gzip_types",base64_encode($encoded));
     echo "$('#$ruleid').remove();\n";
     echo "LoadAjax('nginx-options-$serviceid','fw.nginx.reverse-options.php?main=yes&service=$serviceid');";
-    return true;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
+    return admin_tracks("Remove gzip compression on type $mime from rule #$serviceid");
 
 }
 
-function rule_enable(){
+function rule_enable():bool{
     $ruleid=intval($_GET["pattern-enable"]);
     $serviceid=intval($_GET["serviceid"]);
     $sock       = new socksngix($serviceid);
     $data       = unserialize(base64_decode($sock->GET_INFO("gzip_types")));
+    $mime=$data[$ruleid]["mime"];
+    $tt="";
     if(intval($data[$ruleid]["enable"])==1){
         $data[$ruleid]["enable"]=0;
+        $tt="disabled";
     }else{
         $data[$ruleid]["enable"]=1;
+        $tt="enabled";
     }
     $encoded=serialize($data);
     $sock->SET_INFO("gzip_types",base64_encode($encoded));
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
+    return admin_tracks("Set gzip compression on $mime $tt on service #$serviceid");
 }
 
 function rule_popup(){
@@ -160,7 +168,8 @@ function rule_save():bool{
     $data[$ruleid]=$_POST;
     $encoded=serialize($data);
     $sock->SET_INFO("gzip_types",base64_encode($encoded));
-    return true;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
+    return admin_tracks("Set gzip compression on {$_POST["mime"]} on service #$serviceid");
 }
 
 function popup_main(){

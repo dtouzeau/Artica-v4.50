@@ -26,6 +26,9 @@ if(isset($_POST["backend-agent"])){backend_agent_save();exit;}
 if(isset($_GET["metrics"])){metrics();exit;}
 if(isset($_GET["start-js"])){start_js();exit;}
 if(isset($_GET["start-ready"])){start_ready();exit;}
+if(isset($_GET["weight-js"])){weight_js();exit;}
+if(isset($_GET["weight-popup"])){weight_popup();exit;}
+if(isset($_POST["weightid"])){weight_save();exit;}
 
 
 if(isset($_GET["start-activate"])){start_activate();exit;}
@@ -336,6 +339,15 @@ function events_backend_search(){
     $html[]="</tbody></table>";
     $html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/hacluster-clients.syslog.query")."</i></div>";
     echo $tpl->_ENGINE_parse_body($html);
+}
+function weight_js(){
+    $page       = CurrentPageName();
+    $tpl        = new template_admin();
+    $ID=intval($_GET["weight-js"]);
+    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
+    $title="{$ligne["backendname"]}";
+    $tpl->js_dialog3("{weight}: $title","$page?weight-popup=$ID",890);
 }
 
 function graphs_js(){
@@ -801,7 +813,7 @@ function metrics_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $sql="SELECT *  FROM `hacluster_backends` ORDER BY bweight";
+    $sql="SELECT *  FROM `hacluster_backends` ORDER BY bweight DESC";
     $results = $q->QUERY_SQL($sql);
     $period=$_GET["period"];
     $function="";
@@ -1419,6 +1431,7 @@ function table(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
+    $sql="SELECT *  FROM `hacluster_backends` ORDER BY bweight DESC";
     $jsSync=$tpl->framework_buildjs("/hacluster/server/notify/all",
     "hacluster.connect.progress",
     "hacluster.connect.txt","hacluster-backend-restart", ""
@@ -1479,7 +1492,7 @@ function table(){
 	$html[]="<tbody>";
 
 
-	$sql="SELECT *  FROM `hacluster_backends` ORDER BY bweight";
+
 	$results = $q->QUERY_SQL($sql);
 	
 	$TRCLASS=null;
@@ -2356,9 +2369,68 @@ function td_bweight($ligne):string{
     if(!property_exists($backends,"proxy$ID")){
         return "?";
     }
-VERBOSE("proxy$ID srv_uweight == ".$backends->{"proxy$ID"}->srv_uweight,__LINE__);
-    return strval($backends->{"proxy$ID"}->srv_uweight);
+
+
+
+
+    $weight=strval($backends->{"proxy$ID"}->metrics->raw->weight);
+    $srv_uweight=strval($backends->{"proxy$ID"}->srv_uweight);
+    VERBOSE("proxy$ID srv_uweight == ".$backends->{"proxy$ID"}->srv_uweight."/ Weight: $weight",__LINE__);
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $js="Loadjs('$page?weight-js=$ID')";
+
+    $weightText="&nbsp;<strong style='font-size:18px'>$weight&nbsp;/&nbsp;$srv_uweight</strong>";
+    if($weight==0){
+        return $tpl->button_inline($weightText,$js,ico_weight,"AsProxyMonitor",0,"btn-danger","small");
+
+    }
+    return $tpl->button_inline($weightText,$js,ico_weight,"AsProxyMonitor",0,"btn-default","small");
 }
+
+function weight_save():bool{
+    $ID=intval($_POST["weightid"]);
+    $weight=intval($_POST["weight"]);
+    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
+    $sql="UPDATE hacluster_backends SET bweight=$weight WHERE ID=$ID";
+    $q->QUERY_SQL($sql);
+    if(!$q->ok){
+        writelogs("$q->mysql_error",__FUNCTION__,__FILE__,__LINE__);
+        return false;
+    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/node/weight/$ID");
+    return admin_tracks("Set Weight $weight for HaCluster node $ID");
+
+}
+function weight_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $ID=intval($_GET["weight-popup"]);
+    if(!isset($GLOBALS["backends"])){
+        td_prepare();
+    }
+    $backends=$GLOBALS["backends"];
+
+    if(!is_object($backends)){
+       echo $tpl->div_error("TD Prepare failed, unknown error");
+       return false;
+    }
+
+    if(!property_exists($backends,"proxy$ID")){
+        //var_dump($backends);
+
+        echo $tpl->div_error("This node [proxy$ID] cannot be seen from the list ??? Strange ?");
+        return false;
+    }
+
+    $weight=intval(strval($backends->{"proxy$ID"}->srv_uweight));
+    $after="dialogInstance3.close();";
+    echo $tpl->BigFieldIntegerCheckbox("weight|weightid:$ID","{weight}",
+        "{haproxy_weight_explain}",$weight,1,255,"$after");
+    return true;
+}
+
+
 function td_inout($ligne):array{
     $ID=$ligne["ID"];
     $BackenEnabled=intval($ligne["enabled"]);
@@ -3172,6 +3244,7 @@ function td_row($ReturnID=0):string{
     $tdhostname=base64_encode($tpl->_ENGINE_parse_body(td_hostname($ligne)));
     $tdHaCNX=base64_encode($tpl->_ENGINE_parse_body(td_hacnx($ligne)));
     $sessions=td_sessions($ligne);
+    $weight=base64_encode($tpl->_ENGINE_parse_body($bweight));
 
 
    if(!$ReturnID==0){ header("content-type: application/x-javascript");}
@@ -3194,6 +3267,7 @@ function td_row($ReturnID=0):string{
     $array[]="VER";
     $array[]="MODE";
 
+
     foreach($array as $key){
         $f[]="if(!document.getElementById('STATUS-$key-$ID') ){";
         $f[]="//alert('STATUS-$key-$ID not found')";
@@ -3209,7 +3283,7 @@ function td_row($ReturnID=0):string{
         $btnEnc=base64_encode($tpl->_ENGINE_parse_body($button));
         $f[] = "document.getElementById('STATUS-BTN-$ID').innerHTML=base64_decode('$btnEnc');";
     }
-    $f[] = "document.getElementById('STATUS-WEIGHT-$ID').innerHTML='$bweight';";
+    $f[] = "document.getElementById('STATUS-WEIGHT-$ID').innerHTML=base64_decode('$weight');";
     $f[] = "document.getElementById('STATUS-CNX-$ID').innerHTML='$cnx';";
 
     if(strlen($IN)>0) {
@@ -3221,9 +3295,6 @@ function td_row($ReturnID=0):string{
     $f[] = "document.getElementById('STATUS-RQS-$ID').innerHTML='$requests';";
     $f[] = "document.getElementById('STATUS-SESS-$ID').innerHTML='$sessions';";
     $f[] = "document.getElementById('STATUS-HACNX-$ID').innerHTML=base64_decode('$tdHaCNX');";
-
-
-
     $f[] = "document.getElementById('STATUS-CLI-$ID').innerHTML='$NumberoFClients';";
     $f[] = "document.getElementById('STATUS-INTERFACE-$ID').innerHTML=base64_decode('$interface');";
     $f[] = "document.getElementById('STATUS-HOST-$ID').innerHTML=base64_decode('$tdhostname');";

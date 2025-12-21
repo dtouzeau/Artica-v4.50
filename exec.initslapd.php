@@ -22,9 +22,6 @@ if($GLOBALS["VERBOSE"]){echo "Starting analyze command lines\n";$GLOBALS["OUTPUT
 if(isset($argv[1])){
     if($argv[1]=="syslog-deb"){exit();}
     if($argv[1]=="--ldap-client"){$GLOBALS["OUTPUT"]=true;ldap_client();exit();}
-    if($argv[1]=="--getty"){$GLOBALS["OUTPUT"]=true;getty();exit();}
-
-
     if($argv[1]=="--dnsmasq"){exit();}
     if($argv[1]=="--nscd"){nscd_init_debian();exit();}
     if($argv[1]=="--start"){exit;}
@@ -107,7 +104,7 @@ $functions=array("upgrades","artica_monitor","bandwidthd","hypercache_tail","vsf
     "conntrackd","nscd_init_debian","wsgate_init_debian","buildscriptLoopDisk",
     "ifup","ftpproxy","webservices","phppfm","cicap",
     "CleanUbuntu","UpstartJob","debian_mirror","artica_categories","roundcube_http","fetchmail","vde_switch","squid_db","clamav_freshclam","postgres",
-    "artica_iso","syncthing","getty","proftpd",
+    "artica_iso","syncthing","proftpd",
     "not_shutdown","cgconfig","cgredconfig","clamdscan","policyd_weight");
 
 $countDeFunc=count($functions);
@@ -2050,64 +2047,7 @@ function policyd_weight(){
 
 
 
-function getty(){
-    $f=array();
-    $unix=new unix();
-    $chattr=$unix->find_program("chattr");
-    $main=explode("\n",@file_get_contents("/etc/inittab"));
-    foreach ($main as $line){
-        if(preg_match("#\/(logon\.sh|artica-logon)#",$line)){
-            if($GLOBALS["OUTPUT"]){echo "Starting......: ".date("H:i:s")." [INIT]: Already done\n";}
-            system("$chattr +i /etc/inittab");
-            return;
-        }
-    }
-    $main=array();
-    if(!is_file("/etc/inittab.bak")){@copy("/etc/inittab","/etc/inittab.bak");}
-    system("$chattr -i /etc/inittab");
 
-    $f[]="# /etc/inittab: init(8) configuration.";
-    $f[]="# Override by Artica on ". date("Y-m-d H:i:s");
-    $f[]="# \$Id: inittab,v 1.91 2002/01/25 13:35:21 miquels Exp \$";
-    $f[]="";
-    $f[]="id:2:initdefault:";
-    $f[]="si::sysinit:/etc/init.d/rcS";
-    $f[]="~~:S:wait:/sbin/sulogin --force";
-    $f[]="";
-    $f[]="";
-    $f[]="l0:0:wait:/etc/init.d/rc 0";
-    $f[]="l1:1:wait:/etc/init.d/rc 1";
-    $f[]="l2:2:wait:/etc/init.d/rc 2";
-    $f[]="l3:3:wait:/etc/init.d/rc 3";
-    $f[]="l4:4:wait:/etc/init.d/rc 4";
-    $f[]="l5:5:wait:/etc/init.d/rc 5";
-    $f[]="l6:6:wait:/etc/init.d/rc 6";
-    $f[]="z6:6:respawn:/sbin/sulogin --force";
-    $f[]="ca:12345:ctrlaltdel:/sbin/shutdown -t1 -a -r now";
-    $f[]="pf::powerwait:/etc/init.d/powerfail start";
-    $f[]="pn::powerfailnow:/etc/init.d/powerfail now";
-    $f[]="po::powerokwait:/etc/init.d/powerfail stop";
-    $f[]="";
-    $f[]="1:2345:respawn:/sbin/getty -i -n -l /usr/share/artica-postfix/logon.sh 38400 tty1";
-    $f[]="2:23:respawn:/sbin/getty 38400 tty2";
-    $f[]="3:23:respawn:/sbin/getty 38400 tty3";
-    $f[]="4:23:respawn:/sbin/getty 38400 tty4";
-    $f[]="5:23:respawn:/sbin/getty 38400 tty5";
-    $f[]="6:23:respawn:/sbin/getty 38400 tty6";
-    $f[]="";
-
-    @file_put_contents("/etc/inittab", @implode("\n", $f)."\n");
-
-    $main=explode("\n",@file_get_contents("/etc/inittab"));
-    foreach ($main as $line){
-        if(preg_match("#\/(logon\.sh|artica-logon)#",$line)){
-            if($GLOBALS["OUTPUT"]){echo "Starting......: ".date("H:i:s")." [INIT]: inittab success\n";}
-            system("$chattr +i /etc/inittab");
-            return;
-        }
-    }
-
-}
 
 function bandwidthd(){
     return;
