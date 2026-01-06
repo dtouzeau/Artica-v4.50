@@ -9246,3 +9246,174 @@ body#page-top.pace-done div#wrapper div#left-barr nav.navbar-default div.sidebar
 body#page-top.pace-done div#wrapper div#left-barr nav.navbar-default div.sidebar-collapse ul#side-menu.nav li#left-menu.active ul.nav li a span.nav-label{
 	font-size: 13px;
 }
+
+/* ============================================
+   Artica Icon Classes (FontAwesome-style)
+   Usage: <i class="ico ico-artica"></i>
+          <i class="ico ico-artica ico-2x"></i>
+   ============================================ */
+
+/* Base icon class */
+.ico {
+  display: inline-block;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  line-height: 1;
+}
+
+/* Artica icon - uses ico-artica-96.png */
+.ico-artica {
+  background-image: url('/img/ico-artica-96.png');
+}
+
+/* Artica icon alternative (64px version) */
+.ico-artica-64 {
+  background-image: url('/img/artica-logo-64.png');
+}
+
+/* Artica icon alternative (32px version) */
+.ico-artica-32 {
+  background-image: url('/img/artica-logo-32.png');
+}
+.ico-artica-25 {
+  background-image: url('/img/artica-logo-25.png');
+}
+/* Size modifiers - matches FontAwesome sizing */
+.ico-xs {
+  width: 0.75em;
+  height: 0.75em;
+}
+
+.ico-sm {
+  width: 0.875em;
+  height: 0.875em;
+}
+
+.ico-lg {
+  width: 1.33333em;
+  height: 1.33333em;
+  vertical-align: -0.225em;
+}
+
+.ico-2x {
+  width: 2em;
+  height: 2em;
+}
+
+.ico-3x {
+  width: 3em;
+  height: 3em;
+}
+
+.ico-4x {
+  width: 4em;
+  height: 4em;
+}
+
+.ico-5x {
+  width: 5em;
+  height: 5em;
+}
+
+.ico-6x {
+  width: 6em;
+  height: 6em;
+}
+
+.ico-7x {
+  width: 7em;
+  height: 7em;
+}
+
+.ico-8x {
+  width: 8em;
+  height: 8em;
+}
+
+.ico-9x {
+  width: 9em;
+  height: 9em;
+}
+
+.ico-10x {
+  width: 10em;
+  height: 10em;
+}
+
+/* Fixed width - like fa-fw */
+.ico-fw {
+  width: 1.25em;
+  text-align: center;
+}
+
+/* Spinning animation - like fa-spin */
+.ico-spin {
+  animation: ico-spin 2s infinite linear;
+}
+
+@keyframes ico-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pulse animation - like fa-pulse */
+.ico-pulse {
+  animation: ico-spin 1s infinite steps(8);
+}
+
+/* Border - like fa-border */
+.ico-border {
+  border: solid 0.08em #eee;
+  border-radius: 0.1em;
+  padding: 0.2em 0.25em 0.15em;
+}
+
+/* Pull left/right - like fa-pull-left/right */
+.ico-pull-left {
+  float: left;
+  margin-right: 0.3em;
+}
+
+.ico-pull-right {
+  float: right;
+  margin-left: 0.3em;
+}
+
+/* Stack container */
+.ico-stack {
+  display: inline-block;
+  height: 2em;
+  line-height: 2em;
+  position: relative;
+  vertical-align: middle;
+  width: 2.5em;
+}
+
+.ico-stack-1x,
+.ico-stack-2x {
+  left: 0;
+  position: absolute;
+  text-align: center;
+  width: 100%;
+}
+
+.ico-stack-1x {
+  line-height: inherit;
+}
+
+.ico-stack-2x {
+  font-size: 2em;
+}
+
+/* Inverse color (for dark backgrounds) */
+.ico-inverse {
+  filter: invert(1);
+}

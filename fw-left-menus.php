@@ -52,6 +52,10 @@ function xgen(){
         $name=$ldap->ldap_admin;
         $right="{administrator}";
     }
+    $HTTP_X_ARTICA_SUBFOLDER="/";
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
 
     if(isset($_SESSION["ACTIVE_DIRECTORY_INFO"])){
         $name=GetAdDisplayName();
@@ -79,17 +83,17 @@ function xgen(){
 
     $f[]="<input type='hidden' id='fw-left-menus-uri' value='$page?none=yes".@implode("&", $tt)."'>";
 
-    $content_page="fw.index.php?content=yes";
+    $content_page="{$HTTP_X_ARTICA_SUBFOLDER}fw.index.php?content=yes";
 
     if(isset($_GET["dynacls"])){
-        $content_page="fw.dynacls.php?content=yes";
+        $content_page="{$HTTP_X_ARTICA_SUBFOLDER}fw.dynacls.php?content=yes";
     }
 
     if($users->isProxyManagerOnly()){
-        $content_page="fw.proxy.php?content=yes";
+        $content_page="{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.php?content=yes";
     }
 
-    if(isset($_GET["choose-proxy"])){$content_page="fw.proxy.php?content=yes";}
+    if(isset($_GET["choose-proxy"])){$content_page="{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.php?content=yes";}
 
 
     $f[]="<nav class=\"navbar-default navbar-static-side\" role=\"navigation\">";
@@ -124,34 +128,35 @@ function xgen(){
         $f[]="<!-- CORP_LICENSE ===  TRUE -->";
     }
     $f[]="<!-- SquidInRouterMode ===  $SquidInRouterMode -->";
+    $IPFeed=false;
     $EnableWazhuCLient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWazhuCLient"));
     if($users->AsAnAdministratorGeneric OR $users->AsFirewallManager){
         $f[]="                <li id='left-menu'>";
         $f[]="                    <a href='#' ><i class=\"fa fa-server\"></i> <span class=\"nav-label\">{your_system}</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
 
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.system.information.php","ICO"=>"fas fa-server","TEXT"=>"{system_information}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.information.php","ICO"=>"fas fa-server","TEXT"=>"{system_information}"));
         if($users->AsSystemAdministrator) {
             if(!$users->AsDockerWeb) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.hd.php", "ICO" => "fa-hdd", "TEXT" => "{your_hard_disks}"));
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.memory.config.php", "ICO" => "fad fa-memory", "TEXT" => "{memory_info}"));
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.swap.php", "ICO" => "fa-hdd", "TEXT" => "{swap_label}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.hd.php", "ICO" => "fa-hdd", "TEXT" => "{your_hard_disks}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.memory.config.php", "ICO" => "fad fa-memory", "TEXT" => "{memory_info}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.swap.php", "ICO" => "fa-hdd", "TEXT" => "{swap_label}"));
 
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.users.php", "ICO" => ico_group, "TEXT" => "{system_users}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.users.php", "ICO" => ico_group, "TEXT" => "{system_users}"));
             }
 
             $EnableFluentBit=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFluentBit");
             $f[]="<!-- EnableFluentBit ===  $EnableFluentBit -->";
             if($EnableFluentBit){
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.fluent.php", "ICO" => "fa-solid fa-dove", "TEXT" => "Fluent Bit"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.fluent.php", "ICO" => "fa-solid fa-dove", "TEXT" => "Fluent Bit"));
             }
 
 
-            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.monit.php", "ICO" => "fas fa-dog", "TEXT" => "{watchdog}"));
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.monit.php", "ICO" => "fas fa-dog", "TEXT" => "{watchdog}"));
 
             if($EnableWazhuCLient==0){
                 if(!$users->AsDockerWeb) {
-                    $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.fsm.php", "ICO" => "fa-solid fa-folder-magnifying-glass", "TEXT" => "{APP_ARTICAFSMON}"));
+                    $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.fsm.php", "ICO" => "fa-solid fa-folder-magnifying-glass", "TEXT" => "{APP_ARTICAFSMON}"));
                 }
             }
         }
@@ -162,12 +167,12 @@ function xgen(){
         if($users->AsSystemAdministrator){
             if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ISCSI_CLIENT_INSTALLED"))==1){
                 if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableISCSI")==1)){
-                    $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.iscsi.php","ICO"=>"fa-hdd","TEXT"=>"{APP_IETD}"));
+                    $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.iscsi.php","ICO"=>"fa-hdd","TEXT"=>"{APP_IETD}"));
                 }
             }
 
 
-            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.activedirectory.rest.php",
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.activedirectory.rest.php",
             "ICO" => "fad fa-monitor-heart-rate", "TEXT" => "{webapi_service}"));
 
 
@@ -180,7 +185,7 @@ function xgen(){
             if($users->autofs_installed){
                 if($AutoFSEnabled==1){
 
-                    $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.autofs.php",
+                    $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.autofs.php",
                         "ICO" => "fa-conveyor-belt-alt", "TEXT" => "{automount_center}",
                         "LEVEL3" => array("ID" => "fw-autofs-left-menu",
                             "PAGE" => "fw-left-menus-autofs.php")));
@@ -191,13 +196,13 @@ function xgen(){
 
         if($users->AsAnAdministratorGeneric) {
             $f[] = $tpl->LeftMenu(
-                array("PAGE" => "fw.system.watchdog.php",
+                array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.watchdog.php",
                     "ICO" => ico_eye, "TEXT" => "{system_events}"));
         }
 
         if($users->AsSystemAdministrator) {
             $f[] = $tpl->LeftMenu(
-                array("PAGE" => "fw.system.notifications.php",
+                array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.notifications.php",
                     "ICO" => "fa fa-envelope", "TEXT" => "{notifications}"));
         }
 
@@ -210,13 +215,13 @@ function xgen(){
             if($PowerDNSEnableClusterMaster==1){
 //<i class="fas fa-clone"></i>
                 $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"fw.system.cluster.master.php",
+                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.cluster.master.php",
                         "ICO"=>"fas fa-clone","TEXT"=>"Cluster ({master_mode})"));
             }
             if($PowerDNSEnableClusterSlave==1){
 //<i class="fas fa-clone"></i>
                 $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"fw.system.cluster.client.php",
+                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.cluster.client.php",
                         "ICO"=>"fas fa-clone","TEXT"=>"Cluster ({slave_mode})"));
             }
         }
@@ -225,7 +230,7 @@ function xgen(){
         if($users->AsSystemAdministrator){
             if(!$users->AsDockerWeb) {
                 $f[] = $tpl->LeftMenu(
-                    array("PAGE" => "fw.system.services.php",
+                    array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.services.php",
                         "ICO" => ico_cd, "TEXT" => "{features}"));
             }
         }
@@ -239,12 +244,12 @@ function xgen(){
                 $EnableSSHProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSSHProxy"));
                 if($EnableOpenSSH==1) {
                     $f[] = $tpl->LeftMenu(
-                        array("PAGE" => "fw.sshd.php",
+                        array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.sshd.php",
                             "ICO" => ico_terminal, "TEXT" => "{APP_OPENSSH}"));
                 }
                     if($EnableSSHProxy==1) {
                         $f[] = $tpl->LeftMenu(
-                            array("PAGE" => "fw.sshproxy.php",
+                            array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.sshproxy.php",
                                 "ICO" => ico_terminal, "TEXT" => "{APP_SSHPROXY}"));
 
                 }
@@ -259,7 +264,7 @@ function xgen(){
         if(!$users->AsSystemAdministrator){$ChronydEnabled=0;}
         if($ChronydEnabled==1){
             $f[]=$tpl->LeftMenu(
-                array("PAGE"=>"fw.system.ntpd.php",
+                array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.ntpd.php",
                     "ICO"=>"fa-clock","TEXT"=>"{time_server}"));
 
         }
@@ -267,84 +272,84 @@ function xgen(){
 
         if($EnableWazhuCLient==1){
             $f[]=$tpl->LeftMenu(
-                array("PAGE"=>"fw.wazhu.client.php",
+                array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.wazhu.client.php",
                     "ICO"=>"fa-solid fa-sensor","TEXT"=>"{APP_WAZHU}"));
 
         }
         $EnableNagiosClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNagiosClient"));
         if($EnableNagiosClient==1){
             $f[]=$tpl->LeftMenu(
-                array("PAGE"=>"fw.nagios.client.php",
+                array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.nagios.client.php",
                     "ICO"=>"fa-solid fa-sensor","TEXT"=>"{APP_NAGIOS_CLIENT}"));
         }
 
         if($users->AsSystemAdministrator){
             $EnableGlances=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableGlances"));
             if($EnableGlances==1){
-                $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.system.glances.php","ICO"=>"fas fa-microchip","TEXT"=>"{APP_GLANCES}"));
+                $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.glances.php","ICO"=>"fas fa-microchip","TEXT"=>"{APP_GLANCES}"));
 
             }
         }
 
         if($users->AsSystemAdministrator){
             if(!$users->AsDockerWeb) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.tasks.php", "ICO" => "fa-clock", "TEXT" => "{tasks}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.tasks.php", "ICO" => "fa-clock", "TEXT" => "{tasks}"));
             }
         }
 
 
         if(!$users->isCertifManagerOnly()) {
             if ($users->AsCertifsManager) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.certificates-center.php", "ICO" => "fa-certificate", "TEXT" => "{certificates_center}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.certificates-center.php", "ICO" => "fa-certificate", "TEXT" => "{certificates_center}"));
             }
         }
 
         if($users->APP_NETDATA_INSTALLED){
             $NetDATAEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetDATAEnabled"));
-            if($NetDATAEnabled==1){$f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netdata.php","ICO"=>"fa-heart","TEXT"=>"{system_monitoring}"));}
+            if($NetDATAEnabled==1){$f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.netdata.php","ICO"=>"fa-heart","TEXT"=>"{system_monitoring}"));}
         }
 
 
         $EnableSNMPD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSNMPD"));
         VERBOSE("EnableSNMPD=$EnableSNMPD", __LINE__);
         if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSNMPD"))==1){
-            $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.system.snmpd.php","ICO"=>"fas fa-comment-check","TEXT"=>"SNMPv3"));
+            $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.snmpd.php","ICO"=>"fas fa-comment-check","TEXT"=>"SNMPv3"));
 
         }
 //<i class="fas fa-heart-rate"></i>
         if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableZabbixAgent")==1)){
-            $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.system.zabbix.php","ICO"=>ico_health_check,"TEXT"=>"{APP_ZABBIX_AGENT}"));
+            $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.zabbix.php","ICO"=>ico_health_check,"TEXT"=>"{APP_ZABBIX_AGENT}"));
         }
 
 
         if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SPLUNK_FORWARDER_INSTALLED"))==1){
             $SplunkForwarderEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SplunkForwarderEnabled"));
             if($SplunkForwarderEnabled==1){
-                $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.splunk.general.php","ICO"=>"far fa-arrow-right","TEXT"=>"Splunk"));
+                $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.splunk.general.php","ICO"=>"far fa-arrow-right","TEXT"=>"Splunk"));
             }
         }
 
 
         if($users->AsSystemAdministrator){
             if(!$users->AsDockerWeb) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.artica.backup.php", "ICO" => "fa-archive", "TEXT" => "{backup}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.artica.backup.php", "ICO" => "fa-archive", "TEXT" => "{backup}"));
             }
         }
 
 
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.license.php","ICO"=>"fa-key","TEXT"=>"{license2}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.license.php","ICO"=>"fa-key","TEXT"=>"{license2}"));
 
         if($users->AsAnAdministratorGeneric) {
             if(!$users->AsDockerWeb) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.updates.php",
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.updates.php",
                     "ICO" => "far fa-cloud-download", "TEXT" => "{update2}",
                     "LEVEL3" => array("ID" => "fw-updates-left-menu",
-                        "PAGE" => "fw-left-menus-updates.php")));
+                        "PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw-left-menus-updates.php")));
             }
 
         }
         if($users->AsAnAdministratorGeneric) {
-            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.articaweb.php", "ICO" => "far fa-browser",
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.articaweb.php", "ICO" => "far fa-browser",
                 "TEXT" => "{web_console}"));
 
 
@@ -352,13 +357,13 @@ function xgen(){
 
             $EnableRESTFulSystem = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRESTFulSystem"));
             if ($EnableRESTFulSystem == 1) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.restful.php", "ICO" => "fa-heart",
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.restful.php", "ICO" => "fa-heart",
                     "TEXT" => "RESTful"));
             }
         }
 
         if(!$users->AsDockerWeb) {
-            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.support.php", "ICO" => "fas fa-bug", "TEXT" => "Support"));
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.support.php", "ICO" => "fas fa-bug", "TEXT" => "Support"));
         }
 
         $f[]="					 </ul>";
@@ -369,7 +374,6 @@ function xgen(){
     $EnablenDPI=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablenDPI"));
     if(!$users->AsDockerWeb) {
         if($users->AsAnAdministratorGeneric OR $users->AsFirewallManager){
-        $IPFeed=false;
         $f[]="<!-- NETWORK START -->";
         $f[]="                <li id='left-menu'>";
         $f[]="                    <a href='#' ><i class=\"fa fa-sitemap\"></i> <span class=\"nav-label\">{network}</span> </a>";
@@ -388,13 +392,13 @@ function xgen(){
 
         if($SYSTEMD_NETWORK_ENABLED==1){
             $f[] = $tpl->LeftMenu(
-                array("PAGE" => "fw.networkd.php",
+                array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.networkd.php",
                     "ICO" => ico_params, "TEXT" => "{APP_NETWORKD}"));
 
         }
 
             $f[] = $tpl->LeftMenu(
-                array("PAGE" => "fw.network.interfaces.php",
+                array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.network.interfaces.php",
                     "ICO" => "far fa-exchange", "TEXT" => "{interfaces}"));
 
         $APP_OPENVSWITCH_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_OPENVSWITCH_INSTALLED"));
@@ -405,24 +409,24 @@ function xgen(){
 
         if($OpenVswitchEnable==1){
             $f[] = $tpl->LeftMenu(
-                array("PAGE" => "fw.openvswitch.php", "ICO" => "fas fa-bezier-curve", "TEXT" => "{virtual_switch}"));
+                array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.openvswitch.php", "ICO" => "fas fa-bezier-curve", "TEXT" => "{virtual_switch}"));
         }
 
 
         if($isFireWall==0) {
             if($users->AsFirewallManager) {
                     $f[] = $tpl->LeftMenu(
-                        array("PAGE" => "fw.bridges.php", "ICO" => "fas fa-bezier-curve", "TEXT" => "{interfaces_connectors}"));
+                        array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.bridges.php", "ICO" => "fas fa-bezier-curve", "TEXT" => "{interfaces_connectors}"));
 
                     $f[] = $tpl->LeftMenu(
-                    array("PAGE" => "fw.ipfeeds.php",
+                    array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.ipfeeds.php",
                         "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
                     $IPFeed=true;
             }
         }
 
         if($users->AsSystemAdministrator) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.network.routing.php",
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.network.routing.php",
                     "ICO" => "fa-road",
                     "TEXT" => "{routing_rules}"));
 
@@ -431,14 +435,14 @@ function xgen(){
             $EnableOSPFD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOSPFD"));
             VERBOSE("EnableOSPFD: $EnableOSPFD",__LINE__);
             if($EnableOSPFD==1){
-                $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.network.ospf.php",
+                $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.network.ospf.php",
                     "ICO"=>"fad fa-route",
                     "TEXT"=>"{APP_OSPF}"));
             }
 
 
             if($EnableLinkBalancer==1){
-                $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.network.balancer.php",
+                $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.network.balancer.php",
                     "ICO"=>"fas fa-bezier-curve",
                     "TEXT"=>"{APP_LINK_BALANCER}"));
 
@@ -449,13 +453,13 @@ function xgen(){
 
             if($EnablePPTPClient==1){
                 $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"fw.pptp.client.php",
+                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.pptp.client.php",
                         "ICO"=>"fad fa-router","TEXT"=>"{APP_PPTP_CLIENT_SHORT}"));
             }
         }
 
             $f[]=$tpl->LeftMenu(
-                array("PAGE"=>"fw.networks.php",
+                array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.networks.php",
                     "ICO"=>"fa-wifi","TEXT"=>"{your_networks}"));
 
             if(method_exists($leftmenus,"PRADS")) {
@@ -468,8 +472,9 @@ function xgen(){
                 if($users->AsFirewallManager) {
                     if(!$IPFeed) {
                         $f[] = $tpl->LeftMenu(
-                            array("PAGE" => "fw.ipfeeds.php",
-                                "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
+                            array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.ipfeeds.php",
+                                "ICO" => "fas fa-hockey-mask",
+                                "TEXT" => "{CybercrimeIPFeeds}"));
                         $IPFeed=true;
                     }
                 }
@@ -478,7 +483,7 @@ function xgen(){
           $IPAUDIT_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPAUDIT_INSTALLED"));
             if($IPAUDIT_INSTALLED==1){
                 $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"fw.network.ipaudit.php","ICO"=>ico_chart_line,"TEXT"=>"{APP_IPAUDIT}"));
+                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.network.ipaudit.php","ICO"=>ico_chart_line,"TEXT"=>"{APP_IPAUDIT}"));
 
             }
 
@@ -487,14 +492,14 @@ function xgen(){
             $EnableDarkStat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDarkStat"));
             if($EnableDarkStat==1){
                 $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"fw.network.darkstat.php","ICO"=>"fas fa-chart-area","TEXT"=>"{network_monitor}"));
+                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.network.darkstat.php","ICO"=>"fas fa-chart-area","TEXT"=>"{network_monitor}"));
             }
 
             $NtopNGInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NtopNGInstalled"));
             if($NtopNGInstalled==1){
                 $Enablentopng=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablentopng"));
                 if($Enablentopng==1){
-                    $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.network.ntopng.php","ICO"=>"fa-heart","TEXT"=>"{network_monitor}"));
+                    $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.network.ntopng.php","ICO"=>"fa-heart","TEXT"=>"{network_monitor}"));
                 }
             }
 
@@ -504,7 +509,7 @@ function xgen(){
             $EnableSmokePing=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSmokePing"));
 
             if($EnableSmokePing==1){
-                $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.network.smokeping.php",
+                $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.network.smokeping.php",
                     "ICO"=>ico_health_check,"TEXT"=>"{APP_SMOKEPING}"));
 
 
@@ -525,13 +530,6 @@ function xgen(){
     }else{
         $f[] = "<!-- method_exists  harmpManaged NONE -->";
     }
-    if(method_exists($leftmenus,"ArticaMeta")) {
-        $f[] = $leftmenus->ArticaMeta();
-    }else{
-        $f[] = "<!-- method_exists  ArticaMeta NONE -->";
-    }
-
-
     $f[]=$leftmenus->Siege();
     $f[]=$leftmenus->FireCracker();
     $f[]=$leftmenus->reverse_proxys();
@@ -560,7 +558,7 @@ function xgen(){
     $f[]=$leftmenus->APP_NETBOX();
     $f[]=$leftmenus->KEA();
     $f[]=$leftmenus->rustdesk();
-    $f[]=$leftmenus->FireHole();
+    $f[]=$leftmenus->FireHole($IPFeed);
     $f[]=$leftmenus->Suricata();
     $f[]=$leftmenus->Fail2Ban();
     $f[]=$leftmenus->ProFTPD();
@@ -582,7 +580,6 @@ function xgen(){
 
     if($EnablePostfix==1){
         $f[]=$leftmenus->Messaging();
-        $f[]=$leftmenus->MimeDefang();
     }
     if(method_exists($leftmenus,"ImapBox")) {
         $f[] = $leftmenus->ImapBox();
@@ -591,6 +588,9 @@ function xgen(){
     }
     $f[]=$leftmenus->RDPProxy();
     $f[]=$leftmenus->HaCluster();
+    if(method_exists($leftmenus,"NetworkAgents")) {
+        $f[] = $leftmenus->NetworkAgents();
+    }
     $f[]=$leftmenus->PulseReverse();
 
     //KEEPALIVED
@@ -659,7 +659,7 @@ function xgen(){
             $f[] = "							</li>";
 
             if($users->AsDansGuardianAdministrator) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.clamav.waf.php", "ICO" => ico_eye, "TEXT" => "{WAF_LONG}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.clamav.waf.php", "ICO" => ico_eye, "TEXT" => "{WAF_LONG}"));
             }
 
             $f[] = "					 </ul>";
@@ -692,12 +692,12 @@ function xgen(){
 
         if($users->AsAnAdministratorGeneric) {
                 $f[] = $tpl->LeftMenu(
-                    array("PAGE" => "fw.syslogd.php",
+                    array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.syslogd.php",
                         "ICO" => "fad fa-wrench", "TEXT" => "Syslog"));
 
         }
         if ($users->AsSystemAdministrator) {
-            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.retention.php", "ICO" => "fas fa-cogs", "TEXT" => "{retentions}"));
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.retention.php", "ICO" => "fas fa-cogs", "TEXT" => "{retentions}"));
 
         }
 
@@ -720,9 +720,9 @@ function xgen(){
 
         if($users->AsAnAdministratorGeneric){
             if ($ActAsASyslogServer == 1) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.unbound.queries.php", "ICO" => ico_eye, "TEXT" => "{DNS_QUERIES}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.dns.unbound.queries.php", "ICO" => ico_eye, "TEXT" => "{DNS_QUERIES}"));
 
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.syslog.php", "ICO" => ico_eye, "TEXT" => "{firewall}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.syslog.php", "ICO" => ico_eye, "TEXT" => "{firewall}"));
 
             }
         }
@@ -730,10 +730,10 @@ function xgen(){
             if ($SquidInRouterMode == 0) {
                 if ($users->AsProxyMonitor) {
                     $f[] = $tpl->LeftMenu(
-                        array("PAGE" => "fw.proxy.daemon.php", "ICO" => ico_eye, "TEXT" => "{PROXY_EVENTS}",
+                        array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.daemon.php", "ICO" => ico_eye, "TEXT" => "{PROXY_EVENTS}",
                             "LEVEL3" => array("ID" => "fw-left-menus-proxy-logs",
-                                "PAGE" => "fw-left-menus-proxy-logs.php")));
-                    $f[] = $tpl->LeftMenu(array("PAGE" => "fw.icap.logs.php", "ICO" => ico_eye, "TEXT" => "{icap_events}"));
+                                "PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw-left-menus-proxy-logs.php")));
+                    $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.icap.logs.php", "ICO" => ico_eye, "TEXT" => "{icap_events}"));
                 }
 
             }
@@ -743,16 +743,16 @@ function xgen(){
         $f[] ="<!-- CicapEnabled = $CicapEnabled  C_ICAP_RECORD = $C_ICAP_RECORD-->";
         if ($CicapEnabled == 1) {
             if($C_ICAP_RECORD==1) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.sandbox.logs.php",
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.sandbox.logs.php",
                         "ICO" => ico_eye, "TEXT" => "{sandbox_connector}"));
             }
         }
 
         // -----------------------------------------------------------------------
 
-        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.kernel.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:{kernel}"));
-        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.syslog.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:Syslogd"));
-        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.php.logs.php", "ICO" => "fab fa-php", "TEXT" => "{events}:PHP"));
+        $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.kernel.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:{kernel}"));
+        $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.syslog.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:Syslogd"));
+        $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.php.logs.php", "ICO" => "fab fa-php", "TEXT" => "{events}:PHP"));
 
         $f[]="					 </ul>";
         $f[]="                </li>";
@@ -789,7 +789,7 @@ function xgen(){
     $f[]=");";
     $f[]="me.parent('li').addClass( 'active' );";
     $f[]="LoadAjaxSilent('MainContent',page);";
-    $f[]="LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
+    $f[]="LoadAjaxSilent('artica-notifs-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?notifs=yes');";
     $f[]="}";
 
     $f[] = "function RemoveMiniNav(){";

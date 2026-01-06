@@ -1,13 +1,16 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+$GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
-include_once(dirname(__FILE__)."/ressources/class.openvpn.inc");
+include_once(dirname(__FILE__)."/ressources/class.rbldnsd.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["section-rpz-js"])){section_rpz_js();exit();}
 if(isset($_GET["section-rpz-popup"])){section_rpz_popup();exit;}
 if(isset($_POST["CategoryServiceRPZEnabled"])){section_rpz_save();exit;}
-
+if(isset($_GET["compile-all"])){compile_all();exit;}
+if(isset($_GET["GetCompileProgress"])){GetCompileProgress();exit;}
 if(isset($_GET["dnscatz-table-status-left"])){status_left();exit;}
 if(isset($_GET["dnscatz-table-status-top"])){status_top();exit;}
 if(isset($_POST["none"])){die();}
@@ -21,6 +24,10 @@ if(isset($_GET["ufdbdebug-popup"])){ufdbdebug_popup();exit;}
 if(isset($_GET["graph1"])){graph1();exit;}
 if(isset($_GET["remove-database-ask"])){remove_database_ask();exit;}
 if(isset($_GET["form-js"])){form_js();exit;}
+if(isset($_GET["official-js"])){official_js();exit;}
+if(isset($_GET["official-popup"])){official_popup();exit;}
+if(isset($_POST["ManageOfficialsCategories"])){official_save();exit;}
+
 if(isset($_GET["form-popup"])){form_popup();exit;}
 if(isset($_GET["rpzserver-reload-js"])){rpzserver_reload_js();exit;}
 if(isset($_GET["ufdb-update-js"])){ufdb_update_js();exit;}
@@ -36,9 +43,14 @@ function tabs():bool{
 function form_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $tpl->js_dialog1("{global_parameters}","$page?form-popup=yes");
+    return $tpl->js_dialog1("{global_parameters}","$page?form-popup=yes");
+}
+function compile_all():bool{
+    $RbldnsdClient=new RbldnsdClient();
+    $RbldnsdClient->compile();
     return true;
 }
+
 function rpzserver_reload_js():bool{
     $tpl=new template_admin();
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/server/rpz/reload");
@@ -168,18 +180,76 @@ function restart_js():string{
     $tpl            = new template_admin();
     return $tpl->js_restart_api("/dnscatz/restart","LoadAjax('table-ufdbcatstatus','$page?tabs=yes');");
 }
+function official_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog1("{global_parameters}","$page?official-popup=yes");
+}
+function official_popup():bool{
+    $tpl            = new template_admin();
+    $page=CurrentPageName();
+    $ManageOfficialsCategories=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ManageOfficialsCategories"));
+
+    echo $tpl->BigCircleCheckbox("ManageOfficialsCategories","{official_categories}",
+        "{official_categories_explain}",$ManageOfficialsCategories,"dialogInstance1.close();LoadAjaxSilent('dnscatz-main-status','$page?table=yes');");
+    return true;
+}
+function official_save():bool{
+
+    if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ManageOfficialsCategories",0);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("/dnscatz/reconfigure");
+        return false;
+    }
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ManageOfficialsCategories",$_POST["ManageOfficialsCategories"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnscatz/reconfigure");
+    return admin_tracks("Set ManageOfficialsCategories to {$_POST["ManageOfficialsCategories"]}");
+
+}
+
 function status_top():bool{
     $tpl            = new template_admin();
+    $dnscat_status=status_dnscatz();
     $status_rpz_server=status_rpz_server();
     $status_ufdb_repos=status_ufdb_repos();
     $html[]="<table style='width:100%;margin-top:-5px'>";
     $html[]="<tr>";
-    $html[]="<td style='vertical-align:top;width:50%'>$status_rpz_server</td>";
-    $html[]="<td style='vertical-align:top;width:50%;padding-left: 5px'>$status_ufdb_repos</td>";
+    $html[]="<td style='vertical-align:top;width:33%'>$dnscat_status</td>";
+    $html[]="<td style='vertical-align:top;width:33%;padding-left: 5px'>$status_rpz_server</td>";
+    $html[]="<td style='vertical-align:top;width:33%;padding-left: 5px'>$status_ufdb_repos</td>";
     $html[]="</tr>";
     $html[]="</table>";
     echo $tpl->_ENGINE_parse_body($html);
     return true;
+}
+function status_dnscatz():string{
+    $tpl            = new template_admin();
+    $page=currentPageName();
+
+    $btn["ico"]=ico_save;
+    $btn["name"]="{compile_all_categories}";
+    $btn["js"]="Loadjs('$page?compile-all=yes');";
+
+    $RbldnsdClient = new RbldnsdClient();
+    if($RbldnsdClient->isLoading()){
+        $btn["ico"]=ico_retweet;
+        $btn["name"]="{loading}";
+        $btn["js"]="blur();";
+        $result = $RbldnsdClient->health();
+        $loading_duration=$result["loading_duration"];
+        return $tpl->widget_h("grey",ico_retweet,"{loading} ($loading_duration)","{please_wait}",$btn);
+    }
+
+
+    $array=$RbldnsdClient->getStats();
+    if(!is_array($array)){
+        return $tpl->widget_h("red",ico_bug,"{error}",$RbldnsdClient->getLastError(),$btn);
+    }
+        $queries_per_second=round($array['queries_per_second'],2);
+    $queries_total=$tpl->FormatNumber($array['queries_total'],0);
+
+    return $tpl->widget_h("green",ico_speed,
+        "$queries_per_second/rqs","{queries} $queries_total",$btn);
 }
 
 function UfdbDatabasesEnabled(){
@@ -289,8 +359,34 @@ function status_rpz_server():string{
         }
     }
     $Requests=$tpl->FormatNumber($json->Requests);
-    return $tpl->widget_h("green",ico_database,"{active2} $Requests {requests}","RPZ Server",$btn);
+    return $tpl->widget_h("green",ico_database,"$Requests {requests}","RPZ Server",$btn);
 }
+function GetCompileProgress():bool{
+    $myid=time();
+    $maindiv="progress-ufdbcat-restart";
+    $RbldnsdClient=new RbldnsdClient();
+    header("content-type: application/x-javascript");
+    if(!$RbldnsdClient->isCompiling()){
+        echo "// Not compiling...\n";
+        echo "if( document.getElementById('def-compiling-progress') ){ document.getElementById('$maindiv').innerHTML='';}";
+        return false;
+    }
+    $tpl            = new template_admin();
+    $results=$RbldnsdClient->getCompileProgress();
+// [current_category] => [current_index] => 0 [last_event] => [progress] => 0 [running] => [total_categories]
+    $title=$tpl->_ENGINE_parse_body("{compiling}");
+    $title2=$results["last_event"];
+    $prc=intval($results["progress"]);
+    $htmlContent=base64_encode("<div id='def-compiling-progress'><h5 id=\"title-compiling-progress\">$title</h5><div class=\"progress progress-bar-default\" id=\"main-$myid\">
+        <div id=\"barr-compiling-progress\" style=\"width: $prc%\" aria-valuemax=\"100\" aria-valuemin=\"0\" aria-valuenow=\"5\" 
+        role=\"progressbar\" class=\"progress-bar\">$prc% $title2</div></div></div>");
+
+    echo "document.getElementById('$maindiv').innerHTML=base64_decode('$htmlContent');";
+    return true;
+
+}
+
+
 function status_left():bool{
     $tpl            = new template_admin();
     $html           = array();
@@ -309,9 +405,13 @@ function status_left():bool{
         $DBUSED=$tpl->widget_vert("{used_databases}",$CountOfDatabase);
     }
 
+
     $html[]=status_service();
     $html[]=$DBUSED;
-    $html[]="<script>LoadAjaxSilent('dnscatz-table-status-top','$page?dnscatz-table-status-top=yes');</script>";
+    $html[]="<script>";
+    $html[]="Loadjs('$page?GetCompileProgress=yes');";
+    $html[]="LoadAjaxSilent('dnscatz-table-status-top','$page?dnscatz-table-status-top=yes');";
+    $html[]="</script>";
     echo $tpl->_engine_parse_body($html);
     return true;
 }
@@ -362,20 +462,21 @@ function table():bool{
     $DnsCatzCrypt=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DnsCatzCrypt"));
     $DnsCatzPassPharse=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DnsCatzPassPharse"));
     if($DnsCatzPassPharse==null){$DnsCatzPassPharse=generateRandomString();}
+    $ManageOfficialsCategories  = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ManageOfficialsCategories"));
 
     if($DnscatzInterface==null){$DnscatzInterface="lo";}
     if($DnscatzDomain==null){$DnscatzDomain="categories.tld";}
     if($DnsCatzTTL==0){$DnsCatzTTL=35;}
     if($DnsCatzPort==0){$DnsCatzPort=3477;}
 
-
+    $html[]="<div id='dnscatz-table-status-top'></div>";
 	$html[]="<table style='width:100%;margin-top: 15px'>";
 	$html[]="<tr>";
 	$html[]="<td style=\"width:260px;vertical-align:top\" >";
     $html[]="<div id='dnscatz-table-status-left'></div>";
     $html[]="</td>";
     $html[]="<td style='width:99%;vertical-align:top;padding-left:15px'>";
-    $html[]="<div id='dnscatz-table-status-top'></div>";
+
 
 
 
@@ -394,6 +495,17 @@ function table():bool{
     $tpl->table_form_field_bool("{SQUID_ISP_MODE}","$DnscatzProfessional",ico_city);
     $tpl->table_form_field_bool("{encrypt_data}","$DnsCatzCrypt",ico_crypt);
 
+
+    if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
+        $tpl->table_form_field_js("");
+        $tpl->table_form_field_bool("{official_categories}",0,ico_books);
+    }else{
+        $ManageOfficialsCategories=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ManageOfficialsCategories"));
+        $tpl->table_form_field_js("Loadjs('$page?official-js=yes');");
+        $tpl->table_form_field_bool("{official_categories}",$ManageOfficialsCategories,ico_books);
+    }
+
+    $tpl->table_form_field_js("Loadjs('$page?form-js=yes')");
     $CategoryServiceWebFilteringEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoryServiceWebFilteringEnabled"));
     $CategoryServiceRPZEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoryServiceRPZEnabled"));
     if($CategoryServiceRPZEnabled==0){
@@ -441,22 +553,11 @@ function table():bool{
     $html[]="</table>";
 
 
-    $jsCompile=$tpl->framework_buildjs(
-        "/dnscatz/compile/all",
-        "dnscat.compile.progress",
-        "dnscat.compile.log",
-        "progress-ufdbcat-restart",
-        "LoadAjax('table-ufdbcatstatus','$page?tabs=yes');"
-    );
-    $users=new usersMenus();
-    $btns[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
-    if($users->AsDansGuardianAdministrator){
-        $btns[]="<label class=\"btn btn-info\" OnClick=\"$jsCompile\"><i class='fa fa-save'></i> {compile_all_categories} </label>";
-    }
-    $btns[]="</div>";
 
+    $btns[]="";
 
-    $TINY_ARRAY["TITLE"]="{APP_UFDBCAT}";
+    $APP_RBLDNSD_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RBLDNSD_VERSION");
+    $TINY_ARRAY["TITLE"]="{APP_UFDBCAT} v$APP_RBLDNSD_VERSION";
     $TINY_ARRAY["ICO"]="fa-solid fa-engine";
     $TINY_ARRAY["EXPL"]="{APP_UFDBCAT_EXPLAIN}";
     $TINY_ARRAY["BUTTONS"]=@implode("",$btns);

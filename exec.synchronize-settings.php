@@ -10,7 +10,6 @@ function CheckSettings():bool{
     NetDATAEnabled();
 	EnableMilterRegex();
 	MilterGreyListEnabled();
-    MimeDefangEnabled();
     NTPDClientEnabled();
     EnableUfdbGuard();
     EnableClamavDaemon();
@@ -185,23 +184,7 @@ function MilterGreyListEnabled(){
 	system("$php /usr/share/artica-postfix/exec.milter-greylist.install.php --uninstall");
 }
 
-function MimeDefangEnabled(){
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    $initd="/etc/init.d/mimedefang";
-    $sock=new sockets();
-    $Commutator=intval($sock->GET_INFO("MimeDefangEnabled"));
-    if($Commutator==1){
-        if(is_file($initd)){return;}
-        system("$php /usr/share/artica-postfix/exec.mimedefang.php --install");
-        return;
-    }
 
-    if(!is_file($initd)){return;}
-    squid_admin_mysql(0,"Uninstall {APP_MIMEDEFANG}",null,__FILE__,__LINE__);
-    squid_admin_mysql(1,"[SMTP]: Uninstall MimeDefang system (after replication)",null,__FILE__,__LINE__);
-    system("$php /usr/share/artica-postfix/exec.mimedefang.php --uninstall");
-}
 
 function NTPDClientEnabled(){
 

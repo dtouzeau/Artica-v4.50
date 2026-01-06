@@ -715,10 +715,7 @@ if (isset($argv[1])) {
         echo mailman();
         exit();
     }
-    if ($argv[1] == "--mimedefang") {
-        echo mimedefang() . "\n";
-        exit();
-    }
+
     if ($argv[1] == "--articadb") {
         articadb();
         exit();

@@ -538,7 +538,7 @@ Policyd-weight caches the most frequent client/sender combinations (SPAM as well
 <auto_account>Auto-create Accounts</auto_account>
 <auto_account_text>Auto-create Accounts is a feature that allow your users to create accounts themself</auto_account_text>
 <auto_apt>Automatically upgrade the system</auto_apt>
-<available>available</available>
+<available>Available</available>
 <aveserver_licence_add>Upload the *.key file about Kaspersky for Unix Mail server in order to update the licence.</aveserver_licence_add>
 <aveserver_main_settings>Kaspersky Anti-Virus for Postfix settings</aveserver_main_settings>
 <aveserver_status>Kaspersky Mail server status</aveserver_status>
@@ -2392,7 +2392,7 @@ All the emails will be deleted and not be able to restore...</remove_mailqueue_t
 <rule_number>Rule number</rule_number>
 <run>Run</run>
 <runat>Time to execute</runat>
-<running>running</running>
+<running>Running</running>
 <run_every>Run every</run_every>
 <SAMBA_NEWVERSION>New Samba version:</SAMBA_NEWVERSION>
 <SAMBA_NEWVERSION_TEXT>It is recommed to upgrade your Samba version to the latest, check the Setup control Center and upgrade your Samba</SAMBA_NEWVERSION_TEXT>

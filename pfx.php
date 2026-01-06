@@ -11,7 +11,6 @@ include_once('ressources/charts.php');
 include_once('ressources/class.syslogs.inc');
 include_once('ressources/class.system.network.inc');
 include_once(dirname(__FILE__).'/ressources/class.os.system.inc');
-include_once('ressources/class.stats-appliance.inc');
 
 if(isset($_GET["pfx"])){pfx();exit;}
 if(isset($_GET["der"])){der();exit;}

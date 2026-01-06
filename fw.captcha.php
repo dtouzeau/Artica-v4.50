@@ -47,8 +47,14 @@ function new_css():string{
     }
     $f[]="<style>";
     $f[]="body{";
+
+    $HTTP_X_ARTICA_SUBFOLDER=null;
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
+
     if($HideArticaLogo==0) {
-        $f[] = "background-image:url('img/Articafond3.png');";
+        $f[] = "background-image:url('{$HTTP_X_ARTICA_SUBFOLDER}img/Articafond3.png');";
     }
 
     if($_COOKIE["userfont"]==null){

@@ -1697,6 +1697,10 @@ function dynacls(){
 	
 }
 function page_no_privs():bool{
+    $HTTP_X_ARTICA_SUBFOLDER="/";
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
     VERBOSE("BUILDING ERROR 500",__LINE__);
     $data=@file_get_contents("generic.html");
     $data=str_replace("_CODE_",500,$data);
@@ -1704,7 +1708,7 @@ function page_no_privs():bool{
 
     $tpl=new template_admin();
     $content=$tpl->_ENGINE_parse_body("<strong>{$_SESSION["uid"]}</strong>, {not allowed}<p>{session_expired_text}</p>");
-    $content=str_replace("href=logon.php","/fw.login.php?disconnect=yes",$content);
+    $content=str_replace("href=logon.php","{$HTTP_X_ARTICA_SUBFOLDER}fw.login.php?disconnect=yes",$content);
     $data=str_replace("_DESC_",$content,$data);
     echo $tpl->_ENGINE_parse_body($data);
     return true;

@@ -23,7 +23,6 @@ class ActiveDirectory{
     var $UseDynamicGroupsAcls=1;
     var $ADNETIPADDR="";
     var $ldap_failed=false;
-
     private $WINDOWS_SERVER_ADMIN=null;
     private $WINDOWS_DNS_SUFFIX=null;
 

@@ -1,5 +1,4 @@
 <?php
-
 class lib_sqlite{
     public $db_path="";
     public $last_id=0;

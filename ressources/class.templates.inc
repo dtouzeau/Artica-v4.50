@@ -379,8 +379,12 @@ class templates{
 
     }
     function time_to_date($xtime,$time=false){
-        if(!is_numeric($xtime)){return "-";}
-        if(intval($xtime)==0){return "-";}
+        if(!is_numeric($xtime)){
+            VERBOSE("$xtime NOT NUMERIC",__LINE__);
+            return "-";}
+        if(intval($xtime)==0){
+            VERBOSE("$xtime IS 0",__LINE__);
+            return "-";}
         $xtime=intval($xtime);
 
         if($time){

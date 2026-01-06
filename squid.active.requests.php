@@ -36,12 +36,8 @@ function js(){
 }
 function tabs(){
 	$tpl=new templates();
-	$stats_appliance=new stats_appliance();
-	
 	$array["popup"]='{active_requests}';
-	
 	$time=time();
-
 	$style="style='font-size:22px'";
 
 

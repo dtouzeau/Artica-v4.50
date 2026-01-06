@@ -167,10 +167,7 @@ function features():bool{
     if(method_exists($features,"APP_SMOKEPING")) {
         $APP_SMOKEPING = $features->APP_SMOKEPING();
     }
-    $APP_META_SERVER=null;
-    if(method_exists($features,"APP_META_SERVER")) {
-        $APP_META_SERVER = $features->APP_META_SERVER();
-    }
+
 
 
     $APP_WAZHU=null;
@@ -271,7 +268,7 @@ function features():bool{
 //  $APP_CYRUS=$features->APP_CYRUS();
     $APP_SNMPD=$features->APP_SNMPD();
     //$APP_MAIL_SPY=$features->APP_MAIL_SPY();
-    $APP_MIMEDEFANG=$features->APP_MIMEDEFANG();
+
     $APP_RBLDNSD=$features->APP_RBLDNSD();
     $APP_NGINX=$features->APP_NGINX();
     $APP_MATTERMOST=$features->APP_MATTERMOST();
@@ -531,7 +528,7 @@ function features():bool{
     $network_services[]=$IWLWIFI;
     $network_services[]=$APP_OSPFD;
     $network_services[]=$APP_DOCKER;
-    $network_services[]=$APP_META_SERVER;
+
 
     $network_services[]=$UBOUND;
     $network_services[]=$UBOUND_DNS;

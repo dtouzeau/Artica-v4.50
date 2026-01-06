@@ -1068,12 +1068,12 @@ class features{
             return 1;
     }
 
-    public function APP_CYRUS(){
+    public function APP_CYRUS():string{
         if($this->ASReverseProxyAppliance){
             return "";
         }
         $DisableMessaging=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableMessaging"));
-        if($DisableMessaging==1){return null;}
+        if($DisableMessaging==1){return "";}
         $config["SECURITY"]="AsMailBoxAdministrator";
         $config["TITLE"]="{APP_CYRUS}";
         $config["EXPLAIN"]="{about_cyrus}";
@@ -1105,7 +1105,7 @@ class features{
 
     }
 
-    public function APP_CGROUPS(){
+    public function APP_CGROUPS():string{
         if($this->ASReverseProxyAppliance){
             return "";
         }
@@ -1137,16 +1137,6 @@ class features{
         return $this->build_paragraph($config);
 
     }
-
-
-    public function APP_KLNAGENT(){
-       return "";
-
-    }
-
-
-
-
     public function APP_SMOKEPING(){
         if($this->ASReverseProxyAppliance){
             return "";
@@ -1208,7 +1198,7 @@ class features{
     }
 
 
-    public function RSYNC(){
+    public function RSYNC():string{
 
         $config["SECURITY"]="AsSystemAdministrator";
         $config["TOKEN_INSTALLED"]="RSYNC_INSTALLED";
@@ -1238,7 +1228,7 @@ class features{
         $config["MEMMIN"]="1900";
         return $this->build_paragraph($config);
     }
-    public function HAPROXY_EXCHANGE(){
+    public function HAPROXY_EXCHANGE():string{
         if($this->ASReverseProxyAppliance){
             return "";
         }
@@ -1296,7 +1286,7 @@ class features{
 
 
 
-    public function WSUSOFFLINE(){
+    public function WSUSOFFLINE():string{
         if($this->ASReverseProxyAppliance){
             return "";
         }
@@ -1477,23 +1467,7 @@ class features{
         return $this->build_paragraph($config);
 
     }
-    public function APP_META_SERVER():string{
-        $ShowMeta=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ShowMeta"));
-        if($ShowMeta==0){
-            return "";
-        }
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{artica_meta_server}";
-        $config["EXPLAIN"]="{artica_meta_server_explain}";
-        $config["TOKEN"]="EnableArticaMetaServer";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/meta.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/meta.progress.log";
-        $config["CMD_ON"]="/metasrv/install";
-        $config["CMD_OFF"]="/metasrv/uninstall";
-        $config["WIKI"]="https://wiki.articatech.com/metasrv";
-        return $this->build_paragraph($config);
 
-    }
 
 
 
@@ -1621,26 +1595,7 @@ class features{
     }
 
 
-    public function APP_MIMEDEFANG(){
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $DisableMessaging=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableMessaging"));
-        if($DisableMessaging==1){return null;}
-        $config["TOKENS_REQUIRE_INSTALLED"]["POSTFIX_INSTALLED"]="APP_POSTFIX";
-        $config["TOKEN_REQUIRE_ENABLED"]="EnablePostfix";
-        $config["SECURITY"]="AsPostfixAdministrator";
-        $config["TOKEN_INSTALLED"]="MimeDefangInstalled";
-        $config["TITLE"]="{APP_VALVUAD}";
-        $config["EXPLAIN"]="{MIMEDEFANG_TEXT}";
-        $config["TOKEN"]="MimeDefangEnabled";
-        $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/mimedefang.reconfigure.progress";
-        $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/mimedefang.reconfigure.progress.log";
-        $config["CMD_ON"]="mimedefang.php?install=yes";
-        $config["CMD_OFF"]="mimedefang.php?uninstall=yes";
-        $config["LICENSE"]=true;
-        return $this->build_paragraph($config);
-    }
+
 
     public function APP_MILTER_REGEX(){
         if($this->ASReverseProxyAppliance){
@@ -2233,31 +2188,17 @@ class features{
 
 
 
-
-
-
-
-
-    public function APP_CLUSTER_INFRA(){
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $config["LICENSE"]=true;
-        $config["TOKENS_REQUIRE_INSTALLED"]["SQUIDEnable"]="APP_SQUID";
-        $config["SECURITY"]="AsSquidAdministrator";
-        $config["TITLE"]="{APP_CLUSTER_INFRA}";
-        $config["EXPLAIN"]="{APP_CLUSTER_INFRA_EXPLAIN}";
-        $config["TOKEN"]="EnableClusterInfra";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/ClusterInfra.progress";
-        $config["CMD_ON"]="cluster.php?enable-infra=yes";
-        $config["CMD_OFF"]="cluster.php?disable-infra=yes";
+    public function APP_ARTICA_META():string{
+        $config["SECURITY"]="AsSystemAdministrator";
+        $config["TITLE"]="{APP_ARTICA_META}";
+        $config["EXPLAIN"]="{network_agents_explain}";
+        $config["TOKEN"]="EnableArticaMeta";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/meta.progress";
+        $config["CMD_ON"]="/metasrv/install";
+        $config["CMD_OFF"]="/metasrv/uninstall";
         return $this->build_paragraph($config);
+
     }
-
-
-
-
-
     public function SQUID_RESTFULL(){
         if($this->ASReverseProxyAppliance){
             return "";

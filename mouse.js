@@ -9,6 +9,7 @@ if (document.layers) {
   document.captureEvents(Event.MOUSEMOVE);
 }
 
+
 // --- Fonctions ---
 
 // retourne vrai si le dernier clic de souris concerne le bouton droit

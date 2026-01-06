@@ -1127,10 +1127,7 @@ function RestartDedicatedServices($aspid=false){
 
 	
 
-	if(is_file("/etc/init.d/mimedefang")){
-		build_progress_manu("{starting} - Building mimedefang",100);
-		shell_exec("$nohup $php $Aroot/exec.mimedefang.php --parse >/dev/null 2>&1 &");
-	}
+
 
 	if(is_file("/etc/init.d/firehol")){
         build_progress_manu("{starting} (Line:".__LINE__.")",100);

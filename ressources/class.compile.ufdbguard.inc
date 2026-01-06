@@ -234,7 +234,6 @@ class compile_ufdbguard{
 		$conf[]="upload-crash-reports off";
 		$conf[]="use-ipv6-on-wan  off";
         $conf[]="num-worker-threads $threads";
-		
 		$ufdbguardConfig=$this->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ufdbguardConfig"));
         
         

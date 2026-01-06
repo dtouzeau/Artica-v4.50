@@ -69,10 +69,6 @@ if($argv[1]=='--smtpd-client-restrictions'){
 			smtpd_client_restrictions_progress("{reloading} Greylist",96);
 			system("/etc/init.d/milter-greylist restart");
 	}
-	if(is_file("/etc/init.d/mimedefang")){
-		smtpd_client_restrictions_progress("{reloading} {APP_MIMEDEFANG}",97);
-		system("$php /usr/share/artica-postfix/exec.mimedefang.php --build");
-	}
 	if(is_file("/etc/init.d/milter-regex")){
 		smtpd_client_restrictions_progress("{reloading} {APP_MILTER_REGEX}",98);
 		system("/etc/init.d/milter-regex restart");

@@ -105,9 +105,9 @@ function disconnect():bool{
     $artica_logon->logoff();
     echo "
     <html>
-	<head><META HTTP-EQUIV=\"Refresh\" CONTENT=\"0; URL=$HTTP_X_ARTICA_SUBFOLDER\"> </head>
+	<head><META HTTP-EQUIV=\"Refresh\" CONTENT=\"0; URL={$HTTP_X_ARTICA_SUBFOLDER}fw.login.php\"> </head>
 	<body>
-	<script>document.location.href='$HTTP_X_ARTICA_SUBFOLDER';</script>
+	<script>document.location.href='{$HTTP_X_ARTICA_SUBFOLDER}fw.login.php';</script>
 	</body>
 	</html>";
     return true;
@@ -147,7 +147,13 @@ function new_css():string{
     $f[]="<style>";
     $f[]="body{";
     if($HideArticaLogo==0) {
-        $f[] = "background-image:url('img/Articafond3.png');";
+
+        $HTTP_X_ARTICA_SUBFOLDER=null;
+        if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+            $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+        }
+
+        $f[] = "background-image:url('{$HTTP_X_ARTICA_SUBFOLDER}img/Articafond3.png');";
     }
 
 
@@ -456,7 +462,7 @@ function new_login($return=false,$error=null){
     }else{
         $myhostname=$TitleOfArticaPage;
     }
-
+    $HTTP_X_ARTICA_SUBFOLDER="/";
     fingerprint();
 
     if($HideArticaVersion==0) {
@@ -469,6 +475,11 @@ function new_login($return=false,$error=null){
         $ArticaVer = "Artica $CURVER{$SP} &copy; " . date("Y");
 
     }
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
+
+
     $f[]="<!DOCTYPE html>";
     $f[]="<html xmlns=\"http://www.w3.org/1999/xhtml\">";
     $f[]="<html xmlns:v>";
@@ -478,11 +489,11 @@ function new_login($return=false,$error=null){
     $f[]="<meta HTTP-EQUIV=\"Pragma\" CONTENT=\"no-cache\">";
     $f[]="<meta HTTP-EQUIV=\"Expires\" CONTENT=\"-1\">";
     $f[]="<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\">";
-    $f[]="<link rel='icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
-    $f[]="<link rel='shortcut icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
+    $f[]="<link rel='icon' href='{$HTTP_X_ARTICA_SUBFOLDER}ressources/templates/default/favicon.ico' type='image/x-icon' />";
+    $f[]="<link rel='shortcut icon' href='{$HTTP_X_ARTICA_SUBFOLDER}ressources/templates/default/favicon.ico' type='image/x-icon' />";
     $f[]="<title>$myhostname</title>";
     $f[]=new_css();
-    $f[]="<script src=\"/fingerprint/query\"></script>";
+    $f[]="<script src=\"{$HTTP_X_ARTICA_SUBFOLDER}fingerprint/query\"></script>";
     $f[]="<script>";
     $f[]="function login(){";
     $f[]="document.form.submit();";
@@ -731,7 +742,12 @@ function login($return=false,$error=null){
     $myhostname=null;
     $ArticaVer=null;
 
-    $bgstyle="background-image:url(img/Articafond1.png);background-repeat:no-repeat;";
+    $HTTP_X_ARTICA_SUBFOLDER=null;
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
+
+    $bgstyle="background-image:url({$HTTP_X_ARTICA_SUBFOLDER}img/Articafond1.png);background-repeat:no-repeat;";
     $columns="col-md-6";
     $TitleOfArticaPage=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TitleOfArticaPage"));
     $TextOfArticaPage=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TextOfArticaPage"));
@@ -1381,6 +1397,10 @@ function GeoIPCheck():bool{
     return false;
 }
 function page_no_privs():bool{
+    $HTTP_X_ARTICA_SUBFOLDER="/";
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
     VERBOSE("BUILDING ERROR 500",__LINE__);
     $data=@file_get_contents("generic.html");
     $data=str_replace("_CODE_",500,$data);
@@ -1388,7 +1408,7 @@ function page_no_privs():bool{
 
     $tpl=new template_admin();
     $content=$tpl->_ENGINE_parse_body("<strong>{$_SESSION["uid"]}</strong>, {not allowed}<p>{session_expired_text}</p>");
-    $content=str_replace("href=logon.php","/fw.login.php?disconnect=yes",$content);
+    $content=str_replace("href=logon.php","{$HTTP_X_ARTICA_SUBFOLDER}fw.login.php?disconnect=yes",$content);
     $data=str_replace("_DESC_",$content,$data);
     echo $tpl->_ENGINE_parse_body($data);
     return true;

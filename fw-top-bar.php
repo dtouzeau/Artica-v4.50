@@ -103,7 +103,10 @@ function GlobalSearchEngine(e){
     $LegallogServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LegallogServer"));
     $EnableDNSFirewall=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSFirewall"));
     $EnableSmokePing=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSmokePing"));
-
+    $HTTP_X_ARTICA_SUBFOLDER="/";
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
     $SHOW_REALTIME_PROXY=true;
     $HaClusterClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
     $SquidNoAccessLogs=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidNoAccessLogs"));
@@ -138,7 +141,7 @@ function GlobalSearchEngine(e){
     if($users->AsProxyMonitor){
         if($EnableSmokePing==1) {
             $f[] = "<li>";
-            $f[] = "<a href=\"javascript:s_PopUp('smokeping/smokeping.cgi?target=_charts','1024','800')\">";
+            $f[] = "<a href=\"javascript:s_PopUp('{$HTTP_X_ARTICA_SUBFOLDER}smokeping/smokeping.cgi?target=_charts','1024','800')\">";
             $f[] = "<i class=\"".ico_health_check."\"></i> {latency} </a>";
             $f[] = "</li>";
         }
@@ -146,7 +149,7 @@ function GlobalSearchEngine(e){
         if($Enablehacluster==1) {
             $f[] = "<!-- L.".__LINE__." -->";
             $f[] = "<li>";
-            $f[] = "<a href=\"javascript:LoadAjax('MainContent','fw.proxy.relatime.php')\">";
+            $f[] = "<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.relatime.php')\">";
             $f[] = "<i class=\"fa fa-eye\"></i> {requests}";
             $f[] = "</a>";
             $f[] = "</li>";
@@ -155,7 +158,7 @@ function GlobalSearchEngine(e){
         if($EnablePulseReverse==1){
             $f[] = "<!-- L.".__LINE__." -->";
             $f[] = "<li>";
-            $f[] = "<a href=\"javascript:LoadAjax('MainContent','fw.pulsereverser.requests.php')\">";
+            $f[] = "<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.pulsereverser.requests.php')\">";
             $f[] = "<i class=\"fa fa-eye\"></i> {requests}";
             $f[] = "</a>";
             $f[] = "</li>";
@@ -165,7 +168,7 @@ function GlobalSearchEngine(e){
         if($SQUIDEnable==1){
 
                 $f[] = "<li>";
-                $f[] = "<a href=\"javascript:Loadjs('fw.proxy.active_requests.php')\">";
+                $f[] = "<a href=\"javascript:Loadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.active_requests.php')\">";
                 $f[] = "<i class=\"".ico_health_check."\"></i> {active_requests}";
                 $f[] = "</a>";
                 $f[] = "</li>";
@@ -177,7 +180,7 @@ function GlobalSearchEngine(e){
                         $f[] = "<!-- HaClusterClient = $HaClusterClient HaClusterRemoveRealtimeLogs = $HaClusterRemoveRealtimeLogs -->";
                         $f[] = "<!-- L.".__LINE__." -->";
                         $f[] = "<li>";
-                        $f[] = "<a href=\"javascript:LoadAjax('MainContent','fw.proxy.relatime.php')\">";
+                        $f[] = "<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.relatime.php')\">";
                         $f[] = "<i class=\"fa fa-eye\"></i> {requests}";
                         $f[] = "</a>";
                         $f[] = "</li>";
@@ -190,7 +193,7 @@ function GlobalSearchEngine(e){
 
             if($EnableSquidAnalyzer==1){
                 $f[]="<li>";
-                $f[]="<a href=\"javascript:LoadAjax('MainContent','fw.squid.analyzer.table.php')\">";
+                $f[]="<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.squid.analyzer.table.php')\">";
                 $f[]="<i class=\"fas fa-user-chart\"></i> {statistics}";
                 $f[]="</a>";
                 $f[]="</li>";
@@ -201,7 +204,7 @@ function GlobalSearchEngine(e){
             if(! $SQUID_RT) {
                 $f[] = "<!-- L.".__LINE__." -->";
                 $f[] = "<li>";
-                $f[] = "<a href=\"javascript:LoadAjax('MainContent','fw.proxy.relatime.php')\">";
+                $f[] = "<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.relatime.php')\">";
                 $f[] = "<i class=\"fa fa-eye\"></i> {requests}";
                 $f[] = "</a>";
                 $f[] = "</li>";
@@ -216,7 +219,7 @@ function GlobalSearchEngine(e){
             if(! $SQUID_RT) {
                 $f[] = "<!-- L.".__LINE__." -->";
                 $f[] = "<li>";
-                $f[] = "<a href=\"javascript:LoadAjax('MainContent','fw.proxy.relatime.php')\">";
+                $f[] = "<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.relatime.php')\">";
                 $f[] = "<i class=\"fa fa-eye\"></i> {requests}";
                 $f[] = "</a>";
                 $f[] = "</li>";
@@ -231,7 +234,7 @@ function GlobalSearchEngine(e){
             if(! $SQUID_RT) {
                 $f[] = "<!-- L.".__LINE__." -->";
                 $f[] = "<li>";
-                $f[] = "<a href=\"javascript:LoadAjax('MainContent','fw.proxy.relatime.php')\">";
+                $f[] = "<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.relatime.php')\">";
                 $f[] = "<i class=\"fa fa-eye\"></i> {requests}";
                 $f[] = "</a>";
                 $f[] = "</li>";
@@ -242,10 +245,11 @@ function GlobalSearchEngine(e){
     }
 
 
+
     if($EnableDNSFilterd==1){
         if($users->AsDnsAdministrator){
             $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','fw.dns.filterd.stats.php?with-events=yes')\">";
+            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.dns.filterd.stats.php?with-events=yes')\">";
             $f[]="                            <i class=\"fa fa-eye\"></i> {DNS_FILTERING}";
             $f[]="                        </a>";
             $f[]="                    </li>";
@@ -255,7 +259,7 @@ function GlobalSearchEngine(e){
     if($UnboundEnabled==1){
         if($users->AsDnsAdministrator){
             $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','fw.dns.unbound.queries.php')\">";
+            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.dns.unbound.queries.php')\">";
             $f[]="                            <i class=\"fa fa-eye\"></i> {DNS_QUERIES}";
             $f[]="                        </a>";
             $f[]="                    </li>";
@@ -267,7 +271,7 @@ function GlobalSearchEngine(e){
     if($EnableModSecurityIngix==1){
         if($users->AsWebMaster){
             $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','fw.modsecurity.threats.php')\">";
+            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.modsecurity.threats.php')\">";
             $f[]="                            <i class=\"fa fa-eye\"></i> Web Firewall Audit</a>";
             $f[]="                    </li>";
 
@@ -291,12 +295,11 @@ function GlobalSearchEngine(e){
 
 
 
-
     if($users->AsPostfixAdministrator OR $users->AsMessagingOrg){
         $EnableMilterSpyDaemon=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMilterSpyDaemon"));
         if($EnableMilterSpyDaemon==1){
             $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','fw.postfix.milterspy.relatime.php')\">";
+            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.postfix.milterspy.relatime.php')\">";
             $f[]="                            <i class=\"fa fa-eye\"></i> {forwarded_messages}";
             $f[]="                        </a>";
             $f[]="                    </li>";
@@ -304,7 +307,7 @@ function GlobalSearchEngine(e){
 
         if($EnablePostfix==1){
             $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','fw.postfix.maillog.php')\">";
+            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.postfix.maillog.php')\">";
             $f[]="                            <i class=\"fa fa-eye\"></i> {smtp_transactions}";
             $f[]="                        </a>";
             $f[]="                    </li>";
@@ -316,7 +319,7 @@ function GlobalSearchEngine(e){
         $EnableKibana=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKibana"));
         if($EnableKibana==1){
             $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:s_PopUpFull('/kibana/',1024,768,'Kibana Statistics');\">";
+            $f[]="                        <a href=\"javascript:s_PopUpFull('{$HTTP_X_ARTICA_SUBFOLDER}kibana/',1024,768,'Kibana Statistics');\">";
             $f[]="                            <i class=\"fas fa-chart-area\"></i> {statistics}";
             $f[]="                        </a>";
             $f[]="                    </li>";
@@ -354,7 +357,7 @@ function GlobalSearchEngine(e){
             $NetDATAEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetDATAEnabled"));
             if($NetDATAEnabled==1){
                 $NetDataListenPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetDataListenPort"));
-                $MAIN_URI="https://{$_SERVER["SERVER_ADDR"]}:".$_SERVER["SERVER_PORT"]."/netdata/";
+                $MAIN_URI="https://{$_SERVER["SERVER_ADDR"]}:".$_SERVER["SERVER_PORT"]."{$HTTP_X_ARTICA_SUBFOLDER}netdata/";
                 $f[]="                    <li>";
                 $f[]="                        <a href=\"javascript:s_PopUpFull('$MAIN_URI',1024,768,'Monitor');\">";
                 $f[]="                            <i class=\"fa fa-heart\"></i> {monitor}";
@@ -368,7 +371,7 @@ function GlobalSearchEngine(e){
         if($NtopNGInstalled==1){
             $Enablentopng=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablentopng"));
             if($Enablentopng==1){
-                $MAIN_URI="https://{$_SERVER["SERVER_ADDR"]}:".$_SERVER["SERVER_PORT"]."/ntopng/";
+                $MAIN_URI="https://{$_SERVER["SERVER_ADDR"]}:".$_SERVER["SERVER_PORT"]."{$HTTP_X_ARTICA_SUBFOLDER}ntopng/";
                 $f[]="                    <li>";
                 $f[]="                        <a href=\"javascript:s_PopUpFull('$MAIN_URI',1024,768,'Monitor');\">";
                 $f[]="                            <i class=\"fa fa-heart\"></i> {network_monitor}";
@@ -389,7 +392,7 @@ function GlobalSearchEngine(e){
 
         if($users->isCategorizeAdmin()) {
             $f[] = "                    <li>";
-            $f[] = "                        <a href=\"javascript:blur()\" OnClick=\"Loadjs('fw.ufdb.categorize.php')\">";
+            $f[] = "                        <a href=\"javascript:blur()\" OnClick=\"Loadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.ufdb.categorize.php')\">";
             $f[] = "                            <i class=\"fa fa-book\"></i> {categorize}";
             $f[] = "                        </a>";
             $f[] = "                    </li>";
@@ -450,7 +453,7 @@ function GlobalSearchEngine(e){
             if ($EnableExternalACLADAgent==1){
                 $EnableOpenLDAP = 0;
                 $f[] = "                    <li>";
-                $f[] = "                        <a href=\"javascript:LoadAjaxSilent('MainContent','fw.members.activedirectory.ad.agent.php');\">";
+                $f[] = "                        <a href=\"javascript:LoadAjaxSilent('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.members.activedirectory.ad.agent.php');\">";
                 $f[] = "                            <i class=\"far fa-users\" ></i> {members}";
                 $f[] = "                        </a>";
                 $f[] = "                    </li>";
@@ -458,7 +461,7 @@ function GlobalSearchEngine(e){
             else{
                 $EnableOpenLDAP = 0;
                 $f[] = "                    <li>";
-                $f[] = "                        <a href=\"javascript:LoadAjaxSilent('MainContent','fw.members.activedirectory.php');\">";
+                $f[] = "                        <a href=\"javascript:LoadAjaxSilent('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.members.activedirectory.php');\">";
                 $f[] = "                            <i class=\"far fa-users\" ></i> {members}";
                 $f[] = "                        </a>";
                 $f[] = "                    </li>";
@@ -469,7 +472,7 @@ function GlobalSearchEngine(e){
 
         if($EnableOpenLDAP==1){
             $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:LoadAjaxSilent('MainContent','fw.members.ldap.php');\">";
+            $f[]="                        <a href=\"javascript:LoadAjaxSilent('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.members.ldap.php');\">";
             $f[]="                            <i class=\"far fa-users\"></i> {members}";
             $f[]="                        </a>";
             $f[]="                    </li>";
@@ -480,7 +483,7 @@ function GlobalSearchEngine(e){
             $SquidExternLDAPAUTH=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidExternLDAPAUTH"));
             if($SquidExternLDAPAUTH==1){
                 $f[]="                    <li>";
-                $f[]="                        <a href=\"javascript:LoadAjaxSilent('MainContent','fw.members.externldap.php');\">";
+                $f[]="                        <a href=\"javascript:LoadAjaxSilent('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.members.externldap.php');\">";
                 $f[]="                            <i class=\"far fa-users\"></i> {members}";
                 $f[]="                        </a>";
                 $f[]="                    </li>";
@@ -492,7 +495,7 @@ function GlobalSearchEngine(e){
             $q=new postgres_sql();
             $Computers=$q->COUNT_ROWS("hostsnet");
             $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:LoadAjaxSilent('MainContent','fw.computers.php');\">";
+            $f[]="                        <a href=\"javascript:LoadAjaxSilent('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.computers.php');\">";
             $f[]="                            <i class=\"fa-solid fa-computer\"></i>&nbsp;$Computers {computers}";
             $f[]="                        </a>";
             $f[]="                    </li>";
@@ -503,7 +506,7 @@ function GlobalSearchEngine(e){
     $lang           = $htmltools_inc->LanguageArray();
     if($_COOKIE["artica-language"]==null){$_COOKIE["artica-language"]=$tpl->language;}
     $langtext = $lang[$_COOKIE["artica-language"]];
-    $js="Loadjs('fw.account.php?change-language-js=yes')";
+    $js="Loadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.account.php?change-language-js=yes')";
 
     $f[]="                    <li>";
     $f[]="                        <a href=\"javascript:$js;\">";
@@ -515,7 +518,7 @@ function GlobalSearchEngine(e){
     $f[]="<li class=\"dropdown\" id='artica-notifs-barr'></li>";
 
     $f[]="                    <li>";
-    $f[]="                        <a href=\"$login?disconnect=yes\">";
+    $f[]="                        <a href=\"$HTTP_X_ARTICA_SUBFOLDER$login?disconnect=yes\">";
     $f[]="                            <i class=\"far fa-power-off\"></i> {logoff}";
     $f[]="                        </a>";
     $f[]="                    </li>";
@@ -537,7 +540,7 @@ function GlobalSearchEngine(e){
 	$('body').toggleClass('mini-navbar');
 	SmoothlyMenu();";
     $f[]="$('.right-sidebar-toggle').on('click', function () {";
-    $f[]="\tLoadjs('fw.sidebar.php?call=yes');";
+    $f[]="\tLoadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.sidebar.php?call=yes');";
     $f[]="});";
     $f[]="$('.sidebar-container').slimScroll({";
     $f[]="height: '100%',";
@@ -552,7 +555,7 @@ function GlobalSearchEngine(e){
                 ads_detected=1;
             }
         })
-        setTimeout(() => Loadjs('fw.icon.top.php?adblock='+ads_detected), 1); 
+        setTimeout(() => Loadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?adblock='+ads_detected), 1); 
     ";
     //$f[]="LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
     //END ABDEV

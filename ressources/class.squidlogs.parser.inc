@@ -1,7 +1,6 @@
 <?php
 include_once(dirname(__FILE__)."/class.ccurl.inc");
 include_once(dirname(__FILE__)."/class.mysql.catz.inc");
-include_once(dirname(__FILE__)."/class.stats-appliance.inc");
 include_once(dirname(__FILE__)."/class.artica-meta.inc");
 include_once(dirname(__FILE__)."/class.realtime-buildsql.inc");
 class squid_logs_parser{
@@ -21,9 +20,7 @@ class squid_logs_parser{
 		$this->EnableArticaMetaClient=intval(trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaMetaClient")));
 		
 		if($EnableProxyLogHostnames==1){$GLOBALS["LOG_HOSTNAME"]=true;}
-		
-		$stats_appliance=new stats_appliance();
-		
+
 		$unix=new unix();
 		$this->hostname=$unix->hostname_g();
 		$this->uuid=$unix->GetUniqueID();

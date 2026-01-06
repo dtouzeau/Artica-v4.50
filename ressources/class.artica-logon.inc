@@ -161,10 +161,6 @@ class artica_logon{
 
     public function logoff(){
         unset($_SESSION["privileges_array"]);
-
-
-
-
         unset($_SESSION["FORCED_TEMPLATE"]);
         unset($_SESSION["MINIADM"]);
         unset($_SESSION["uid"]);

@@ -8,8 +8,7 @@ include_once(dirname(__FILE__).'/ressources/charts.php');
 include_once(dirname(__FILE__).'/ressources/class.syslogs.inc');
 include_once(dirname(__FILE__).'/ressources/class.system.network.inc');
 include_once(dirname(__FILE__).'/ressources/class.os.system.inc');
-include_once(dirname(__FILE__).'/ressources/class.stats-appliance.inc');
-include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
+include_once(dirname(__FILE__).'/ressources/class.templates.inc');
 include_once(dirname(__FILE__).'/ressources/class.os.system.tools.inc');
 include_once(dirname(__FILE__).'/ressources/class.mysql.catz.inc');
 

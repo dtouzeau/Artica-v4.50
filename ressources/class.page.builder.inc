@@ -150,7 +150,7 @@ class pagebuilder{
 		if(!$GLOBALS["JS_NO_CACHE"]){
 			if($GLOBALS["EXECUTED_AS_ROOT"]){
 				if($GLOBALS["VERBOSE"]){echo "[DEBUG: ".__LINE__."] EXECUTED_AS_ROOT = true...\n";}
-				return;}
+				return false;}
 			$mem_id=__CLASS__.__FUNCTION__.$_SERVER['HTTP_USER_AGENT'];
 				if(isset($GLOBALS[$mem_id])){if($GLOBALS[$mem_id]<>null){
 					if($GLOBALS["VERBOSE"]){echo "[DEBUG: ".__LINE__."] return GLOBAL[$mem_id]\n";}
@@ -171,9 +171,13 @@ class pagebuilder{
 			$tafel=null;
 			$jsTable=array();
 			$html="\n$backspace<!--Called by  $filename/$function/$line -->\n" ;
-			$html="\n$backspace<!-- Template $template  -->\n" ;
+			$html=$html."\n$backspace<!-- Template $template  -->\n" ;
 			$html=$html."$backspace<!-- {$_SERVER['HTTP_USER_AGENT']}  -->\n" ;
 			$html=$html."$backspace<!-- Prepend:{$GLOBALS['JS_HEAD_PREPREND']}  -->\n" ;
+			$HTTP_X_ARTICA_SUBFOLDER="";
+			if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+				$HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+			}
 			
 			
 			if(preg_match("#curl\/[0-9\.]+#",$_SERVER['HTTP_USER_AGENT'])){
@@ -261,37 +265,26 @@ class pagebuilder{
 			
 			$chrome[]=$this->favicon($this->GetTemplateMemory());
 
-			if(($this->CurrentPageName()=="logon.php") OR ($this->CurrentPageName()=="logoff.php") OR ($this->CurrentPageName()=="404.php")){
-				$tafel=null;
-				$floatbarr=null;
-				$TimersLogs=null;
-				$artica_confapply=null;
-				$editusers=null;
-				}
-			
-			// view http://headjs.com/
-			$f[]="\n{$backspace}<script>";
-			if(!isset($GLOBALS["JS_HEAD_PREPREND"])){$GLOBALS["JS_HEAD_PREPREND"]=null;}
 			foreach ($jsTable as $num=>$func){
-				$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"{$GLOBALS["JS_HEAD_PREPREND"]}$func\"></script>";
+				$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"$HTTP_X_ARTICA_SUBFOLDER$func\"></script>";
 				
 			}
 
 			foreach ($jsTablesrc as $num=>$func){
-				$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"$func\"></script>";
+				$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"$HTTP_X_ARTICA_SUBFOLDER$func\"></script>";
 				
 			}
 
-			$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"/js/jquery.blockUI.js\"></script>";
-			$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"/js/highcharts.js\"></script>";
-			$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"/XHRConnection.js\"></script>";
-			$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"/mouse.js\"></script>";
+			$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"$HTTP_X_ARTICA_SUBFOLDER/js/jquery.blockUI.js\"></script>";
+			$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"$HTTP_X_ARTICA_SUBFOLDER/js/highcharts.js\"></script>";
+			$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"$HTTP_X_ARTICA_SUBFOLDER/XHRConnection.js\"></script>";
+			$chrome[]="$backspace<script type=\"text/javascript\" language=\"javascript\" src=\"$HTTP_X_ARTICA_SUBFOLDER/mouse.js\"></script>";
 			
 			
 			
 			
 			//$f[]="{$backspace}if(head.browser.ie){head.js('/mouse_ie.js');}";
-			$f[]="{$backspace}</script>\n";
+			//$f[]="$backspace}</script>\n";
 			
 			$oldMethod=false;
 			if(preg_match("#Chrome\/8#",$_SERVER['HTTP_USER_AGENT'])){$oldMethod=true;}

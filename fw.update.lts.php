@@ -31,11 +31,16 @@ function popup():bool{
     $tpl=new template_admin();
     $Lastest=$_GET["version"];
 
+    $HTTP_X_ARTICA_SUBFOLDER="/";
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
+
     $js=$tpl->framework_buildjs("artica.php?upgrade-lts=yes",
         "lts.progress",
         "lts.log",
         "lts-progress",
-        "document.location.href='/fw.login.php?disconnect=yes'"
+        "document.location.href='{$HTTP_X_ARTICA_SUBFOLDER}fw.login.php?disconnect=yes'"
     );
 
 

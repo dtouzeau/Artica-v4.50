@@ -1,6 +1,5 @@
 <?php
 
-
 class ldap_extern{
 	private $ldap_server;
 	private $ldap_port;

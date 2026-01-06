@@ -102,9 +102,6 @@ if(isset($_GET["outgoingmark"])){outgoingmark();exit;}
 if(isset($_GET["explain-this-rule"])){explain_this_rule();exit;}
 if(isset($_GET["explain-all-rules"])){explain_all_rules();exit;}
 
-if(isset($_GET["siege-status"])){siege_status();exit;}
-if(isset($_GET["siege-stop"])){siege_stop();exit;}
-if(isset($_GET["analyze-access"])){siege_analyze();exit;}
 if(isset($_GET["schedule-purge"])){schedule_purge();exit;}
 
 if(isset($_GET["global-ports-center"])){global_ports_center();exit;}
@@ -1503,50 +1500,11 @@ function configure_cache(){
 
 }
 
-function siege_stop(){
-    $unix=new unix();
-    $siege="/usr/share/artica-postfix/bin/siege";
-    if(!is_file($siege)){$siege=$unix->find_program("siege");}
-    $PID=$unix->PIDOF($siege);
-    if(!$unix->process_exists($PID)){return false;}
-    $kill=$unix->find_program("kill");
-    shell_exec("$kill $PID");
-}
 
-function siege_analyze(){
 
-    $fname=$_GET["analyze-access"];
-    writelogs_framework("----------------------------------> $fname",__FUNCTION__,__FILE__,__LINE__);
 
-    $unix=new unix();
-    $unix->framework_execute("exec.siege.php --analyze-access \"$fname\"","access.log.parser",
-        "access.log.parser.debug");
 
-}
 
-function siege_status(){
-    $unix=new unix();
-    $f[]="[PROCESS]";
-
-    $siege="/usr/share/artica-postfix/bin/siege";
-    if(!is_file($siege)){$siege=$unix->find_program("siege");}
-    if(!is_file($siege)){
-        $f[]="running=0";
-        @file_put_contents(PROGRESS_DIR."/siege.status",@implode("\n",$f));
-        return true;
-    }
-    $PID=$unix->PIDOF($siege);
-    if(!$unix->process_exists($PID)){
-        $f[]="running=0";
-        @file_put_contents(PROGRESS_DIR."/siege.status",@implode("\n",$f));
-        return true;
-    }
-    $f[]="running=1";
-    $f[]=$unix->GetMemoriesOf($PID);
-    @file_put_contents(PROGRESS_DIR."/siege.status",@implode("\n",$f));
-    return true;
-
-}
 
 function global_logging_center(){
     $unix=new unix();

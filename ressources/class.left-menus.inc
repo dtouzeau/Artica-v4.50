@@ -52,25 +52,6 @@ class left_menus{
         return @implode("\n", $f);
 
     }
-
-    public function ArticaMeta():string{
-        $ArticaMetaEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaMetaEnabled"));
-        if($ArticaMetaEnabled==0){
-            return "";
-        }
-        $tpl=new template_admin();
-
-        $f[] = "<li id='left-menu'>";
-        $f[] = "<a href='#' ><i class=\"".ico_ameta."\"></i> <span class=\"nav-label\">{artica_meta}</span> </a>";
-        $f[] = "<ul class='nav nav-second-level'>";
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.meta.status.php", "ICO"=>ico_dashboard,"TEXT"=>"{status}"));
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.meta.nodes.php", "ICO"=>ico_computer,"TEXT"=>"{managed_nodes}"));
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.meta.events.php", "ICO"=>ico_eye,"TEXT"=>"{events}"));
-        $f[] = "</ul>";
-        return @implode("\n", $f);
-    }
-
-
     public function hamrp():string{
         $EnableManagedReverseProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableManagedReverseProxy"));
         if($EnableManagedReverseProxy==0){return "";}
@@ -1410,7 +1391,7 @@ class left_menus{
         return 1;
     }
 
-    public function FireHole(){
+    public function FireHole($IPFeed=false):string{
         $tpl=new template_admin();
         if($this->isFireWall()==0){return "";}
         $FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
@@ -1451,7 +1432,10 @@ class left_menus{
             );
         }
 
-        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ipfeeds.php", "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
+        if(!$IPFeed) {
+            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ipfeeds.php",
+                "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
+        }
 
         if($FireHolEnable==1) {
             $f[]=$tpl->LeftMenu(
@@ -1840,70 +1824,7 @@ class left_menus{
     }
 
 
-    public function MimeDefang(){
-        $MimeDefangEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangEnabled"));
-        $MimeDefangInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangInstalled"));
-        if($MimeDefangInstalled==0){$MimeDefangEnabled=0;}
-        if(!$this->users->AsPostfixAdministrator){return "";}
-        if($MimeDefangEnabled==0){return "";}
 
-        $f[]="<!-- MIMEDEFANG START  -->";
-        $f[]="                <li id='left-menu'>";
-        $f[]="                    <a href='#' ><i class=\"fas fa-crosshairs\"></i> <span class=\"nav-label\">{APP_VALVUAD}</span> </a>";
-        $f[]="                    <ul class='nav nav-second-level'>";
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.mimedefang.status.php');\">
-															<i class=\"fas fa-tachometer-alt\"></i> <span class=\"nav-label\">{status}</span> </a>";
-        $f[]="							</li>";
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.mimedefang.spamassassin.php');\">
-														<i class=\"fas fa-location-slash\"></i> <span class=\"nav-label\">{Anti-Spam Engine}</span> </a>";
-        $f[]="							</li>";
-
-
-
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.mimedefang.spamassassin.rules.php');\">
-														<i class=\"fas fa-location-slash\"></i> <span class=\"nav-label\">{antispam_rules}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.mimedefang.clamav.php');\">
-														<i class=\"fab fa-medrt\"></i> <span class=\"nav-label\">{antivirus_rules}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.mimedefang.urls.php');\">
-														<i class=\"fab fa-medrt\"></i> <span class=\"nav-label\">{url_filtering}</span> </a>";
-        $f[]="							</li>";
-
-
-
-
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.mimedefang.backup.php');\">
-														<i class=\"fas fa-hdd\"></i> <span class=\"nav-label\">{backupemail_behavior}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.mimedefang.autowhite.php');\">
-														<i class=\"fas fa-thumbs-up\"></i> <span class=\"nav-label\">{smtp_AutoWhiteList}</span> </a>";
-        $f[]="							</li>";
-
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.mimedefang.quarantine.php');\">
-														<i class=\"fas fa-archive\"></i> <span class=\"nav-label\">{quarantine}</span> </a>";
-        $f[]="							</li>";
-
-
-        $f[]="					 </ul>";
-        $f[]="                </li>";
-        $f[]="<!-- MIMEDEFANG END  -->";
-        return @implode("\n",$f);
-    }
 
 
     function PulseReverse():string{
@@ -3294,6 +3215,24 @@ class left_menus{
         return @implode("\n",$f);
 
 
+    }
+
+    public function NetworkAgents(): string {
+        if(!$this->users->AsSystemAdministrator){return "";}
+        $EnableArticaMeta=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaMeta"));
+        if($EnableArticaMeta==0){return "";}
+        $tpl=new template_admin();
+        $f[]="<!-- NETWORK_AGENTS START -->";
+        $f[]="                <li id='left-menu'>";
+        $f[]="                    <a href='#' ><i class=\"fa-regular fa-arrows-to-circle\"></i> <span class=\"nav-label\">{APP_ARTICA_META}</span> </a>";
+        $f[]="                    <ul class='nav nav-second-level'>";
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.php", "ICO"=>ico_dashboard,"TEXT"=>"{status}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.list.php", "ICO"=>ico_computer,"TEXT"=>"{agents_list}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.artica.repository.php", "ICO"=>ico_database,"TEXT"=>"{repository}"));
+        $f[]="					 </ul>";
+        $f[]="                </li>";
+        $f[]="<!-- NETWORK_AGENTS END -->";
+        return @implode("\n",$f);
     }
 
 

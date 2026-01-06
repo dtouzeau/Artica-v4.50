@@ -24,7 +24,6 @@ if(function_exists("debug_mem")){debug_mem();}
 include_once(dirname(__FILE__)."/class.highcharts.inc");
 include_once(dirname(__FILE__)."/class.tcpip.inc");
 include_once(dirname(__FILE__)."/class.analyze-page.inc");
-include_once(dirname(__FILE__)."/class.stats-appliance.inc");
 include_once(dirname(__FILE__)."/class.mysql-dump.inc");
 include_once(dirname(__FILE__)."/class.postgres.inc");
 include_once(dirname(__FILE__)."/class.template-admin.inc");

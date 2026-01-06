@@ -18,13 +18,16 @@ function js():bool{
        admin_tracks("Turn OFF the Web-Filtering engine");
        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UfdbGuardDisabledTemp",1);
    }
-
+    $HTTP_X_ARTICA_SUBFOLDER="/";
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
 
    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/filter"));
    if(!$json->Status){
        $tpl->js_error($json->Error);
        return false;
    }
-   echo "Loadjs('fw.sidebar.php?call=yes');\nLoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
+   echo "Loadjs('fw.sidebar.php?call=yes');\nLoadAjaxSilent('artica-notifs-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?notifs=yes');";
    return true;
 }

@@ -50,6 +50,8 @@ define("ico_docker","fa-brands fa-docker");
 define("ico_containers","fa-solid fa-truck-container");
 define("ico_scanner_gun","fa-solid fa-scanner-gun");
 define("ico_refresh","fa-solid fa-rotate");
+define("ico_refresh_animate","fa-solid fa-rotate fa-spin");
+
 define("ico_storage","fa-solid fa-boxes-packing");
 define("ico_stop","fa-solid fa-stop");
 define("ico_run","fa-solid fa-play");

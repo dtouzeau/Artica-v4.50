@@ -2246,8 +2246,8 @@ Artica will then create firewall rules to ban source addresses for 4 hours.
 <lb_options>Load-balancing options</lb_options>
 <CREATE_DOH_SERVICE>[b]Create a DoH Gateway[/b][br]
 Turns your reverse proxy into a DNS conversion proxy, enabling you to transform your DNS server into DNS over DNS over HTTPS (DoH).</CREATE_DOH_SERVICE>
-<CREATE_METAR_SERVICE>[b]Create a local Artica Meta gateway[/b][br]
-Redirects https connections to the local Meta service</CREATE_METAR_SERVICE>
+<CREATE_DEBIAN_AGENT_SERVICE>[b]Debian-Agent redirector[/b][br]
+Redirects https connections to the local Debian Agent service</CREATE_DEBIAN_AGENT_SERVICE>
 <exceed_os_capacities>Exceeding system capabilities</exceed_os_capacities>
 <free_mem_less>Free memory less than</free_mem_less>
 <sysguard_explain>Returns a 503 error if the load exceeds %s or if the swap only has %s% left or if only %sM of RAM is left</sysguard_explain>
@@ -3350,5 +3350,74 @@ If the value is set to 0, the tracing feature is disabled.[br]You will see a spe
 <APP_SIEGE_EXPLAIN>Siege Daemon is an enterprise-grade load testing solution.[br]It provides a modern REST API to orchestrate HTTP load tests, with real-time monitoring, Kerberos authentication support, and seamless integration capabilities.[br]Whether you are stress-testing internal applications behind corporate proxies or validating public-facing APIs, Siege Daemon delivers the insights required to ensure your infrastructure can sustain production workloads.</APP_SIEGE_EXPLAIN>
 <delay_between_requests>Delay between requests</delay_between_requests>
 <new_stress_test>New stress test</new_stress_test>
+<official_categories_explain>If this option is enabled, you will be able to use the official Artica Tech categories.[br]
+This feature will override the existing Artica Tech categories.</official_categories_explain>
+<APP_DEBIAN_NETWORK_AGENT>Network Agent</APP_DEBIAN_NETWORK_AGENT>
+<network_agents>Network Agents</network_agents>
+<network_agents_explain>Manage remote network agents for distributed monitoring and administration</network_agents_explain>
+<agents_list>Agents List</agents_list>
+<add_agent>Add Agent</add_agent>
+<total_agents>Total Agents</total_agents>
+<online>Online</online>
+<offline>Offline</offline>
+<pending>Pending</pending>
+<check_all_agents>Check All Agents</check_all_agents>
+<no_agents_configured>No agents configured</no_agents_configured>
+<last_seen>Last Seen</last_seen>
+<check_status>Check Status</check_status>
+<regenerate_token>Regenerate Token</regenerate_token>
+<hostname_and_ip_required>Hostname and IP address are required</hostname_and_ip_required>
+<agent_added_token>Agent added. Enrollment token</agent_added_token>
+<agent_online>Agent is online</agent_online>
+<agent_offline>Agent is offline or not responding</agent_offline>F
+<no_events>No events recorded</no_events>
+<new_enrollment_token>New Enrollment Token</new_enrollment_token>
+<check_started>Status check started in background</check_started>
+<unknown_error>Unknown error occurred</unknown_error>
+<cpu_load>CPU Load</cpu_load>
+<enrollment_token>Enrollment Token</enrollment_token>
+<enrollment_token_explain>Token obtained from the remote agent Unix console or from the Artica Web console if the Agent is enabled on a remote Artica server</enrollment_token_explain>
+<agent_version>Agent version</agent_version>
+<registered_at>Registered at</registered_at>
+<not_before>Not before</not_before>
+<not_after>Not after</not_after>
+<days_until_expiry>Days until expiry</days_until_expiry>
+<dns_names>DNS names</dns_names>
+<articaweb_to_unix>You are about to change the communication method (Unix) of the Web console.[br]
+It will now listen on a Unix network socket and will be accessible only through this server.</articaweb_to_unix>
+<articaweb_to_tcp>You are about to change the communication method (TCP) of the Web console.[br]
+It will now listen on a TCP network and will be accessible from everywhere.</articaweb_to_tcp>
+<artica_repositories>Artica repositories</artica_repositories>
+<artica_repositories_explain>This section allows you to create a mirror of the official Artica repositories.[br]In this way, you can centrally deploy Artica updates through this server.[br]Artica servers equipped with the network agent will be able to receive these updates automatically.</artica_repositories_explain>
+<total_files>Total files</total_files>
+<total_size>Total size</total_size>
+<comma_separated>Comma separated</comma_separated>
+<add_hotfix>Add a hotfix</add_hotfix>
+<service_pack>Service Pack</service_pack>
+<service_packs>Service Packs</service_pack>
+<APP_FAILOVER_CHECKER>Failover checker</APP_FAILOVER_CHECKER>
+<APP_MALTRAIL>MailTrail</APP_MALTRAIL>
+<hotfixes>Hotfixes</hotfixes>
+<add_package_later>Your package has been added.[br]The server is rebuilding its indexes and will be available in a few seconds (approximately 30 seconds).</add_package_later>
+<push_update>Push update</push_update>
+<deploy_agent>Deploy agent</deploy_agent>
+<deploy_agent_ssh_explain>This operation will remotely deploy the Debian agent to a remote server using SSH.[br]Please specify the root account (or an account with sufficient privileges) to install the agent remotely.</deploy_agent_ssh_explain>
+<ssh_port>SSH port</ssh_port>
+<agent_port>Agent port</agent_port>
+<synchronisation>Synchronization</synchronisation>
+<repository_status>Repository status</repository_status>
+<hotfix>Hotfix</hotfix>
+<select_agents>Select agents</select_agents>
+<operation_details>Operation details</operation_details>
+<operation_summary>Operation summary</operation_summary>
+<completed_at>Completed at</completed_at>
+<agent_results>Agent results</agent_results>
+<agent_id>Agent ID</agent_id>
+<no_agent_explain>To manage remote servers, you must deploy a service named Debian Agent, capable of receiving and executing commands sent by your Meta server.[br]
+Please refer to the documentation (click the button) to view the available remote deployment methods.</no_agent_explain>
+<set_token>Set token</set_token>
+<trust_reverse_proxy_CA>Trust reverse-proxy CA</trust_reverse_proxy_CA>
+<use_ssh>Use SSH</use_ssh>
+<use_API>Use API</use_API>
 
 

@@ -182,7 +182,6 @@ function uninstall($noprogress=false){
 	system("$php /usr/share/artica-postfix/exec.milter-greylist.install.php --uninstall");
     if(!$noprogress){build_progress_restart("{uninstalling}...",34);}
     if(!$noprogress){build_progress_restart("{uninstalling}...",35);}
-    system("$php /usr/share/artica-postfix/exec.mimedefang.php --uninstall");
     if(!$noprogress){build_progress_restart("{uninstalling}...",36);}
 
     if(is_file("/etc/init.d/opendkim")) {

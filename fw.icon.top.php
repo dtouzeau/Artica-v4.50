@@ -38,11 +38,17 @@ if(isset($_GET['adblock'])){
 start();
 
 function see_updated(){
+    $HTTP_X_ARTICA_SUBFOLDER="/";
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
+
+
 	$ID=$_GET["seen-updated"];
 	$q=new lib_sqlite("/home/artica/SQLITE/nightly.db");
 	$q->QUERY_SQL("UPDATE history SET asseen=1 WHERE ID=$ID");
 	header("content-type: application/x-javascript");
-	echo "LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
+	echo "LoadAjaxSilent('artica-notifs-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?notifs=yes');";
 }
 function Cronos():bool{
     header("content-type: application/x-javascript");

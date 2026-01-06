@@ -34,8 +34,10 @@ foreach ($includes as $classfile){
 class template_admin{
     private $TRCLASS=null;
     private $switchjs=null;
+    private $TABLE_FORM_BTS=array();
     private $TABLE_FORM_PRIV="";
     private $TABLE_FORM=array();
+    private $TABLE_FORM_JS=array();
     private $TABLE_FORM_BUTTONS=array();
     private $FieldTable=array();
     private $FieldTableJs=array();
@@ -176,7 +178,7 @@ class template_admin{
 
 
 
-    private function table_form_style_data($error=false):string{
+    private function table_form_style_data($error=false,$nojs=false):string{
 
         if($this->switchjs==null){
             return "style='width:99%;font-size:large;padding-left: 10px'";
@@ -187,7 +189,9 @@ class template_admin{
         if($error){
             $color="#ed5565";
         }
-
+        if($nojs){
+            $js="";
+        }
 
         return "style='width:99%;font-size:large;padding-left: 10px' OnMouseOver=\";this.style.cursor='pointer';this.style.color='#21b9bb'\" 
         OnMouseOut=\";this.style.cursor='default';this.style.color='$color';\" $js";
@@ -360,9 +364,23 @@ return implode(', ', $timeParts);
         if($error){
             $color="#ed5565";
         }
-        $style=$this->table_form_style($error);
 
+        $btns_flat="";
+        $idStrong=md5(time()."strong".$value.$field);
+        $style=$this->table_form_style($error);
         $style_value=$this->table_form_style_data($error);
+        VERBOSE("TABLE_FORM_BTS:".count($this->TABLE_FORM_BTS),__LINE__);
+        if(count($this->TABLE_FORM_BTS)>0) {
+            $style_value = $this->table_form_style_data($error, true);
+            if (strlen($this->switchjs) > 3) {
+                $this->TABLE_FORM_JS[] = "$('#$idStrong').click(function () { $this->switchjs } );";
+            }
+            $btns_flat="<div style='text-align:right;margin-right:20px'>".$this->th_buttons($this->TABLE_FORM_BTS)."</div>";
+            $this->TABLE_FORM_BTS=array();
+        }
+
+        
+
         $INT=array();
         $INT[] = "<tr class='$this->TRCLASS' style='height: 60px'>";
         $INT[] = "<td style='width:1%;padding-left:10px;color:$color' $style>
@@ -377,14 +395,14 @@ return implode(', ', $timeParts);
 
         if( strlen($Button)==0 ) {
             $INT[] = "<td $style_value $colspan>";
-            $INT[] = "<strong style='text-transform:capitalize;color:$color'>$value</strong>$icon_help";
+            $INT[] = "<strong style='text-transform:capitalize;color:$color' id='$idStrong'>$value</strong>$icon_help$btns_flat";
         }else{
             $INT[] = "<td>";
             $INT[] = "<!-- Button: BUILD -->";
             $INT[] = "<table style='width:100%'>";
             $INT[] = "<tr>";
             $INT[] = "<td $style_value >";
-            $INT[] = "<strong style='text-transform:capitalize;color:$color'>$value</strong>$icon_help</td>";
+            $INT[] = "<strong style='text-transform:capitalize;color:$color' id='$idStrong'>$value</strong>$icon_help$btns_flat</td>";
             $INT[] = "<td style='width:1%'>$Button</td>";
             $INT[] = "</tr>";
             $INT[] = "</table>";
@@ -431,8 +449,14 @@ return implode(', ', $timeParts);
         }
 
         $html[]="</table>";
+        if(count($this->TABLE_FORM_JS)>0){
+            $html[]="<script>";
+            $html[]=@implode("\n",$this->TABLE_FORM_JS);
+            $thml[]="</script>";
+        }
         $this->TABLE_FORM=array();
         $this->TABLE_FORM_BUTTONS=array();
+        $this->TABLE_FORM_JS=array();
         return $this->_ENGINE_parse_body($html);
     }
 
@@ -864,7 +888,7 @@ return implode(', ', $timeParts);
     }
 
 
-    public function table_form_field_js($js,$privilege=null):bool{
+    public function table_form_field_js($js,$privilege=null,$buttons=array()):bool{
         $this->TABLE_FORM_PRIV=$privilege;
         if($privilege<>null){
             if(!$this->IsSecurity($privilege)){
@@ -872,7 +896,9 @@ return implode(', ', $timeParts);
                 return false;
             }
         }
-
+        if(!is_array($buttons)){$buttons=array();}
+        VERBOSE("TABLE_FORM_BTS = ".count($buttons),__LINE__);
+        $this->TABLE_FORM_BTS=$buttons;
         $this->switchjs=$js;
         return true;
     }
@@ -1185,15 +1211,21 @@ return implode(', ', $timeParts);
     public function build_heads():string{
         include_once(dirname(__FILE__)."/class.heads.builder.inc");
         $this->title=$this->javascript_parse_text($this->title);
+        $HTTP_X_ARTICA_SUBFOLDER="/";
+        if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+            $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+        }
+
+
         $f[]="<!DOCTYPE html>";
         $f[]="<html lang=\"en\">";
         $f[]= "<head>";
         $f[]="    <title>$this->title</title>";
         $f[]="    <meta charset=\"utf-8\">";
         $f[]="    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
-        $f[]="    <link rel=\"icon\" href=\"/ressources/templates/default/favicon.ico\" type=\"image/x-icon\" />";
-        $f[]="    <link rel=\"shortcut icon\" href=\"/ressources/templates/default/favicon.ico\" type=\"image/x-icon\" />";
-        $f[]="    <link href=\"/css/pace-theme-big-counter.css\" rel=\"stylesheet\">";
+        $f[]="    <link rel=\"icon\" href=\"{$HTTP_X_ARTICA_SUBFOLDER}ressources/templates/default/favicon.ico\" type=\"image/x-icon\" />";
+        $f[]="    <link rel=\"shortcut icon\" href=\"{$HTTP_X_ARTICA_SUBFOLDER}ressources/templates/default/favicon.ico\" type=\"image/x-icon\" />";
+        $f[]="    <link href=\"{$HTTP_X_ARTICA_SUBFOLDER}css/pace-theme-big-counter.css\" rel=\"stylesheet\">";
         $HeadBuilder=new HeadsBuilder();
         $HeadBuilder->BuildLoader();
         $f[]=$HeadBuilder->f;
@@ -1322,10 +1354,64 @@ return implode(', ', $timeParts);
         return "v$VERSION Community Edition$Eval";
 
     }
+    public function GoToTimestamp($s):int{
+
+        if(preg_match("#^(.+?)T([0-9:]+)\.#",$s,$re)){
+            VERBOSE("$s = $re[1] $re[2]",__LINE__);
+            return strtotime("$re[1] $re[2]");
+        }
+
+        if(preg_match("#^[0-9]+:[0-9]+:[0-9]+$#",$s,$re)){
+            VERBOSE("$s = ".date("Y-m-d")." $s",__LINE__);
+            return strtotime(date("Y-m-d")." $s");
+        }
+
+        VERBOSE("$s NO MATCH1",__LINE__);
+
+        $d=$this->iso8601_to_timestamp($s);
+        if($d>0){
+            return $d;
+        }
+        $s = preg_replace('/\.(\d{6})\d*(?=[+-]\d{2}:\d{2}$)/', '.$1', $s);
+
+        $dt = DateTime::createFromFormat('Y-m-d\TH:i:s.uP', $s);
+        if (!$dt) {
+            return 0;
+        }
+        return $dt->getTimestamp();
+    }
+    private function iso8601_to_timestamp(string $date): int {
+        // Detect ISO 8601 with fractional seconds and timezone
+        if (preg_match(
+            '/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d+)?([+-]\d{2}:\d{2}|Z)$/',
+            $date,
+            $m
+        )) {
+            // Keep only microseconds (max 6 digits)
+            $fraction = '';
+            if (!empty($m[2])) {
+                $fraction = substr($m[2], 0, 7); // ".123456"
+            }
+
+            $clean = $m[1] . $fraction . $m[3];
+
+            try {
+                return (new DateTime($clean))->getTimestamp();
+            } catch (Exception $e) {
+                return 0;
+            }
+        }
+
+        return 0;
+    }
 
     public function build_firewall($token="nothing=none"){
         VERBOSE("BuildFireWall OK", __LINE__);
+        $HTTP_X_ARTICA_SUBFOLDER="/";
         if(!isset($GLOBALS["CLASS_USERS"])){$GLOBALS["CLASS_USERS"]=new usersMenus();}
+        if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+            $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+        }
 
         $f[]=$this->build_heads();
         $f[]="<body id=\"page-top\" class='pace-done mini-navbar'>";
@@ -1364,10 +1450,10 @@ return implode(', ', $timeParts);
 		</div>";
         $f[]="<div id='artica-modal-dialog'></div><div id='modal-windows' class='modal inmodal fade'  data-keyboard=\"false\" data-backdrop=\"static\">";
         $LEFT=false;
-        $f[]="<script src=\"/angular/js/plugins/pace/pace.min.js\"></script>";
+        $f[]="<script src=\"{$HTTP_X_ARTICA_SUBFOLDER}angular/js/plugins/pace/pace.min.js\"></script>";
         $f[]=@implode("\n",$this->cssScript);
-        $f[]="<script src=\"/angular/js/plugins/chartJs/Chart.min.js\"></script>";
-        $f[]="<script src=\"/angular/js/plugins/chartJs/angles.js\"></script>";
+        $f[]="<script src=\"{$HTTP_X_ARTICA_SUBFOLDER}angular/js/plugins/chartJs/Chart.min.js\"></script>";
+        $f[]="<script src=\"{$HTTP_X_ARTICA_SUBFOLDER}angular/js/plugins/chartJs/angles.js\"></script>";
         $f[]="<!-- Custom and plugin javascript -->";
 
         $f[]="<script>";
@@ -1376,15 +1462,15 @@ return implode(', ', $timeParts);
         $f[]="function RefreshSecondInterfaceBarrs(){";
         if($this->DynaAcls){
             $LEFT=true;
-            $f[]="LoadAjaxSilent('left-barr','fw-left-menus.php?dynacls=yes');";
+            $f[]="LoadAjaxSilent('left-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw-left-menus.php?dynacls=yes');";
         }
         if(!$LEFT){
-            $f[]="LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes&$token');";
+            $f[]="LoadAjaxSilent('left-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw-left-menus.php?nothing=yes&$token');";
         }
 
         $me=CurrentPageName();
-        $f[]="LoadAjaxSilent('top-barr','fw-top-bar.php?by=$me&$token');";
-        $f[]="Loadjs('fw.icon.top.php');";
+        $f[]="LoadAjaxSilent('top-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw-top-bar.php?by=$me&$token');";
+        $f[]="Loadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php');";
         $f[]="}";
 
         $f[]="RefreshSecondInterfaceBarrs();";
@@ -1484,7 +1570,7 @@ return implode(', ', $timeParts);
                 $btn=$this->parse_button($button,$sbtncalss);
             }
         }
-        return "<div class=\"widget style1 $background\" style='min-height: 122px'>
+        return "<div class=\"widget style1 $background\" style='min-height: 172px'>
 			<div class=\"row\">
 				<div class=\"col-xs-4\">
 					<i class=\"$icon fa-5x\"></i>
@@ -1536,7 +1622,7 @@ return implode(', ', $timeParts);
         $Main["QUERY"]=$Query;
         $Main["INTERVAL"]=$Interval;
         $Serialize=base64_encode(serialize($Main));
-        return "Loadjs('$Target?Start=$Serialize');";
+        return "Loadjs('$Target?Start=$Serialize');LoadAjaxSilent('$div','$page?$Query');";
     }
     public function RefreshInterval_Loadjs($div,$page,$Query,$Interval=3):string{
         $Target="fw.status.interval.php";
@@ -3129,24 +3215,28 @@ if($forceFunc<>null){
 
 
     }
-    public function js_ok($text=null):bool{
+    public function js_ok($text=null,$after=null):bool{
         header("content-type: application/x-javascript");
         $success=$this->_ENGINE_parse_body("{success}");
         $text=$this->_ENGINE_parse_body($text);
         $text=str_replace("'", "\'", $text);
         $text=str_replace("\n", "<br>", $text);
         $jsa[]="$.alert({";
-        $jsa[]="theme: 'white-theme',";
-        $jsa[]="containerFluid: true,";
-        $jsa[]="title: \"<p style='margin-top:20px;margin-left:5px'>$success</p>\",";
-        $jsa[]="content: '<H3 class=center>&laquo;&nbsp;$text&nbsp;&raquo;</H3>',";
-        $jsa[]="icon: 'fas fa-thumbs-up fa-4x',";
-        $jsa[]="defaultButtons: {";
-        $jsa[]="    ok: {";
-        $jsa[]="        action: function (){ }";
-        $jsa[]="    }";
-        $jsa[]="        }";
+        $jsa[]="\ttheme: 'white-theme',";
+        $jsa[]="\tcontainerFluid: true,";
+        $jsa[]="\ttitle: \"<p style='margin-top:20px;margin-left:5px'>$success</p>\",";
+        $jsa[]="\tcontent: '<H3 class=center>&laquo;&nbsp;$text&nbsp;&raquo;</H3>',";
+        $jsa[]="\ticon: 'fas fa-thumbs-up fa-4x',";
+        $jsa[]="\tdefaultButtons: {";
+        $jsa[]="\t\tok: {";
+        $jsa[]="\t\t\taction: function (){";
+        $jsa[]="\t\t\t}";
+        $jsa[]="\t\t}";
+        $jsa[]="\t}";
         $jsa[]="});";
+        $jsa[]="";
+        $jsa[]=$after;
+        $jsa[]="";
         echo @implode("\n",$jsa);
         return true;
     }
@@ -3185,7 +3275,6 @@ if($forceFunc<>null){
         $text=str_replace("\n","<br>",$text);
         $text=str_replace("<br><br>","<br>",$text);
         $text=str_replace("'","`",$text);
-
         return "jserror:$text";
     }
 
@@ -4127,7 +4216,15 @@ $jsb[]="}";
         }
         return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" >$ico</button>";
     }
+    public function icon_browser($js=null):string{
+        $ico="fab fa-internet-explorer";
+        if($js==null){
+            return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"blur()\" ><i class='$ico'></i></button>";
+        }
 
+
+        return "<button type='button' class='btn btn-primary btn-bitbucket' OnClick=\"$js\" ><i class='$ico'></i></button>";
+    }
     public function icon_support($url=null):string{
         $ico=ico_support;
         if($url==null){
@@ -5625,6 +5722,19 @@ $jsb[]="}";
 
     }
 
+    public function GetProgressBarr($title,$prc):string{
+        $myid=time();
+        $html[]="<div>";
+        $html[]="<h5 id=\"title-$myid\">$title</h5>";
+        $html[]="<div class=\"progress progress-bar-default\"";
+        $html[]="id=\"main-$myid\">";
+        $html[]="<div id=\"barr-$myid\" style=\"width: $prc%\" aria-valuemax=\"100\"";
+        $html[]="aria-valuemin=\"0\" aria-valuenow=\"5\" role=\"progressbar\"";
+        $html[]="class=\"progress-bar\">$prc% $title</div></div></div>";
+        return @implode(" ",$html);
+    }
+    
+
     public function CleanServiceName($source){
         $source=utf8_decode($source);
         $source=str_replace("_", "", $source);
@@ -6688,7 +6798,7 @@ if(typeof dialogInstance == 'object'){
 						</form>
 					</div>
 				</div>
-			";
+			</div>";
 
        // if(!$this->formwizard){$html[]="</div>";}
         if($iconclass<>null){$html[]="</td></tr></table>";}
@@ -6804,7 +6914,7 @@ if(typeof dialogInstance == 'object'){
     $html[]="\tSwitchFormInsteadOf(vid,1);";
     $html[]="}";
     $html[]="function SwitchFormInsteadOf(vid,direction){";
-    $html[]="\tif(direction==1){";
+    $html[]="\tif(direction===1){";
         foreach ($this->DISABLE_ALL as $ids){
             $html[]="\t\tif( document.getElementById('$ids') ){";
             $html[]="\t\t\tdocument.getElementById('$ids').disabled=true;";
@@ -6830,7 +6940,7 @@ if(typeof dialogInstance == 'object'){
             $html[]="\t\t\t}";
         }
         $html[]="\t}";
-        $html[]="\tif(direction==0){";
+        $html[]="\tif(direction===0){";
         reset($this->DISABLE_ALL);
         foreach ($this->DISABLE_ALL as $ids){
             $html[]="\t\tif( document.getElementById('$ids') ){";
@@ -7733,7 +7843,7 @@ if(typeof dialogInstance == 'object'){
         if(!isset($_GET["tiny-page"])){
 
             if($title<>null) {
-                $html[] = "	<div class=\"row border-bottom white-bg dashboard-header\">";
+                $html[] = "<div class=\"row border-bottom white-bg dashboard-header\">";
                 $html[] = "<table style='width:100%'>";
                 $html[] = "<tr>";
                 if(preg_match("#\.png$#",$ico)){
@@ -9515,6 +9625,39 @@ if(typeof dialogInstance == 'object'){
         }
 
         return $this->_ENGINE_parse_body(" <div class=\"panel panel-warning\" style='margin:10px'>
+                                        <div class=\"panel-heading\">
+                                          $title
+                                        </div>
+                                        <div class=\"panel-body\">
+                                            $license_ico<p>$text</p>
+                                            <div style='text-align:right'>
+                                            $button
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>");
+    }
+    function div_info($text):string{
+
+        $license_ico=null;
+        $title="{info}";
+        $button=null;
+        if(strpos($text,"||")>0){
+            $tb=explode("||",$text);
+            $title=$tb[0];
+            $text=$tb[1];
+            if(isset($tb[2])){
+                if(preg_match("#wiki:(.+)#",$tb[2],$re)){
+                    $url="s_PopUpFull('{$re[1]}','1024','900');";
+                    $button=$this->button_autnonome("{howto}: {online_help}", $url, "fas fa-user-headset",null,0,"btn-warning");
+                }else{
+                    $button=$this->button_autnonome("{howto}: {online_help}", $tb[2], "fas fa-user-headset",null,0,"btn-warning");
+                }
+
+
+            }
+        }
+        return $this->_ENGINE_parse_body(" <div class=\"panel panel-info\" style='margin:10px'>
                                         <div class=\"panel-heading\">
                                           $title
                                         </div>

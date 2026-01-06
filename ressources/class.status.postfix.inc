@@ -38,7 +38,6 @@ function postfix_increment_func($array){
 	$array[]="postfix_schedules";
 	$array[]="policyd_weight";
 	$array[]="milter_regex";
-	$array[]="mimedefang";
 	$array[]="cleanClode";
 	$array[]="PostfixClusterServer";
 	$array[]="PostfixClusterClient";
@@ -600,148 +599,7 @@ function sa_update_directory(){
 
 
 //========================================================================================================================================================
-function mimedefang():string{
-	$WORKDIR=base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2E=");
-	$WORKFILE=base64_decode('LmxpYw==');
-	$WORKPATH="$WORKDIR/$WORKFILE";
-	$FUNCTION=__FUNCTION__."()";
-	if(!is_file("/etc/init.d/mimedefang")){
-		return "";
-    }
-	$l[]="[APP_MIMEDEFANG]";
-	$l[]="service_name=APP_MIMEDEFANG";
-	$MasterBin=$GLOBALS["CLASS_UNIX"]->find_program("mimedefang");
-	if(is_file("/usr/local/bin/mimedefang")){$MasterBin="/usr/local/bin/mimedefang";}
 
-	
-	if(!is_file($MasterBin)){
-		$l[]="running=0\ninstalled=0";
-		events_watchdog_postfix("$FUNCTION Master binary not found [".__LINE__."]");
-		return @implode("\n", $l);
-	}
-	
-	
-	
-	$MimeDefangEnabled=intval(@file_get_contents('/etc/artica-postfix/settings/Daemons/MimeDefangEnabled'));
-	
-	$CONTENT=strtoupper(@file_get_contents($WORKPATH));
-	if($GLOBALS["VERBOSE"]){echo "DEBUG: $WORKPATH --> $CONTENT\n";}
-	if($CONTENT<>"TRUE"){
-		if($MimeDefangEnabled==1){
-		    squid_admin_mysql(0,"License Error, disable SMTP Policies service ",null,__FILE__,__LINE__);
-			shell_exec("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.mimedefang.php --uninstall >/dev/null 2>&1");
-			return false;
-		}
-	}
-
-
-
-	
-
-	if($GLOBALS["VERBOSE"]){echo "DEBUG: MimeDefangEnabled..: $MimeDefangEnabled\n";}
-	$pid_path="/var/spool/MIMEDefang/mimedefang.pid";
-	if($GLOBALS["VERBOSE"]){echo "DEBUG: pid path....: $pid_path\n";}
-	$master_pid=trim(@file_get_contents($pid_path));
-	if($GLOBALS["VERBOSE"]){echo "DEBUG: master pid..: $master_pid\n";}
-
-	$DisableMessaging=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableMessaging"));
-	if($DisableMessaging==1){$MimeDefangEnabled=0;}
-
-
-	$l[]="master_version=".$GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangVersion");
-	$l[]="service_cmd=/etc/init.d/mimedefang";
-	$l[]="service_disabled=$MimeDefangEnabled";
-	$l[]="pid_path=$pid_path";
-	$l[]="watchdog_features=1";
-	$l[]="family=postfix";
-	
-	if(!is_file("/etc/init.d/mimedefang")){
-		shell_exec("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.mimedefang.php --init");
-		
-	}
-	
-	
-
-
-	if($MimeDefangEnabled==0){
-		if($GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-			squid_admin_mysql(0, "Stopping MimeDefang service...", null,__FILE__,__LINE__);
-			shell_exec2("{$GLOBALS["nohup"]} /etc/init.d/mimedefang stop");
-		}
-		events_watchdog_postfix("$FUNCTION MimeDefangEnabled:$MimeDefangEnabled [".__LINE__."]");
-		return implode("\n",$l)."\n".mimedefangmx();
-	}
-
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		squid_admin_mysql(0, "Starting MimeDefang service (not running)..", null,__FILE__,__LINE__);
-		$l[]="running=0";
-		$l[]="installed=1\n";
-		events_watchdog_postfix("$FUNCTION Starting MimeDefang service (not running).. !!!");
-		return implode("\n",$l)."\n".mimedefangmx();
-		
-	}
-	
-	
-	if(!$GLOBALS["CLASS_UNIX"]->is_socket('/var/spool/MIMEDefang/mimedefang.sock')){
-		squid_admin_mysql(0, "mimedefang.sock No such socket [ {action} = {restart} ]", null,__FILE__,__LINE__);
-		shell_exec2("{$GLOBALS["nohup"]} /etc/init.d/mimedefang restart");
-	}
-    sa_update();
-	
-	
-	$MimeDefangArchiver=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangArchiver"));
-	$MilterGreyListEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MilterGreyListEnabled"));
-	$MimeDefangAutoWhiteList=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangAutoWhiteList"));
-    $MimeDefangSpamAssassin=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangSpamAssassin"));
-	
-	events_watchdog_postfix("$FUNCTION MimeDefangArchiver:$MimeDefangArchiver [".__LINE__."]");
-	
-	if($MimeDefangArchiver==1){
-		$pidtime="/etc/artica-postfix/pids/exec.mimedefang.backup.php.start.time";
-		$execTime=$GLOBALS["CLASS_UNIX"]->file_time_min($pidtime);
-		events_watchdog_postfix("$FUNCTION $pidtime {$execTime}mn/5 [".__LINE__."]");
-		
-		if($execTime>5){
-			events_watchdog_postfix("RUNNING /usr/share/artica-postfix/exec.mimedefang.backup.php [".__LINE__."]");
-			shell_exec("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.mimedefang.backup.php >/dev/null 2>&1 &");
-		}
-	}
-	
-	if($MimeDefangSpamAssassin==1){
-
-		$pidtime="/etc/artica-postfix/pids/exec.mimedefang.quarantine.php.start.time";
-		$execTime=$GLOBALS["CLASS_UNIX"]->file_time_min($pidtime);
-		if($execTime>5){
-			shell_exec("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.mimedefang.quarantine.php >/dev/null 2>&1 &");
-		}
-		
-		
-		$pidtime="/etc/artica-postfix/pids/exec.spamassassin.update.artica.time";
-		$execTime=$GLOBALS["CLASS_UNIX"]->file_time_min($pidtime);
-		if($execTime>15){
-			shell_exec("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.spamassassin.update.artica.php >/dev/null 2>&1 &");
-		}
-		
-	}
-	
-	
-	if($MilterGreyListEnabled==1){
-		if($MimeDefangAutoWhiteList==1){
-			$pidtime="/etc/artica-postfix/pids/exec.milter-greylist.php.SingleInstance_whitelist.pid";
-			$execTime=$GLOBALS["CLASS_UNIX"]->file_time_min($pidtime);
-			if($execTime>10){
-				shell_exec("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.milter-greylist.php --AutoWhiteList >/dev/null 2>&1 &");
-			}
-		}
-	}
-
-	$l[]="running=1";
-	$l[]=GetMemoriesOf($master_pid);
-	$l[]="";
-
-	return implode("\n",$l)."\n".mimedefangmx();
-
-}
 //=======================================================================================================
 
 
@@ -772,64 +630,7 @@ return true;
 
 }
 
-function mimedefangmx(){
-	
-	$pid_path="/var/spool/MIMEDefang/mimedefang-multiplexor.pid";
-	if($GLOBALS["VERBOSE"]){echo "DEBUG: pid path....: $pid_path\n";}
-	$master_pid=trim(@file_get_contents($pid_path));
-	if($GLOBALS["VERBOSE"]){echo "DEBUG: master pid..: $master_pid\n";}
 
-	$binpath=$GLOBALS["CLASS_UNIX"]->find_program("mimedefang-multiplexor");
-	
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-
-        $master_pid=$GLOBALS["CLASS_UNIX"]->PIDOF($binpath);
-		if($GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-			@file_put_contents($pid_path, $master_pid);
-		}
-	}
-
-
-
-	$MimeDefangEnabled=intval(@file_get_contents('/etc/artica-postfix/settings/Daemons/MimeDefangEnabled'));
-	$l[]="[APP_MIMEDEFANGX]";
-	$l[]="service_name=APP_MIMEDEFANGX";
-	$l[]="master_version=".$GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangVersion");
-	$l[]="service_cmd=/etc/init.d/mimedefang";
-	$l[]="service_disabled=$MimeDefangEnabled";
-	$l[]="pid_path=$pid_path";
-	$l[]="watchdog_features=1";
-	$l[]="family=postfix";
-
-
-
-	if($MimeDefangEnabled==0){
-		if($GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){shell_exec2("{$GLOBALS["nohup"]} /etc/init.d/mimedefang stop");}
-		return implode("\n",$l);
-	}
-
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        shell_exec2("{$GLOBALS["nohup"]} /etc/init.d/mimedefang start");
-        $l[] = "running=0";
-        $l[] = "installed=1\n";
-        return implode("\n", $l);
-    }
-	$l[]="running=1";
-	$l[]=GetMemoriesOf($master_pid);
-	$l[]="";
-	
-	if(!is_dir("/home/artica/SQLITE/MIMEDEFANG_STATS")){@mkdir("/home/artica/SQLITE/MIMEDEFANG_STATS",0755,true);}
-	if(!is_dir("/home/artica/MIMEDEFANG/MYSQL_FAILED")){@mkdir("/home/artica/MIMEDEFANG/MYSQL_FAILED",0755,true);}
-	
-	shell_exec("chown -R postfix:postfix /home/artica/SQLITE/MIMEDEFANG_STATS");
-	shell_exec("chown -R postfix:postfix /home/artica/MIMEDEFANG");
-	shell_exec("{$GLOBALS["nohup"]} /usr/local/bin/md-mx-ctrl -s /var/spool/MIMEDefang/mimedefang-multiplexor.sock msgs >/etc/artica-postfix/settings/Daemons/MIMEDEFANG_MSGS 2>&1 &");
-	shell_exec("{$GLOBALS["nohup"]} /usr/local/bin/md-mx-ctrl -s /var/spool/MIMEDefang/mimedefang-multiplexor.sock status >/etc/artica-postfix/settings/Daemons/MIMEDEFANG_WORKERS 2>&1 &");
-	
-
-	return implode("\n",$l);
-
-}
 //========================================================================================================================================================
 function cleanClode():bool{
 	

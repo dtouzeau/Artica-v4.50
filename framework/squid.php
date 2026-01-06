@@ -44,7 +44,7 @@ if(isset($_GET["single-searchs"])){single_searchs();exit;}
 
 
 
-if(isset($_GET["squid-siege"])){squid_siege();exit;}
+
 if(isset($_GET["nas-storage-progress"])){nas_storage_progress();exit;}
 if(isset($_GET["rockstore-progress"])){rockstore_progress();exit;}
 if(isset($_GET["disable-hypercache-urgency"])){squid_hypercache_emergency();exit;}
@@ -974,10 +974,7 @@ function squid_realtime_cache(){
 
 
 
-function squid_siege(){
-    $unix=new unix();
-    $unix->framework_execute("exec.siege.php","squid.siege.progress","squid.siege.progress.txt");
-}
+
 
 
 function ufdbguard_compile_smooth(){

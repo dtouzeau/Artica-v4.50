@@ -574,10 +574,10 @@ function dnsdist_status_center(){
         $html[]="<td colspan=$colspan style='vertical-align: middle'>";
         $html[]="<table style='width:100%'>";
         $html[]="<tr>";
-        $html[]="<td style='vertical-align: middle' style='width:1%' nowrap>";
+        $html[]="<td style='vertical-align: middle;width:1%' nowrap>";
         $html[]="$pie";
         $html[]="</td>";
-        $html[]="<td style='vertical-align: middle;padding-left:20px' width=100% nowrap>";
+        $html[]="<td style='vertical-align: middle;padding-left:20px;width:100%' nowrap>";
         $html[]="<H2 id='pool-$pool' class=''>$poolName <small id='smallpool-$pool'>$cache_rate{cache}: $prc_cache</small></h2>";
         $html[]="</td>";
         $html[]="</tr>";

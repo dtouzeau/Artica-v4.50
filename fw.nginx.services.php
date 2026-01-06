@@ -1507,7 +1507,7 @@ function www_parameters2():bool{
     $Types[13]="ADFS 3.0";
     $Types[14]="{default} {deny}";
     $Types[15]="{DOH_WEB_SERVICE}";
-    $Types[16]="{artica_meta_server}";
+    $Types[16]="{APP_DEBIAN_NETWORK_AGENT}";
 
     $TypesNoSLSA[15]=true;
     $TypesNoSLSA[14]=true;
@@ -2476,11 +2476,9 @@ function isAlready14():bool{
 function new_www():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $DOHServerEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DOHServerEnabled"));
-    $EnableAptMirror=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableAptMirror"));
     $PHPReverseEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PHPReverseEnabled"));
     $NgxStreamJS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NgxStreamJS"));
-    $ArticaMetaEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaMetaEnabled"));
+    $EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
 
     if($PHPReverseEnabled==1) {
         $Types[1] = "{php_website_explain}";
@@ -2492,8 +2490,8 @@ function new_www():bool{
     if($NgxStreamJS==1){
         $Types[15] = "{CREATE_DOH_SERVICE}";
     }
-    if($ArticaMetaEnabled==1){
-        $Types[16] = "{CREATE_METAR_SERVICE}";
+    if($EnableDebianAgent==1){
+        $Types[16] = "{CREATE_DEBIAN_AGENT_SERVICE}";
     }
 
     if(!isHarmpID()) {

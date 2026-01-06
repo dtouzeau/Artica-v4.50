@@ -2,7 +2,7 @@
 
 
 class external_acl_squid_ldap{
-	public $Errors=array();
+    public $Errors=array();
 	private $SquidAddkerAlernates=array();
 	
 	function __construct(){

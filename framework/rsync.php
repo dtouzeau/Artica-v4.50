@@ -29,8 +29,7 @@ function service_cmds(){
 	$unix=new unix();
 	$php=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
-//	$cmd=trim("$nohup $php /usr/share/artica-postfix/exec.mimedefang.php 2>&1");
-//	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
+//	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 //	exec($cmd,$results);
 	$cmds=$_GET["service-cmds"];
 	$results[]="Postition: $cmds";

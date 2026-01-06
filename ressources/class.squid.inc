@@ -1,6 +1,5 @@
 <?php
 
-
 if(!isset($GLOBALS["AS_ROOT"])){$GLOBALS["AS_ROOT"]=false;}
 include_once(dirname(__FILE__).'/class.sqlite.inc');
 include_once(dirname(__FILE__).'/class.dansguardian.inc');

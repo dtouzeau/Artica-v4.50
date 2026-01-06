@@ -839,7 +839,7 @@ The object will not be deleted but all datas will be erased</perform_empty_ask>
 <CURLE_OPERATION_TIMEDOUT>Operation timeout. The specified time-out period was reached according to the conditions.</CURLE_OPERATION_TIMEDOUT>
 <APP_SQUID31>Squid Cache 3.1x</APP_SQUID31>
 <compilation_status>Compilation status</compilation_status>
-<token>token</token>
+<token>Token</token>
 <test_auth>Testing auth.</test_auth>
 <delete_this_category_ask>Delete this category ?</delete_this_category_ask>
 <whitelist_categories_explain>All websites stored in these categories will be allways allowed</whitelist_categories_explain>
@@ -11068,9 +11068,7 @@ Categories are:
 <yes_empty>Yes, empty it</yes_empty>
 <all_entries_was_removed>All entries was removed</all_entries_was_removed>
 <secondary_interface>Secondary interface</secondary_interface>
-<dhcp_fixed_addr_explain>
-If this option is enabled, the DHCP service will always provide the defined IP address from this section.
-</dhcp_fixed_addr_explain>
+<dhcp_fixed_addr_explain>If this option is enabled, the DHCP service will always provide the defined IP address from this section.</dhcp_fixed_addr_explain>
 <no_cache_level>No cache</no_cache_level>
 <smooth_cache_level>Low caching</smooth_cache_level>
 <medium_cache_level>Smooth caching</medium_cache_level>

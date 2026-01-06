@@ -3464,8 +3464,10 @@ regex/(^|\.)(diariodemallorca|prensaiberica|unidadeditorial)\.es/103
 regex/(^|\.)kioskoymas\.com/103
 regex/(^|\.)today.line.me/103
 regex/(^|\.)(lefigaro|lemonde|ouest-france|liberation|letudiant)\.fr/103
-
 regex/(^|\.)prcdn\.co/103
+
+# CloudFlare 234
+regex/(^|\.)workers.dev/234
 
 #Streaming
 fixed/occ-0-3475-56.1.nflxso.net/100
@@ -3533,7 +3535,7 @@ regex/(^|\.)(woopic|imgur|imgix)\.(com|net)$/80
 fixed/dmotion.s.llnwi.net/83
 fixed/www.free.fr/83
 fixed/pro.free.fr/83
-fixed/cdnjs.cloudflare.com/83
+fixed/cdnjs.cloudflare.com/234
 regex/(\.|^)(squarespace|synten|unpkg|jimstatic|parastorage|squarespace-cdn|website-files|webflow|jimcdn|wixstatic|herokuapp|ovhcloud)\.com$/83
 regex/(\.|^)ovh\.(fr|de|br|es|pl|com|net|cloud)$/83
 regex/(\.|^)fastly\.net$/83

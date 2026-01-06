@@ -1136,35 +1136,11 @@ function squid_master_status($buildcache=false):string{
 	if(!is_file("/etc/artica-postfix/settings/Daemons/UnlockWebStats")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnlockWebStats", 0);}
 
     squid_compilation_params();
-	//$ServerRunSince=$GLOBALS["CLASS_UNIX"]->ServerRunSince();
-
-    $isrtime_logs=isrtime_logs();
-    if($isrtime_logs) {
-        if (!is_file("/etc/cron.d/postgres-hourly")) {
-            $GLOBALS["CLASS_UNIX"]->Popuplate_cron_make("postgres-hourly", "0,10,20,30,40,50 * * * *", "exec.postgres.squid.hourly.php");
-            system("/etc/init.d/cron reload");
-        }
-    }else{
-        if (is_file("/etc/cron.d/postgres-hourly")) {
-            @unlink("/etc/cron.d/postgres-hourly");
-            system("/etc/init.d/cron reload");
-        }
-
-    }
-
-    squid_tasks();
+	squid_tasks();
 	return "";
 }
 // ======================================================================================
-function check_logging_conf():bool{
-    $f=explode("\n",@file_get_contents("/etc/squid3/logging.conf"));
-    foreach ($f as $line){
-        $line=trim($line);
-        if($line==null){continue;}
-        if(preg_match("#^coredump_dir#",$line)){return true;}
-    }
-    return false;
-}
+
 function cntlm_version():string{
 	$cacheFile="/etc/artica-postfix/cntlm_version";
 	if($GLOBALS["CLASS_UNIX"]->file_time_min($cacheFile)<800){return @file_get_contents("/etc/artica-postfix/cntlm_version");}
@@ -1362,10 +1338,3 @@ function ss5(){
 
 
 // ====================================================================================
-function isrtime_logs():bool{
-    $EnableRedisServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
-    $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
-    if($EnableRedisServer==0){return false;}
-    if($SQUIDEnable==0){return false;}
-    return true;
-}

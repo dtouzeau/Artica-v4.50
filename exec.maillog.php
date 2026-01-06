@@ -1598,17 +1598,8 @@ if(preg_match("#Slave [0-9]+ stderr: bayes: cannot open bayes databases (.*?)\/b
 	return;
 }
 // ---------------------------------------------------------------------------------------------------------------
-if(preg_match("#mimedefang-multiplexor.*?exited normally with status 255 \(SLAVE DIED UNEXPECTEDLY\)#",$buffer,$re)){
-	squid_admin_mysql(1, "Policies Service: Issue on reloading SLAVE DIED UNEXPECTEDLY [action=reload]", $buffer,__FILE__,__LINE__);
-	shell_exec("{$GLOBALS["PHP5_BIN"]} /usr/share/artica-postfix/exec.mimedefang.php && /etc/init.d/mimedefang reload");
-	return;
-}
-// ---------------------------------------------------------------------------------------------------------------
-if(preg_match("#Can't call method \"finish\" on an undefined value at#",$buffer,$re)){
-	squid_admin_mysql(1, "Policies Service: Issue on reloading [action=reload]", $buffer,__FILE__,__LINE__);
-	shell_exec("{$GLOBALS["PHP5_BIN"]} /usr/share/artica-postfix/exec.mimedefang.php && /etc/init.d/mimedefang reload");
-	return;
-}
+
+
 // ---------------------------------------------------------------------------------------------------------------
 
 

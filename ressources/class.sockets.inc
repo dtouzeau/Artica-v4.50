@@ -20,7 +20,6 @@ if(!isset($GLOBALS["LOGON-PAGE"])){$GLOBALS["LOGON-PAGE"]=false;}
 include_once(dirname(__FILE__)."/class.semaphores.php");
 include_once(dirname(__FILE__)."/class.memcached.inc");
 include_once(dirname(__FILE__)."/logs.inc");
-include_once(dirname(__FILE__)."/class.stats-appliance.inc");
 include_once(dirname(__FILE__)."/class.sqlite.inc");
 CheckMemCached();
 if(function_exists("debug_mem")){debug_mem();}
@@ -197,7 +196,9 @@ class sockets{
 
         $resp = curl_exec($cURLConnection);
         $curl_error_num=curl_errno($cURLConnection);
-        curl_close($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
         if($this->is_curl_error($curl_error_num)){
             VERBOSE("POST $endpoint $this->mysql_error",__LINE__);
             $this->go_exec_syslog("[FATAL] ".$this->mysql_error);
@@ -519,7 +520,6 @@ class sockets{
         if(preg_match("#\/squidclient#",$endpoint)){
             return $resp;
         }
-
         if(function_exists("json_decode")) {
             json_decode($resp);
             if (json_last_error() > JSON_ERROR_NONE) {

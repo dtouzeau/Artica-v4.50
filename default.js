@@ -3254,23 +3254,6 @@ function logoffUser(){
 
 
 }
-
-function logoff(){
-        YahooWin(300,'/logoff.php?menus=yes','Logoff');
-        setTimeout("logoffUser()",1000);
-   }
-   
-
- 
-function ShutDownCOmputer(){
-        var text=document.getElementById('shutdown_computer_text').value;
-        if(confirm(text)){
-        	var XHR = new XHRConnection();
-        	XHR.appendData('perform','shutdown');
-        	XHR.sendAndLoad('/logoff.php', 'GET');       
-        }
- }
-
 function IsNumeric(sText){
    var ValidChars = "0123456789.";
    var IsNumber=true;

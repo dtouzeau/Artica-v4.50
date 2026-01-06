@@ -354,22 +354,7 @@ function APP_RDPPROXY_VERSION():string{
 
 
 
-function APP_UFDBCAT_VERSION(){
-	if(isset($GLOBALS["APP_UFDBCAT_VERSION"])){return $GLOBALS["APP_UFDBCAT_VERSION"];}
-	$MasterBin="/usr/share/artica-postfix/bin/install/rbldnsd";
-	chmod($MasterBin,0755);
-	exec("$MasterBin -h 2>&1",$string);
-	foreach ($string as $line){
-		if(!preg_match("#version\s+([0-9\.]+)#",$line,$re)){
-			if($GLOBALS["VERBOSE"]){echo "APP_UFDBCAT_VERSION: no match \"$line\"\n";}
-			continue;
-		}
-		if($GLOBALS["VERBOSE"]){echo "APP_UFDBCAT_VERSION: FOUND {$re[1]}\n";}
-		$GLOBALS["APP_UFDBCAT_VERSION"]=$re[1];
-		return $re[1];
-	}
 
-}
 
 function mimedefang_version():string{
 	if(isset($GLOBALS["mimedefang_version"])){return strval($GLOBALS["mimedefang_version"]);}
@@ -1864,8 +1849,6 @@ function Build_default_values(){
 
 	if(!isset($GLOBALS["CLASS_SOCKETS"])){$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
-
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_UFDBCAT_VERSION",APP_UFDBCAT_VERSION());
 	if(is_file($msmtp)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSMTP_INSTALLED", 1);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSMTP_VERSION", MSMTP_VERSION());

@@ -109,7 +109,6 @@ class compile_ufdbguard_expression{
 		
 		
 	}
-	
 	private function isAregex($pattern){
 		$pattern="  $pattern";
 		$pattern=str_replace('\.', "", $pattern);

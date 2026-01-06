@@ -347,7 +347,7 @@ async function loadWorldMap(dataUrl) {
 }
 console.log('--> document.addEventListener');  
   loadWorldMap( '$page?map-data=yes');
-  LoadAJaxSilent('worldmap-country','$page?worldmap-country=yes');
+  LoadAjaxSilent('worldmap-country','$page?worldmap-country=yes');
 </script>";
 
 }

@@ -10640,7 +10640,7 @@ This task will parse this queue in order to build thumbnails for stattistics pur
 <tls_security_level>Nivel de seguridad TLS</tls_security_level>
 <tls_support>TLS support</tls_support>
 <tls_table>TLS table</tls_table>
-<token>token</token>
+<token>Token</token>
 <took>Took</took>
 <tool>Tool</tool>
 <top_10>TOP 10</top_10>

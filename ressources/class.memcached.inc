@@ -8,7 +8,6 @@ class lib_memcached{
 	public $mysql_error;
 	public $ok=false;
 	private $memcached_exists=true;
-	
 	function __construct(){
 
     }
