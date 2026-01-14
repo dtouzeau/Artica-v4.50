@@ -144,8 +144,6 @@ function support_step1($i=0):int{
     shell_exec("$iptables >/usr/share/artica-postfix/ressources/support/iptables.txt 2>&1");
 
 
-    progress("ps_mem",$i++);
-    shell_exec("/usr/share/artica-postfix/bin/ps_mem.py  >/usr/share/artica-postfix/ressources/support/ps_mem.txt 2>&1");
 
     progress("$free -m",$i++);
     shell_exec("$free -m  >/usr/share/artica-postfix/ressources/support/free.txt 2>&1");
@@ -211,7 +209,6 @@ function support_step2($i=0):int{
     $files[]="/var/log/squid/external_acl.log";
     $files[]="/var/log/squid/squidGuard.log";
     $files[]="/var/log/squid/ufdbgclient.debug";
-    $files[]="/var/log/tailon.log";
     $files[]="/var/log/ntpdate.log";
     $files[]="/var/log/ntml.status.log";
     $files[]="/var/log/theshields-daemon.log";

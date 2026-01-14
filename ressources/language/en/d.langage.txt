@@ -502,3 +502,152 @@ It is designed to fast categorization and other resources</APP_GO_SHIELD_CONNECT
 <use_vmac_explain>To reduce the impact of takeovers in some networking environments, VRRP (Virtual Router Redundancy Protocol) can be used with VMAC (Virtual MAC) addresses. To achieve this, the Keepalived VRRP framework implements VMAC support</use_vmac_explain>
 <vmac_xmit_base_explain>Force Transmit VRRP adverts over physical interface</vmac_xmit_base_explain>
 <ipvlan_explain>IPvlan is similar to MacVLAN technology, with one key difference: IPvlan does not assign unique MAC addresses to its sub-interfaces.[br]Instead, all sub-interfaces share the MAC address of the parent interface while using unique IP addresses.</ipvlan_explain>
+<spmac>Spamc</spamc>
+<tcp_settings>TCP Settings</tcp_settings>
+<tcp_send>TCP Send</tcp_send>
+<tcp_send_explain>Data to send after connection (text, hex, or escape sequences).[BR]Example: tcp_send=PING[br] or tcp_send=0x50494E47</tcp_send_explain>
+<tcp_expect>TCP Expect</tcp_expect>
+<tcp_expect_explain>Expected response pattern (regex, text, or hex).[BR]Example: tcp_expect=+PONG or tcp_expect=OK</tcp_expect_explain>
+<udp_settings>UDP Settings</udp_settings>
+<udp_send>UDP Send</udp_send>
+<udp_send_explain>Data to send after connection (text or hex).[BR]We strongly recommended define an udp_send, default value 0x00.[BR]Example: udp_send=PING or udp_send=0xABCD</udp_send_explain>
+<udp_expect>UDP Expect</udp_expect>
+<udp_expect_explain>Expected response pattern (regex, text, or hex).[BR]Example: udp_expect=PONG, udp_expect=0x49, udp_expect="(OK|RUNNING|HEALTHY)" or udp_expect="OK 200" </udp_expect_explain>
+<http_settings>HTTP/HTTPS Settings</http_settings>
+<http_uri_path>URI path</http_uri_path>
+<http_uri_path_explain>HTTP/HTTPS path to check, default value /[BR]Example: uri=/health</http_uri_path_explain>
+<http_headers>Headers</http_headers>
+<http_header_explain>Send custom headers[BR]Example: header=Authorization:Bearer-token or header=Authorization:Bearer-mytoken header=X-Custom-Header:value</http_header_explain>
+<http_match_headers>Match Header</http_match_headers>
+<http_match_header_explain>Required response header[BR]Example: match_header=Content-Type:application/json</http_match_header_explain>
+<http_match_body>Match Body</http_match_body>
+<http_match_body_explain>Regex for response body[BR]Example: match_body="\"status\":\"ok\"" or match_body="(healthy|ok)"</http_match_body_explain>
+<grpc_settings>gRPC Settings</grpc_settings>
+<grpc_service>gRPC Service</grpc_service>
+<grpc_service_explain>gRPC Service name[BR]Example: grpc_service=myapp.HealthService</grpc_service_explain>
+<grpc_status_code_expected>gRPC Status</grpc_status_code_expected>
+<grpc_status_code_expected_explain>Expected gRPC status code, default value 12 (SERVING)[BR]Example: grpc_status=12</grpc_status_code_expected_explain>
+<active_health_check_settings>Active Health Check Settings</active_health_check_settings>
+<active_health_check_type>Health check protocol</active_health_check_type>
+<active_health_check_timeout_explain>Max wait for response, default 3s</active_health_check_timeout_explain>
+<active_health_check_interval_explain>Time between checks, default 5s</active_health_check_interval_explain>
+<raises>Raises</raises>
+<raises_explain>Successes to mark healthy, default 2</raises_explain>
+<falls>Falls</falls>
+<falls_explain>Failures to mark unhealthy, default 3</falls_explain>
+<persistent>Persistent</persistent>
+<persistent_explain>Remember health state across restarts</persistent_explain>
+<mandatory>Mandatory</mandatory>
+<mandatory_explain>Server starts down until first successful check</mandatory_explain>
+<active_health_check_explain>A high-performance, enterprise-grade active health checking system for Artica Reverse Proxy with automatic upstream discovery and real-time monitoring.</active_health_check_explain>
+<override_port>Override Port</override_port>
+<override_port_explain>Override health check port, default 0 (Disable)</override_port_explain>
+<enable_dns_discovery>Enable DNS Service Discovery</enable_dns_discovery>
+<enable_dns_discovery_explain>Automatically discover servers from DNS records.</enable_dns_discovery_explain>
+<override_outgoing_interface>Override Outgoing Interface</override_outgoing_interface>
+<active_health_check_daemon>Active Health Check Daemon</active_health_check_daemon>
+<active_health_check_workers>Workers</active_health_check_workers>
+<active_health_check_queue>Queue Size</active_health_check_queue>
+<active_health_check_concurrency>Max concurrent operations (0=unlimited)</active_health_check_concurrency>
+<active_health_check_log_level>Log Level</active_health_check_log_level>
+<active_health_check_metrics_max_age>Max Age in day(s)</active_health_check_metrics_max_age>
+<active_health_check_metrics_entries>Max Entries</active_health_check_metrics_entries>
+<active_health_check_logs_max_age>Max Age in day(s)</active_health_check_logs_max_age>
+<active_health_check_logs_max_size>Max Size (MB)</active_health_check_logs_max_size>
+<custom_dns>Custom DNS resolver (eg: 8.8.8.8)</custom_dns>
+<custom_hostname>DNS domain for service discovery</custom_hostname>
+<active_health_check_disable>Active Health Check Disabled[BR]You can close the window.</active_health_check_disable>
+<http_expected_status>Expected Status</http_expected_status>
+<http_expected_status_explain>Expected HTTP status codes (comma-separated)[BR]expected_status=200,201</http_expected_status_explain>
+<enable_adaptive_performance_tracking>Adaptive Performance Tracking</enable_adaptive_performance_tracking>
+<enable_adaptive_performance_tracking_explain>Adaptive Performance Tracking allow monitor the upstream servers response time and take actions based on defined thresholds. Auto Weight Adjustment or Remove the server from upstream.</enable_adaptive_performance_tracking_explain>
+<auto_weight_threshold>Auto Weight Threshold (ms)</auto_weight_threshold>
+<auto_weight_threshold_explain>Dynamically adjust the servers weight by the factor if the response time of the server is equal or greater the threshold</auto_weight_threshold_explain>
+<auto_weight_factor>Auto Weight Factor</auto_weight_factor>
+<auto_weight_factor_explain>Factor to dynamically adjust the server weight</auto_weight_factor_explain>
+<remove_threshold>Auto Remove Threshold (ms)</remove_threshold>
+<remove_threshold_explain>Dynamically add/remove the servers from upstream if the response time of the server is equal or greater the threshold</remove_threshold_explain>
+<auto_weight_greater_remove>Auto weight threshold can not be equal or greater than auto remove threshold</auto_weight_greater_remove>
+<enable_active_health_check_daemon>Enable Active Health Check Daemon</enable_active_health_check_daemon>
+<rr>Round Robin</rr>
+<weighted_rr>Weighted Round Robin</rr>
+<ip_hash>IP Hash</ip_hash>
+<uri_hash>URI Hash</uri_hash>
+<random>Random</random>
+<adaptive_least_response>Adaptive Least Response</adaptive_least_response>
+<adaptive_rr>Adaptive Round Robin</adaptive_rr>
+<sticky_cookie>Sticky Cookie</sticky_cookie>
+<sticky_route>Sticky Route</sticky_route>
+<APP_ACTIVE_HEALTH_CHECK>Active Health Check Daemon</APP_ACTIVE_HEALTH_CHECK>
+<active_health_check_p_settings>Health Check Protocol Settings</active_health_check_p_settings>
+<lbl_settings>Load Balancing Settings</lbl_settings>
+<rr_no_p>No parameters available for Round Robin method</rr_no_p>
+<wrr_p>Parameters available for Weighted Round Robin method</wrr_p>
+<lc_p>Parameters available for Least Connections method</lc_p>
+<ip_hash_p>Parameters available for IP Hash method</ip_hash_p>
+<consistent>Consistent</consistent>
+<consistent_explain>Use consistent hashing (ketama) for minimal session disruption on server changes[BR]</consistent_explain>
+<uri_hash_p>Parameters available for URI Hash method</uri_hash_p>
+<use_request_uri>Use Request URI</use_request_uri>
+<random_no_p>No parameters available for Random method</random_no_p>
+<alr_p>Parameters available for Adaptive Least Response method</alr_p>
+<arr_p>Parameters available for Adaptive Round Robin Load method</arr_p>
+<generic_hash>Generic Hash</generic_hash>
+<generic_hash_p>Parameters available for Generic Hash method</generic_hash_p>
+<sc_p>Parameters available for Sticky Cookie method</sc_p>
+<cookie_name>Cookie Name</cookie_name>
+<sticky_ip_hash>Sticky IP Hash</sticky_ip_hash>
+<cookie_name_explain>Name of the sticky cookie</cookie_name_explain>
+<set_cookie>Set Cookie</set_cookie>
+<set_cookie_explain>Enable automatic Set-Cookie in responses (load balancer manages cookies)</set_cookie_explain>
+<cookie_time>Cookie Expiration time (seconds)</cookie_time>
+<cookie_time_explain>Cookie expiry in seconds (e.g., 3600 for 1 hour). Empty = session cookie</cookie_time_explain>
+<cookie_domain>Cookie Domain</cookie_domain>
+<cookie_domain_explain>Cookie domain (e.g., ".example.com"). Empty = current domain</cookie_domain_explain>
+<cookie_path>Cookie Path</cookie_path>
+<cookie_path_explain>Cookie path (e.g., "/")</cookie_path_explain>
+<cookie_http_only>HTTP Only</cookie_http_only>
+<cookie_http_only_explain>Set HttpOnly flag (prevents JavaScript access)</cookie_http_only_explain>
+<cookie_secure>Secure Cookie</cookie_secure>
+<cookie_secure_explain>Set Secure flag (HTTPS only)</cookie_secure_explain>
+<same_site>Same Site</same_site>
+<same_site_explain>SameSite attribute: "Strict", "Lax", or "None".</same_site_explain>
+<cookie_backup>Failover To Backup</cookie_backup>
+<cookie_backup_explain>Use backup servers if all primary servers are down</cookie_backup_explain>
+<cookie_down>Failover To Down</cookie_down>
+<cookie_down_explain>Use down servers as last resort (not recommended)</cookie_down_explain>
+<sr_p>Parameters available for Sticky Route method</sr_p>
+<route_param>Router Parameters</route_param>
+<route_param_explain>URL query parameter name (e.g., ?session_id=abc123)</route_param_explain>
+<route_header>Route Header</route_header>
+<route_header_explain>HTTP header name (e.g., X-Session-ID: abc123)</route_header_explain>
+<sih_p>Parameters available for Sticky IP Hash method</sih_p>
+<wrr_strict>Strict</wrr_strict>
+<wrr_strict_explain>Use mutex lock for perfect fairness[BR]Default: false[BR]Use true ONLY for extreme weight ratios (1000:1+)</wrr_strict_explain>
+<wrr_max_retries>Max Retries</wrr_max_retries>
+<wrr_max_retries_explain>Lock retry attempts in strict mode[BR]Default: 3[BR]Only used when strict=true</wrr_max_retries_explain>
+<use_binary>Use binary_remote_addr</binary_remote_addr>
+<use_binary_explain>Use binary_remote_addr for better performance vs string remote_addr[BR]If disable, it will use proxied X-Forwarded-For</use_binary_explain>
+<caution_parameters>[BR]Use this option with caution![BR]Default values covers must of the situations/environments.[BR]Use only for very high concurrency (>10k RPS) environments</caution_parameters>
+<arr_outlier_threshold>Outlier Threshold</arr_outlier_threshold>
+<arr_outlier_threshold_explain>Outlier Threshold controls how tolerant the load balancer is to slow servers.[BR]Is a "safety valve" that prevents one slow backend from poisoning your load-balancing decisions.[BR]Lower values→ more ruthless.[BR]Higher values → more forgiving</arr_outlier_threshold_explain>
+<ewma_alpha>EWMA Alpha</ewma_alpha>
+<ewma_alpha_explain>How fast the balancer reacts to changes[BR]Controls how quickly the balancer updates a server’s response time when new requests are seen.[BR]- Low values (0.1) = slow but stable[BR]- High values (0.5) = fast but more jumpy[BR]- Default (0.3) = balanced[BR]This prevents overreacting to small spikes while still responding to real slowdowns.</ewma_alpha_explain>
+<default_rt_ms>Default RT (ms)</default_rt_ms>
+<default_rt_ms_explain>Starting response time for new servers[BR]When a server has no data yet, the balancer assumes it takes this long to respond.[BR]This prevents new or restarted servers from receiving all traffic at once.</default_rt_ms_explain>
+<default_rt_jitter>Default RT Jitter</default_rt_jitter>
+<default_rt_jitter_explain>Small random variation for new servers[BR]Adds a small random offset to the default response time.[BR]This prevents multiple new servers from being selected at the same time, which avoids traffic spikes during scaling or restarts.</default_rt_jitter_explain>
+<failure_penalty_ms>Failure Penalty (ms)</failure_penalty_ms>
+<failure_penalty_ms_explain>Penalty added when a request fails[BR]When a server returns a 5xx error, this value is added to its response time.[BR]This makes failing servers look very slow, so they receive less traffic until they recover.</failure_penalty_ms_explain>
+<queue_factor>Queue Factor</queue_factor>
+<queue_factor_explain>How much active connections matter[BR]Controls how strongly the number of active connections affects routing.[BR]Higher values make the balancer avoid busy servers even if they are fast.[BR]Lower values focus more on raw response time.</queue_factor_explain>
+<age_penalty_max>Age Penalty Max</age_penalty_max>
+<age_penalty_max_explain>Maximum penalty for old data[BR]If a server has not reported metrics for a long time, its score can be increased by up to this amount (for example, +100%).[BR]This prevents traffic from being sent to servers that might be down or unreachable.</age_penalty_max_explain>
+<age_penalty_window>Age Penalty Window</age_penalty_window>
+<age_penalty_window_explain>How fast old data becomes untrusted[BR]Time (in seconds) over which the staleness penalty grows.[BR]After this time, the maximum penalty is applied.[BR]This makes servers slowly fade out instead of disappearing suddenly.</age_penalty_window_explain>
+<tie_threshold>Tie Threshold</tie_threshold>
+<tie_threshold_explain>When two servers are considered equal[BR]If two servers are within this percentage of each other, they are treated as the same.[BR]This prevents constant switching when servers have nearly identical performance.</tie_threshold_explain>
+<log_filtered_servers>Log Filtered Servers</log_filtered_servers>
+<log_filtered_servers_explain>Log when servers are ignored[BR]When enabled, logs when a server is filtered out due to being slow, stale, or unhealthy.[BR]Useful for debugging.</log_filtered_servers_explain>
+<warn_missing_metrics>Warn Missing Metrics</warn_missing_metrics>
+<warn_missing_metrics_explain>Warn when data is missing[BR]Logs a warning if a server has no performance data yet.[BR]Useful to detect monitoring or reporting problems.</warn_missing_metrics_explain>

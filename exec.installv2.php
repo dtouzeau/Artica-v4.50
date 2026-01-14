@@ -243,11 +243,7 @@ function install($product, $key,$localpath=null){
         }
     }
 
-    if ($product=="APP_FRONTAIL"){
-        build_progress("{stopping} {{$product}} ($key)...", 40);
-        shell_exec("/usr/sbin/artica-phpfpm-service -stop-frontail-smtp");
-        shell_exec("/usr/sbin/artica-phpfpm-service -stop-frontail-syslog");
-    }
+
     if ($product=="APP_VNSTAT"){
         build_progress("{stopping} {{$product}} ($key)...", 40);
         shell_exec("/usr/sbin/artica-phpfpm-service -stop-vnstat");

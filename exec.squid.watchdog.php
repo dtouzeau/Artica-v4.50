@@ -2918,16 +2918,7 @@ function check_status(){
     build_progress_status2("{APP_SQUID}: {checking_caches}",61);
     sleep(1);
     build_progress_status2("{APP_SQUID}: {checking_caches}",62);
-
     sleep(1);
-
-    build_progress_status2("{APP_SQUID}: {checking_caches}",63);
-    ALLKIDS(true);
-    sleep(1);
-
-
-
-
     build_progress_status2("{APP_SQUID}: {done}",100);
     sleep(1);
 }

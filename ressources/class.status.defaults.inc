@@ -404,22 +404,7 @@ function FILEBEAT_VERSION():string{
     return "";
 
 }
-function FRONTAIL_LINUX_VERSION():string{
-	if(isset($GLOBALS[__FUNCTION__])){return strval($GLOBALS[__FUNCTION__]);}
-	$program=$GLOBALS["CLASS_UNIX"]->find_program("frontail-linux");
-	exec("$program --version 2>&1",$results);
-	foreach ($results as $line){
-		if(preg_match("#([0-9\.]+)#i", $line,$re)){
-			$GLOBALS[__FUNCTION__]=$re[1];
-			if($GLOBALS["VERBOSE"]){echo "[".__FUNCTION__."]: Found '$re[1]'\n";}
-			return $re[1];
-		}
 
-
-		if($GLOBALS["VERBOSE"]){echo "[".__FUNCTION__."]: Not Found '$line'\n";}
-	}
-    return "";
-}
 
 
 
@@ -1534,7 +1519,6 @@ function Build_default_values(){
 	$pdns_server=$GLOBALS["CLASS_UNIX"]->find_program("pdns_server");
 	$msmtp=$GLOBALS["CLASS_UNIX"]->find_program("msmtp");
 	$glances=$GLOBALS["CLASS_UNIX"]->find_program("glances");
-	$frontail_linux=$GLOBALS["CLASS_UNIX"]->find_program("frontail-linux");
 	$cyrus=$GLOBALS["CLASS_UNIX"]->LOCATE_CYRUS_DAEMON();
 	$php5=$GLOBALS["CLASS_UNIX"]->LOCATE_PHP5_BIN();
 	$procmail=$GLOBALS["CLASS_UNIX"]->find_program("procmail");
@@ -1632,7 +1616,6 @@ function Build_default_values(){
 	if($GLOBALS["VERBOSE"]){echo "msmtp           : $msmtp\n";}
 	if($GLOBALS["VERBOSE"]){echo "glances         : $glances\n";}
 	if($GLOBALS["VERBOSE"]){echo "filebeat        : $filebeat\n";}
-	if($GLOBALS["VERBOSE"]){echo "frontail-linux  : $frontail_linux\n";}
 	if($GLOBALS["VERBOSE"]){echo "nginx           : $nginx\n";}
 	if($GLOBALS["VERBOSE"]){echo "greensql        : $greensql\n";}
 	if($GLOBALS["VERBOSE"]){echo "milter-greylist : $milter_greylist\n";}
@@ -1856,14 +1839,9 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSMTP_INSTALLED", 0);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MSMTP_VERSION",0);
 	}
-	if(is_file($frontail_linux)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FRONTAIL_LINUX_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FRONTAIL_LINUX_VERSION", FRONTAIL_LINUX_VERSION());
 
-	}else{
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FRONTAIL_LINUX_INSTALLED", 0);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FRONTAIL_LINUX_VERSION",0);
-	}
 
 
 	if(is_file($cyrus)){
@@ -2328,11 +2306,7 @@ function Build_default_values(){
 	}else{
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("WSUSOFFLINE_INSTALLED", 0);
 	}
-    if(is_dir("/sys/module/nf_conntrack")){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("nf_conntrack_loaded", 1);
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("nf_conntrack_loaded", 0);
-    }
+
 
 
 

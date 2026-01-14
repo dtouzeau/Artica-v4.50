@@ -466,16 +466,15 @@ function search_form():bool{
 
     }
 
-    $jsonTenants=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/events/latency/scan"));
-    if($jsonTenants->Status) {
-        if (count($jsonTenants->tenants) > 0) {
-            foreach ($jsonTenants->tenants as $tenant) {
+    $Tenants=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/events/latency/scan"),true);
+    if(!isset($Tenants["Status"]) && isset($Tenants["tenants"]) && is_array($Tenants["tenants"]) && count($Tenants["tenants"])>0) {
+            foreach ($Tenants["tenants"] as $tenant) {
                 if (isset($zids[$tenant])) {
                     $Latencies[$tenant] = $zids[$tenant];
                 }
             }
         }
-    }
+
 
 
     if($fileid==0) {

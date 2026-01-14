@@ -3663,10 +3663,10 @@ Note that unwriteable directories are shown as usual.</hide_unwriteable_files_te
 <APP_PHPMYADMIN>PhpMyAdmin</APP_PHPMYADMIN>
 <APP_PHPMYADMIN_TEXT>Manage, display and browse MySQL databases</APP_PHPMYADMIN_TEXT> 
 <squid_filter_stats_text>Create filter in order to display specifics events</squid_filter_stats_text>
-<last_24_h>last 24 hours</last_24_h>
-<last_48_h>last 48 hours</last_48_h>
-<this_week>this week</this_week>
-<last_week>last week</last_week>
+<last_24_h>Last 24 hours</last_24_h>
+<last_48_h>Last 48 hours</last_48_h>
+<this_week>This week</this_week>
+<last_week>Last week</last_week>
 <this_month>This month</this_month>
 <when>when</when>
 <www_server_name>Web server name</www_server_name>

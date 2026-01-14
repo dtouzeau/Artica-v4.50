@@ -55,7 +55,9 @@ if(isset($_GET["graphs-line-total"])){graphs_line_total();exit;}
 if(isset($_GET["graphs-line-total-hour"])){graphs_line_total_hour();exit;}
 if(isset($_GET["graphs-pie-cache"])){graphs_pie_total_cache();exit;}
 if(isset($_GET["reconfigure-js"])){reconfigure_js();exit;}
-
+if(isset($_GET["active-health-check-js"])){section_active_health_check_js();exit;}
+if(isset($_GET["active-health-check-popup"])){section_active_health_check_popup();exit;}
+if(isset($_POST["NginxActiveHealthCheckWorkersCount"])){section_active_health_check_save();exit;}
 page();
 
 
@@ -483,11 +485,92 @@ function parameters1():bool{
         }
         $tpl->table_form_field_text("Prometheus Exporter","$PrometheusNginxInterface:$PrometheusNginxPort@$PrometheusNginxNameSpace",ico_chart_line);
     }
+    $NginxActiveHealthCheckDaemonEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckDaemonEnabled"));
+    $NginxActiveHealthCheckWorkersCount=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckWorkersCount"));
+    $NginxActiveHealthCheckQueueSize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckQueueSize"));
 
+    if($NginxActiveHealthCheckWorkersCount==0){$NginxActiveHealthCheckWorkersCount=4;}
+    if($NginxActiveHealthCheckQueueSize==0){$NginxActiveHealthCheckQueueSize=1000;}
+
+
+    $tpl->table_form_field_js("Loadjs('$page?active-health-check-js=yes')","AsWebMaster");
+    if($NginxActiveHealthCheckDaemonEnabled==0){
+        $tpl->table_form_field_bool("{active_health_check_daemon}",0,ico_sensor);
+    }
+    else {
+        $tpl->table_form_field_text("{active_health_check_daemon}","{active_health_check_workers}: $NginxActiveHealthCheckWorkersCount {active_health_check_queue}: $NginxActiveHealthCheckQueueSize ...",ico_sensor);
+
+    }
 
     echo $tpl->table_form_compile();
     return true;
 
+}
+
+function section_active_health_check_js():bool{
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+    $page=CurrentPageName();
+    return $tpl->js_dialog("{active_health_check_daemon}","$page?active-health-check-popup=yes");
+
+}
+function section_active_health_check_popup():bool
+{
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $security = "AsWebMaster";
+    $NginxActiveHealthCheckDaemonEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckDaemonEnabled"));
+    $NginxActiveHealthCheckWorkersCount=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckWorkersCount"));
+    $NginxActiveHealthCheckQueueSize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckQueueSize"));
+    $NginxActiveHealthCheckConcurrency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckConcurrency"));
+    $NginxActiveHealthCheckLogLevel=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckLogLevel"));
+    $NginxActiveHealthCheckOutgoingInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckOutgoingInterface"));
+
+    $NginxActiveHealthCheckMetricsMaxAge=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckMetricsMaxAge"));
+    if($NginxActiveHealthCheckMetricsMaxAge==0){$NginxActiveHealthCheckMetricsMaxAge=30;}
+    $NginxActiveHealthCheckMetricsMaxEntries=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckMetricsMaxEntries"));
+    if($NginxActiveHealthCheckMetricsMaxEntries==0){$NginxActiveHealthCheckMetricsMaxEntries=100000;}
+    $NginxActiveHealthCheckLogMaxAge=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckLogMaxAge"));
+    if($NginxActiveHealthCheckLogMaxAge==0){$NginxActiveHealthCheckLogMaxAge=7;}
+    $NginxActiveHealthCheckLogMaxSize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckLogMaxSize"));
+    if($NginxActiveHealthCheckLogMaxSize==0){$NginxActiveHealthCheckLogMaxSize=100;}
+
+    if($NginxActiveHealthCheckWorkersCount==0){$NginxActiveHealthCheckWorkersCount=4;}
+    if($NginxActiveHealthCheckQueueSize==0){$NginxActiveHealthCheckQueueSize=1000;}
+    if($NginxActiveHealthCheckConcurrency==0){$NginxActiveHealthCheckConcurrency=100;}
+    $logLevel=array();
+    $logLevel[0]="info";
+    $logLevel[1]="debug";
+    $logLevel[2]="warn";
+    $logLevel[3]="error";
+
+    $form[] = $tpl->field_checkbox("NginxActiveHealthCheckDaemonEnabled", "{enable_active_health_check_daemon}", $NginxActiveHealthCheckDaemonEnabled);
+    $form[] = $tpl->field_numeric("NginxActiveHealthCheckWorkersCount", "{active_health_check_workers}", $NginxActiveHealthCheckWorkersCount);
+    $form[] = $tpl->field_numeric("NginxActiveHealthCheckQueueSize", "{active_health_check_queue}", $NginxActiveHealthCheckQueueSize);
+    $form[] = $tpl->field_numeric("NginxActiveHealthCheckConcurrency", "{active_health_check_concurrency}", $NginxActiveHealthCheckConcurrency);
+    $form[]=$tpl->field_array_hash($logLevel,"NginxActiveHealthCheckLogLevel","nonull:{active_health_check_log_level}",$NginxActiveHealthCheckLogLevel);
+    $form[]=$tpl->field_interfaces("NginxActiveHealthCheckOutgoingInterface","nooloopNone:{outgoing_interface}",$NginxActiveHealthCheckOutgoingInterface);
+    $form[]=$tpl->field_section("{metrics}");
+    $form[] = $tpl->field_numeric("NginxActiveHealthCheckMetricsMaxAge", "{active_health_check_metrics_max_age}", $NginxActiveHealthCheckMetricsMaxAge);
+    $form[] = $tpl->field_numeric("NginxActiveHealthCheckMetricsMaxEntries", "{active_health_check_metrics_entries}", $NginxActiveHealthCheckMetricsMaxEntries);
+    $form[]=$tpl->field_section("{log_rotation}");
+    $form[] = $tpl->field_numeric("NginxActiveHealthCheckLogMaxAge", "{active_health_check_logs_max_age}", $NginxActiveHealthCheckLogMaxAge);
+    $form[] = $tpl->field_numeric("NginxActiveHealthCheckLogMaxSize", "{active_health_check_logs_max_size}", $NginxActiveHealthCheckLogMaxSize);
+    $html[] = $tpl->form_outside(null, $form, "", "{apply}",
+        "LoadAjax('nginx-status-flat','$page?table2=yes');" . section_js_form(), $security);
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+function section_active_health_check_save():bool{
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+    $tpl->CLEAN_POST();
+
+    foreach ($_POST as $key=>$val){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO($key,$val);
+    }
+
+    $sock=new sockets();
+    $sock->REST_API_NGINX("/active-health-check/restart");
+    return true;
 }
 function section_sla_frontend_popup():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
@@ -702,6 +785,13 @@ function ServiceStatus():string{
         $ini->loadString($json->Info);
         $html[]=$tpl->SERVICE_STATUS($ini, "APP_REVERSE_PROXY",$service_restart);
     }
+    $ini=new Bs_IniHandler();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/active-health-check/status"));
+    $service_restart = $tpl->framework_buildjs("nginx:/active-health-check/restart",
+        "nginx.restart.progress","nginx.restart.progress.txt",
+        "progress-nginx-restart", "LoadAjax('table-nginx','$page?table=yes');");
+    $ini->loadString($json->Info);
+    $html[]=$tpl->SERVICE_STATUS($ini, "APP_ACTIVE_HEALTH_CHECK",$service_restart);
     return @implode("\n",$html);
 }
 

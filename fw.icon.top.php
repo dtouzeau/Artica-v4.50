@@ -23,7 +23,7 @@ if(isset($_GET["notifs"])){notifs();exit;}
 if(isset($_GET["seen-updated"])){see_updated();exit;}
 if(isset($_GET["SetToken"])){SetToken();exit;}
 if(isset($_POST["SetToken"])){SetTokenConfirm();exit;}
-if(isset($_GET["cronos"])){Cronos();exit;}
+
 if(isset($_GET["refresh-interval"])){refresh_interval();exit;}
 //ABDEV 1/3
 if(isset($_GET['adblock'])){
@@ -50,116 +50,9 @@ function see_updated(){
 	header("content-type: application/x-javascript");
 	echo "LoadAjaxSilent('artica-notifs-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?notifs=yes');";
 }
-function Cronos():bool{
-    header("content-type: application/x-javascript");
-    $page=CurrentPageName();
-    $f[]="LoadAjaxSilent('artica-notifs-barr','$page?notifs=yes');";
-    $HTMLTITLE=null;
 
-    $FileCookyKey=md5($_SERVER["REMOTE_ADDR"].$_SERVER["HTTP_USER_AGENT"]);
-    if(is_file("/etc/artica-postfix/settings/Daemons/$FileCookyKey.HTMLTITLE")){$HTMLTITLE=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("$FileCookyKey.HTMLTITLE");}
-    if(isset($_COOKIE["HTMLTITLE"])){$HTMLTITLE=$_COOKIE["HTMLTITLE"];}
-
-    if(!is_null($HTMLTITLE)){
-        $HTMLTITLE=trim($HTMLTITLE);
-    }else{
-        $HTMLTITLE="%s (%v)";
-    }
-
-
-    if(strpos("  $HTMLTITLE ", "%s")>0){
-        $MyHostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
-        $HTMLTITLE=str_replace("%s", $MyHostname, $HTMLTITLE);
-    }
-    if(strpos("  $HTMLTITLE ", "%v")>0){
-        $MyHostname=trim(@file_get_contents("VERSION"));
-        $HTMLTITLE=str_replace("%v", $MyHostname, $HTMLTITLE);
-    }
-
-    $HTMLTITLE=str_replace("'", "`", $HTMLTITLE);
-    $f[]="document.title = '$HTMLTITLE'";
-
-    $date=date("H:i:s");
-    $f[]='$("#faclock").html("'.$date.'");';
-
-    $CURRENT_CPU_AVG=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CURRENT_CPU_AVG"));
-    $RT_CPU_AVG=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CURRENT_CPU_AVG"));
-    if(floatval($RT_CPU_AVG)>0){
-        $CURRENT_CPU_AVG=$RT_CPU_AVG;
-    }
-    VERBOSE("CURRENT_CPU_AVG = [$CURRENT_CPU_AVG]",__LINE__);
-    $MEM_USED=explode(",",trim(@file_get_contents("/etc/artica-postfix/DASHBOARD_MEM_CUR")));
-    $MEM_USED_PERC=intval($MEM_USED[0]);
-    $cpu = floatval($CURRENT_CPU_AVG);
-    if ($MEM_USED_PERC == 0) {
-                $sock = new sockets();
-                $data = $sock->REST_API("/system/status");
-
-                $json = json_decode($data);
-                if (json_last_error() > JSON_ERROR_NONE) {
-                    writelogs("REST API: /system/status " . json_last_error_msg(), __FUNCTION__, __FILE__, __LINE__);
-
-                }
-                if (!$json->Status) {
-                    writelogs("REST API: /system/status Return false!", __FUNCTION__, __FILE__, __LINE__);
-                }
-                $MEM_USED_PERC = $json->CurMemPrc;
-            }
-    VERBOSE("CPU PERCEN $cpu MEM PERC: $MEM_USED_PERC", __LINE__);
-    $cpu_color = "text-muted";
-            $mem_color = "text-muted";
-            if ($MEM_USED_PERC > 70) {
-                $mem_color = "text-primary";
-            }
-            if ($MEM_USED_PERC > 80) {
-                $mem_color = "text-warning";
-            }
-            if ($MEM_USED_PERC > 90) {
-                $mem_color = "text-danger";
-            }
-
-            if ($cpu > 70) {
-                $cpu_color = "text-primary";
-            }
-            if ($cpu > 80) {
-                $cpu_color = "text-warning";
-            }
-            if ($cpu > 90) {
-                $cpu_color = "text-danger";
-            }
-        $docid="document.getElementById";
-        $f[] = "function updateBars() {";
-        $f[] = "const cpuUsage = '$cpu'";
-        $f[] = "const memUsage = '$MEM_USED_PERC'";
-        $f[] = "if( $docid('top-cpu-text') ){";
-        $f[] = "    $docid('top-cpu-text').className='$cpu_color';";
-        $f[] = "    $docid('top-ram-text').className='$mem_color';";
-        $f[] = "    $docid('cpu-fill').style.width = cpuUsage + '%';";
-        $f[] = "    $docid('mem-fill').style.width = memUsage + '%';";
-        $f[] = "    $docid('cpu-percent').textContent = cpuUsage + '%';";
-        $f[] = "    $docid('mem-percent').textContent = memUsage + '%';";
-        $f[] = "    $docid('cpu-fill').style.backgroundColor = getColor(cpuUsage);";
-        $f[] = "    $docid('mem-fill').style.backgroundColor = getColor(memUsage);";
-        $f[] = "    }";
-        $f[] = "if( $docid('dash-cpu-title') ){";
-        $f[] = "    $docid('dash-cpu-title').textContent = cpuUsage + '%';";
-        $f[] = "    }";
-        $f[] = "}";
-        $f[] = "function getColor(usage) {";
-        $f[] = "if (usage < 50) return '#4caf50'; // Green";
-        $f[] = "if (usage < 80) return '#ff9800'; // Orange";
-        $f[] = "return '#f44336'; // Red";
-        $f[] = "}";
-        $f[]="updateBars()";
-
-    echo @implode("\n",$f);
-    return true;
-}
 function refresh_interval(){
     header("content-type: application/x-javascript");
-    $page=CurrentPageName();
-    $html[]="Loadjs('$page?cronos=yes');";
-    $html[]="LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
     $html[]="RefreshNotifs();";
     echo @implode("\n",$html);
 
@@ -1229,8 +1122,6 @@ echo "<li style='font-weight:bold;font-size:14px'>
 echo "</ul>";
 echo "<script>\n";
 echo "if(document.getElementById('WSUSOFFLINE-STATE') ){ LoadAjaxSilent('WSUSOFFLINE-STATE','fw.wsusoffline.php?status=yes');}";
-    echo "if(document.getElementById('widget-hostname') ){ 
-        LoadAjaxSilent('widget-hostname','fw.index.php?widget-hostname=yes');}";
 echo "</script>\n";
 
 

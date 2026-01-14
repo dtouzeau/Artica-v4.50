@@ -229,10 +229,6 @@ if (isset($argv[1])) {
         echo framework();
         exit;
     }
-    if ($argv[1] == "--glances") {
-        echo glances();
-        exit;
-    }
     if ($argv[1] == "--dnsfilterd") {
         include_once("$RDIR/class.status.dnsfilterd.inc");
         echo dnsfilterd_status();
@@ -655,11 +651,6 @@ if (isset($argv[1])) {
     if ($argv[1] == "--exec-nice") {
         $GLOBALS["VERBOSE"] = true;
         echo "\"{$GLOBALS["CLASS_UNIX"]->EXEC_NICE()}\"\n";
-        exit();
-    }
-
-    if ($argv[1] == "--ps-mem") {
-        ps_mem();
         exit();
     }
     if ($argv[1] == "--arpd") {
@@ -1367,78 +1358,6 @@ function xdcloudlogs($text = null)
     @fclose($f);
 }
 
-function MemorySync()
-{
-
-    $filecacheInodes = "/etc/artica-postfix/cron.1/InodeSync.time";
-    $filetime = $GLOBALS["CLASS_UNIX"]->file_time_min($filecacheInodes);
-
-    if ($filetime > 30) {
-        if (is_file($filecacheInodes)) {
-            @unlink($filecacheInodes);
-        }
-        $DISK_INODES = $GLOBALS["CLASS_UNIX"]->DISK_INODES();
-        foreach ($DISK_INODES as $num => $ligne) {
-            if(!is_array($ligne)){
-                continue;
-            }
-            $POURC = $ligne["POURC"];
-            if ($POURC > 90) {
-                squid_admin_mysql(1, "Alertes too many files on partition $num {$POURC}% used",
-                    "Please remove some files on this partition", __FILE__, __LINE__);
-
-                squid_admin_mysql(1, "Alertes too many files on partition $num {$POURC}% used",
-                    "Please remove some files on this partition", __FILE__, __LINE__);
-
-                @file_put_contents($filecacheInodes, time());
-
-            }
-        }
-    }
-
-
-    $TOTAL_MEM_POURCENT_USED = $GLOBALS["CLASS_UNIX"]->TOTAL_MEM_POURCENT_USED();
-    $GLOBALS["CLASS_UNIX"]->ToSyslog("Memory use {$TOTAL_MEM_POURCENT_USED}%");
-    $filecache_80 = "/etc/artica-postfix/cron.1/MemorySync80.time";
-    $filecache_90 = "/etc/artica-postfix/cron.1/MemorySync90.time";
-    $filecache_100 = "/etc/artica-postfix/cron.1/MemorySync99.time";
-
-    if ($TOTAL_MEM_POURCENT_USED > 80) {
-        if ($TOTAL_MEM_POURCENT_USED < 90) {
-            $filetime = $GLOBALS["CLASS_UNIX"]->file_time_min($filecache_80);
-            if ($filetime > 15) {
-                @unlink($filecache_80);
-                @file_put_contents($filecache_80, time());
-                squid_admin_mysql(1, "System memory exceed {$TOTAL_MEM_POURCENT_USED}%",
-                    "Timeout {$filetime}Mn\nYou will find here a snapshot of current tasks\n" . $GLOBALS["CLASS_UNIX"]->ps_mem_report(), __FILE__, __LINE__);
-            }
-        }
-    }
-
-    if ($TOTAL_MEM_POURCENT_USED > 89) {
-        if ($TOTAL_MEM_POURCENT_USED < 97) {
-            $filetime = $GLOBALS["CLASS_UNIX"]->file_time_min($filecache_90);
-            if ($filetime > 10) {
-                @unlink($filecache_90);
-                @file_put_contents($filecache_90, time());
-                squid_admin_mysql(1, "System memory exceed {$TOTAL_MEM_POURCENT_USED}%",
-                    "Timeout {$filetime}Mn\nYou will find here a snapshot of current tasks\n" . $GLOBALS["CLASS_UNIX"]->ps_mem_report(), __FILE__, __LINE__);
-            }
-        }
-    }
-
-    if ($TOTAL_MEM_POURCENT_USED > 97) {
-        $filetime = $GLOBALS["CLASS_UNIX"]->file_time_min($filecache_100);
-        if ($filetime > 10) {
-            @unlink($filecache_100);
-            @file_put_contents($filecache_100, time());
-            squid_admin_mysql(0, "System memory exceed {$TOTAL_MEM_POURCENT_USED}% (action {$filetime}Mn/20mn)",
-                "Timeout {$filetime}Mn\nYou will find here a snapshot of current tasks\n" . $GLOBALS["CLASS_UNIX"]->ps_mem_report(), __FILE__, __LINE__);
-        }
-    }
-
-
-}
 
 function SwapWatchdog()
 {
@@ -1961,7 +1880,7 @@ function launch_all_status($force = false){
         "ocs_agent",  "wanproxy","go_exec_update" ,"sshportal", "gluster", "auditd", "milter_dkim", "dropbox", "killstrangeprocesses", "dockerd",
          "tftpd",  "bandwith", "lsm", "Build_default_values",
         "pptpd", "pptp_clients", "ddclient", "cluebringer", "proftpd_status", "splunk",
-         "openvpn", "vboxguest", "sabnzbdplus", "MemorySync",  "SwapWatchdog", "mosquitto","APP_ARTICAFSMON",        "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
+         "openvpn", "vboxguest", "sabnzbdplus",   "SwapWatchdog", "mosquitto","APP_ARTICAFSMON",        "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
         "iscsi", "netatalk", "smartd",   "greyhole_watchdog", "tomcat",
         "cgroups",  "arpd", "ps_mem", "ipsec", "openvpn", "ifconfig_network",
         "udevd_daemon",  "arkwsd", "arkeiad", "haproxy", "hacluster", "privoxy", "ad_rest", "CleanLogs", "checksyslog", "freeradius", "maillog_watchdog", "arp_spoof","go_squid_auth","HOTSPOT_STATUS",
@@ -2347,92 +2266,6 @@ function maillog_watchdog(){
 
 
 //---------------------------------------------------------------------------------------------------
-
-function glances_pid(){
-    $pid = $GLOBALS["CLASS_UNIX"]->get_pid_from_file("/var/run/glances/glances.pid");
-    if ($GLOBALS["CLASS_UNIX"]->process_exists($pid)) {
-        return $pid;
-    }
-    $Masterbin = $GLOBALS["CLASS_UNIX"]->find_program("glances");
-    return $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN($Masterbin);
-}
-
-function glances():string{
-    $l[] = "[APP_GLANCES]";
-    $l[] = "service_name=APP_GLANCES";
-    $l[] = "service_cmd=/etc/init.d/glances";
-    $l[] = "master_version=" . $GLOBALS["CLASS_SOCKETS"]->GET_INFO("GLANCES_VERSION");
-    $l[] = "family=statistics";
-    $l[] = "watchdog_features=1";
-    $l[] = "installed=1";
-
-    $EnableGlances=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableGlances"));
-    if($EnableGlances==1){
-        $GLOBALS["CLASS_UNIX"]->framework_exec("exec.glances.php --uninstall");
-        squid_admin_mysql(1, "Glances is installed remove it for htop-web migration [action=uninstall]",
-            null, __FILE__, __LINE__);
-
-        $GLOBALS["CLASS_UNIX"]->framework_exec("exec.bandwhich.php --install");
-        return true;
-    }
-
-
-    if($EnableGlances==0) {
-        $l[] = "service_disabled=0";
-        $l[] = "running=0";
-        if (!is_file("/etc/init.d/glances")) {
-            return @implode("\n", $l);
-        }
-        if (is_file("/etc/init.d/glances")) {
-            $GLOBALS["CLASS_UNIX"]->framework_exec("exec.glances.php --uninstall");
-            squid_admin_mysql(1, "Glances is installed but disabled [action=uninstall]",
-                null, __FILE__, __LINE__);
-        }
-        return @implode("\n", $l);
-    }
-
-    $l[] = "service_disabled=1";
-    if($EnableGlances==1) {
-        $l[] = "running=0";
-        if (!is_file("/etc/init.d/glances")) {
-            $GLOBALS["CLASS_UNIX"]->framework_exec("exec.glances.php --install");
-            squid_admin_mysql(1, "Glances is not installed but enabled [action=install]",
-                null, __FILE__, __LINE__);
-            return @implode("\n", $l);
-        }
-    }
-
-
-    $f = explode("\n", @file_get_contents("/etc/default/glances"));
-    foreach ($f as $line) {
-        $line = trim($line);
-        if ($line == null) {
-            continue;
-        }
-        if (preg_match("#^RUN=.*?false#i", $line)) {
-            squid_admin_mysql(0, "Glances Daemon installation corrupted [action=uninstall]", "see in /etc/default/glances", __FILE__, __LINE__);
-            $GLOBALS["CLASS_UNIX"]->framework_exec("exec.glances.php --uninstall");
-            return @implode("\n", $l);
-        }
-
-    }
-
-    $glances_pid = glances_pid();
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($glances_pid)) {
-        if (!$GLOBALS["DISABLE_WATCHDOG"]) {
-            $GLOBALS["CLASS_UNIX"]->framework_exec("exec.glances.php --restart");
-        }
-        $l[] = "running=0";
-        $l[] = "";
-        return implode("\n", $l);
-    }
-
-
-    $l[] = "running=1";
-    $l[] = GetMemoriesOf($glances_pid);
-    $l[] = "";
-    return implode("\n", $l);
-}
 function squid_watchdog_events($text)
 {
     $sourcefunction = null;
@@ -6542,9 +6375,7 @@ function GetVersionOf($name)
 
 function events($text, $function = null, $line = 0){ ToSyslog("$text $function() L.$line");}
 function events_syslog($text = null){ToSyslog("$text");}
-function ps_mem()
-{
-}
+
 
 function ifconfig_network(){
     $ifconfigs = $GLOBALS["CLASS_UNIX"]->ifconfig_all_ips();

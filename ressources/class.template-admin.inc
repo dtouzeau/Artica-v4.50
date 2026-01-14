@@ -1232,12 +1232,12 @@ return implode(', ', $timeParts);
         $this->cssScript[]=$HeadBuilder->cssScript;
 
         $SessionCookieLifetime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SessionCookieLifetime"));
+        $Ordonnancer=$this->RefreshInterval_Loadjs("sysmemory","fw.system.status.php","top-widget=yes",30);
+
         $f[]="<script>";
         $f[]="\t$.address.strict(false);";
+        $f[]="\t$Ordonnancer";
         $f[]="\tfunction ArtPing() {";
-        $f[]="\t\tif( document.getElementById('sysmemory') ){";
-            $f[]="\t\t\tLoadAjaxTiny('sysmemory', 'fw.system.status.php?sysmemory=yes');";
-            $f[]="\t\t}";
             $f[]="";
             $f[]="\t\t$.ajax({";
             $f[]="\t\t\ttype: \"GET\",";
@@ -1672,8 +1672,8 @@ return implode(', ', $timeParts);
 
     public function utf8_encode($string):string{
 
-        $phpver=phpversion();
-        if(strpos(" $phpver","8.2")){
+
+        if(version_compare(phpversion(),"8.2",">=")){
             return strval(mb_convert_encoding($string, 'UTF-8'));
         }
         if(function_exists("utf8_encode")){
@@ -2647,8 +2647,8 @@ if($forceFunc<>null){
             $initial="this.style.fontWeight='bold'";
         }
 
-        $ClickMouse="onMouseOver=\"this.style.cursor='pointer';this.style.fontWeight='bold';this.style.textDecoration=underline\" 
-        OnMouseOut=\"this.style.cursor='default';$initial;this.style.textDecoration=none\"
+        $ClickMouse="onMouseOver=\"this.style.cursor='pointer';this.style.fontWeight='bold';this.style.textDecoration='underline'\" 
+        OnMouseOut=\"this.style.cursor='default';$initial;this.style.textDecoration='none'\"
         OnClick=\"$js\"
         ";
         return $ClickMouse;
@@ -2802,8 +2802,11 @@ if($forceFunc<>null){
             $FINAL[]=$bin;
 
         }
+        $Latest=0;
 
-        $Latest=$FINAL[0];
+        if(isset($FINAL[0])) {
+            $Latest = $FINAL[0];
+        }
         $Latesta=$Latest/100;
         $Latestb=$IntCurVer/100;
         if($Latesta>10){
@@ -6325,7 +6328,7 @@ if(typeof dialogInstance == 'object'){
 
         }
         $log=@implode("\n",$xlog);
-        return "$log<button type=\"button\" class=\"btn $class{$btsize_class}\" OnClick=\"$js\" style='text-transform: capitalize;$widthcss'>".$this->_ENGINE_parse_body($insideButton)."</button>";
+        return "$log<button type=\"button\" class=\"btn $class$btsize_class\" OnClick=\"$js\" style='text-transform: capitalize;$widthcss'>".$this->_ENGINE_parse_body($insideButton)."</button>";
     }
 
     public function javascript_senderror($text,$div):bool{
@@ -7482,14 +7485,16 @@ if(typeof dialogInstance == 'object'){
 
     }
 
-    public function field_array_select($HashList,$name,$label,$value,$explain=null,$jsafter=null){
+    public function field_array_select($HashList,$name,$label,$value,$explain=null,$jsafter=null):string{
         $id=md5("$name$this->suffixid");
         $id2=md5("{$name}2$this->suffixid");
         $value2=$HashList[$value];
 
         $Encoded=base64_encode(serialize($HashList));
         $DefaultValue=urlencode($value);
-        $jsafter=urlencode(base64_encode($jsafter));
+        if(!is_null($jsafter)) {
+            $jsafter = urlencode(base64_encode($jsafter));
+        }
         $labelenc=urlencode($label);
         $page=CurrentPageName();
         $js="Loadjs('fw.browse-select.php?&page=$page&name=$name&field-id=$id&Hash=$Encoded&field-id2=$id2&value=$DefaultValue&js=$jsafter&label=$labelenc')";
@@ -9637,6 +9642,48 @@ if(typeof dialogInstance == 'object'){
                                     </div>
                                 </div>");
     }
+    function div_success($text):string{
+        $LICENCE=false;
+        if(strpos(" $text","{license_error}")>0){
+            $LICENCE=true;
+        }
+        $license_ico=null;
+        $title="{Warning}";
+        $button=null;
+        if(strpos($text,"||")>0){
+            $tb=explode("||",$text);
+            $title=$tb[0];
+            $text=$tb[1];
+            if(isset($tb[2])){
+                if(preg_match("#wiki:(.+)#",$tb[2],$re)){
+                    $url="s_PopUpFull('{$re[1]}','1024','900');";
+                    $button=$this->button_autnonome("{howto}: {online_help}", $url, "fas fa-user-headset",null,0,"btn-warning");
+                }else{
+                    $button=$this->button_autnonome("{howto}: {online_help}", $tb[2], "fas fa-user-headset",null,0,"btn-warning");
+                }
+
+
+            }
+        }
+
+        if($LICENCE){
+            $license_ico="<div style='float:left;margin:10px;'><i class=' text-warning ".ico_certificate." fa-6x'></i></div>";
+        }
+
+        return $this->_ENGINE_parse_body(" <div class=\"panel panel-primary\" style='margin:10px'>
+                                        <div class=\"panel-heading\">
+                                          $title
+                                        </div>
+                                        <div class=\"panel-body\">
+                                            $license_ico<p>$text</p>
+                                            <div style='text-align:right'>
+                                            $button
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>");
+    }
+
     function div_info($text):string{
 
         $license_ico=null;

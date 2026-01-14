@@ -63,7 +63,7 @@ function popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$sock=new sockets();
-	//$sock->getFrameWork("system.php?ps-mem=yes");
+
 	$SwapOffOn=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SwapOffOn")));
 	$DisableSWAPP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableSWAPP"));
 	if(!is_numeric($SwapOffOn["SwapEnabled"])){$SwapOffOn["SwapEnabled"]=1;}

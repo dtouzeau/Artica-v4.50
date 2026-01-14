@@ -402,6 +402,9 @@ function unbound_client_status():string{
 
     }
     $tpl=new template_admin();
+    if(!file_exists("/etc/artica-postfix/UnboundCluster.json")){
+        return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}"));
+    }
     $json=json_decode(file_get_contents("/etc/artica-postfix/UnboundCluster.json"));
 
     if ($json === false) {

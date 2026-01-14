@@ -133,7 +133,7 @@ if(isset($_GET["refresh-logs-storefiles"])){refresh_logs_storefiles();exit;}
 if(isset($_GET["ping-host"])){ping_host();exit;}
 if(isset($_GET["etc-timezone"])){etc_timezone();exit;}
 if(isset($_GET["ucarp-isactive"])){ucarp_isactive();exit;}
-if(isset($_GET["ps-mem"])){ps_mem();exit;}
+
 if(isset($_GET["empty-swap"])){empty_swap();exit;}
 if(isset($_GET["force-databases"])){force_databases();exit;}
 
@@ -2160,72 +2160,7 @@ function make_www_writable(){
 	@chmod($dir, 0777);
 	
 }
-function ps_mem(){
-	
-	exec("/usr/share/artica-postfix/bin/ps_mem.py -s 2>&1",$results);
-    $MEM=array();
-foreach ($results as $num=>$line){
-	if(!preg_match("#[0-9\.]+\s+[A-Z-a-z]+.*?[0-9\.]+\s+[A-Z-a-z]+\s+=\s+([0-9\.]+)\s+([A-Z-a-z]+)\s+(.+)#", $line,$re)){continue;}
-	$MEMORY=$re[1];
-	$UNIT=$re[2];
-	$PROG=trim($re[3]);
-	if($UNIT=="KiB"){continue;}
-	//writelogs_framework($PROG,__FUNCTION__,__FILE__,__LINE__);
-	
-	if($UNIT=="KiB"){$MEMORY=$MEMORY/1024;}
-	if($UNIT=="GiB"){$MEMORY=$MEMORY*1024;}
-	$MEMORY=round($MEMORY);
-	if(preg_match("#\/influxd -pidfile#", $PROG)){$PROG="BigData service";}
-	if(preg_match("#exec\.logfile_daemon\.php#", $PROG)){$PROG="Proxy Access Logger";}
-	if(preg_match("#\/ufdbcatdd -c #", $PROG)){$PROG="Categories service";}
-	if(preg_match("#smbd -D#", $PROG)){$PROG="Samba service";}
-	if(preg_match("#memcached\.pid#", $PROG)){$PROG="Memory Cache service";}
-	if(preg_match("#slapd\.conf -u#", $PROG)){$PROG="OpenLDAP server";}
-	if(preg_match("#monit\.state#", $PROG)){$PROG="System Watchdog";}
-	if(preg_match("#\(ssl_crtd\)#", $PROG)){$PROG="Proxy SSL Client";}
-	if(preg_match("#\(ntlm_auth\)#", $PROG)){$PROG="NTLM Authenticator";}
-	if(preg_match("#\(squid-[0-9]+\)#", $PROG)){$PROG="Proxy Service";}
-	if(preg_match("#\(squid-coord-[0-9]+\)#", $PROG)){$PROG="Proxy Service";}
-	if(preg_match("#sshd:#", $PROG)){$PROG="OpenSSH server";}
-	if(preg_match("#\/ufdbgclient\.php#", $PROG)){$PROG="Web Filtering client";}
-	if(preg_match("#suricata#", $PROG)){$PROG="IDS service";}
-	if(preg_match("#\/external_acl_response\.php#", $PROG)){$PROG="Proxy File Watcher";}
-	if(preg_match("#\/external_acl_squid\.php#", $PROG)){$PROG="Proxy ACLs Watcher";}
-	if(preg_match("#\/external_acl_squid_ldap\.#", $PROG)){$PROG="Proxy Active Directory Watcher";}
-	if(preg_match("#\/exec.ufdbguard-tail\.php#", $PROG)){$PROG="Web Filtering Watcher";}
-	if(preg_match("#\/opt\/squidsql#", $PROG)){$PROG="MySQL for Proxy";}
-	if(preg_match("#\/var\/run\/mysqld\/mysqld\.sock#", $PROG)){$PROG="MySQL Server";}
-	if(preg_match("#\/exec.cache-logs\.php#", $PROG)){$PROG="Proxy Real-time Watchdog";}
-	if(preg_match("#\/exec\.syslog\.php#", $PROG)){$PROG="System Watchdog";}
-	if(preg_match("#\/bin\/ufdbguardd#", $PROG)){$PROG="Web Filtering Service";}
-	if(preg_match("#\/exec\.status\.php#", $PROG)){$PROG="Services Watchdog";}
-	if(preg_match("#\/exec.auth-tail\.php#", $PROG)){$PROG="Authentication Watchdog";}
-	if(preg_match("#bin\/apache2#", $PROG)){$PROG="Web Service";}
-	if(preg_match("#winbindd -D#", $PROG)){$PROG="Winbind Daemon";}
-	if(preg_match("#apache2\.conf -k start#", $PROG)){$PROG="Web Service";}
-	if(preg_match("#exec\.hypercache-tail#", $PROG)){$PROG="HyperCache Tail logger";}
-	if(preg_match("#exec\.web-community-filter\.php#", $PROG)){$PROG="Cloud Update process";}
-	if(preg_match("#tmp --log-warnings=2 --default-storage-engine=myisam#", $PROG)){$PROG="MySQL Server";}
-	if(preg_match("#clamd.*?clamd.conf#", $PROG)){$PROG="ClamAV Service";}
-	if(preg_match("#fail2ban.sock#", $PROG)){$PROG="Fail2ban Service";}
-	if(preg_match("#rsyslogd\s+-c#", $PROG)){$PROG="Syslog Service";}
-	if(strpos($PROG, "/")>0){
-		
-		if(strpos($PROG, " ")>0){$TR=explode(" ",$PROG);$PROG=$TR[0];}
-	}
-	$PROG=basename($PROG);
-	$PROG=str_replace("(", "", $PROG);
-	$PROG=str_replace(")", "", $PROG);
-	
-	if($PROG=="php5"){$PROG="php";}
-	if(preg_match("#^squid-#", $PROG)){$PROG="Proxy Service";}
-	if(!isset($MEM[$PROG])){$MEM[$PROG]=$MEMORY;}else{$MEM[$PROG]=$MEM[$PROG]+$MEMORY;}
-}
-	
-	@file_put_contents("/usr/share/artica-postfix/ressources/logs/web/ps_mem.array", serialize($MEM));
-	
-	
-}
+
 
 
 function  DirectoriesMonitorSchedules(){

@@ -282,20 +282,6 @@ class icontop{
         }
     }
     $ERR=$this->proxy_checks_ports($ERR);
-
-    if(count($ERR)>0){
-        $text=$ERR[0];
-        if(strpos($text,"||WARN||")==0) {
-            $ss = base64_encode($ERR[0]);
-            if(!$nooutjs) {
-                echo "<script>LoadAjaxSilent('widget-hostname','fw.index.php?widget-hostname=yes&ERRJS=$ss');</script>";
-            }
-        }
-    }else{
-        if(!$nooutjs){echo "<script>LoadAjaxSilent('widget-hostname','fw.index.php?widget-hostname=yes');</script>";}
-    }
-
-
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NOTIFS_SQUID",serialize($ERR));
     $ERR=$this->check_ufdbguard($ERR);
 

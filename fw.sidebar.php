@@ -11,10 +11,8 @@ $SquidCacheLevel=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidCacheLevel"));
 $SquidDisableHyperCacheDedup=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableHyperCacheDedup"));
 $HyperCacheStoreID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HyperCacheStoreID"));
 $SquidDisableCaching=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableCaching"));
-$FRONTAIL_LINUX_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FRONTAIL_LINUX_INSTALLED"));
-$EnableFrontail=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFrontail"));
 $PostfixEnable=intval($GLOBALS['CLASS_SOCKETS']->GET_INFO("EnablePostfix"));
-if($FRONTAIL_LINUX_INSTALLED==0){$EnableFrontail=0;}
+
 $UFDB=false;
 
 if($PostfixEnable==1){
@@ -168,10 +166,7 @@ if($POSTFIX_INSTALLED==1){
 		$f[]="<li>";
 		$f[]="<div><h4 style='font-weight:bold;font-size:19px;margin-bottom:0px;margin-top:0px'>{messaging}</H4></div>";
 		$f[]="</li>";
-		if($users->AsPostfixAdministrator){
-			if($FRONTAIL_LINUX_INSTALLED==1){if($EnableFrontail==1){$f[]=line_icon("s_PopUp('/maillog/',800,600,'Mail.log')",ico_eye,"mail.log","btn-primary");} }
-		}
-		
+
 		if($users->AsAnAdministratorGeneric){
 			$f[]=line_icon("Loadjs('fw.postfix.spamassassin.analyze.php');","fas fa-envelope-square","{message_analyze}","btn-primary");
 			
@@ -216,19 +211,6 @@ if($users->AsAnAdministratorGeneric){
                     );
                 }
 
-
-		if($FRONTAIL_LINUX_INSTALLED==1){
-			if($EnableFrontail==1){
-				$f[]=line_icon("s_PopUp('/syslog/',800,600,'SYSLOG')",
-						ico_eye,
-						"Syslog",
-						"btn-primary"
-				);
-				
-			}
-			
-		}
-		
 		if($users->AsSystemAdministrator){
 			if($sock->GET_INFO("EnableMemcached")==1){
 				$f[]=line_icon("LoadAjaxSilent('MainContent','fw.system.memcached.php');",

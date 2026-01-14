@@ -742,6 +742,7 @@ function unbound_status():bool{
 }
 function dnscache_status():bool{
 	$page=CurrentPageName();
+	echo "<div id='dns-apply-system'></div>\n";
 	$EnableCloudflared=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableCloudflared"));
 	if($EnableCloudflared==1){
 		echo "<div id='cloudflared-status' style='margin-top:10px'></div>\n";

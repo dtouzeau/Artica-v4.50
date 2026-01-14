@@ -3215,9 +3215,11 @@ function td_row_serverstats($QueryID):string{
             $DOMS[$domain] = $id;
         }
         $STATS=array();
-        foreach ($Class->serverZones as $Domain => $jclass) {
-            if (isset($DOMS[$Domain])) {
-                $STATS[$DOMS[$Domain]] = $jclass;
+        if (property_exists($Class, "serverZones")) {
+            foreach ($Class->serverZones as $Domain => $jclass) {
+                if (isset($DOMS[$Domain])) {
+                    $STATS[$DOMS[$Domain]] = $jclass;
+                }
             }
         }
         $GLOBALS["TD_ROWS_STATS"]=$STATS;

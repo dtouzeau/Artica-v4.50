@@ -350,10 +350,8 @@ function uninstall_all():int{
     $SERVICES["/etc/init.d/nginx"]="/usr/sbin/artica-phpfpm-service -nginx-uninstall";
     $SERVICES["/etc/init.d/slapd"]="/usr/sbin/artica-phpfpm-service -uninstall-ldap";
     $SERVICES["/etc/init.d/munin"]="exec.munin.php --uninstall";
-    $SERVICES["/etc/init.d/glances"]="exec.glances.php --uninstall";
     $SERVICES["/etc/init.d/vnstat"]="/usr/sbin/artica-phpfpm-service -uninstall-vnstat";
     $SERVICES["/etc/init.d/arpd"]="exec.arpd.php --uninstall";
-    $SERVICES["/etc/init.d/frontail-syslog"]="exec.frontail.php --uninstall";
     $SERVICES["/etc/init.d/tailon"]="/usr/sbin/artica-phpfpm-service -uninstall-tailon";
     $SERVICES["/etc/init.d/artica-postgres"]="exec.initslapd.php --remove-postgres";
     $SERVICES["/etc/init.d/samba"]="exec.samba-service.php --uninstall";

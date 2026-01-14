@@ -1652,6 +1652,9 @@ function FormatBytes($kbytes,$nohtml=false):string{
     $spacer="&nbsp;";
     $value=0;
     if($nohtml){$spacer="";}
+    if($kbytes<1024){
+        return "$kbytes{$spacer}KB";
+    }
 
     if($kbytes>1048576){
         $value=round($kbytes/1048576, 2);

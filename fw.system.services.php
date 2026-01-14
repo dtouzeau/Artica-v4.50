@@ -234,7 +234,6 @@ function features():bool{
 
 
     $APP_IWCONFIG=$features->APP_IWCONFIG();
-    $APP_FRONTAIL_LINUX=$features->APP_FRONTAIL_LINUX();
     $APP_PRADS=$features->APP_PRADS();
 
     $SQUID=$features->SQUID();
@@ -263,7 +262,7 @@ function features():bool{
     $APP_ZIPROXY=$features->APP_ZIPROXY();
 //  $LM_SENSORS=$features->LM_SENSORS();
     $APP_PRIVOXY=$features->APP_PRIVOXY();
-    $GLANCES=$features->GLANCES();
+
     $POSTFIX=$features->POSTFIX();
 //  $APP_CYRUS=$features->APP_CYRUS();
     $APP_SNMPD=$features->APP_SNMPD();
@@ -316,7 +315,6 @@ function features():bool{
     $APP_OPENDKIM=$features->APP_OPENDKIM();
     //$APP_CENTRAL_NODE=$features->APP_CENTRAL_NODE();
     $APP_GEOIP_UPDATES=$features->APP_GEOIP_UPDATES();
-    $APP_TAILON=$features->APP_TAILON();
     $HA_CLUSTER=$features->HA_CLUSTER();
     $FIREQOS=$features->FIREQOS();
     $APP_DNSDIST=$features->APP_DNSDIST();
@@ -634,8 +632,6 @@ function features():bool{
     $statistics[]="<tr><td colspan=4 class=label style='text-align:left'><H2>{statistics}</td></tr>";
     $statistics[]=$KSRN;
     $statistics[]=$CLOUD_CATEGORIES;
-    $statistics[]=$APP_TAILON;
-    $statistics[]=$APP_FRONTAIL_LINUX;
     $statistics[]=$APP_REDIS_SERVER;
     $statistics[]=$GLANCES;
     $statistics[]=$APP_MUNIN;

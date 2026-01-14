@@ -41,6 +41,7 @@ if(isset($_GET["upload-js"])){upload_js();exit;}
 if(isset($_GET["upload-popup"])){upload_popup();exit;}
 if(isset($_GET["InstantBackup-restore"])){InstantBackup_restore_js();exit;}
 if(isset($_POST["InstantBackup-restore"])){InstantBackup_restore_perform();exit;}
+
 service_js();
 
 function upload_js():bool{

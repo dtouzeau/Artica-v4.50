@@ -2812,6 +2812,9 @@ function table():bool{
 
 
         $addLetsEncrypt="Loadjs('fw.certificates-center.letsencrypt.php?function=$function')";
+        if(!isReverse()){
+            $addLetsEncrypt="Loadjs('fw.certificates-center.letsencrypt.dns.php?function=$function')";
+        }
         $bts[]="<label class=\"btn btn-info\" OnClick=\"$addLetsEncrypt\"><i class='fa fa-plus'></i> {LETSENCRYPT_CERTIFICATE} </label>";
 
 
@@ -3097,6 +3100,21 @@ function td_sitesbyCert($CommonName):string{
     }
 
     return @implode(", ",$CONF);
+}
+function isReverse():bool{
+    $EnableNginx=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNginx"));
+    if($EnableNginx==1){
+        return true;
+    }
+    $EnablePulseReverse=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePulseReverse"));
+    if($EnablePulseReverse==1){
+        return true;
+    }
+    $ActiveDirectoryRestLetsEncrypt    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryRestLetsEncrypt"));
+    if($ActiveDirectoryRestLetsEncrypt==1){
+        return true;
+    }
+    return false;
 }
 function get_servicename($ID):string{
     $ID=intval($ID);

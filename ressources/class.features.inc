@@ -622,35 +622,6 @@ class features{
         $config["LOG_FILE"]=PROGRESS_DIR."/syslog.install.progress.log";
         return $this->build_paragraph($config);
     }
-
-
-
-    function APP_FRONTAIL_LINUX():string{
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_FRONTAIL_LINUX}";
-        $config["TOKEN_INSTALLED"]="FRONTAIL_LINUX_INSTALLED";
-        $config["TOKEN"]="EnableFrontail";
-        $config["EXPLAIN"]="{APP_FRONTAIL_LINUX_EXPLAIN}";
-        $config["CMD_ON"]="/frontail/install";
-        $config["CMD_OFF"]="/frontail/uninstall";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/frontail.install.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/frontail.install.progress";
-        return $this->build_paragraph($config);
-    }
-    function APP_TAILON():string{
-
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_TAILON}";
-        $config["TOKEN_INSTALLED"]="TAILON_INSTALLED";
-        $config["TOKEN"]="EnableTailon";
-        $config["EXPLAIN"]="{APP_FRONTAIL_LINUX_EXPLAIN}";
-        $config["CMD_ON"]="/tailon/install";
-        $config["CMD_OFF"]="/tailon/uninstall";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/tailon.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/tailon.progress.log";
-        return $this->build_paragraph($config);
-    }
-
     function APP_IMAPBOX():string{
         if($this->ASReverseProxyAppliance){
             return "";
@@ -1518,22 +1489,7 @@ class features{
     }
 
 
-    public function GLANCES(){
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        return "";
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TOKEN_INSTALLED"]="GLANCES_INSTALLED";
-        $config["TITLE"]="{APP_GLANCES}";
-        $config["EXPLAIN"]="{GLANCES_EXPLAIN}";
-        $config["TOKEN"]="EnableGlances";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/glances.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/glances.progress.txt";
-        $config["CMD_ON"]="glances.php?install=yes";
-        $config["CMD_OFF"]="glances.php?uninstall=yes";
-        return $this->build_paragraph($config);
-    }
+
     public function POSTFIX():string{
         if($this->ASReverseProxyAppliance){
             return "";

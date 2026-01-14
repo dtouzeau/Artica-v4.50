@@ -702,7 +702,6 @@ function files_list() {
 
     echo $tpl->_ENGINE_parse_body(implode("\n", $f));
 }
-
 function service_packs_list() {
     $tpl = new template_admin();
     $page = CurrentPageName();
@@ -772,26 +771,25 @@ function service_packs_list() {
 
 
 
-function agent_info_js() {
+function agent_info_js():bool {
     $page = CurrentPageName();
     $tpl = new template_admin();
     $id = intval($_GET["agent-info-js"]);
     return $tpl->js_dialog2("{agent_info}", "$page?agent-info-popup=$id", 600);
 }
-
-function agent_info_popup() {
+function agent_info_popup():bool {
     $tpl = new template_admin();
     $sock = new sockets();
     $id = intval($_GET["agent-info-popup"]);
 
-    $json = json_decode($sock->REST_API("/articarepos/agent/{$id}/info"));
+    $json = json_decode($sock->REST_API("/articarepos/agent/$id/info"));
 
     $f = array();
 
     if (isset($json->Error)) {
-        $f[] = "<div class='alert alert-danger'>{$json->Error}</div>";
+        $f[] = "<div class='alert alert-danger'>$json->Error</div>";
         echo $tpl->_ENGINE_parse_body(implode("\n", $f));
-        return;
+        return false;
     }
 
     $debianVersion = isset($json->debian_version) ? $json->debian_version : "-";
@@ -808,6 +806,7 @@ function agent_info_popup() {
     $f[] = "</table>";
 
     echo $tpl->_ENGINE_parse_body(implode("\n", $f));
+    return true;
 }
 function debian_js():bool{
     $page = CurrentPageName();
@@ -852,7 +851,7 @@ function debian_save():bool{
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ArticaReposDebianVersions",@implode(",",$tt));
     return admin_tracks("Save fetch repositories for Debian: ".@implode(",",$tt));
 }
-function push_update_js() {
+function push_update_js():bool {
     $page = CurrentPageName();
     $tpl = new template_admin();
     $filename = isset($_GET["push-update-js"]) ? urlencode($_GET["push-update-js"]) : "";
@@ -860,8 +859,7 @@ function push_update_js() {
     $agentId = isset($_GET["agent_id"]) ? intval($_GET["agent_id"]) : 0;
     return $tpl->js_dialog2("{push_update} $filename", "$page?push-update-popup=yes&filename=$filename&type=$type&agent_id=$agentId", 700);
 }
-
-function push_update_popup() {
+function push_update_popup():bool {
     $page = CurrentPageName();
     $tpl = new template_admin();
     $sock = new sockets();
@@ -919,6 +917,7 @@ function push_update_popup() {
     $f[] = "</script>";
 
     echo $tpl->_ENGINE_parse_body(implode("\n", $f));
+    return true;
 }
 
 function start_sync():bool {

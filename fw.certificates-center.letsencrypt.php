@@ -3,6 +3,7 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 include_once(dirname(__FILE__)."/ressources/class.mysql.powerdns.inc");
 
 if(isset($_POST["CommonName"])){letsencrypt_save();exit;}
+if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["next-step-js"])){next_set_js();exit;}
 if(isset($_GET["next-step-popup"])){next_set_popup();exit;}
@@ -25,26 +26,36 @@ function isReverse():bool{
     }
     return false;
 }
+function tabs(){
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $function=isset($_GET["function"]) ? $_GET["function"] : "";
+    $function2=isset($_GET["function2"]) ? $_GET["function2"] : "";
+    $ID=isset($_GET["ID"]) ? $_GET["ID"] : 0;
+
+    if(isReverse()){
+        if($ID>0){
+            $tabs["#$ID"]="$page?next-step-popup=yes&function=$function&ID=$ID&function2=$function2";
+        }
+        $tabs["{http_request}"]="$page?popup=yes&function=$function&function2=$function2&ID=$ID";
+    }
+    $tabs["{dns_request}"]="fw.certificates-center.letsencrypt.dns.php?tabs=yes&function=$function&function2=$function2";
+    $html[]=$tpl->tabs_default($tabs);
+    echo $tpl->_ENGINE_parse_body($html);
+}
+
 
 function letsencrypt_js():bool{
     $tpl=new template_admin();
-
-    if(!isReverse()){
-        return $tpl->js_error($tpl->_ENGINE_parse_body("{error_lesencrypt_nginx_not_installed}"));
-    }
-
-
-
+    $ID=0;
     $page=CurrentPageName();
     $function=$_GET["function"];
     $function2=$_GET["function2"];
     if(isset($_GET["ID"])){
         $ID=intval($_GET["ID"]);
-        if($ID>0){
-            return $tpl->js_dialog3("{LETSENCRYPT_CERTIFICATE} #$ID", "$page?next-step-popup=yes&function=$function&ID=$ID&function2=$function2");
-        }
+
     }
-    return $tpl->js_dialog3("{LETSENCRYPT_CERTIFICATE}", "$page?popup=yes&function=$function&function2=$function2");
+    return $tpl->js_dialog3("{LETSENCRYPT_CERTIFICATE}", "$page?tabs=yes&function=$function&function2=$function2&ID=$ID");
 
 }
 function next_set_js():bool{
@@ -312,7 +323,7 @@ function popup():bool{
     $function=$_GET["function"];
     $page=CurrentPageName();
 
-    $html[]="<div style='width:95%'>";
+    $html[]="<div style='width:95%;margin-top:10px'>";
     $html[]=$tpl->div_explain("{LETSENCRYPT_CERTIFICATE}||{howto_letsencrypt}");
     $form[]=$tpl->field_text("CommonName","{CertificateName}","",true);
     $form[]=$tpl->field_email("emailAddress","{email}","",true);

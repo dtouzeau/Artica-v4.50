@@ -700,7 +700,6 @@ function install():bool{
     $unix=new unix();
     $php=$unix->LOCATE_PHP5_BIN();
     $SERVICES["/etc/init.d/k5start"]="/usr/sbin/artica-phpfpm-service -uninstall-k5start";
-    $SERVICES["/etc/init.d/glances"]="exec.glances.php --uninstall";
     $SERVICES["/etc/init.d/proxy-pac"]="/usr/sbin/artica-phpfpm-service -uninstall-proxypac";
     $SERVICES["/etc/init.d/ufdb"]="/usr/sbin/artica-phpfpm-service -uninstall-ufdb";
     $SERVICES["/etc/init.d/postfix"]="exec.postfix-install.php --uninstall";

@@ -37,7 +37,6 @@ function startx():bool{
     $f[]="/usr/sbin/artica-phpfpm-service -reconfigure-syslog";
 
     $SERVICES["/etc/init.d/rbldnsd"]="/usr/sbin/artica-phpfpm-service -uninstall-dnsbl";
-    $SERVICES["/etc/init.d/glances"]="exec.glances.php --uninstall";
     $SERVICES["/etc/init.d/proxy-pac"]="/usr/sbin/artica-phpfpm-service -uninstall-proxypac";
     $SERVICES["/etc/init.d/ufdb"]="/usr/sbin/artica-phpfpm-service -uninstall-ufdb";
     squid_admin_mysql(0,"Reseting all parameters!",null,__FILE__,__LINE__);

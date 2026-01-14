@@ -54,10 +54,6 @@ function install(){
 		build_progress_restart("{reconfiguring} {APP_MUNIN}...",34);
 		if(is_file("/etc/init.d/munin-node")){system("$php /usr/share/artica-postfix/exec.munin.php --reconfigure");}
 	}
-	build_progress_restart("{reconfiguring} {APP_FRONTAIL_MAILLOG}...",35);
-	system("$php /usr/share/artica-postfix/exec.frontail.php --install >/dev/null 2>&1");
-
-
 
 	$unix->Popuplate_cron_make("postfix-dashboard",
         "*/5 * * * *","exec.postfix.dashboard.php");
@@ -175,7 +171,6 @@ function uninstall($noprogress=false){
 
 	
 	if(!$noprogress){build_progress_restart("{uninstalling}...",31);}
-	system("$php /usr/share/artica-postfix/exec.frontail.php --uninstall");
 	if(!$noprogress){build_progress_restart("{uninstalling}...",32);}
 	system("$php /usr/share/artica-postfix/exec.milter-regex.php --uninstall");
 	if(!$noprogress){build_progress_restart("{uninstalling}...",33);}

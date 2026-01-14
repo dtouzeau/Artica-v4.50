@@ -52,7 +52,7 @@ function xstart($why,$why2){
 	}
 
     echo "Writing in $DIR\n";
-    $CMDS[]="$nice $python /usr/share/artica-postfix/bin/ps_mem.py >$DIR/psmem.txt 2>&1";
+    $CMDS[]="$nice $python /usr/sbin/artica-phpfpm-service -ps-mem >$DIR/psmem.json 2>&1";
     $CMDS[]="$nice $ps --no-heading -eo user,pid,pcpu,args|$sort -grbk 3|$head -50 >$DIR/TOP50-CPU.txt 2>&1";
     $CMDS[]="$nice $ps --no-heading -eo user,pid,pmem,args|$sort -grbk 3|$head -50 >$DIR/TOP50-MEM.txt 2>&1";
     $CMDS[]="$nice $ps auxww  >$DIR/ALLPS.txt 2>&1";

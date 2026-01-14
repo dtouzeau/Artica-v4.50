@@ -183,6 +183,101 @@ class sockets{
         $this->REST_API("/system/kernel/set/$key/$value");
         return true;
     }
+    function REST_API_POST_JSON($endpoint, $data):string{
+        $unixSocketPath = "/usr/share/artica-postfix/bin/run/articarest.sock";
+
+        if(!function_exists("curl_init")){
+            return json_encode(array("error" => "curl_init not available"));
+        }
+
+        $cURLConnection = curl_init();
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $uri = "http://localhost/$endpoint";
+
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 30);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, $uri);
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cURLConnection, CURLOPT_POST, true);
+        curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+
+        if(strlen($curl_error) > 0){
+            return json_encode(array("error" => $curl_error));
+        }
+
+        return $resp;
+    }
+    function REST_API_PUT_JSON($endpoint, $data){
+        $unixSocketPath = "/usr/share/artica-postfix/bin/run/articarest.sock";
+
+        if(!function_exists("curl_init")){
+            return json_encode(array("error" => "curl_init not available"));
+        }
+
+        $cURLConnection = curl_init();
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $uri = "http://localhost/$endpoint";
+
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 30);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, $uri);
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cURLConnection, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+
+        if(strlen($curl_error) > 0){
+            return json_encode(array("error" => $curl_error));
+        }
+
+        return $resp;
+    }
+    function REST_API_DELETE($endpoint):string{
+        $unixSocketPath = "/usr/share/artica-postfix/bin/run/articarest.sock";
+
+        if(!function_exists("curl_init")){
+            return json_encode(array("error" => "curl_init not available"));
+        }
+
+        $cURLConnection = curl_init();
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $uri = "http://localhost/$endpoint";
+
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 30);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, $uri);
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cURLConnection, CURLOPT_CUSTOMREQUEST, "DELETE");
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        curl_close($cURLConnection);
+
+        if(strlen($curl_error) > 0){
+            return json_encode(array("error" => $curl_error));
+        }
+
+        return $resp;
+    }
     public function REST_API_POST($endpoint,$array):string{
         if(!function_exists("curl_init")){
             $array["Status"]=false;
@@ -264,8 +359,6 @@ class sockets{
         return $cURLConnection;
 
     }
-
-
     private function REST_API_CLIENT($endpoint){
         $unixSocketPath="/usr/share/artica-postfix/bin/run/articarest.sock";
         return $this->GENERIC_API_CLIENT($unixSocketPath,$endpoint);

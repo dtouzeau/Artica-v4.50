@@ -9,6 +9,9 @@ if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["memory-graph"])){memory_graph();exit;}
 if(isset($_GET["memory-graph2"])){memory_graph2();exit;}
+if(isset($_GET["MemoryCacheCleaning-js"])){MemoryCacheCleaning_js();exit;}
+if(isset($_GET["MemoryCacheCleaning-popup"])){MemoryCacheCleaning_popup();exit;}
+if(isset($_POST["MemoryCacheCleaning"])){MemoryCacheCleaning_save();exit;}
 page();
 function page(){
     $page=CurrentPageName();
@@ -37,6 +40,11 @@ function form_js():bool{
     $tpl=new template_admin();
     return  $tpl->js_dialog1("{parameters}","$page?form-popup=yes",650);
 }
+function MemoryCacheCleaning_js(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return  $tpl->js_dialog1("{clean_cache}","$page?MemoryCacheCleaning-popup=yes",650);
+}
 function table_flat():bool{
 
     $page=CurrentPageName();
@@ -54,6 +62,15 @@ function table_flat():bool{
     for($i=50;$i<101;$i++){
         $overcommit_ratioH[$i]="$i%";
     }
+    $MemoryCacheCleaning=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MemoryCacheCleaning"));
+    $tpl->table_form_field_js("Loadjs('$page?MemoryCacheCleaning-js=yes');","AsSystemAdministrator");
+    if($MemoryCacheCleaning==0 OR $MemoryCacheCleaning>95){
+        $tpl->table_form_field_bool("{clean_cache}",0,"fa-solid fa-broom");
+    }else{
+        $tpl->table_form_field_text("{clean_cache}","> $MemoryCacheCleaning%","fa-solid fa-broom");
+    }
+
+
     $tpl->table_form_field_js("Loadjs('$page?form-js=yes');","AsSystemAdministrator");
     $tpl->table_form_field_text("{Overcommiting_Memory_behavior}",$Overcommiting_Memory[$json->kernel->overcommit_memory],ico_mem);
     if($json->kernel->overcommit_memory==2) {
@@ -64,8 +81,31 @@ function table_flat():bool{
     echo $tpl->table_form_compile();
     return true;
 }
+function MemoryCacheCleaning_popup():bool{
 
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $MemoryCacheCleaning=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MemoryCacheCleaning"));
+    if($MemoryCacheCleaning<5 OR $MemoryCacheCleaning>95){
+        $MemoryCacheCleaning=0;
+    }
+    $f[0]="{disabled}";
+    for ($i=5;$i<95;$i++){
+        $f[$i]="$i%";
+    }
 
+    $form[]=$tpl->field_array_hash($f,"MemoryCacheCleaning","{max_value}",$MemoryCacheCleaning);
+    $js[]="dialogInstance1.close();";
+    $js[]="LoadAjax('overcommit-progress','$page?flat=yes');";
+    echo $tpl->form_outside("",$form,"{sys_drop_caches}","{apply}",implode(";",$js));
+    return true;
+}
+function MemoryCacheCleaning_save():bool{
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("MemoryCacheCleaning",$_POST["MemoryCacheCleaning"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/memory/dirtyratio");
+    return admin_tracks("Save system memory cache cleaning after {$_POST["MemoryCacheCleaning"]}%");
+
+}
 
 function form_popup():bool{
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/sysctl/json"));

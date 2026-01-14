@@ -1861,3 +1861,10 @@ bin/install/mimedefang/parse.headers.txt
 bin/install/mimedefang/repl_url.html
 bin/install/mimedefang/repl_url_fichiers/vi.gif
 bin/install/mimedefang/sa-mimedefang.cf
+bin/ps_mem.py
+exec.frontail.php
+exec.frontail-nginx.php
+exec.glances.php
+exec.bandwhich.php
+framework/frontail.php
+framework/glances.php

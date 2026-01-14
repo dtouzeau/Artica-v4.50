@@ -139,9 +139,11 @@ function xgen(){
         if($users->AsSystemAdministrator) {
             if(!$users->AsDockerWeb) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.hd.php", "ICO" => "fa-hdd", "TEXT" => "{your_hard_disks}"));
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.metrics.io.php", "ICO" => "fas fa-chart-line", "TEXT" => "{io_metrics_title}"));
+
+
                 $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.memory.config.php", "ICO" => "fad fa-memory", "TEXT" => "{memory_info}"));
                 $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.swap.php", "ICO" => "fa-hdd", "TEXT" => "{swap_label}"));
-
                 $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.users.php", "ICO" => ico_group, "TEXT" => "{system_users}"));
             }
 
@@ -685,8 +687,8 @@ function xgen(){
         $f[] = "	                  <ul class='nav nav-second-level'>";
 
 
-        $EnableTailon=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableTailon"));
-        $EnableFrontail=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFrontail"));
+
+
 
 
 
@@ -700,23 +702,6 @@ function xgen(){
             $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.retention.php", "ICO" => "fas fa-cogs", "TEXT" => "{retentions}"));
 
         }
-
-
-
-        if($EnableTailon==1){
-            $f[] = "<li id='left-menu'>";
-            $f[] = "<a href='#' OnClick=\"s_PopUpFull('/tailon/','1024','900');\"><i class=\"fa fa-eye\"></i> <span class=\"nav-label\">{APP_TAILON}</span> </a>";
-            $f[] = "</li>";
-        }
-
-        if($EnableFrontail==1) {
-            $f[] = "<li id='left-menu'>";
-            $f[] = "<a href='#' OnClick=\"s_PopUpFull('/syslog/','1024','900');\"><i class=\"fa fa-eye\"></i> <span class=\"nav-label\">{syslog}</span> </a>";
-            $f[] = "</li>";
-        }
-
-
-
 
         if($users->AsAnAdministratorGeneric){
             if ($ActAsASyslogServer == 1) {
@@ -749,7 +734,7 @@ function xgen(){
         }
 
         // -----------------------------------------------------------------------
-
+        $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.tailer.php", "ICO" => ico_eye, "TEXT" => "{viewer}"));
         $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.kernel.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:{kernel}"));
         $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.syslog.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:Syslogd"));
         $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.php.logs.php", "ICO" => "fab fa-php", "TEXT" => "{events}:PHP"));
@@ -789,7 +774,7 @@ function xgen(){
     $f[]=");";
     $f[]="me.parent('li').addClass( 'active' );";
     $f[]="LoadAjaxSilent('MainContent',page);";
-    $f[]="LoadAjaxSilent('artica-notifs-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?notifs=yes');";
+    $f[]="";
     $f[]="}";
 
     $f[] = "function RemoveMiniNav(){";

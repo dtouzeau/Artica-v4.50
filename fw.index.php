@@ -62,8 +62,8 @@ function xgen():bool{
     <script>
         $.address.state('/');
         $.address.value('index');
-        if(document.getElementById('main-dashboard-status') ){ LoadAjaxSilent('main-dashboard-status','fw.system.status.php');}
-        if(document.getElementById('widget-hostname') ){ LoadAjaxSilent('widget-hostname','$page?widget-hostname=yes');}
+        if(document.getElementById('main-dashboard-status') ){ LoadAjaxSilent('main-dashboard-status','fw.system.status.php?tabs=yes');}
+        
         
     </script>
     ";
@@ -1410,11 +1410,59 @@ function widget_vpn_client():bool{
     return true;
 
 }
+function widget_Meta():bool{
+    $EnableArticaMeta=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaMeta"));
+    if($EnableArticaMeta==0){
+        return widget_Firewall();
+    }
+    $tpl=new template_admin();
+    $bg="white-bg";
+    $title_icon="fa-regular fa-arrows-to-circle";
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/stats"));
+    if (json_last_error() > JSON_ERROR_NONE) {
+        $bg = "red-bg";
+        $DISPLAY[]="<li><span class=\"fas fa-exclamation-circle m-r-xs\"></span>{error}</label> </li>";
+    }
+    $total = isset($json->total) ? intval($json->total) : 0;
+    $offline = isset($json->offline) ? intval($json->offline) : 0;
+    $ico=ico_computer;
+    $DISPLAY[]="<li><span class=\"$ico m-r-xs\"></span>{agents}:</label> $total</li>";
+    if($offline>0) {
+        $DISPLAY[] = "<li class='text-danger'><span class=\"$ico m-r-xs\"></span>{offline}:</label> $offline</li>";
+    }
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/articarepos/sync/status"));
+    $repoSizeHuman = isset($json->repo_size_human) ? $json->repo_size_human : '{none}';
+    $ico=ico_database;
+    $DISPLAY[] = "<li><span class=\"$ico m-r-xs\"></span>{repository}:</label> $repoSizeHuman</li>";
+    $ico=ico_version;
+    $DebianAgentStorageVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DebianAgentStorageVersion");
+    $DISPLAY[] = "<li><span class=\"$ico m-r-xs\"></span>{version}:</label> $DebianAgentStorageVersion</li>";
+
+    $widget1="<div class=\"widget $bg p-xl\" style='padding-top:5px;padding-bottom:2px;min-height: 197px'>
+<div class='row'>
+    <table style='width:100%'>
+    <tr>
+    <td style='vertical-align:top;width:1%' nowrap><i class='$title_icon fa-7x' style='margin-top:10px'></i></td>
+    <td style='vertical-align:top;'>
+        <div class='col-xs-8 text-left'>
+        <h2>Artica Meta</h2>
+        <ul class=\"list-unstyled m-t-md\" style='margin-top:5px'>".@implode(" ",$DISPLAY)."</ul>
+        </div>
+     </td>
+     </tr>
+     </table>
+</div>
+</div>";
+
+    echo $tpl->_ENGINE_parse_body($widget1);
+    return true;
+}
 
 function widget_Suricata():bool{
     $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
     if($EnableSuricata==0){
-        return widget_Firewall();
+        return widget_Meta();
     }
     $tpl=new template_admin();
     $bg="white-bg";
@@ -1531,7 +1579,7 @@ function widget_nothing(){
     "firehol.reconfigure.progress",
     "firehol.reconfigure.log",
     "mainsoft-progress",
-    "LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');LoadAjaxSilent('top-barr','fw-top-bar.php');LoadAjaxSilent('widget-info','$page?widget-info=yes&from-hostname=yes')");
+    "LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');LoadAjaxSilent('top-barr','fw-top-bar.php');");
 
     $DHCPD_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DHCPD_INSTALLED"));
 
@@ -1541,7 +1589,7 @@ function widget_nothing(){
             "dhcpd.progress",
             "dhcpd.progress.log",
             "mainsoft-progress",
-            "LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');LoadAjaxSilent('top-barr','fw-top-bar.php');LoadAjaxSilent('widget-info','$page?widget-info=yes&from-hostname=yes')");
+            "LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');LoadAjaxSilent('top-barr','fw-top-bar.php');");
     }
 
 

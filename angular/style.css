@@ -9417,3 +9417,6 @@ body#page-top.pace-done div#wrapper div#left-barr nav.navbar-default div.sidebar
 .ico-inverse {
   filter: invert(1);
 }
+.pointer-cursor {
+  cursor: pointer;
+}

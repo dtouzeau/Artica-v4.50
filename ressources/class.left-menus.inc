@@ -2851,7 +2851,6 @@ class left_menus{
 
         if($EnableNginx==0){return $this->hamrp();}
         $f[]=$this->hamrp();
-        $FRONTAIL_LINUX_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FRONTAIL_LINUX_INSTALLED"));
         if(!$this->users->AsWebMaster){return "";}
         $f[]="<!-- NGINX START  -->";
         $f[]="                <li id='left-menu'>";
@@ -2900,12 +2899,6 @@ class left_menus{
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.events.php","ICO"=>ico_eye,"TEXT"=>"{service_events}",));
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.rest.events.php","ICO"=>ico_eye,"TEXT"=>"{APP_REVERSE_PROXY}",));
 
-        if($FRONTAIL_LINUX_INSTALLED==1) {
-            $f[] = "		<li id='left-menu'>";
-            $f[] = "      	<a href='#' OnClick=\"s_PopUpFull('/nginx-access/','1024','900');\">
-									<i class=\"".ico_eye."\"></i> <span class=\"nav-label\">{events}</span> </a>";
-            $f[] = "		</li>";
-        }
 
 
         //--------------------------- NGINX - END

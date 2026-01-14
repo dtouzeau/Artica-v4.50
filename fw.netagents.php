@@ -73,7 +73,6 @@ function start():bool{
 function widget_total($json):string{
     $total = isset($json->total) ? intval($json->total) : 0;
     $tpl=new template_admin();
-    $page=CurrentPageName();
     $button=array();
 
     if($total==0){
@@ -168,6 +167,12 @@ function top_meta_status():bool{
     $f[]="<td style='width:33%'><canvas id='widget-repos-partitionPieChart'></canvas></td>";
     $f[]="<td style='width:33%;padding-left:5px'><canvas id='widget-repos-partitionNetAgents'></canvas></td>";
     $f[]="<td style='width:33%;padding-left:5px'><canvas id='widget-repos-agents-to-upgrade'></canvas></td>";
+    $f[]="</tr>";
+    $f[]="<tr>";
+    $f[]="<td style='width:33%'><canvas id='widget-repos-partitionDebian'></canvas></td>";
+    $f[]="<td style='width:33%;padding-left:5px'></td>";
+    $f[]="<td style='width:33%;padding-left:5px'></td>";
+    $f[]="</tr>";
 
 
     $f[]="</table>";
@@ -301,6 +306,22 @@ function agents_version(){
     $data_content=@implode(",", $data);
     $bg_contents=@implode(",", $bgcolors);
     $labels_content=@implode(",", $labels);
+    $dataD=array();
+    $bgcolorsD=array();
+    $labelsD=array();
+    $i=0;
+    if(isset($json["debian_versions"])) {
+        foreach ($json["debian_versions"] as $version => $Number) {
+            $i++;
+            $bgcolorsD[] = "'" . $colorz[$i] . "'";
+            $labelsD[] = "'Debian $version'";
+            $dataD[] = "$Number";
+        }
+    }
+    $data_contentD=@implode(",", $dataD);
+    $bg_contentsD=@implode(",", $bgcolorsD);
+    $labels_contentD=@implode(",", $labelsD);
+
     echo "var AgentsVersCtx = document.getElementById('widget-repos-partitionNetAgents').getContext('2d');
     new Chart(AgentsVersCtx, {
         type: 'pie',
@@ -340,6 +361,48 @@ function agents_version(){
             }
         }
     });
+
+var DebianVersCtx = document.getElementById('widget-repos-partitionDebian').getContext('2d');
+    new Chart(DebianVersCtx, {
+        type: 'pie',
+        data: {
+            labels: [$labels_contentD],
+            datasets: [{
+                data: [$data_contentD],
+                backgroundColor: [ $bg_contentsD ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+            title: {
+                    display: true,
+                    text: 'Debian Versions',
+                    font: { size: 14 }
+                },
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            var value = context.raw;
+                            return context.label + ': ' + value.toFixed(1) + ' Version';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+
 ";
     return true;
 }

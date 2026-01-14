@@ -24,7 +24,7 @@ function popup(){
     $jsrestart=$tpl->framework_buildjs("rdpproxy.php?upgrade=yes",
         "squid.rdpproxy.upgrade",
         "squid.rdpproxy.upgrade.log","progress-php7-$t",
-        "dialogInstance6.close();LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');");
+        "dialogInstance6.close();");
 	$html="<div id='progress-php7-$t'></div><script>$jsrestart</script>";
 	echo $html;
 }

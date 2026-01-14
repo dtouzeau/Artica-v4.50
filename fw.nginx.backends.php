@@ -32,7 +32,11 @@ if(isset($_GET["options-popup"])){options_popup();exit;}
 if(isset($_GET["load-balancing-js"])){load_balancing_js();exit;}
 if(isset($_GET["load-balancing-popup"])){load_balancing_popup();exit;}
 if(isset($_GET["td-stats"])){td_stats();exit;}
-
+if(isset($_GET["active-health-check-js"])){active_health_check_js();exit;}
+if(isset($_GET["active-health-check-popup"])){active_health_check_popup();exit;}
+if(isset($_GET["active-health-check-popup-0"])){active_health_check_popup_0();exit;}
+if(isset($_GET["active-health-check-popup-1"])){active_health_check_popup_1();exit;}
+if(isset($_POST["active_health_check_serviceid"])){save_active_health_check();exit;}
 table_start();
 
 
@@ -173,6 +177,391 @@ function options_js():bool{
     $serviceid=intval($_GET["options-js"]);
     $title="{options}: #$serviceid";
     return $tpl->js_dialog2($title, "$page?options-popup=$serviceid");
+}
+
+function active_health_check_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $serviceid=intval($_GET["active-health-check-js"]);
+    $title="active {health} {check} {settings}: #$serviceid";
+    return $tpl->js_dialog2($title, "$page?active-health-check-popup=$serviceid");
+}
+
+function active_health_check_popup_0():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $serviceid=intval($_GET["active-health-check-popup-0"]);
+    $sock=new socksngix($serviceid);
+    $ActiveHealthCheck=intval($sock->GET_INFO("ActiveHealthCheckEnabled"));
+    $HealthCheckType=array();
+    $HealthCheckType[0]="tcp";
+    $HealthCheckType[1]="http";
+    $HealthCheckType[2]="https";
+    $HealthCheckType[3]="udp";
+    $HealthCheckType[4]="gRPC";
+    $HealthCheckTypeSelected=intval($sock->GET_INFO("HealthCheckTypeSelected"));
+    $ActiveHealthCheckFalls=intval($sock->GET_INFO("ActiveHealthCheckFalls"));
+    $ActiveHealthCheckRaises=intval($sock->GET_INFO("ActiveHealthCheckRaises"));
+    $ActiveHealthCheckPersistent=intval($sock->GET_INFO("ActiveHealthCheckPersistent"));
+    $ActiveHealthCheckMandatory=intval($sock->GET_INFO("ActiveHealthCheckMandatory"));
+    $ActiveHealthCheckTimeout=intval($sock->GET_INFO("ActiveHealthCheckTimeout"));
+    $ActiveHealthCheckInterval=intval($sock->GET_INFO("ActiveHealthCheckInterval"));
+    $ActiveHealthCheckOverwritePort=intval($sock->GET_INFO("ActiveHealthCheckOverwritePort"));
+    $ActiveHealthCheckEnableDNSDiscovery=intval($sock->GET_INFO("ActiveHealthCheckEnableDNSDiscovery"));
+    $ActiveHealthCheckDNSDiscoveryDNS=trim($sock->GET_INFO("ActiveHealthCheckDNSDiscoveryDNS"));
+    $ActiveHealthCheckDNSDiscoveryDNSType=intval($sock->GET_INFO("ActiveHealthCheckDNSDiscoveryDNSType"));
+    $ActiveHealthCheckDNSDiscoveryDNSInterval=intval($sock->GET_INFO("ActiveHealthCheckDNSDiscoveryDNSInterval"));
+    $ActiveHealthCheckDNSDiscoveryDNSResolver=trim($sock->GET_INFO("ActiveHealthCheckDNSDiscoveryDNSResolver"));
+    $ActiveHealthCheckOverwriteInterface=trim($sock->GET_INFO("ActiveHealthCheckOverwriteInterface"));
+
+    $ActiveHealthCheckEnableAdaptivePerformanceTracking=intval($sock->GET_INFO("ActiveHealthCheckEnableAdaptivePerformanceTracking"));
+    $ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightResponseTimeThreshold=intval($sock->GET_INFO("ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightResponseTimeThreshold"));
+
+    $ActiveHealthCheckAdaptivePerformanceRemoveThreshold=intval($sock->GET_INFO("ActiveHealthCheckAdaptivePerformanceRemoveThreshold"));
+
+    $ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightFactor=intval($sock->GET_INFO("ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightFactor"));
+    if($ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightResponseTimeThreshold==0){
+        $ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightResponseTimeThreshold=1;
+    }
+    if($ActiveHealthCheckAdaptivePerformanceRemoveThreshold==0){
+        $ActiveHealthCheckAdaptivePerformanceRemoveThreshold=5;
+    }
+    if($ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightFactor==0){
+        $ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightFactor=2;
+    }
+
+
+    if( $ActiveHealthCheckDNSDiscoveryDNSInterval==0){ $ActiveHealthCheckDNSDiscoveryDNSInterval=30;}
+    $dnsTypes=array();
+    $dnsTypes[0]="A";
+    $dnsTypes[1]="AAAA";
+    $dnsTypes[2]="SRV";
+    if($ActiveHealthCheckTimeout==0){$ActiveHealthCheckTimeout=3;}
+    if($ActiveHealthCheckInterval==0){$ActiveHealthCheckInterval=5;}
+
+    if($ActiveHealthCheckFalls==0){$ActiveHealthCheckFalls=3;}
+    if($ActiveHealthCheckRaises==0){$ActiveHealthCheckRaises=2;}
+    $lblMethods=array();
+    $lblMethods[0]="{rr}";
+    $lblMethods[1]="{weighted_rr}";
+    $lblMethods[2]="{least-connections}";
+    $lblMethods[3]="{ip_hash}";
+    $lblMethods[4]="{uri_hash}";
+    $lblMethods[5]="{generic_hash}";
+    $lblMethods[6]="{random}";
+    $lblMethods[7]="{adaptive_least_response}";
+    $lblMethods[8]="{adaptive_rr}";
+    $lblMethods[9]="{sticky_cookie}";
+    $lblMethods[10]="{sticky_route}";
+    $lblMethods[11]="{sticky_ip_hash}";
+    $LBZone=intval($sock->GET_INFO("LBZone"));
+
+    if($LBZone==0){
+        $LBZone=64;
+    }
+
+    $zone["32"]="32k";
+    $zone["64"]="64K";
+    $zone["128"]="128K";
+    $zone["256"]="256K";
+    $zone["512"]="512K";
+    $zone["1024"]="1024K";
+    $ActiveHealthChekLBMethod=intval($sock->GET_INFO("ActiveHealthChekLBMethod"));
+    //Active Health Checks
+    $form[]=$tpl->field_section("{active_health_check_settings}","{active_health_check_explain}");
+    $form[]=$tpl->field_hidden("active_health_check_serviceid",$serviceid);
+    $form[]=$tpl->field_hidden("active_health_check_serviceid_popup",0);
+
+    $form[]=$tpl->field_checkbox("ActiveHealthCheckEnabled","{enable} active {health} {check}",$ActiveHealthCheck,"HealthCheckTypeSelected,ActiveHealthCheckRaises,ActiveHealthCheckFalls,ActiveHealthCheckPersistent,ActiveHealthCheckMandatory,ActiveHealthCheckTimeout,ActiveHealthCheckInterval,ActiveHealthCheckOverwritePort,ActiveHealthCheckEnableDNSDiscovery,ActiveHealthCheckDNSDiscoveryDNSType,ActiveHealthCheckDNSDiscoveryDNSInterval,ActiveHealthCheckOverwriteInterface,ActiveHealthCheckEnableAdaptivePerformanceTracking");
+    $form[]=$tpl->field_array_hash( $zone,"LBZone","nonull:{zone}",$LBZone);
+    $form[]=$tpl->field_array_hash( $lblMethods,"ActiveHealthChekLBMethod","nonull:{method}",$ActiveHealthChekLBMethod);
+    $form[]=$tpl->field_array_hash( $HealthCheckType,"HealthCheckTypeSelected","nonull:{active_health_check_type}",$HealthCheckTypeSelected);
+    $form[]=$tpl->field_interfaces("ActiveHealthCheckOverwriteInterface","nooloopNone:{override_outgoing_interface}",$ActiveHealthCheckOverwriteInterface);
+    $form[]=$tpl->field_numeric("ActiveHealthCheckTimeout","{timeout} ({seconds})",$ActiveHealthCheckTimeout,"{active_health_check_timeout_explain}");
+    $form[]=$tpl->field_numeric("ActiveHealthCheckInterval","{interval} ({seconds})",$ActiveHealthCheckInterval,"{active_health_check_interval_explain}");
+    $form[]=$tpl->field_numeric("ActiveHealthCheckRaises","{raises}",$ActiveHealthCheckRaises,"{raises_explain}");
+    $form[]=$tpl->field_numeric("ActiveHealthCheckFalls","{falls}",$ActiveHealthCheckFalls,"{falls_explain}");
+    $form[]=$tpl->field_checkbox("ActiveHealthCheckPersistent","{persistent}",$ActiveHealthCheckPersistent,null,"{persistent_explain}");
+    $form[]=$tpl->field_checkbox("ActiveHealthCheckMandatory","{mandatory}",$ActiveHealthCheckMandatory,null,"{mandatory_explain}");
+    $form[]=$tpl->field_numeric("ActiveHealthCheckOverwritePort","{override_port}",$ActiveHealthCheckOverwritePort,"{override_port_explain}");
+
+    $form[]=$tpl->field_checkbox("ActiveHealthCheckEnableDNSDiscovery","{enable_dns_discovery}",$ActiveHealthCheckEnableDNSDiscovery,"ActiveHealthCheckDNSDiscoveryDNS,ActiveHealthCheckDNSDiscoveryDNSType,ActiveHealthCheckDNSDiscoveryDNSInterval,ActiveHealthCheckDNSDiscoveryDNSResolver","{enable_dns_discovery_explain}");
+    $form[]=$tpl->field_text("ActiveHealthCheckDNSDiscoveryDNS","{custom_hostname}",$ActiveHealthCheckDNSDiscoveryDNS);
+    $form[]=$tpl->field_array_hash($dnsTypes,"ActiveHealthCheckDNSDiscoveryDNSType","nonull:{type}",$ActiveHealthCheckDNSDiscoveryDNSType);
+    $form[]=$tpl->field_numeric("ActiveHealthCheckDNSDiscoveryDNSInterval","{interval} ({seconds})",$ActiveHealthCheckDNSDiscoveryDNSInterval);
+    $form[]=$tpl->field_text("ActiveHealthCheckDNSDiscoveryDNSResolver","{custom_dns}",$ActiveHealthCheckDNSDiscoveryDNSResolver);
+
+    $form[]=$tpl->field_checkbox("ActiveHealthCheckEnableAdaptivePerformanceTracking","{enable_adaptive_performance_tracking}",$ActiveHealthCheckEnableAdaptivePerformanceTracking,"ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightResponseTimeThreshold,ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightFactor,ActiveHealthCheckAdaptivePerformanceRemoveThreshold","{enable_adaptive_performance_tracking_explain}");
+
+    $form[]=$tpl->field_numeric("ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightResponseTimeThreshold","{auto_weight_threshold}",$ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightResponseTimeThreshold,"{auto_weight_threshold_explain}");
+
+    $form[]=$tpl->field_numeric("ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightFactor","{auto_weight_factor}",$ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightFactor,"{auto_weight_factor_explain}");
+
+    $form[]=$tpl->field_numeric("ActiveHealthCheckAdaptivePerformanceRemoveThreshold","{remove_threshold}",$ActiveHealthCheckAdaptivePerformanceRemoveThreshold,"{remove_threshold_explain}");
+
+
+
+    //$jsafter="dialogInstance2.close();LoadAjax('top-buttons-backends-$serviceid','$page?top-buttons=$serviceid');";
+    $jsafter="LoadAjaxSilent('active-health-check-popup','$page?active-health-check-popup-1=true&active_health_check_serviceid_popup_0=$serviceid');";
+    echo $tpl->form_outside(null,$form,null,"{next}",$jsafter,"AsWebAdministrator");
+    return true;
+}
+function active_health_check_popup_1():bool
+{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $serviceid=intval($_GET["active_health_check_serviceid_popup_0"]);
+    $sock=new socksngix($serviceid);
+    $HealthCheckTypeSelected=intval($sock->GET_INFO("HealthCheckTypeSelected"));
+    $ActiveHealthCheckLBMethod=intval($sock->GET_INFO("ActiveHealthChekLBMethod"));
+    $ActiveHealthCheckIPHashConsistent=intval($sock->GET_INFO("ActiveHealthCheckIPHashConsistent"));
+    $ActiveHealthCheckIPHashUseBinary=intval($sock->GET_INFO("ActiveHealthCheckIPHashUseBinary"));
+    $ActiveHealthCheckURIHashConsistent=intval($sock->GET_INFO("ActiveHealthCheckURIHashConsistent"));
+    $ActiveHealthCheckURIHashUseRequestURI=intval($sock->GET_INFO("ActiveHealthCheckURIHashUseRequestURI"));
+    $ActiveHealthCheckGenericHashConsistent=intval($sock->GET_INFO("ActiveHealthCheckGenericHashConsistent"));
+    //Sticky Cookie Parameters
+    $ActiveHealthCheckStickyCookieName=trim($sock->GET_INFO("ActiveHealthCheckStickyCookieName"));
+
+    $ActiveHealthCheckStickyCookieSet=intval($sock->GET_INFO("ActiveHealthCheckStickyCookieSet"));
+    $ActiveHealthCheckStickyCookieTime=intval($sock->GET_INFO("ActiveHealthCheckStickyCookieTime"));
+    if($ActiveHealthCheckStickyCookieTime==0){
+        $ActiveHealthCheckStickyCookieTime=3600;
+    }
+    $ActiveHealthCheckStickyCookieDomain=trim($sock->GET_INFO("ActiveHealthCheckStickyCookieDomain"));
+    $ActiveHealthCheckStickyCookiePath=trim($sock->GET_INFO("ActiveHealthCheckStickyCookiePath"));
+    $ActiveHealthCheckStickyCookieHTTPOnly=intval($sock->GET_INFO("ActiveHealthCheckStickyCookieHTTPOnly"));
+    $ActiveHealthCheckStickyCookieSecure=intval($sock->GET_INFO("ActiveHealthCheckStickyCookieSecure"));
+    $sameSite=array();
+    $sameSite[""]="{not_used}";
+    $sameSite["None"]="{none}";
+    $sameSite["Strict"]="Strict";
+    $sameSite["Lax"]="Lax";
+    $ActiveHealthCheckStickyCookieSameSite=trim($sock->GET_INFO("ActiveHealthCheckStickyCookieSameSite"));
+
+    $ActiveHealthCheckStickyCookieFailoverBackup=intval($sock->GET_INFO("ActiveHealthCheckStickyCookieFailoverBackup"));
+    $ActiveHealthCheckStickyCookieFailoverDown=intval($sock->GET_INFO("ActiveHealthCheckStickyCookieFailoverDown"));
+    //Sticky Route Parameters
+    $ActiveHealthCheckStickyRouteParam=trim($sock->GET_INFO("ActiveHealthCheckStickyRouteParam"));
+    $ActiveHealthCheckStickyRouteHeader=trim($sock->GET_INFO("ActiveHealthCheckStickyRouteHeader"));
+
+    $ActiveHealthCheckStickyRouteFailoverBackup=intval($sock->GET_INFO("ActiveHealthCheckStickyRouteFailoverBackup"));
+    $ActiveHealthCheckStickyRouteFailoverDown=intval($sock->GET_INFO("ActiveHealthCheckStickyRouteFailoverDown"));
+    //Sticky IP HASH Parameters
+    $ActiveHealthCheckStickyIPHashFailoverBackup=intval($sock->GET_INFO("ActiveHealthCheckStickyIPHashFailoverBackup"));
+    $ActiveHealthCheckStickyIPHashFailoverDown=intval($sock->GET_INFO("ActiveHealthCheckStickyIPHashFailoverDown"));
+    $ActiveHealthCheckStickyIPHashConsistent=intval($sock->GET_INFO("ActiveHealthCheckStickyIPHashConsistent"));
+    $ActiveHealthCheckStickyIPHashUseBinary=intval($sock->GET_INFO("ActiveHealthCheckStickyIPHashUseBinary"));
+    //wrr
+    $ActiveHealthCheckWRRStrict=intval($sock->GET_INFO("ActiveHealthCheckWRRStrict"));
+    $ActiveHealthCheckWRRMaxRetries=intval($sock->GET_INFO("ActiveHealthCheckWRRMaxRetries"));
+    if($ActiveHealthCheckWRRMaxRetries==0){$ActiveHealthCheckWRRMaxRetries=3;}
+    //LeastCoon
+    $ActiveHealthCheckLeastConnStrict=intval($sock->GET_INFO("ActiveHealthCheckLeastConnStrict"));
+    $ActiveHealthCheckLeastConnMaxRetries=intval($sock->GET_INFO("ActiveHealthCheckLeastConnMaxRetries"));
+    if($ActiveHealthCheckLeastConnMaxRetries==0){$ActiveHealthCheckLeastConnMaxRetries=3;}
+    //ALR
+    $ActiveHealthCheckALREWMAAlpha=floatval($sock->GET_INFO("ActiveHealthCheckALREWMAAlpha"));
+    if($ActiveHealthCheckALREWMAAlpha==0){$ActiveHealthCheckALREWMAAlpha=0.3;}
+    $ActiveHealthCheckALRDefaultRT=intval($sock->GET_INFO("ActiveHealthCheckALRDefaultRT"));
+    if($ActiveHealthCheckALRDefaultRT==0){$ActiveHealthCheckALRDefaultRT=500;}
+    $ActiveHealthCheckALRFailurePenalty=intval($sock->GET_INFO("ActiveHealthCheckALRFailurePenalty"));
+    if($ActiveHealthCheckALRFailurePenalty==0){$ActiveHealthCheckALRFailurePenalty=5000;}
+    $ActiveHealthCheckALRQueueFactor=floatval($sock->GET_INFO("ActiveHealthCheckALRQueueFactor"));
+    if($ActiveHealthCheckALRQueueFactor==0){$ActiveHealthCheckALRQueueFactor=1.0;}
+    $ActiveHealthCheckALRAgePenaltyMax=floatval($sock->GET_INFO("ActiveHealthCheckALRAgePenaltyMax"));
+    if($ActiveHealthCheckALRAgePenaltyMax==0){$ActiveHealthCheckALRAgePenaltyMax=1.0;}
+    $ActiveHealthCheckALRAgePenaltyWindow=intval($sock->GET_INFO("ActiveHealthCheckALRAgePenaltyWindow"));
+    if($ActiveHealthCheckALRAgePenaltyWindow==0){$ActiveHealthCheckALRAgePenaltyWindow=300;}
+    $ActiveHealthCheckALRTieThreshold=floatval($sock->GET_INFO("ActiveHealthCheckALRTieThreshold"));
+    if($ActiveHealthCheckALRTieThreshold==0){$ActiveHealthCheckALRTieThreshold=0.01;}
+    $ActiveHealthCheckALRDefaultRTJitter=floatval($sock->GET_INFO("ActiveHealthCheckALRDefaultRTJitter"));
+    if($ActiveHealthCheckALRDefaultRTJitter==0){$ActiveHealthCheckALRDefaultRTJitter=0.1;}
+    $ActiveHealthCheckALRLogFilteredServers=intval($sock->GET_INFO("ActiveHealthCheckALRLogFilteredServers"));
+    $ActiveHealthCheckALRWarnMissingMetrics=intval($sock->GET_INFO("ActiveHealthCheckALRWarnMissingMetrics"));
+    //ARR
+    $ActiveHealthCheckARROutlierThreshold =floatval($sock->GET_INFO("ActiveHealthCheckARROutlierThreshold"));
+    if($ActiveHealthCheckARROutlierThreshold==0){$ActiveHealthCheckARROutlierThreshold=0.01;}
+    $form[]=$tpl->field_hidden("active_health_check_serviceid",$serviceid);
+    $form[]=$tpl->field_hidden("active_health_check_serviceid_popup",1);
+
+    if ($HealthCheckTypeSelected==0) {
+        //tcp
+        $ActiveHealthCheckTCPSend=trim($sock->GET_INFO("ActiveHealthCheckTCPSend"));
+        $ActiveHealthCheckTCPExpected=trim($sock->GET_INFO("ActiveHealthCheckTCPExpected"));
+        $form[]=$tpl->field_section("{active_health_check_p_settings}","{tcp_settings} ({optional})");
+        $form[]=$tpl->field_text("ActiveHealthCheckTCPSend","{tcp_send}",$ActiveHealthCheckTCPSend,false,"{tcp_send_explain}");
+        $form[]=$tpl->field_text("AtiveHealthCheckTCPExpected","{tcp_expect}",$ActiveHealthCheckTCPExpected,false,"{tcp_expect_explain}");
+    }
+    if ($HealthCheckTypeSelected==1 || $HealthCheckTypeSelected==2) {
+        //http
+        $ActiveHealthCheckHTTPUri=trim($sock->GET_INFO("ActiveHealthCheckHTTPUri"));
+        if($ActiveHealthCheckHTTPUri==""){$ActiveHealthCheckHTTPUri="/";}
+        $ActiveHealthCheckHTTPMatchBody=trim($sock->GET_INFO("ActiveHealthCheckHTTPMatchBody"));
+        $ActiveHealthCheckHTTPMatchHeader=trim($sock->GET_INFO("ActiveHealthCheckHTTPMatchHeader"));
+        $ActiveHealthCheckHTTPHHeader=trim($sock->GET_INFO("ActiveHealthCheckHTTPHHeader"));
+        $ActiveHealthCheckHTTPExpectedStatus=trim($sock->GET_INFO("ActiveHealthCheckHTTPExpectedStatus"));
+        $form[]=$tpl->field_section("{active_health_check_p_settings}","{http_settings} ({optional})");
+        $form[]=$tpl->field_text("ActiveHealthCheckHTTPUri","{http_uri_path}",$ActiveHealthCheckHTTPUri,true,"{http_uri_path_explain}");
+        $form[]=$tpl->field_text("ActiveHealthCheckHTTPHHeader","{http_headers}",$ActiveHealthCheckHTTPHHeader,false,"{http_header_explain}");
+        $form[]=$tpl->field_text("ActiveHealthCheckHTTPMatchHeader","{http_match_headers}",$ActiveHealthCheckHTTPMatchHeader,false,"{http_match_header_explain}");
+        $form[]=$tpl->field_text("ActiveHealthCheckHTTPMatchBody","{http_match_body}",$ActiveHealthCheckHTTPMatchBody,false,"{http_match_body_explain}");
+        $form[]=$tpl->field_text("ActiveHealthCheckHTTPExpectedStatus","{http_expected_status}",$ActiveHealthCheckHTTPExpectedStatus,false,"{http_expected_status_explain}");
+        $form[]=$tpl->field_text("ActiveHealthCheckHTTPExpectedStatus","{http_expected_status}",$ActiveHealthCheckHTTPExpectedStatus,false,"{http_expected_status_explain}");
+    }
+    if ($HealthCheckTypeSelected==3) {
+        //udp
+        $form[]=$tpl->field_section("{active_health_check_p_settings}","{udp_settings} ({optional})");
+        $ActiveHealthCheckUDPSend=trim($sock->GET_INFO("ActiveHealthCheckUDPSend"));
+        $ActiveHealthCheckUDPExpected=trim($sock->GET_INFO("ActiveHealthCheckUDPExpected"));
+        $form[]=$tpl->field_text("ActiveHealthCheckUDPSend","{udp_send}",$ActiveHealthCheckUDPSend,false,"{udp_send_explain}");
+        $form[]=$tpl->field_text("AtiveHealthCheckUDPExpected","{udp_expect}",$ActiveHealthCheckUDPExpected,false,"{udp_expect_explain}");
+    }
+    if ($HealthCheckTypeSelected==4) {
+        //gRPC
+        $ActiveHealthCheckgRPCService=trim($sock->GET_INFO("ActiveHealthCheckgRPCService"));
+        $ActiveHealthCheckgRPCStatus=intval($sock->GET_INFO("ActiveHealthCheckgRPCStatus"));
+        if($ActiveHealthCheckgRPCStatus==0){$ActiveHealthCheckgRPCStatus=12;}
+        $form[]=$tpl->field_section("{active_health_check_p_settings}","{grpc_settings} ({optional})");
+        $form[]=$tpl->field_text("ActiveHealthCheckgRPCService","{grpc_service}",$ActiveHealthCheckgRPCService,false,"{grpc_service_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckgRPCStatus","{grpc_status_code_expected}",$ActiveHealthCheckgRPCStatus,"{grpc_status_code_expected_explain}");
+    }
+    if($ActiveHealthCheckLBMethod==0){
+        $form[]=$tpl->field_section("{lbl_settings}","{rr_no_p}");
+    }
+    if($ActiveHealthCheckLBMethod==1){
+        $form[]=$tpl->field_section("{lbl_settings}","{wrr_p}{caution_parameters}",true);
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckWRRStrict","{wrr_strict}",$ActiveHealthCheckWRRStrict,"ActiveHealthCheckWRRMaxRetries","{wrr_strict_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckWRRMaxRetries","{wrr_max_retries}",$ActiveHealthCheckWRRMaxRetries,"{wrr_max_retries_explain}");
+
+
+    }
+    if($ActiveHealthCheckLBMethod==2){
+        $form[]=$tpl->field_section("{lbl_settings}","{lc_p}{caution_parameters}",true);
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckLeastConnStrict","{wrr_strict}",$ActiveHealthCheckLeastConnStrict,"ActiveHealthCheckLeastConnMaxRetries","{wrr_strict_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckLeastConnMaxRetries","{wrr_max_retries}",$ActiveHealthCheckLeastConnMaxRetries,"{wrr_max_retries_explain}");
+
+
+    }
+    if($ActiveHealthCheckLBMethod==3){
+        $form[]=$tpl->field_section("{lbl_settings}","{ip_hash_p}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckIPHashConsistent","{consistent}",$ActiveHealthCheckIPHashConsistent,"","{consistent_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckIPHashUseBinary","{use_binary}",$ActiveHealthCheckIPHashUseBinary);
+    }
+    if($ActiveHealthCheckLBMethod==4){
+        $form[]=$tpl->field_section("{lbl_settings}","{uri_hash_p}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckURIHashConsistent","{consistent}",$ActiveHealthCheckURIHashConsistent,"","{consistent_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckURIHashUseRequestURI","{use_request_uri}",$ActiveHealthCheckURIHashUseRequestURI);
+
+    }
+    if($ActiveHealthCheckLBMethod==5){
+        $form[]=$tpl->field_section("{lbl_settings}","{generic_hash_p}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckGenericHashConsistent","{consistent}",$ActiveHealthCheckGenericHashConsistent,"","{consistent_explain}");
+    }
+    if($ActiveHealthCheckLBMethod==6){
+        $form[]=$tpl->field_section("{lbl_settings}","{random_no_p}");
+    }
+    if($ActiveHealthCheckLBMethod==7){
+        $form[]=$tpl->field_section("{lbl_settings}","{alr_p}{caution_parameters}",true);
+        $form[]=$tpl->field_numeric("ActiveHealthCheckALREWMAAlpha","{ewma_alpha}",$ActiveHealthCheckALREWMAAlpha,"{ewma_alpha_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckALRDefaultRT","{default_rt_ms}",$ActiveHealthCheckALRDefaultRT,"{default_rt_ms_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckALRDefaultRTJitter","{default_rt_jitter}",$ActiveHealthCheckALRDefaultRTJitter,"{default_rt_jitter_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckALRFailurePenalty","{failure_penalty_ms}",$ActiveHealthCheckALRFailurePenalty,"{failure_penalty_ms_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckALRQueueFactor","{queue_factor}",$ActiveHealthCheckALRQueueFactor,"{queue_factor_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckALRAgePenaltyMax","{age_penalty_max}",$ActiveHealthCheckALRAgePenaltyMax,"{age_penalty_max_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckALRAgePenaltyWindow","{age_penalty_window}",$ActiveHealthCheckALRAgePenaltyWindow,"{age_penalty_window_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckALRTieThreshold","{tie_threshold}",$ActiveHealthCheckALRTieThreshold,"{tie_threshold_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckALRLogFilteredServers","{log_filtered_servers}",$ActiveHealthCheckALRLogFilteredServers,"","{log_filtered_servers_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckALRWarnMissingMetrics","{warn_missing_metrics}",$ActiveHealthCheckALRWarnMissingMetrics,"","{warn_missing_metrics_explain}");
+
+    }
+    if($ActiveHealthCheckLBMethod==8){
+        $form[]=$tpl->field_section("{lbl_settings}","{arr_p}{caution_parameters}",true);
+        $form[]=$tpl->field_numeric("ActiveHealthCheckARROutlierThreshold","{arr_outlier_threshold}",$ActiveHealthCheckARROutlierThreshold,"{arr_outlier_threshold_explain}");
+    }
+    if($ActiveHealthCheckLBMethod==9){
+        $form[]=$tpl->field_section("{lbl_settings}","{sc_p}");
+        $form[]=$tpl->field_text("ActiveHealthCheckStickyCookieName","{cookie_name}",$ActiveHealthCheckStickyCookieName,false,"{cookie_name_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyCookieSet","{set_cookie}",$ActiveHealthCheckStickyCookieSet,"ActiveHealthCheckStickyCookieTime,ActiveHealthCheckStickyCookieDomain,ActiveHealthCheckStickyCookiePath,ActiveHealthCheckStickyCookieHTTPOnly,ActiveHealthCheckStickyCookieSecure,ActiveHealthCheckStickyCookieSameSite","{set_cookie_explain}");
+        $form[]=$tpl->field_numeric("ActiveHealthCheckStickyCookieTime","{cookie_time}",$ActiveHealthCheckStickyCookieTime,"{cookie_time_explain}");
+        $form[]=$tpl->field_text("ActiveHealthCheckStickyCookieDomain","{cookie_domain}",$ActiveHealthCheckStickyCookieDomain,false,"{cookie_domain_explain}");
+        $form[]=$tpl->field_text("ActiveHealthCheckStickyCookiePath","{cookie_path}",$ActiveHealthCheckStickyCookiePath,false,"{cookie_path_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyCookieHTTPOnly","{cookie_http_only}",$ActiveHealthCheckStickyCookieHTTPOnly,"","{cookie_http_only_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyCookieSecure","{cookie_secure}",$ActiveHealthCheckStickyCookieSecure,"","{cookie_secure_explain}");
+        $form[]=$tpl->field_array_hash( $sameSite,"ActiveHealthCheckStickyCookieSameSite","nonull:{same_site}",$ActiveHealthCheckStickyCookieSameSite,false,"{same_site_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyCookieFailoverBackup","{cookie_backup}",$ActiveHealthCheckStickyCookieFailoverBackup,"","{cookie_backup_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyCookieFailoverDown","{cookie_down}",$ActiveHealthCheckStickyCookieFailoverDown,"","{cookie_down_explain}");
+    }
+    if($ActiveHealthCheckLBMethod==10){
+        $form[]=$tpl->field_section("{lbl_settings}","{sr_p}");
+        $form[]=$tpl->field_text("ActiveHealthCheckStickyRouteParam","{route_param}",$ActiveHealthCheckStickyRouteParam,false,"{route_param_explain}");
+        $form[]=$tpl->field_text("ActiveHealthCheckStickyRouteHeader","{route_header}",$ActiveHealthCheckStickyRouteHeader,false,"{route_header_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyRouteFailoverBackup","{cookie_backup}",$ActiveHealthCheckStickyRouteFailoverBackup,"","{cookie_backup_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyRouteFailoverDown","{cookie_down}",$ActiveHealthCheckStickyRouteFailoverDown,"","{cookie_down_explain}");
+    }
+    if($ActiveHealthCheckLBMethod==11){
+        $form[]=$tpl->field_section("{lbl_settings}","{sih_p}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyIPHashConsistent","{consistent}",$ActiveHealthCheckStickyIPHashConsistent);
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyIPHashFailoverBackup","{cookie_backup}",$ActiveHealthCheckStickyIPHashFailoverBackup,"","{cookie_backup_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyIPHashFailoverDown","{cookie_down}",$ActiveHealthCheckStickyIPHashFailoverDown,"","{cookie_down_explain}");
+        $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyIPHashUseBinary","{use_binary}",$ActiveHealthCheckStickyIPHashUseBinary,"","{use_binary_explain}");
+    }
+
+
+    $tpl->form_add_button("{back}", "LoadAjax('active-health-check-popup','$page?active-health-check-popup-0=$serviceid');");
+    $jsafter="dialogInstance2.close();LoadAjax('top-buttons-backends-$serviceid','$page?top-buttons=$serviceid');";
+    echo $tpl->form_outside(null,$form,null,"{apply}",$jsafter,"AsWebAdministrator");
+    return true;
+}
+function save_active_health_check():bool
+{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $serviceid=$_POST["active_health_check_serviceid"];
+    $sock=new socksngix($serviceid);
+    if(intval($_POST["active_health_check_serviceid_popup"])==0){
+
+        if(intval($_POST["ActiveHealthCheckEnabled"])==0){
+            $sock->SET_INFO("ActiveHealthCheckEnabled",$_POST["ActiveHealthCheckEnabled"]);
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
+
+            echo "jserror:".$tpl->javascript_parse_text("{active_health_check_disable}");
+        }
+        if(intval($_POST["ActiveHealthCheckEnableAdaptivePerformanceTracking"])==1){
+            if(intval($_POST["ActiveHealthCheckAdaptivePerformanceTrackingAutoWeightResponseTimeThreshold"])>=intval($_POST["ActiveHealthCheckAdaptivePerformanceRemoveThreshold"])){
+                echo "jserror:".$tpl->javascript_parse_text("{auto_weight_greater_remove}");
+            }
+        }
+
+        foreach ($_POST as $key => $value) {
+            if($key=="active_health_check_serviceid"){continue;}
+            if($key=="active_health_check_serviceid_popup"){continue;}
+            $sock->SET_INFO($key,$value);
+        }
+
+
+        return true;
+    }
+
+    foreach ($_POST as $key => $value) {
+        $sock->SET_INFO($key,$value);
+    }
+
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
+    return admin_tracks("Save Balancing method for service #$serviceid ({$_POST["lb_method"]})");
+}
+
+
+
+function active_health_check_popup():bool
+{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $serviceid=intval($_GET["active-health-check-popup"]);
+
+    $html[]="<div id='active-health-check-popup'></div>";
+    $html[]="<script>LoadAjaxSilent('active-health-check-popup','$page?active-health-check-popup-0=$serviceid');</script>";
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
 }
 function load_balancing_js():bool{
     $page=CurrentPageName();
@@ -974,14 +1363,32 @@ function top_buttons():bool{
     if($LBCookiesTime<30){
         $LBCookiesTime=3600;
     }
-    if($lb_method==3){
-        $topbuttons[]=array("Loadjs('$page?load-balancing-js=$serviceid&md5=');", ico_params,
-            "Cookie ({$LBCookiesTime}s)");
-    }else{
-        $topbuttons[]=array("Loadjs('$page?load-balancing-js=$serviceid&md5=');", ico_params,$GLOBALS["HASHLB"][$lb_method]);
+
+    $NginxActiveHealthCheckDaemonEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxActiveHealthCheckDaemonEnabled"));
+    if($NginxActiveHealthCheckDaemonEnabled==0){
+        $sock->SET_INFO("ActiveHealthCheckEnabled",0);
+    }
+    $ActiveHealthCheckEnabled=intval($sock->GET_INFO("ActiveHealthCheckEnabled"));
+
+    if($ActiveHealthCheckEnabled==0){
+        if($lb_method==3){
+            $topbuttons[]=array("Loadjs('$page?load-balancing-js=$serviceid&md5=');", ico_load_balancer,
+                "Cookie ({$LBCookiesTime}s)");
+        }else{
+            $topbuttons[]=array("Loadjs('$page?load-balancing-js=$serviceid&md5=');", ico_load_balancer,$GLOBALS["HASHLB"][$lb_method]);
+        }
     }
 
-
+    if($NginxActiveHealthCheckDaemonEnabled==1) {
+        if ($ActiveHealthCheckEnabled == 0) {
+            $topbuttons[] = array("Loadjs('$page?active-health-check-js=$serviceid&md5=&popup=0');", ico_params, "active {health} {check} OFF");
+        } else {
+            $topbuttons[] = array("Loadjs('$page?active-health-check-js=$serviceid&md5=&popup=0');", ico_params, "active {health} {check} ON");
+        }
+    }
+    else{
+        $topbuttons[] = array("blur();", ico_params, "active {health} {check} {daemon} OFF");
+    }
 
     echo $tpl->_ENGINE_parse_body( $tpl->th_buttons($topbuttons));
     return true;

@@ -51,22 +51,13 @@ function GlobalSearchEngine(e){
     $f[]="                </div>";
     $f[]="                <ul class=\"nav navbar-top-links navbar-right\">";
 
-    $glances_url=null;$glances_urlend=null;
-    $EnableGlances=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableGlances"));
-    $EnableWebHTOP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWebHTOP"));
-    if($EnableGlances==1) {
-        $OnMouse[]= "OnClick=\"s_PopUpFull('/glances/',1024,768,'Monitor');\"";
-        $OnMouse[]="OnMouseOver=\";this.style.cursor='pointer';\"";
-        $OnMouse[]="OnMouseOut=\";this.style.cursor='default';\"";
-        $glances_url=@implode(" ", $OnMouse);
-    }
-    if($EnableWebHTOP==1){
-        $OnMouse[]= "OnClick=\"s_PopUp('/htop/',1024,768,'Monitor');\"";
-        $OnMouse[]="OnMouseOver=\";this.style.cursor='pointer';\"";
-        $OnMouse[]="OnMouseOut=\";this.style.cursor='default';\"";
-        $glances_url=@implode(" ", $OnMouse);
 
-    }
+    $OnMouse[]= "OnClick=\"s_PopUp('/htop/',1024,768,'Monitor');\"";
+    $OnMouse[]="OnMouseOver=\";this.style.cursor='pointer';\"";
+    $OnMouse[]="OnMouseOut=\";this.style.cursor='default';\"";
+    $glances_url=@implode(" ", $OnMouse);
+
+
 
     $f[] = "<li $glances_url style=\"list-style: none;\">
     <div id=\"mini-bars\" style=\"display: flex; align-items: center; gap: 10px; color:#999c9e;font-weight:bold\">
@@ -557,7 +548,7 @@ function GlobalSearchEngine(e){
         })
         setTimeout(() => Loadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?adblock='+ads_detected), 1); 
     ";
-    //$f[]="LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
+    $f[]="Loadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.system.status.php?top-widget=yes');";
     //END ABDEV
 
     $f[]="</script>";

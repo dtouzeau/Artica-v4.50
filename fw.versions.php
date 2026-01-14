@@ -222,8 +222,6 @@ function table():bool{
     $html[]=APP_SSHPORTAL($UPDATES_ARRAY);
     $html[]=APP_SHELLINABOX($UPDATES_ARRAY);
     $html[]=APP_RUSTDESK($UPDATES_ARRAY);
-    $html[]=APP_FRONTAIL_LINUX($UPDATES_ARRAY);
-    $html[]=APP_TAILON($UPDATES_ARRAY);
     $html[]=APP_DHCP($UPDATES_ARRAY);
 
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TFTPD_INSTALLED"))==1){
@@ -1598,29 +1596,7 @@ function APP_RUSTDESK($UPDATES_ARRAY):string{
     $html[]="</tr>";
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
-function APP_FRONTAIL_LINUX($UPDATES_ARRAY):string{
-    if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
-    $tpl=new template_admin();
-    $FRONTAIL_LINUX_VERSION=$tpl->icon_nothing();
-    $bton="<span class='label label-default'>{unavailable}</span>";
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FRONTAIL_LINUX_INSTALLED"))==1){
-        $FRONTAIL_LINUX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("FRONTAIL_LINUX_VERSION");
-    }
 
-    if(isset($UPDATES_ARRAY["APP_FRONTAIL_LINUX"])){
-        $bton=$tpl->button_autnonome("{install_upgrade2}",
-            "Loadjs('fw.system.upgrade-software.php?product=APP_FRONTAIL_LINUX');",
-            "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
-    }
-
-
-    $html[]="<tr>";
-    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_FRONTAIL_LINUX}:</strong></td>";
-    $html[]="<td style='width:1%'  nowrap>$FRONTAIL_LINUX_VERSION</td>";
-    $html[]="<td style='text-align:left;width:99%' nowrap>$bton</td>";
-    $html[]="</tr>";
-    if(!is_array($html)){$html=array();} return @implode("\n",$html);
-}
 function APP_DDNS_AGENT($UPDATES_ARRAY):string{
 
     $tpl=new template_admin();
@@ -1644,28 +1620,7 @@ function APP_DDNS_AGENT($UPDATES_ARRAY):string{
     $html[]="</tr>";
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
-function APP_TAILON($UPDATES_ARRAY):string{
-    $tpl=new template_admin();
-    $TAILON_VERSION=$tpl->icon_nothing();
-    $bton="<span class='label label-default'>{unavailable}</span>";
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TAILON_INSTALLED"))==1){
-        $TAILON_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("TAILON_VERSION");
-    }
 
-    if(isset($UPDATES_ARRAY["APP_TAILON"])){
-        $bton=$tpl->button_autnonome("{install_upgrade2}",
-            "Loadjs('fw.system.upgrade-software.php?product=APP_TAILON');",
-            "fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
-    }
-
-
-    $html[]="<tr>";
-    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_TAILON}:</strong></td>";
-    $html[]="<td style='width:1%'  nowrap>$TAILON_VERSION</td>";
-    $html[]="<td style='text-align:left;width:99%' nowrap>$bton</td>";
-    $html[]="</tr>";
-    if(!is_array($html)){$html=array();} return @implode("\n",$html);
-}
 function APP_PROFTPD($UPDATES_ARRAY):string
 {
     $tpl = new template_admin();

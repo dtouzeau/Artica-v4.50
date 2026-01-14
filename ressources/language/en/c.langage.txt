@@ -3419,5 +3419,123 @@ Please refer to the documentation (click the button) to view the available remot
 <trust_reverse_proxy_CA>Trust reverse-proxy CA</trust_reverse_proxy_CA>
 <use_ssh>Use SSH</use_ssh>
 <use_API>Use API</use_API>
-
+<sys_drop_caches>Releases the page cache and/or the inode and dentry caches</sys_drop_caches>
+<max_value>Maximal value</max_value>
+<enter_valid_domain>Please enter a valid domain</enter_valid_domain>
+<enter_valid_email>Please enter a valid email address</enter_valid_email>
+<connection_test_successful>Connection test successful</connection_test_successful>
+<LETSENCRYPT_DNS_CERTIFICATE>Let's Encrypt Certificate via DNS Validation</LETSENCRYPT_DNS_CERTIFICATE>
+<howto_letsencrypt_dns>DNS-01 validation allows you to obtain SSL/TLS certificates from Let's Encrypt by proving domain ownership through DNS records.[br]
+1. Configure your DNS provider credentials (Cloudflare, Route53, OVH, etc.)[br]
+2. Enter the domain name(s) you want to secure[br]
+3. The system automatically creates a TXT record (_acme-challenge.yourdomain.com)[br]
+4. Let's Encrypt verifies the record and issues your certificate[br]
+5. The TXT record is automatically cleaned up[br]</howto_letsencrypt_dns>
+<new_request>New request</new_request>
+<use_staging_environment>Use staging environment</use_staging_environment>
+<connection_test_failed>Connection test failed</connection_test_failed>
+<no_pending_tasks>No pending tasks</no_pending_tasks>
+<total_tasks>Total tasks</total_tasks>
+<max_tasks>Max tasks</max_tasks>
+<create_request>Create request</create_request>
+<key_type>Key type</key_type>
+<current_configuration>Current configuration</current_configuration>
+<select_provider_below>Select provider below</select_provider_below>
+<configure_dns_provider>Configure DNS Provider</configure_dns_provider>
+<dns_provider>DNS Provider</dns_provider>
+<no_provider_configured>No provider configured</no_provider_configured>
+<renewal_threshold>Renewal threshold</renewal_threshold>
+<auto_renewal_status>Auto renewal status</auto_renewal_status>
+<provider_configured>Provider configured</provider_configured>
+<configure_dns_provider_first>Configure DNS provider first</configure_dns_provider_first>
+<no_expiring_certificates>No expiring certificate</no_expiring_certificates>
+<recent_renewal_results>Recent renewal results</recent_renewal_results>
+<no_renewal_results>No renewal results</no_renewal_results>
+<dns_request_created>DNS request created</dns_request_created>
+<recommended>Recommended</recommended>
+<wait_dns_propagation>Wait DNS propagation</wait_dns_propagation>
+<dns_propagation_time>DNS propagation time</dns_propagation_time>
+<verify_dns_record>Verify DNS record</verify_dns_record>
+<confirm_and_get_certificate>Confirm and get certificate</confirm_and_get_certificate>
+<pending_tasks>Pending tasks</pending_tasks>
+<auto_renewal>Auto renewal</auto_renewal>
+<expiring_certificates>Expiring certificates</expiring_certificates>
+<invalid_domain_name>Invalid domain name</invalid_domain_name>
+<error_api_response>Failed to parse API response</error_api_response>
+<request_failed>Request failed</request_failed>
+<confirm_dns>Confirm DNS</confirm_dns>
+<staging>Staging</staging>
+<task_details>Task details</task_details>
+<remove_task>Remove task</remove_task>
+<cancelled>Cancelled</cancelled>
+<dns_record_instructions>DNS record instructions</dns_record_instructions>
+<record_type>Record type</record_type>
+<record_name>Record name</record_name>
+<record_value>Record value</record_value>
+<or_default>Or default</or_default>
+<confirm_dns_created>Confirm DNS created</confirm_dns_created>
+<create_txt_record_in_dns>Create a TXT record in DNS</create_txt_record_in_dns>
+<unverified>Unverified</unverified>
+<dns_providers_explain>DNS Providers allow you to store multiple DNS API configurations for automated certificate management.[br]Each provider configuration can be assigned to certificates, enabling automatic DNS record creation during certificate requests [b]and renewals[/b].[br]Create a provider configuration using your DNS API credentials, then select it when requesting new certificates.[br]                If your DNS provider does not offer an API, use the [b]Manual[/b] pseudo-provider.[br]In this case, you will need to manually create or update the DNS record each time the certificate is renewed.</dns_providers_explain>
+<dns_providers>DNS Providers</dns_providers>
+<no_providers_configured>No providers configured</no_providers_configured>
+<add_provider>New Provider</add_provider>
+<provider_type>Provider type</provider_type>
+<error_saving_provider>Error saving provider</error_saving_provider>
+<confirm_delete_provider>Delete this provider ?</confirm_delete_provider>
+<renew_now>Renew now</renew_now>
+<expiry_date>Expiry date</expiry_date>
+<days_left>Days left</days_left>
+<certificates_expiring_within>Certificates expiring within</certificates_expiring_within>
+<no_certificates_for_provider>No certificates for this provider</no_certificates_for_provider>
+<failed_to_fetch_certificates>Failed to fetch certificates</failed_to_fetch_certificates>
+<renewal_running_in_background>Renewal running in background</renewal_running_in_background>
+<no_certificates_with_provider_explain>No certificates are currently configured with a DNS provider.[br]
+ To enable automatic renewal, assign a DNS provider to your Let's Encrypt certificates in the certificate settings. [br]
+ Once a certificate has a DNS provider assigned, it will be automatically renewed before expiration.</no_certificates_with_provider_explain>
+ <autorenew_active_explain>Auto-renewal is active.[br]
+ Certificates with a configured DNS provider will be automatically renewed before they expire.</autorenew_active_explain>
+ <no_provider_explain_error>For now, no DNS provider has been added.[br] If you do not yet have a DNS provider, that’s not a problem—create a [b]Manual[/b] provider instead.[br]
+ This will allow you to associate the verification record [b]manually[/b].[br] Use the [b]DNS Providers[/b] tab to add one or more providers that you use (including the manual provider).</no_provider_explain_error>
+ <letsencrypt_staging_explain>Use Let's Encrypt staging environment for testing.[br]Certificates will not be trusted by browsers but allows unlimited requests for testing purposes.</letsencrypt_staging_explain>
+ <certificates_with_provider>Certificates with provider</certificates_with_provider>
+ <autorenew_explain>Automatic certificate renewal uses DNS-01 challenge to renew Let's Encrypt certificates before they expire.[br]
+ Certificates that have a DNS provider configured will be automatically renewed when they are within the renewal threshold period.[br]
+ The system periodically checks for expiring certificates and initiates renewal using the assigned DNS provider credentials.</autorenew_explain>
+ <create_txt_record_manually>Create TXT record manually</create_txt_record_manually>
+ <http_request>HTTP request</http_request>
+ <dns_request>DNS request</dns_request>
+ <io_mon_explain>Monitoring disk I/O activity per process</io_mon_explain>
+ <io_metrics_title>I/O Metrics</io_metrics_title>
+ <last_6_hours>Last 6 hours</last_6_hours>
+ <time_period>Time period</time_period>
+ <system2>System</system>
+ <load_average>Load average</load_average>
+ <log_viewer>Real-Time Log Viewer</log_viewer>
+ <log_viewer_explain>The Log Viewer provides real-time tailing and analysis of system and application log files directly from the web console</log_viewer_explain>
+ <log_files>Log files</log_files>
+ <tip>Tip</tip>
+ <tailer_first_use_tip>Use the left sidebar to filter logs by Host or Process.[br]
+ Click on any facet value to show only matching entries.[br]
+ You can customize columns and add new parsing rules via the Settings (gear icon) menu.
+ [br]Your configuration is saved automatically</tailer_first_use_tip>
+ <viewer>Viewer</viewer>
+ <tailer_running_warning> Warning: The log viewer is actively streaming data. Tailing multiple large log files may increase CPU and memory usage.[br]
+ Close this page when not in use to release resources.</tailer_running_warning>
+ <configured_log_files>Configured log files</configured_log_files>
+ <no_files_configured_explain>No log files are currently configured for tailing.[br]
+ The system automatically detects available log files at startup.[br]
+ If no files appear, verify that the log files exist and have read permissions.</no_files_configured_explain>
+ <required_fields_missing>Required fields missing</required_fields_missing>
+ <tailer_not_running>Tailer not running</tailer_not_running>
+<tailer_not_running_explain>The log viewer is not currently active.[br]
+ Click Start to begin tailing log files.[br]
+ Once started, new log entries will stream in real-time.[br]
+ The viewer will automatically reconnect if the connection is interrupted.
+</tailer_not_running_explain>
+<fullscreen>Full screen</fullscreen>
+<exit_fullscreen>Exit full screen</exit_fullscreen>
+<os_metrics_title>System metrics</os_metrics_title>
+<os_mon_explain>Artica monitors the vital components of your server, including CPU, load, and memory.[br]
+These metrics are stored locally to provide historical usage and consumption trends.</os_mon_explain>
 

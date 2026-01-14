@@ -19,6 +19,8 @@ if(isset($_GET["agents-upgrade-popup"])){agents_upgrade_popup();exit;}
 if(isset($_GET["agents-upgrade-js"])){agents_upgrade_js();exit;}
 if(isset($_GET["artica-web-restart-js"])){artica_web_restart_js();exit;}
 if(isset($_GET["agent-info-disk"])){agent_info_disk();exit;}
+if(isset($_GET["agent-info-net"])){agent_info_net();exit;}
+
 if(isset($_POST["agent-address-popup"])){agent_address_save();exit;}
 if(isset($_GET["agent-address-js"])){agent_address_js();exit;}
 if(isset($_GET["agent-address-popup"])){agent_address_popup();exit;}
@@ -336,6 +338,90 @@ function agent_address_js():bool{
     $Hostname=getAgentHostname($id);
     return $tpl->js_dialog3($Hostname,"$page?agent-address-popup=$id",650);
 }
+
+function agent_info_net():bool{
+    $tpl=new template_admin();
+    $id = intval($_GET["agent-info-net"]);
+    $Main=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/status/$id"),true);
+    if (json_last_error() > JSON_ERROR_NONE) {
+        VERBOSE(json_last_error_msg(),__LINE__);
+        echo $tpl->div_error(json_last_error_msg());
+        return true;
+    }
+   // print_r($Main);
+    if(isset($Main["Error"]) && !empty($Main["Error"])){
+        VERBOSE($Main["Error"],__LINE__);
+        echo $tpl->div_error($Main["Error"]);
+        return true;
+    }
+    print_r($Main);
+
+    if(!isset($Main["network"])){
+        echo $tpl->div_error("No information");
+        return true;
+    }
+    $icoIf=ico_nic;
+    $w1="style='width:1%' nowrap";
+    $html[]="<table style='width:100%;margin-top:10px' class='table table-stripped'>";
+    $html[]="<tr>";
+    $html[]="<th colspan='2'>{interface}</th>";
+    $html[]="<th colspan='2'>{incoming2}/{outgoing}</th>";
+    $html[]="</tr>";
+
+    foreach($Main["network"] as $Interface){
+        $iface=$Interface["interface"];
+        $bytes_sent=FormatBytes($Interface["bytes_sent"]/1024);
+        $bytes_recv=FormatBytes($Interface["bytes_recv"]/1024);
+        $html[]="<tr>";
+        $html[]="<td $w1><i class='$icoIf'></i></td>";
+        $html[]="<td style='width:99%'><strong>$iface</strong></td>";
+        $html[]="<td>$bytes_recv</td>";
+        $html[]="<td>$bytes_sent</td>";
+        $html[]="</tr>";
+
+
+    }
+    $html[]="</table>";
+    /*Array ( [routes] => Array (
+        [0] => Array ( [destination] => 0.0.0.0/0 [gateway] => 192.168.90.1 [interface] => eth0 [protocol] =>
+        boot [scope] => universe [type] => unicast [table] => 254 ) [1] => Array ( [destination] => 127.0.0.0/8 [interface] => lo [protocol] => boot [scope] => link [type] => unicast [table] => 254 ) [2] => Array ( [destination] => 127.0.0.1/32 [interface] => lo [protocol] => boot [scope] => link [type] => unicast [table] => 254 ) [3] => Array ( [destination] => 192.168.90.0/24 [interface] => eth0 [protocol] => boot [scope] => link [type] => unicast [table] => 254 [priority] => 2 ) [4] => Array ( [destination] => 192.168.90.1/32 [interface] => eth0 [protocol] => boot [scope] => link [type] => unicast [table] => 254 ) ) [rules] => Array ( [0] => Array ( [priority] => 0 [table] => 255 [goto] => -1 ) [1] => Array ( [priority] => 32766 [table] => 254 [goto] => -1 ) [2] => Array ( [priority] => 32767 [table] => 253 [goto] => -1 ) [3] => Array ( [priority] => 0 [table] => 255 [goto] => -1 ) [4] => Array ( [priority] => 32766 [table] => 254 [goto] => -1 ) ) )
+    */
+    if(isset($Main["routes"])){
+        $html[]="<table style='width:100%;margin-top:10px' class='table table-stripped'>";
+        $html[]="<tr>";
+        $html[]="<th colspan='2'>{table}</th>";
+        $html[]="<th colspan='2'>{destination}</th>";
+        $html[]="<th>{gateway}</th>";
+        foreach ($Main["routes"]["routes"] as $route){
+            $interface=$route["interface"];
+            if($interface=="lo"){continue;}
+            $destination=$route["destination"];
+            $gateway=$route["gateway"];
+
+            $protocol=$route["protocol"];
+            $scope=$route["scope"];
+            $type=$route["type"];
+            $table=$route["table"];
+            $arrow="<i class='".ico_arrow_right."'></i>";
+            if(strlen($gateway)<3){
+                $arrow="&nbsp;";
+            }
+            $html[]="<tr>";
+            $html[]="<td $w1><i class='$icoIf'></i>&nbsp;$interface</td>";
+            $html[]="<td $w1>$table</td>";
+            $html[]="<td $w1>$destination<br><small>$protocol $scope $type</small></td>";
+            $html[]="<td $w1>$arrow</td>";
+            $html[]="<td><strong>$gateway</strong></td>";
+            $html[]="</tr>";
+        }
+    }
+
+    $html[]="</table>";
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+
+
 function agent_info_disk():bool{
     $id=intval($_GET["agent-info-disk"]);
     $html[]="<table style='width:80%;margin-top:20px;' class='table'>";
@@ -379,6 +465,7 @@ function agent_info_tabs():bool{
     }
     $array[$Hostname]="$page?agent-info-status=$id$token";
     $array["{disks}"]="$page?agent-info-disk=$id$token";
+    $array["{network}"]="$page?agent-info-net=$id$token";
     if($AgentArtica){
         $array["Artica"]="$page?agent-info-artica=$id";
     }
@@ -789,12 +876,12 @@ function td_agent_version($agentJson):string{
 function td_cpu($agentJson):array{
     $id = $agentJson->id;
     $main=agent_status($id);
-    $html[]="<div id='td-cpu-clickable-$id'>".$main["cpu"]."%</div>";
+    $html[]="<div id='td-cpu-clickable-$id' class='pointer-cursor'>".$main["cpu"]."%</div>";
     $dashjs="";
     echo "// [".__LINE__."]: Peity: ".count($main["peity"])."\n";
     if(count($main["peity"])>0){
         $peity_conf="{ width:110,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
-        $html[]="<div id=\"peity-cpu-line-$id\">".@implode(",",$main["peity"])."</div>";
+        $html[]="<div id=\"peity-cpu-line-$id\" class='pointer-cursor'>".@implode(",",$main["peity"])."</div>";
         $dashjs="\t$(\"#peity-cpu-line-$id\").peity(\"line\",$peity_conf);
         $('#td-cpu-clickable-$id').click(function () { Loadjs('fw.netagents.metrics.charts.php?agent-metrics-js=$id') } );";
     }
@@ -803,11 +890,10 @@ function td_cpu($agentJson):array{
 function td_cpu_graphs($id):array{
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/cpu-history/agent/$id?limit=60"),true);
     if(!isset($json["records"])){
-        echo "// [".__LINE__."]: records: not found...\n";
         return array();
     }
     $f=array();
-    echo "// [".__LINE__."]: records: ".count($json["records"])." elements..\n";
+
 
 
     foreach ($json["records"] as $record){

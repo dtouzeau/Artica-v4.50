@@ -342,33 +342,7 @@ function left_postfix_status_master(){
 
 }
 
-function left_frontail_status():bool{
-    $EnableFrontail=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFrontail"));
-    if($EnableFrontail==0){
-        return false;
-    }
-    $tpl=new template_admin();
-    $data=$GLOBALS["CLASS_SOCKETS"]->REST_API("/frontail/postfix/status");
-    if(!function_exists("json_decode")){
-        echo $tpl->widget_rouge("{error}","json_decode no such function, please restart Web console");
-        return true;
-    }
 
-    $json=json_decode($data);
-    if (json_last_error()> JSON_ERROR_NONE) {
-        echo $tpl->widget_rouge("{error}",json_last_error_msg());
-        return true;
-    }
-    $bsini=new Bs_IniHandler();
-    $bsini->loadString($json->Info);
-    $restart=$tpl->framework_buildjs("/frontail/postfix/restart",
-        "frontail.install.progress","frontail.install.log","progress-postfix-restart");
-
-    echo $tpl->SERVICE_STATUS($bsini, "APP_FRONTAIL_MAILLOG",$restart);
-
-
-return true;
-}
 
 function left_postfix_status():bool{
     $page=CurrentPageName();
@@ -378,14 +352,12 @@ function left_postfix_status():bool{
 
     if($instance_id==0) {
         left_postfix_status_master();
-        left_frontail_status();
         return true;
     }
 
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("postfix2.php?instance-status=$instance_id");
     $ini=new Bs_IniHandler(PROGRESS_DIR . "/postfix.$instance_id.status");
     $html[]=$tpl->SERVICE_STATUS($ini, "APP_POSTFIX",$postfix_restart);
-    left_frontail_status();
     $html[]="<script>";
     $html[]="LoadAjaxSilent('socks-connection-$instance_id','$page?socks-connection=yes&instance-id=$instance_id')";
     $html[]="</script>";
@@ -464,17 +436,10 @@ function top_status():bool{
             $TINY_ARRAY["TITLE"] = "{InternalRouter} &raquo;&raquo; {service_status} <small>($instancename) v.$POSTFIX_VERSION</small>";
 
         }
-
-        $EnableFrontailPostfix=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFrontailPostfix"));
-        if($EnableFrontailPostfix==1) {
-            $topbuttons[] = array("s_PopUp('/maillog/',1024,768,'Mail.log')", ico_eye, "{APP_FRONTAIL_MAILLOG}");
-        }
-
-
         $TINY_ARRAY["ICO"] = "fas fa-tachometer-alt";
         $TINY_ARRAY["EXPL"] = "{APP_POSTFIX_TEXT}";
         $TINY_ARRAY["URL"] = "postfix-status-$instance_id";
-        $TINY_ARRAY["BUTTONS"] = $tpl->table_buttons($topbuttons);
+        $TINY_ARRAY["BUTTONS"] = $tpl->table_buttons(array());
         $jstiny = "Loadjs('fw.progress.php?tiny-page=" . urlencode(base64_encode(serialize($TINY_ARRAY))) . "');";
     }
 
