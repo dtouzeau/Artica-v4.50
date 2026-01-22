@@ -2,6 +2,7 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.sla.inc.php");
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -71,7 +72,11 @@ function widget_frontend_time():string{
 
 function widget_frontend_domains():array{
     $tpl=new template_admin();
-    $json=json_decode(@file_get_contents(slapath));
+    if(!file_exists(slapath)){
+        $json=json_encode(array());
+    }else {
+        $json = json_decode(@file_get_contents(slapath));
+    }
     if(!property_exists($json,"services")){
         return array(
             $tpl->widget_h("grey",ico_earth,0,"{tested_domains}"),
@@ -345,7 +350,7 @@ function page():bool{
 function search_header():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    echo $tpl->search_block($page);
+    echo "<div style='margin-top:10px'>".$tpl->search_block($page)."</div>";
     return true;
 }
 function drop_table(){
@@ -545,13 +550,10 @@ function get_all_services($search):array{
     return $f;
 }
 function get_servicename($ID):string{
-    if(isset($GLOBALS["SERVICES"][$ID])){return $GLOBALS["SERVICES"][$ID];}
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $GLOBALS["SERVICES"][$ID]=trim($ligne["servicename"]);
-    return strval($ligne["servicename"]);
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 }
 function isHarmpID():bool{
     if(!isset($_SESSION["HARMPID"])){

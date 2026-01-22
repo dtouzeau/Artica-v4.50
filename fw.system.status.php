@@ -136,13 +136,6 @@ if(isset($_SESSION["MANAGE_CATEGORIES"])){
     }
 }
 
-    if($users->AsAnAdministratorGeneric) {
-
-        if(is_file("/usr/share/artica-postfix/img/philesight/system.png")){
-            $array["{disk_usage}"] = "fw.dashboard.philesight.php";
-
-        }
-    }
 
     $EnableRDPProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRDPProxy"));
     if($EnableRDPProxy==1) {
@@ -768,6 +761,8 @@ JS;
     //echo "LoadAjaxSilent('widget-hostname','fw.index.php?widget-hostname=yes');\n";
     echo "Loadjs('$HTTP_X_ARTICA_SUBFOLDER$page?doughnut-ps-mem=yes');\n";
     echo "LoadAjaxSilent('widget-info','{$HTTP_X_ARTICA_SUBFOLDER}fw.index.php?widget-info=yes&from-hostname=yes');\n";
+    echo "LoadAjaxSilent('frontend-notifications','{$HTTP_X_ARTICA_SUBFOLDER}fw.system.status.php?frontend-notifications=yes');\n";
+    echo "LoadAjaxSilent('artica-notifs-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?notifs=yes');\n";
     echo "$top_cpu_mem\n";
     echo Cronos();
     return true;
@@ -802,7 +797,7 @@ function widget_load($Status,$metrics):string{
     $html[]="                <div class=\"ibox float-e-margins\">";
     $html[]="                    <div class=\"ibox-title\">";
     $html[]="                        <span class=\"label $label_load pull-right\">$text_load</span>";
-    $html[]="                        <h5>{load2}</h5>";
+    $html[]="                        <h5><i class='fas fa-tachometer'></i>&nbsp;{load2}</h5>";
     $html[]="                    </div>";
     $html[]="                    <div class=\"ibox-content\">";
     $html[]="                        <h1 class=\"no-margins\">$ORG_LOAD</h1>";
@@ -915,11 +910,11 @@ function widget_sysdisk():string{
             $dahs = "<span id=\"dashboard-" . md5($ID_FS_LABEL) . "\">$value1,$value2</span>";
 
             $srcjs[] = "$(\"#dashboard-" . md5($ID_FS_LABEL) . "\").peity(\"pie\",{ fill: [\"#18a689\", \"#eeeeee\"], height:38,width:38 });";
-
+            $ic=ico_hd;
             $html[] = "    <div class=\"ibox float-e-margins\">";
             $html[] = "        <div class=\"ibox-title\">";
             $html[] = "            <span class=\"label $label_part pull-right\">$text_part</span>";
-            $html[] = "            <h5>{partition}:$ID_FS_LABEL</h5>";
+            $html[] = "            <h5><i class='$ic'></i>&nbsp;{partition}:$ID_FS_LABEL</h5>";
             $html[] = "         </div>";
             $html[] = "         <div class=\"ibox-content\">";
             $html[] = "<table>";
@@ -974,11 +969,11 @@ function widget_cpu():array{
     $page=CurrentPageName();
 
     $label="$label_a<span class='label $label_cpu'>{history}</span></a>";
-
+    $ico=ico_cpu;
     $html[]="                <div class=\"ibox float-e-margins\">";
     $html[]="                    <div class=\"ibox-title\">";
     $html[]="                        <span class=\"label $label_cpu pull-right\">$text_cpu</span>";
-    $html[]="                        <h5>{cpu}</h5>";
+    $html[]="                        <h5><i class='$ico'></i>&nbsp;{cpu}</h5>";
     $html[]="                    </div>";
     $html[]="                    <div class=\"ibox-content\">";
     $html[]="                        <h1 class=\"no-margins\" id='dash-cpu-title'>$CPUPERCENT%</h1>";

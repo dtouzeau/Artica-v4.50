@@ -304,8 +304,9 @@ function decisions_list_add_save():bool{
         echo $tpl->post_error("$ipadd {invalid}");
         return false;
     }
-    $description=base64_encode($_POST["description"]);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("crowdsec.php?decision-add=$ipadd&time={$_POST["time"]}&desc=$description");
+    $description=urlencode($_POST["description"]);
+    $ztime=intval($_POST["time"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/crowdsec/decision/add/$ipadd/$ztime/$description");
     return true;
 }
 
@@ -1323,7 +1324,6 @@ function threats_search():bool{
 function decisions_list():array{
     $MAIN=array();
     $tfile=PROGRESS_DIR."/crowdsec-blacklists.list";
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("crowdsec.php?ipset-list=yes");
     $tpl = new template_admin();
     $sock=new sockets();
     $data=$sock->REST_API("/crowdsec/decision/list");

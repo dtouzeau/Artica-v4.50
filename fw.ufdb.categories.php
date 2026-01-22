@@ -12,6 +12,12 @@ if(isset($_GET["remote-categories-service-queries"])){remote_categories_service_
 if(isset($_POST["UseRemoteCategoriesService"])){remote_categories_service_save();exit;}
 if(isset($_POST["EnableRemoteCategoriesServices"])){remote_categories_service_save();exit;}
 if(isset($_GET["synchronize-remote-categories"])){remote_categories_service_fetch();exit;}
+if(isset($_GET["category-dns-js"])){remote_category_js();exit;}
+if(isset($_GET["category-http-js"])){remote_http_category_js();exit;}
+
+
+if(isset($_GET["remote-http-category-popup"])){remote_http_category_popup();exit;}
+if(isset($_GET["remote-category-popup"])){remote_category_popup();exit;}
 
 if(isset($_GET["all-categories-js"])){all_categories_js();exit;}
 if(isset($_GET["all-categories-tabs"])){all_categories_tabs();exit;}
@@ -35,7 +41,9 @@ if(isset($_GET["category-edit-js"])){category_edit_js();exit;}
 if(isset($_GET["category-edit-popup"])){category_edit_general_popup();exit;}
 if(isset($_GET["category-edit-rpz"])){category_edit_rpz_js();exit;}
 if(isset($_GET["category-edit-rpz-popup"])){category_edit_rpz_popup();exit;}
-
+if(isset($_GET["dnscatz-compile-single"])){dnscatz_compile_single();exit;}
+if(isset($_GET["pinger"])){pinger();exit;}
+if(isset($_GET["pinger-ids"])){pinger2();exit;}
 
 if(isset($_POST["newcat"])){category_new_save();exit;}
 if(isset($_POST["categorykey"])){category_save();exit;}
@@ -92,26 +100,208 @@ function synchronize_dns_api():bool{
     echo "$function();";
     return true;
 }
+function pinger():bool{
+    $page=CurrentPageName();
+    $js[]="function getDnsCatzIdsString() {
+        var ids = [];
+        var idsUFDB = [];
+        $('span[id^=\"dnscatz-status-\"]').each(function () {
+            var match = this.id.match(/dnscatz-status-(\d+)/);
+            if (match) {
+                ids.push(match[1]); // keep as string
+            }
+        });
+        $('span[id^=\"dnscatz-ufdb-\"]').each(function () {
+            var match = this.id.match(/dnscatz-ufdb-(\d+)/);
+            if (match) {
+                idsUFDB.push(match[1]); // keep as string
+            }
+        });
+        var idsStr=ids.join('-');
+        var UfdbStr=idsUFDB.join('-');
+        Loadjs('$page?pinger-ids='+encodeURIComponent(idsStr)+'&ufdb='+encodeURIComponent(UfdbStr)  );
+    }";
+    $js[]="getDnsCatzIdsString()";
+    header("content-type: application/x-javascript");
+    echo @implode("\n", $js);
+    return true;
+}
+
+function pinger2_client():string{
+    $EnableRemoteCategoriesServices=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRemoteCategoriesServices"));
+    if($EnableRemoteCategoriesServices==0){
+        return "";
+    }
+    $RemoteCategoriesServiceError=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceError");
+    if(strlen($RemoteCategoriesServiceError)>2){
+        $tpl=new template_admin();
+        $text=base64_encode($tpl->_ENGINE_parse_body("<div class='text-info' style='margin-top:-10px'><strong>{error}</strong>:&nbsp;$RemoteCategoriesServiceError</div>"));
+        echo "$('#categories-text-infos').html(base64_decode('$text'));\n";
+        return "";
+    }
+    return "";
+}
+
+function pinger2_global_status():string{
+    $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
+    if($EnableLocalUfdbCatService==0){
+        return pinger2_client();
+    }
+    $tpl=new template_admin();
+
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_DNSCATZ("/compile-progress"),true);
+    if(!isset($json["progress"])) { return "";}
+        $progress = intval($json["progress"]);
+        if ($progress == 0) {
+            return "";
+        }
+        if (isset($json["error"])) {
+            if (strlen($json["error"]) > 3) {
+                $completed_at = $tpl->time_to_date($tpl->GoToTimestamp($json["completed_at"]), true);
+                $err = base64_encode($tpl->div_error("$completed_at||{$json["error"]}"));
+                echo "$('#progress-ppcategories-restart').html(base64_decode('$err'));\n";
+            }
+        }
+
+        if($progress==100){
+            $duration_ms=round(intval($json["duration_ms"])/1000,2);
+            $completed_at=$tpl->time_to_date($tpl->GoToTimestamp($json["completed_at"]), true);
+            $text=base64_encode($tpl->_ENGINE_parse_body("<div class='text-info' style='margin-top:-10px'><strong>100%</strong>:&nbsp;{compilation_done}, {completed_at}: $completed_at ({$duration_ms}s)</div>"));
+            echo "$('#categories-text-infos').html(base64_decode('$text'));\n";
+        }
+        if( ($progress<100) && ($progress>0) ){
+            $ico=ico_refresh_animate;
+            $text=base64_encode($tpl->_ENGINE_parse_body("<i class='$ico'></i>&nbsp;$progress%"));
+            echo "$('#categories-text-infos').html(base64_decode('$text'));\n";
+        }
+
+    return "";
+}
+function pinger2():bool{
+    $tpl=new template_admin();
+    echo pinger2_global_status()."\n";
+    $ufdbs=array();
+
+    $sock=new sockets();
+    $DNSCATZREMOTE=array();
+    $DNSCATZSTATUS=array();
+    $DumpRemoteCategories=json_decode($sock->GET_INFO("DumpRemoteCategories"),true);
+    $LOCAL_CATEGORIES=array();
+
+    if ( (json_last_error()> JSON_ERROR_NONE) OR !is_array($DumpRemoteCategories))  {
+        $DumpRemoteCategories=array();
+    }
+    if(count($DumpRemoteCategories)>0){
+        foreach ($DumpRemoteCategories as $ligne){
+            $DNSCATZREMOTE[$ligne["category_id"]]=true;
+        }
+    }
+
+    if(isset($_GET["ufdb"])){
+        $ufdbs=explode("-",$_GET["ufdb"]);
+
+        if( count($ufdbs)>0 ) {
+            VERBOSE("UFDB -> {$_GET["ufdb"]} --> ".count($ufdbs)." -> /categories/locales",__LINE__);
+            $LocalCatz=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/locales"),true);
+            if(isset($LocalCatz["Categories"])){
+                foreach ($LocalCatz["Categories"] as $cat){
+                    $LOCAL_CATEGORIES[$cat["category_id"]]=$cat["compiledate"];
+                }
+            }
+            foreach ($ufdbs as $category_id) {
+                $idSpan = "dnscatz-ufdb-$category_id";
+                $Updted="dnscatz-updated-$category_id";
+
+                if(isset($LOCAL_CATEGORIES[$category_id])){
+                    $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-primary'>{active2}</span>"));
+                    echo "$('#$idSpan').html(base64_decode('$t'));\n";
+                    $TimeCompiles=distanceOfTimeInWords($LOCAL_CATEGORIES[$category_id],time(),true);
+                    $t = base64_encode($tpl->_ENGINE_parse_body("<small>{updated}: $TimeCompiles</small>"));
+                    echo "$('#$Updted').html(base64_decode('$t'));\n";
+                    continue;
+                }
+
+
+                if(isset($DNSCATZREMOTE[$category_id])){
+                    $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-primary'>{active2}</span>"));
+                    echo "$('#$idSpan').html(base64_decode('$t'));\n";
+                    continue;
+                }
+                $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-warning'>{not_compiled}</span>"));
+                echo "$('#$idSpan').html(base64_decode('$t'));\n";
+            }
+        }
+    }
+
+    $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
+    if($EnableLocalUfdbCatService==1) {
+        $data = json_decode($sock->REST_API_DNSCATZ("/export/status"), true);
+        if (isset($data["categories"])) {
+            foreach ($data["categories"] as $cat) {
+                $category_id = $cat["category_id"];
+                $domain_count = $cat["domain_count"];
+                $DNSCATZSTATUS[$category_id] = $domain_count;
+            }
+        }
+    }
+
+    $tb=explode("-",$_GET["pinger-ids"]);
+    if( count($tb)>0 ) {
+        foreach ($tb as $category_id) {
+            $idSpan = "dnscatz-status-$category_id";
+
+            if(isset($DNSCATZREMOTE[$category_id])){
+                $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-primary'>{active2}</span>"));
+                echo "$('#$idSpan').html(base64_decode('$t'));\n";
+                continue;
+            }
+
+            if (!isset($DNSCATZSTATUS[$category_id])) {
+                $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-warning'>{not_compiled}</span>"));
+                echo "$('#$idSpan').html(base64_decode('$t'));\n";
+                continue;
+            }
+            $icoDNS = "<span class='label label-primary'>{active2}</span>";
+            $t = base64_encode($tpl->_ENGINE_parse_body($icoDNS));
+            echo "$('#$idSpan').html(base64_decode('$t'));\n";
+        }
+    }
+    return true;
+}
+
+
 function compile_dns_api():bool{
     $tpl=new template_admin();
-    $sock=new sockets();
-    $function=$_GET["function"];
-    $data=$sock->REST_API("/categories/dns/compile");
+
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/dnscatz/permissions"),true);
+
+    if(!isset($json["Status"])){
+        return $tpl->js_error("Protocol error");
+    }
+    if(!$json["Status"]){
+        return $tpl->js_error($json["Error"]);
+    }
+
+
+
+    $data=$GLOBALS["CLASS_SOCKETS"]->REST_API_POST_DNSCATZ("/compile");
     $json=json_decode($data);
     if (json_last_error()> JSON_ERROR_NONE) {
         $tpl->js_error($tpl->_ENGINE_parse_body(json_last_error_msg()));
         return false;
     }
 
-    if (!$json->Status){
-        $tpl->js_error($json->Error);
+    if ($json->status=="error"){
+        $tpl->js_error($json->message);
         return false;
     }
 
 
 
     $tpl->js_ok($tpl->_ENGINE_parse_body("{success}"));
-    echo "$function();";
+
     return true;
 
 }
@@ -121,7 +311,7 @@ function page():bool{
     $tpl=new template_admin();
 
     $html=$tpl->page_header("{your_categories}",
-        "fad fa-books","{personal_categories_explain}","$page?tabs=yes",
+        "fad fa-books","{personal_categories_explain}<div id='categories-text-infos'></div>","$page?tabs=yes",
         "personal-categories","progress-ppcategories-restart",false,"table-perso-category-start");
 
 
@@ -258,8 +448,11 @@ function tabs():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $users=new usersMenus();
-    $function=$_GET["function"];
-$EnableRemoteCategoriesServices=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRemoteCategoriesServices"));
+    $function="";
+    if(isset($_GET["function"])) {
+        $function = $_GET["function"];
+    }
+    $EnableRemoteCategoriesServices=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRemoteCategoriesServices"));
     $array["{your_categories}"]="$page?table-start=yes&function=$function";
     if($EnableRemoteCategoriesServices==0) {
         $array["{main_parameters}"] = "fw.ufdb.categories.settings.php?parameters=yes&function=$function";
@@ -293,6 +486,32 @@ function js_export_confirm():bool{
     $catname=$catz->CategoryIntToStr($categoryid);
    return $tpl->js_dialog6("{export}:$catname", "$page?js-export-perform=$categoryid",650);
 }
+function dnscatz_compile_single():bool{
+    $tpl=new template_admin();
+    $id=intval($_GET["dnscatz-compile-single"]);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/dnscatz/permissions"),true);
+
+    if(!isset($json["Status"])){
+        return $tpl->js_error("Protocol error");
+    }
+    if(!$json["Status"]){
+        return $tpl->js_error($json["Error"]);
+    }
+
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_DNSCATZ("/compile/$id"),true);
+
+    if(!isset($json["category_id"])){
+        return $tpl->js_error("Protocol error");
+    }
+    if(isset($json["message"])){
+        admin_tracks("Category service: Compile category id #$id");
+        return $tpl->js_ok($json["message"]);
+    }
+    return admin_tracks("Category service: Compile category id #$id");
+
+}
+
 function js_export_perform(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -406,7 +625,7 @@ function category_remove_all():bool{
 
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ufdbcat.compile.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/ufdbcat.compile.log";
-    $ARRAY["CMD"]="ufdbguard.php?remove-all-categories=yes";
+    $ARRAY["CMD"]="/categories/remove-all";
     $ARRAY["TITLE"]="{remove_all_categories}";
     $ARRAY["AFTER"]="$function";
     $prgress=base64_encode(serialize($ARRAY));
@@ -752,6 +971,107 @@ function remote_categories_service_js():bool{
     return $tpl->js_dialog2("{use_remote_categories_services}",
         "$page?remote-categories-service-tabs=yes$function",550);
 }
+function remote_category_js():bool{
+    $function=null;
+    if(isset($_GET["function"])){
+        $function="&function=".$_GET["function"];
+    }
+    $tpl=new template_admin();
+    $tpl->CLUSTER_CLI   = true;
+    $page=CurrentPageName();
+    $q=new postgres_sql();
+    $category_id=intval($_GET["category-dns-js"]);
+    $sql="SELECT categoryname FROM personal_categories WHERE category_id='$category_id'";
+    $ligne=$q->mysqli_fetch_array($sql);
+    $title="{category}: {$ligne["categoryname"]}";
+    return $tpl->js_dialog2($title,
+        "$page?remote-category-popup=$category_id$function",550);
+}
+function remote_http_category_js():bool{
+    $function=null;
+    if(isset($_GET["function"])){
+        $function="&function=".$_GET["function"];
+    }
+    $tpl=new template_admin();
+    $tpl->CLUSTER_CLI   = true;
+    $page=CurrentPageName();
+    $q=new postgres_sql();
+    $category_id=intval($_GET["category-http-js"]);
+    $sql="SELECT categoryname FROM personal_categories WHERE category_id='$category_id'";
+    $ligne=$q->mysqli_fetch_array($sql);
+    $title="{category}: {$ligne["categoryname"]}";
+    return $tpl->js_dialog2($title,
+        "$page?remote-http-category-popup=$category_id$function",550);
+
+}
+function remote_http_category_popup(){
+    $tpl=new template_admin();
+    $category_id        = intval($_GET["remote-http-category-popup"]);
+    $q=new postgres_sql();
+    $sql="SELECT * FROM personal_categories WHERE category_id='$category_id'";
+    $ligne=$q->mysqli_fetch_array($sql);
+    $category_description=$ligne["category_description"];
+    $items=numberFormat($ligne["items"],0,""," ");
+    $item_text=$items;
+    $title="{$ligne["categoryname"]}";
+
+    $RemoteCategoriesServicesPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicePort"));
+    $RemoteCategoriesServicesAddress=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceAddr");
+    $Addr="http://$RemoteCategoriesServicesAddress:$RemoteCategoriesServicesPort";
+
+    $category_dns_explain=$tpl->_ENGINE_parse_body("{category_http_explain}");
+    $category_dns_explain=str_replace("%s",$Addr,$category_dns_explain);
+    $category_dns_explain=$tpl->_ENGINE_parse_body("{category_dns_explain}");
+    $category_dns_explain=str_replace("%s",$Addr,$category_dns_explain);
+    $tpl->table_form_section($title,$category_dns_explain);
+    $tpl->table_form_field_text("{ID}",$category_id,ico_params);
+    $tpl->table_form_field_text("{key}",$ligne["categorykey"],ico_key);
+    $tpl->table_form_field_text("{description}",$category_description,ico_infoi);
+    $tpl->table_form_field_text("{items}",$item_text,ico_list_opt);
+    echo $tpl->_ENGINE_parse_body($tpl->table_form_compile());
+    return true;
+}
+function remote_category_popup(){
+    $tpl=new template_admin();
+    $category_id        = intval($_GET["remote-category-popup"]);
+    $q=new postgres_sql();
+    $sql="SELECT * FROM personal_categories WHERE category_id='$category_id'";
+    $ligne=$q->mysqli_fetch_array($sql);
+    $category_description=$ligne["category_description"];
+    $items=numberFormat($ligne["items"],0,""," ");
+    $item_text=$items;
+    $title="{$ligne["categoryname"]}";
+
+
+    $RemoteCategoriesServicesRemote = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicesRemote"));
+    $RemoteCategoriesServicesAddress = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicesAddress"));
+    $RemoteCategoriesServicesPort = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicesPort"));
+    $RemoteCategoriesServicesDomain = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicesDomain"));
+    $Addr="{DNS}: $RemoteCategoriesServicesDomain";
+    if ($RemoteCategoriesServicesPort == 0) {
+        $RemoteCategoriesServicesPort = 3477;
+    }
+    if ($RemoteCategoriesServicesDomain == null) {
+        $RemoteCategoriesServicesDomain = "categories.tld";
+    }
+    if($RemoteCategoriesServicesRemote==1){
+        $Addr="$RemoteCategoriesServicesAddress:$RemoteCategoriesServicesPort@$RemoteCategoriesServicesDomain";
+    }
+
+
+    $category_dns_explain=$tpl->_ENGINE_parse_body("{category_dns_explain}");
+    $category_dns_explain=str_replace("%s",$Addr,$category_dns_explain);
+    $tpl->table_form_section($title,$category_dns_explain);
+    $tpl->table_form_field_text("{ID}",$category_id,ico_params);
+    $tpl->table_form_field_text("{key}",$ligne["categorykey"],ico_key);
+    $tpl->table_form_field_text("{description}",$category_description,ico_infoi);
+    $tpl->table_form_field_text("{items}",$item_text,ico_list_opt);
+    echo $tpl->_ENGINE_parse_body($tpl->table_form_compile());
+    return true;
+
+
+
+}
 
 function remote_categories_service_tabs():bool{
     $tpl=new template_admin();
@@ -788,6 +1108,9 @@ function remote_categories_service_queries():bool{
     $RemoteCategoriesServicesPort = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicesPort"));
     $RemoteCategoriesServicesDomain = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicesDomain"));
 
+
+
+
     if ($RemoteCategoriesServicesPort == 0) {
         $RemoteCategoriesServicesPort = 3477;
     }
@@ -795,7 +1118,14 @@ function remote_categories_service_queries():bool{
         $RemoteCategoriesServicesDomain = "categories.tld";
     }
 
-            $form[] = $tpl->field_checkbox("EnableRemoteCategoriesServices", "{use_remote_categories_services}", $EnableRemoteCategoriesServices, "RemoteCategoriesServicesDomain,RemoteCategoriesServicesRemote,RemoteCategoriesServicesAddress,RemoteCategoriesServicesPort,RemoteCategoriesServicesDomain");
+        $form[] = $tpl->field_checkbox("EnableRemoteCategoriesServices", "{use_remote_categories_services}", $EnableRemoteCategoriesServices, "RemoteCategoriesServicesDomain,RemoteCategoriesServicesRemote,RemoteCategoriesServicesAddress,RemoteCategoriesServicesPort,RemoteCategoriesServicesDomain");
+    $RemoteCategoriesServiceUseArticaTech=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceUseArticaTech");
+
+    $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
+    if($EnableLocalUfdbCatService==1){
+        $form[]=$tpl->field_checkbox("RemoteCategoriesServiceUseArticaTech","{query_artica_db_unknown}",$RemoteCategoriesServiceUseArticaTech);
+    }
+
         $form[] = $tpl->field_checkbox("RemoteCategoriesServicesRemote", "{direct_connection}", $RemoteCategoriesServicesRemote, "RemoteCategoriesServicesAddress,RemoteCategoriesServicesPort");
         $form[] = $tpl->field_text("RemoteCategoriesServicesAddress", "{remote_server_address}", $RemoteCategoriesServicesAddress);
         $form[] = $tpl->field_text("RemoteCategoriesServicesPort", "{remote_server_port}", $RemoteCategoriesServicesPort);
@@ -838,8 +1168,19 @@ function remote_categories_service_save():bool{
     $tpl->CLUSTER_CLI   = true;
     $tpl->CLEAN_POST();
     $tpl->SAVE_POSTs();
+    if($_POST["RemoteCategoriesServiceUseArticaTech"]==1){
+        if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("RemoteCategoriesServiceUseArticaTech",0);
+            echo $tpl->post_error("{articadb_error_license}");
+        }
+    }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/remote/service/check");
-    return admin_tracks_post("Saving the use a remote categories service");
+    $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
+    if($EnableLocalUfdbCatService==1) {
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnscatz/reconfigure");
+    }
+
+    return admin_tracks_post("Saving the use of a remote categories service");
 
 }
 function category_edit_rpz_js():bool{
@@ -1668,33 +2009,7 @@ function table(){
 
     $COLUMNUFDB=isUfdb();
     $RPZCOLUMN=isRPZ();
-
-
-        $sock=new sockets();
-        $data=$sock->REST_API("/categories/dns/status");
-        $jsonCatz=json_decode($data);
-
-        if (json_last_error() > JSON_ERROR_NONE) {
-            echo $tpl->div_error( "Decoding: " . strlen($data) . " bytes " . json_last_error_msg());
-        }
-
-        if (json_last_error() == JSON_ERROR_NONE) {
-            if ($jsonCatz->Status){
-                VERBOSE($jsonCatz->Cats,__LINE__);
-                $tb=explode("|",$jsonCatz->Cats);
-                foreach ($tb as $zl){
-                    VERBOSE($zl,__LINE__);
-                    $tb2=explode(":",$zl);
-                    $DNSCATZSTATUS[$tb2[0]]=$tb2[1];
-                }
-                $tb=explode("|",$jsonCatz->Rpz);
-                foreach ($tb as $rpzid){
-                    $RPZSTATUS[$rpzid]=true;
-                }
-
-            }
-        }
-
+    $DNSCATZSTATUS=array();
 
     $search=trim($_GET["search"]);
     if($search<>null) {
@@ -1729,16 +2044,12 @@ function table(){
 
     if($users->AsDansGuardianAdministrator){
         if($PowerDNSEnableClusterSlave==0){
-            if($UseRemoteCategoriesService==0) {
-                $topbuttons[] = array($add, "fad fa-books-medical", "{new_category}");
-            }
+            $topbuttons[] = array($add, "fad fa-books-medical", "{new_category}");
         }
 
-        if($UseRemoteCategoriesService==0){
-            $topbuttons[] = array($jsCompile, ico_save, "{compile_all_categories}");
-        }
 
-        $topbuttons[] = array("Loadjs('$page?remote-categories-service=yes&function=$function')", ico_clouds, "{use_remote_categories_services}$LabelRCat");
+        $topbuttons[] = array($jsCompile, ico_save, "{compile_all}");
+        $topbuttons[] = array("Loadjs('$page?remote-categories-service=yes&function=$function')", ico_clouds, "{category_server}$LabelRCat");
         $UseRemoteCategoriesService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseRemoteCategoriesService"));
         $EnableRemoteCategoriesServices=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRemoteCategoriesServices"));
 
@@ -1761,6 +2072,7 @@ function table(){
             $topbuttons[] = array($jsRemoveAll, ico_trash, "{remove_all_categories}");
         }
     }
+    $t=time();
     $html[]="<table id='table-persocats-list' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";
     $html[]="<tr>";
@@ -1804,9 +2116,12 @@ function table(){
 
     $sql="SELECT * FROM personal_categories order by categoryname $WHERE";
 
+    VERBOSE("ManageOfficialsCategories=$ManageOfficialsCategories HideOfficialsCategory=$HideOfficialsCategory",__LINE__);
+
     if($HideOfficialsCategory==1){
         $sql="SELECT * FROM personal_categories WHERE official_category=0 AND free_category=0 $WHERE2 order by categoryname";
     }
+
     if($ManageOfficialsCategories==1){$sql="SELECT * FROM personal_categories $WHERE order by categoryname";}
     VERBOSE("$sql",__LINE__);
     $results=$q->QUERY_SQL($sql);
@@ -1838,7 +2153,7 @@ function table(){
         $text_category=$tpl->_ENGINE_parse_body($ligne["category_description"]);
         $itemsEncTxt=numberFormat($items,0,""," ");
         $delete=$tpl->icon_delete("Loadjs('$page?category-delete=$category_id&function=$function')");
-        $category_icon=$ligne["category_icon"];
+        $category_icon="<img src='{$ligne["category_icon"]}'>";
         $official_category=$ligne["official_category"];
         $free_category=$ligne["free_category"];
         $remotecatz=intval($ligne["remotecatz"]);
@@ -1847,9 +2162,10 @@ function table(){
         $meta=intval($ligne["meta"]);
         $icolabel="";
         $icolabel2="";
+        $refreshIco="<div class='center'><i class='".ico_refresh_animate."'></i></div>";
         $icoRPZ="<span class='label label-default'>{inactive2}</span>";
-        $icoDNS="<span class='label label-warning'>{not_compiled}</span>";
-        $icoProxy="<span class='label label-warning'>{not_compiled}</span>";
+        $icoDNS=$refreshIco;
+        $icoProxy=$refreshIco;
 
         $source_ico=null;
         if(!isset($SOURCES_TABLE[$category_id])){
@@ -1876,6 +2192,10 @@ function table(){
             "ufdbcat.compile.progress","ufdbcat.compile.txt",
             "progress-ppcategories-restart","$function()");
 
+        if($EnableLocalUfdbCatService==1){
+            $jsCompile="Loadjs('$page?dnscatz-compile-single=$category_id')";
+
+        }
         $button_compile=$tpl->button_autnonome("{compile2}",$jsCompile,
             "fas fa-download","AsDansGuardianAdministrator",0,"btn-success","small");
 
@@ -1916,12 +2236,12 @@ function table(){
             $button_export="&nbsp;";
             $button_compile="&nbsp;";
             $delete=$tpl->icon_nothing();
-            $category_link=$categoryname;
+            $category_link=$tpl->td_href($categoryname,"","Loadjs('$page?category-dns-js=$category_id&function=$function')");
             $q2=new lib_sqlite("/home/artica/SQLITE/proxy.db");
             $sline=$q2->mysqli_fetch_array("SELECT * FROM categories_services WHERE ID=$serviceid");
             $port=$sline["port"];
             $hostname=$sline["hostname"];
-            $category_icon="img/20-import.png";
+            $category_icon="<img src='img/20-import.png'>";
             $items=$ligne["items"];
             $text_category=$tpl->_ENGINE_parse_body($ligne["category_description"]);
             $itemsEncTxt=numberFormat($items,0,""," ");
@@ -1929,11 +2249,12 @@ function table(){
         }
 
         if($meta==1){
+            $category_icon="<i class='fa fa-2x fa-download' style='color:#1ab394'></i>";
             $button="&nbsp;";
             $button_import="&nbsp;";
             $button_export="&nbsp;";
             $button_compile="&nbsp;";
-            $category_link=$categoryname;
+            $category_link=$tpl->td_href($categoryname,"","Loadjs('$page?category-http-js=$category_id&function=$function')");
             $items=intval($ligne["items"]);
             $text_category=$tpl->_ENGINE_parse_body($ligne["category_description"]);
             $itemsEncTxt=numberFormat($items,0,""," ");
@@ -1941,7 +2262,7 @@ function table(){
 
         if($EnableLocalUfdbCatService==1){
             if($remotecatz==0) {
-                $button_compile = "&nbsp;";
+
                 if (isset($DNSCATZSTATUS[$category_id])) {
                     $icoDNS = "<span class='label label-primary'>{active2}</span>";
                 }
@@ -1949,17 +2270,6 @@ function table(){
                 $icoDNS="&nbsp;";
             }
         }
-        if($COLUMNUFDB){
-           if(!is_null($jsonCatz)) {
-                if (property_exists($jsonCatz, "Ufdb")) {
-                    if ($jsonCatz->Ufdb->{$category_id}) {
-                        $icoProxy = "<span class='label label-primary'>{active2}</span>";
-                    }
-                }
-            }
-        }
-
-
 
         $created_text=$tpl->icon_nothing();
         if($created>0){
@@ -1978,15 +2288,15 @@ function table(){
 
         $sid=$category_id;
         $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td style='width:1%'><img src='$category_icon' alt=''></td>";
+        $html[]="<td style='width:1%'>$category_icon</td>";
         if($RPZCOLUMN) {
               $html[] = "<td style='width:1%'>$icoRPZ</td>";
         }
         if($EnableLocalUfdbCatService==1) {
-            $html[] = "<td style='width:1%'>$icoDNS</td>";
+            $html[] = "<td style='width:1%'><span id='dnscatz-status-$category_id'>$icoDNS</span></td>";
         }
         if($COLUMNUFDB) {
-            $html[] = "<td style='width:1%'>$icoProxy</td>";
+            $html[] = "<td style='width:1%'><span id='dnscatz-ufdb-$category_id'>$icoProxy</span></td>";
         }
         if($UseRemoteCategoriesService==1) {
             $button="&nbsp;";
@@ -1999,7 +2309,7 @@ function table(){
 
         $html[]="<td nowrap style='width:20%'>$source_ico<strong id='category_name_$sid'>$category_link</strong></td>";
         $html[]="<td style='width:80%'><span id='category_text_$sid'>$icolabel$icolabel2$text_category</span></td>";
-        $html[]="<td style='vertical-align:middle;width=1%' nowrap>$created_text</td>";
+        $html[]="<td style='vertical-align:middle;width=1%' nowrap>$created_text<div id='dnscatz-updated-$category_id'></div></div></td>";
         $html[]="<td style='vertical-align:middle;width=1%;text-align:right' nowrap><span id='category_items_$sid'>$itemsEncTxt</span></td>";
         $html[]="<td style='vertical-align:middle;width=1%' class='center'>$button_compile</td>";
         $html[]="<td style='vertical-align:middle;width=1%' class='center'>$button_import</td>";
@@ -2022,10 +2332,12 @@ function table(){
     $TINY_ARRAY["BUTTONS"]=$tpl->th_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
+    $Pinger=$tpl->RefreshInterval_Loadjs("table-persocats-list",$page,"pinger=yes");
 
 
     $html[]="
 	<script>
+	$Pinger
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$jstiny
 	</script>";

@@ -314,7 +314,7 @@ function remove_events_js(){
     }
 
     $tpl->js_confirm_empty("{remove_all_same} $filename ($line)","remove-events","$filename;$line",
-        "BootstrapDialog1.close();{$funcadd}RefreshNotifs();");
+        "BootstrapDialog1.close();{$funcadd}");
 }
 function remove_events_perform(){
     $q=new lib_sqlite("/home/artica/SQLITE/system_events.db");

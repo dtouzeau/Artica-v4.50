@@ -62,13 +62,6 @@ var JavaScriptError=0;
 
 
 /* Top notify */
-
-
-function RefreshNotifs(){
-	if(!document.getElementById('frontend-notifications') ){return;}
-	LoadAjaxSilent('frontend-notifications','fw.system.status.php?frontend-notifications=yes');
-}
-
 function NoSpinner(){
 	if ( $('#spinner').children('.ibox-content').hasClass('sk-loading') ){
 		$('#spinner').children('.ibox-content').toggleClass('sk-loading');

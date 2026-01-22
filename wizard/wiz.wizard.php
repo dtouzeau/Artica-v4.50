@@ -293,6 +293,9 @@ function step_products():bool{
             "LABEL" => "{APP_DHCP} - IPAM", "EXPLAIN" => "{dhcp_ipam_explain}", "PIC" => "DHCP");
     }
 
+    $LIST[11] = array(
+        "LABEL" => "{APP_UFDBCAT}", "EXPLAIN" => "{APP_CATEGORIESS_EXPLAIN}", "PIC" => "CATEGORIES");
+
     $LIST[6] = array(
         "LABEL" => "{APP_POSTFIX}", "EXPLAIN" => "{wizard_smtp_explain}", "PIC" => "SMTP");
 

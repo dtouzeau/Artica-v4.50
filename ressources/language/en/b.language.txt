@@ -667,8 +667,7 @@ If you check this option, the item will be added without any checking.</free_cat
 <backup_categories>Backup your categories</backup_categories>
 <backup_categories_explain>Extract your categories content from SQL database and backup them into local disk</backup_categories_explain>
 <build_crypted_tables_catz>Build crypted tables</build_crypted_tables_catz>
-<build_crypted_tables_catz_explain>This task is intended if your use this server has an ASP service.[br]
-It is designed to build websites statistics.</build_crypted_tables_catz_explain>
+<build_crypted_tables_catz_explain>This task is intended for use when this server provides an ASP service.[br]It is designed to compile categories into .ufdb databases and upload them to a repository.</build_crypted_tables_catz_explain>
 <compile_ufdb_repos>Compile UFBD databases for repository</compile_ufdb_repos>
 <compile_ufdb_repos_explain>This task is intended if your use this server has an ASP service.[br]It designed to compile categories into .ufdb databases and upload them to a repository</compile_ufdb_repos_explain>
 <ZarafaEnablePluginPassword>Enable password plugin</ZarafaEnablePluginPassword>

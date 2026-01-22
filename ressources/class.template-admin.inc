@@ -1735,18 +1735,21 @@ return implode(', ', $timeParts);
     public function SAVE_POSTs($exclude=null,$admintrcktext=null):array{
         $this->CLEAN_POST($exclude);
         $admintrack=array();
-        $sock=new sockets();
+        $keys=array();
         foreach ($_POST as $key=>$val){
             if($key<>$exclude){
                 $admintrack[]="$key: $val";
-                $sock->SET_INFO($key, $val);
+                $keys["Keys"][]= array("key"=>$key,"value"=>$val);
+
             }
         }
         if($admintrcktext<>null){
             admin_tracks($admintrcktext ."(". @implode(", ",$admintrack).")");
         }
         reset($_POST);
-        $sock->REST_API("/reset/cache");
+        $payload = $keys;
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/setinfo",$payload));
+        if(!$json){return $_POST;}
         return $_POST;
     }
 
@@ -1920,14 +1923,17 @@ return implode(', ', $timeParts);
 
 
     }
-
-
-
-
-
-
     public function kernel_binary_ver():int{
         $kernver = php_uname("r");
+        $kernver = str_replace( "+deb13", "",$kernver);
+        $kernver = str_replace("+deb14", "",$kernver);
+        $kernver = str_replace("+deb15", "",$kernver);
+        $kernver = str_replace( "+deb16", "",$kernver);
+        $kernver = str_replace( "+deb17", "",$kernver);
+        $kernver = str_replace( "+deb18", "",$kernver);
+        $kernver = str_replace( "+deb19", "",$kernver);
+        $kernver = str_replace( "+deb20", "",$kernver);
+        VERBOSE("([0-9\.-]+)-amd64 -> $kernver",__LINE__);
         if (!preg_match("#([0-9\.-]+)-amd64#", $kernver, $re)) {
             VERBOSE("ALERT !!!!! Current Kernel: NO MATCHES", __LINE__);
             return 0;
@@ -6280,7 +6286,7 @@ if(typeof dialogInstance == 'object'){
         if($btsize=="small"){$btsize_class=" btn-sm";}
 
 
-        VERBOSE("icon = $fa and $icon_class btsize=$btsize --> $btsize_class security=$security",__LINE__);
+        //VERBOSE("icon = $fa and $icon_class btsize=$btsize --> $btsize_class security=$security",__LINE__);
 
         // btn-default,btn-primary,btn-success,btn-info,btn-warning,btn-danger,btn-link
         $i_class=null;

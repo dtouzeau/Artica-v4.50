@@ -260,7 +260,7 @@ function agents_table():bool{
     $f[]="  <th nowrap></th>";
     $f[]="  <th>{load}/{cpu}</th>";
     $f[]="  <th>{memory}</th>";
-    $f[]="  <th>{disk}</th>";
+    $f[]="  <th>&nbsp;</th>";
     $f[]="  <th>UP</th>";
     $f[]="  <th nowrap>{last_seen}</th>";
     $f[]="  <th></th>";
@@ -906,21 +906,26 @@ function td_cpu_graphs($id):array{
 }
 
 function td_disk($agentJson):string{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
     $main=agent_status($agentJson->id);
     if(!isset($main["HD"]["percent_int"])){
         return "-";
     }
-    $disk= "<span class='text-muted'>{$main["HD"]["percent"]}</span>";
+    $ico=ico_hd;
+    $ichd="<i class='$ico'></i>&nbsp;";
+    $link=$tpl->td_href($main["HD"]["percent"],"{disks}: {$main["HD"]["percent"]}","Loadjs('$page?agents-disk-js=$agentJson->id')");
+    $disk= "<span class='text-muted'>$ichd$link</span>";
 
     if($main["HD"]["percent_int"]>70){
-        $disk= "<span style='font-weight:bold;color:black'>{$main["HD"]["percent"]}</span>";
+        $disk= "<span style='font-weight:bold;color:black'>$ichd$link</span>";
     }
 
     if($main["HD"]["percent_int"]>80){
-        $disk= "<span class='text-warning' style='font-weight:bold'>{$main["HD"]["percent"]}</span>";
+        $disk= "<span class='text-warning' style='font-weight:bold'>$ichd$link</span>";
     }
     if($main["HD"]["percent_int"]>90){
-        $disk= "<span class='text-danger' style='font-weight:bold'>{$main["HD"]["percent"]}</span>";
+        $disk= "<span class='text-danger' style='font-weight:bold'>$ichd$link</span>";
     }
     return $disk;
 }

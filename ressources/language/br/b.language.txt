@@ -1927,8 +1927,7 @@ A utilizaç%C3£o desta chave API é mais segura porque o seu nome de utilizador
 <build_collection>Build collection</build_collection>
 <build_configuration>Build configuration</build_configuration>
 <build_crypted_tables_catz>Build crypted tables</build_crypted_tables_catz>
-<build_crypted_tables_catz_explain>This task is intended if your use this server has an ASP service.[br]
-It is designed to build websites statistics.</build_crypted_tables_catz_explain>
+<build_crypted_tables_catz_explain>This task is intended for use when this server provides an ASP service.[br]It is designed to compile categories into .ufdb databases and upload them to a repository.</build_crypted_tables_catz_explain>
 <build_daily_visited_websites>Build daily visited websites</build_daily_visited_websites>
 <build_daily_visited_websites_explain>Create a statistics table that calculate size/hits of each visited website by day[br]This to speed the front-end query</build_daily_visited_websites_explain>
 <build_feature>Build Feature</build_feature>

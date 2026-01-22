@@ -1721,12 +1721,6 @@ function Build_default_values(){
         $RELOAD_CRON=true;
     }
 
-
-	if(!is_file("/usr/share/artica-postfix/img/philesight/system.png")){
-		$cmd=trim("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} $BArticaP/exec.philesight.php --run >/dev/null 2>&1");
-		shell_exec2($cmd);
-	}
-
 	if(!is_file("/etc/cron.d/ping-cloud-license")){
 		if(is_file("/etc/cron.d/ping-cloud")){@unlink("/etc/cron.d/ping-cloud");}
 		Popuplate_cron_make("ping-cloud-license","15 */2 * * *","exec.web-community-filter.php --ping-cloud");

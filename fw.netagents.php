@@ -41,6 +41,11 @@ function page():bool{
         "fas fa-network-wired","{network_agents_explain}","$page?start=yes",
         "netagents","progress-netagents",false,"table-netagents");
 
+    $html=$tpl->page_header("{artica_meta}",
+        ico_ameta,"{network_agents_explain}","$page?start=yes",
+        "meta-server","progress-netagents",false,"table-netagents");
+
+
     if(isset($_GET["main-page"])){
         $tpl=new template_admin("{network_agents}",$html);
         echo $tpl->build_firewall();

@@ -1848,6 +1848,8 @@ spamassassin.php
 spamassassin.spf.php
 spamassassin.template.php
 exec.spamassassin.urls.php
+fw.dashboard.philesight.php
+framework/philesight.php
 framework/mimedefang.php
 exec.mimedefang.php
 bin/install/mimedefang/The MIMEDefang HOWTO.html
@@ -1862,9 +1864,17 @@ bin/install/mimedefang/repl_url.html
 bin/install/mimedefang/repl_url_fichiers/vi.gif
 bin/install/mimedefang/sa-mimedefang.cf
 bin/ps_mem.py
+bin/duc
 exec.frontail.php
 exec.frontail-nginx.php
 exec.glances.php
 exec.bandwhich.php
+exec.philesight.php
+exec.crowdsec.php
 framework/frontail.php
 framework/glances.php
+framework/crowdsec.php
+bin/siege-deb12
+bin/metasrv
+bin/articarest.tar.gz
+exec.compile.categories.php

@@ -22,7 +22,7 @@ function popup(){
 	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/php7install.log";
 	$ARRAY["CMD"]="services.php?apt-get-install=libcache-cache-perl";
 	$ARRAY["TITLE"]="{system} {installing} libcache-cache-perl";
-	$ARRAY["AFTER"]="dialogInstance6.close();LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
+	$ARRAY["AFTER"]="dialogInstance6.close();";
 	$prgress=base64_encode(serialize($ARRAY));
 	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-php7-restart')";
 	$html="<div id='progress-php7-restart'></div><script>$jsrestart</script>";

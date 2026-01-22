@@ -73,9 +73,9 @@ function rule_remove():bool{
 }
 function get_servicename($ID):string{
     $ID=intval($ID);
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM pnic_bridges WHERE ID='$ID'");
-    return $ligne['rulename'];
+    if($ID==0){return "Unknown";}
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 
 }
 

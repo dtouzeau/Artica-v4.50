@@ -25,7 +25,11 @@ function collection_remove_perform():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $nameEncoded=urlencode($_POST["collection-remove"]);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("crowdsec.php?collection-remove=$nameEncoded");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/crowdsec/collection/delete/$nameEncoded"));
+    if(!$json->Status){
+        echo $json->Error;
+        return false;
+    }
     return admin_tracks("Remove CrowdSec collection name {$_POST["collection-remove"]}");
 }
 function collection_enabled_js():bool{

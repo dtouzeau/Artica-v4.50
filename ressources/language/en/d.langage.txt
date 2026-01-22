@@ -505,9 +505,9 @@ It is designed to fast categorization and other resources</APP_GO_SHIELD_CONNECT
 <spmac>Spamc</spamc>
 <tcp_settings>TCP Settings</tcp_settings>
 <tcp_send>TCP Send</tcp_send>
-<tcp_send_explain>Data to send after connection (text, hex, or escape sequences).[BR]Example: tcp_send=PING[br] or tcp_send=0x50494E47</tcp_send_explain>
+<tcp_send_explain>Data to send after connection (text, hex, or escape sequences).[BR]Example: tcp_send="PING\r\n" or tcp_send=0x50494E47</tcp_send_explain>
 <tcp_expect>TCP Expect</tcp_expect>
-<tcp_expect_explain>Expected response pattern (regex, text, or hex).[BR]Example: tcp_expect=+PONG or tcp_expect=OK</tcp_expect_explain>
+<tcp_expect_explain>Expected response pattern (regex, text, or hex).[BR]Example: tcp_expect="\+PONG" or tcp_expect="OK"</tcp_expect_explain>
 <udp_settings>UDP Settings</udp_settings>
 <udp_send>UDP Send</udp_send>
 <udp_send_explain>Data to send after connection (text or hex).[BR]We strongly recommended define an udp_send, default value 0x00.[BR]Example: udp_send=PING or udp_send=0xABCD</udp_send_explain>
@@ -517,7 +517,7 @@ It is designed to fast categorization and other resources</APP_GO_SHIELD_CONNECT
 <http_uri_path>URI path</http_uri_path>
 <http_uri_path_explain>HTTP/HTTPS path to check, default value /[BR]Example: uri=/health</http_uri_path_explain>
 <http_headers>Headers</http_headers>
-<http_header_explain>Send custom headers[BR]Example: header=Authorization:Bearer-token or header=Authorization:Bearer-mytoken header=X-Custom-Header:value</http_header_explain>
+<http_header_explain>Sens custom headers[BR]Example: header=Authorization:Bearer-token or header=Authorization:Bearer-mytoken header=X-Custom-Header:value</http_header_explain>
 <http_match_headers>Match Header</http_match_headers>
 <http_match_header_explain>Required response header[BR]Example: match_header=Content-Type:application/json</http_match_header_explain>
 <http_match_body>Match Body</http_match_body>
@@ -531,14 +531,14 @@ It is designed to fast categorization and other resources</APP_GO_SHIELD_CONNECT
 <active_health_check_type>Health check protocol</active_health_check_type>
 <active_health_check_timeout_explain>Max wait for response, default 3s</active_health_check_timeout_explain>
 <active_health_check_interval_explain>Time between checks, default 5s</active_health_check_interval_explain>
-<raises>Raises</raises>
+<raises>Raise</raises>
 <raises_explain>Successes to mark healthy, default 2</raises_explain>
-<falls>Falls</falls>
+<falls>Fall</falls>
 <falls_explain>Failures to mark unhealthy, default 3</falls_explain>
 <persistent>Persistent</persistent>
 <persistent_explain>Remember health state across restarts</persistent_explain>
-<mandatory>Mandatory</mandatory>
-<mandatory_explain>Server starts down until first successful check</mandatory_explain>
+<inital_down>Initial State Down</inital_down>
+<inital_down_explain>Server starts down until first successful check</inital_down_explain>
 <active_health_check_explain>A high-performance, enterprise-grade active health checking system for Artica Reverse Proxy with automatic upstream discovery and real-time monitoring.</active_health_check_explain>
 <override_port>Override Port</override_port>
 <override_port_explain>Override health check port, default 0 (Disable)</override_port_explain>
@@ -651,3 +651,6 @@ It is designed to fast categorization and other resources</APP_GO_SHIELD_CONNECT
 <log_filtered_servers_explain>Log when servers are ignored[BR]When enabled, logs when a server is filtered out due to being slow, stale, or unhealthy.[BR]Useful for debugging.</log_filtered_servers_explain>
 <warn_missing_metrics>Warn Missing Metrics</warn_missing_metrics>
 <warn_missing_metrics_explain>Warn when data is missing[BR]Logs a warning if a server has no performance data yet.[BR]Useful to detect monitoring or reporting problems.</warn_missing_metrics_explain>
+<load-balancer>Load-Balancer</load-balancer>
+<APP_HEALTH_CHECK_MONITOR>Health Check Monitor</APP_HEALTH_CHECK_MONITOR>
+<adaptivePerformanceTrackingTXT>[BR][B]Adaptive Performance Tracking is Enabled. Enable Consistent in order to get auto weight adjustments[B]</adaptivePerformanceTrackingTXT>

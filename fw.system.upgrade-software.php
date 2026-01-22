@@ -90,6 +90,15 @@ function popup():bool{
         $KERNEL_PACKAGE = true;
         $kernbin = $tpl->kernel_binary_ver();
         $kernStr = php_uname("r");
+        $kernStr = str_replace( "+deb13", "",$kernStr);
+        $kernStr = str_replace("+deb14", "",$kernStr);
+        $kernStr = str_replace("+deb15", "",$kernStr);
+        $kernStr = str_replace( "+deb16", "",$kernStr);
+        $kernStr = str_replace( "+deb17", "",$kernStr);
+        $kernStr = str_replace( "+deb18", "",$kernStr);
+        $kernStr = str_replace( "+deb19", "",$kernStr);
+        $kernStr = str_replace( "+deb20", "",$kernStr);
+        
         $install_this_prog_kernel=$tpl->_ENGINE_parse_body("{install_this_prog_kernel}");
         $install_this_prog_kernel=str_replace("%kernelver","<strong>$kernStr</strong>",$install_this_prog_kernel);
         $install_this_prog_kernel=str_replace("%kernelbin","<strong>$kernbin</strong>",$install_this_prog_kernel);

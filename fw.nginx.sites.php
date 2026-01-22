@@ -1209,9 +1209,8 @@ function get_ServiceType($ID):int{
 function get_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    return strval($ligne["servicename"]);
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 }
 
 
@@ -1932,7 +1931,7 @@ function www_parameters2():bool{
     $LowerCase="<span style='text-transform: lowercase'>";
     $goodconftime_text ="<br><small><i>{saved_on} $goodconftimeStr</i></small>";
     $tpl->table_form_field_js("Loadjs('$page?www-parameters-general-js=$ID')");
-    $tpl->table_form_field_text("{service_name2}", $LowerCase.implode(", ",$names)."</span>$goodconftime_text",ico_earth,$error);
+    $tpl->table_form_field_text("{service_name2}", $LowerCase.implode(", ",$names)."</span>$goodconftime_text {type}:$type",ico_earth,$error);
 
 
     $tpl=www_parameters2_vitrification($tpl,$ID);
@@ -2970,9 +2969,9 @@ function td_destinations():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
 
-    $q                          = new lib_sqlite(NginxGetDB());
+
     $sockngix                   = new socksngix($ID);
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
+    $ligne=$sockngix->GetCache();
     $idDiv="rcolor9-$ID";
     if(!isset($ligne["type"])){$ligne["type"]=0;}
 
@@ -2990,7 +2989,7 @@ function td_destinations():bool{
         VERBOSE("$ID: Type 14 OR 9",__LINE__);
         $destination=base64_encode($tpl->_ENGINE_parse_body("{local}"));
         if($ligne["type"]==9){
-            $WebDavEnabled=$sockngix->GET_INFO("WebDavEnabled");
+            $WebDavEnabled=$ligne["WebDavEnabled"];
             if($WebDavEnabled==1){
                 $destination=base64_encode($tpl->td_href("{local}&nbsp;<span class='label label-info'>WebDav</span>",
                     null,"Loadjs('fw.nginx.site.content.php?webdav-explain=$ID')"));
@@ -3008,7 +3007,7 @@ function td_destinations():bool{
 
     }
     if($ligne["type"]==7){
-        $doh_subfolder=$sockngix->GET_INFO("doh_subfolder");
+        $doh_subfolder=$ligne["doh_subfolder"];
         if($doh_subfolder==null){$doh_subfolder="dns-query";}
         $destination=base64_encode($tpl->_ENGINE_parse_body("{local_dns_service}"));
         $f[]="if( document.getElementById('$idDiv') ){";
@@ -3019,7 +3018,7 @@ function td_destinations():bool{
         return true;
     }
     if($ligne["type"]==5){
-        $destination=backendsOf($ID);
+        $destination=@implode("<br>",$ligne["backendsOf"]);
         $destination=base64_encode($tpl->_ENGINE_parse_body($destination));
         $f[]="if( document.getElementById('$idDiv') ){";
         $f[]="\ttempdata=base64_decode('$destination');";
@@ -3040,17 +3039,22 @@ function td_destinations():bool{
         $fname="/usr/share/artica-postfix/ressources/databases/ReverseProxy/$ID.json";
         $json=json_decode(file_get_contents($fname));
 
-        $BackendAnalyzed=$json->BackendAnalyzed;
-        $BackendErr=$json->BackendErr;
+        $ActiveHealthCheck=intval($sockngix->GET_INFO("ActiveHealthCheckEnabled"));
+        if($ActiveHealthCheck==0){
 
-        if($ligne["enabled"]==1) {
-            if($BackendAnalyzed==1) {
-                if ($BackendErr == 1) {
-                    $js = "Loadjs('$page?backend-error-js=$ID')";
-                    $tootips = "<span class='label label-danger' $mouses OnClick=\"$js\">{error}</span><br>";
+            $BackendAnalyzed=$json->BackendAnalyzed;
+            $BackendErr=$json->BackendErr;
+
+            if($ligne["enabled"]==1) {
+                if($BackendAnalyzed==1) {
+                    if ($BackendErr == 1) {
+                        $js = "Loadjs('$page?backend-error-js=$ID')";
+                        $tootips = "<span class='label label-danger' $mouses OnClick=\"$js\">{error}</span><br>";
+                    }
                 }
             }
         }
+
 
         $latencyscore_text="";
         $latencyscore=$json->LatencyScore;
@@ -3101,20 +3105,18 @@ function backend_error_popup():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $ID=$_GET["backend-error-popup"];
     $page=CurrentPageName();
-    $Gpid=intval($_SESSION["HARMPID"]);
-    $restart=$tpl->framework_buildjs("nginx:/reverse-proxy/progress/checkbackend/$ID/$Gpid",
+
+    $restart=$tpl->framework_buildjs("nginx:/reverse-proxy/progress/checkbackend/$ID/0",
         "nginx.CheckReverseTests.$ID.progress",
         "nginx.CheckReverseTests.$ID.log","renalyze-backend-$ID",
         "dialogInstance2.close();Loadjs('$page?td-row=$ID');","Loadjs('$page?backend-error-js=$ID');");
 
 
     $btn=$tpl->button_autnonome("{analyze}",$restart,ico_refresh,null,335,"btn-danger");
-
-
-    $fname="/usr/share/artica-postfix/ressources/databases/ReverseProxy/$ID.json";
-    $json=json_decode(file_get_contents($fname));
-    $BackendAnalyzedTime=$json->BackendAnalyzedTime;
-    $BackendErrDetail=base64_decode($json->BackendErrDetail);
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
+    $BackendAnalyzedTime=$ligne["backend_analyzed_time"];
+    $BackendErrDetail=base64_decode($ligne["backend_err_detail"]);
     $html[]="<div id='renalyze-backend-$ID'>";
     $html[]="<H2>{scan_date}: ".$tpl->time_to_date($BackendAnalyzedTime,true)." <small>( {since} ".distanceOfTimeInWords($BackendAnalyzedTime,time()).")</small></H2>";
     $btn="<div style='text-align:right;margin-top: 10px'>$btn</div>";
@@ -3267,10 +3269,11 @@ function td_row_status($id=0):bool{
     if($id==0) {
         $id = intval($_GET["td-status"]);
     }
-    $q                          = new lib_sqlite(NginxGetDB());
+
     $sockngix                   = new socksngix($id);
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$id");
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?reverse-fs=yes");
+    $ligne=$sockngix->GetCache();
+
+
     $MAIN_REVERSED = MAIN_REVERSED();
     $WAF=base64_encode(td_row_waf($id));
     $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne,$sockngix,$MAIN_REVERSED)));
@@ -3279,6 +3282,7 @@ function td_row_status($id=0):bool{
     $servicename=base64_encode(td_row_servicename($id,$MAIN_REVERSED));
     $servernames=base64_encode(td_row_serversnames($id));
     $ServerStats=base64_encode(td_row_serverstats($id));
+
 
 
 
@@ -3406,10 +3410,8 @@ function table_pagination():bool{
 function table():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $users=new usersMenus();
 
-
-    $search=trim($_GET["search"]);
+     $search=trim($_GET["search"]);
     $function=$_GET["function"];
 
     if(!isset($_SESSION["NginxTableMaxRecs"])){
@@ -3433,7 +3435,6 @@ function table():bool{
 
     }
 
-    $ModSecurity=true;
     $NginxHTTPModSecurity       = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxHTTPModSecurity"));
     $EnableModSecurityIngix     = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableModSecurityIngix"));
     $DisableBuildNginxConfig=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableBuildNginxConfig"));
@@ -3463,7 +3464,7 @@ function table():bool{
     $html[]="</thead>";
     $html[]="<tbody>";
 
-    $q=new lib_sqlite(NginxGetDB());
+
     $Types[1]="{PHP_WSITE}";
     $Types[2]="{reverse_proxy}";
     $Types[3]="{HOTSPOT_WWW}";
@@ -3481,106 +3482,36 @@ function table():bool{
     $Types[15]="DNS Over HTTPS";
     $Types[16]="{APP_DEBIAN_NETWORK_AGENT}";
     $Types[19]="{APP_MATTERMOST}";
-    $ANDPRIVS="";
-    if(!$q->FIELD_EXISTS("backends","weight")) {
-        $q->QUERY_SQL("ALTER TABLE backends ADD `weight` INT NOT NULL DEFAULT 0");
-        if (!$q->ok) {
-            echo $tpl->div_error("{sql_error}||$q->mysql_error");
-        }
-    }
-
-    if(!$q->FIELD_EXISTS("backends","backup")) {
-        $q->QUERY_SQL("ALTER TABLE backends ADD `backup` INT NOT NULL DEFAULT 0");
-        if (!$q->ok) {
-            echo $tpl->div_error("{sql_error}||$q->mysql_error");
-        }
-    }
-    if(!$q->FIELD_EXISTS("backends","down")) {
-        $q->QUERY_SQL("ALTER TABLE backends ADD `down` INT NOT NULL DEFAULT 0");
-        if (!$q->ok) {
-            echo $tpl->div_error("{sql_error}||$q->mysql_error");
-        }
-    }
-    if(!$q->FIELD_EXISTS("backends","fail_timeout")) {
-        $q->QUERY_SQL("ALTER TABLE backends ADD `fail_timeout` INT NOT NULL DEFAULT 0");
-        if (!$q->ok) {
-            echo $tpl->div_error("{sql_error}||$q->mysql_error");
-        }
-    }
-    if(!$q->FIELD_EXISTS("backends","max_fails")) {
-        $q->QUERY_SQL("ALTER TABLE backends ADD `max_fails` INT NOT NULL DEFAULT 0");
-        if (!$q->ok) {
-            echo $tpl->div_error("{sql_error}||$q->mysql_error");
-        }
-    }
-    $sql="SELECT * FROM nginx_services ORDER BY zorder";
-    if(!$users->AsWebMaster){
-        if(count($users->NGINX_SERVICES)==0){
-            echo $tpl->div_error("{error}||{ERROR_NO_PRIVS2}");
-            $html[]="</tbody>";
-            $html[]="";
-            $html[]="</table>";
-            $html[]="";
-            $html[]="<script>";
-            $html[]="Loadjs('$page?js-tiny=yes&function=$function')";
-            $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-            $html[]="</script>";
-            echo $tpl->_ENGINE_parse_body($html);
-            return true;
-        }
-        $tql=array();
-        foreach ($users->NGINX_SERVICES as $ServiceID=>$none){
-            if(!is_numeric($ServiceID)){continue;}
-            $tql[]="(ID=$ServiceID)";
-        }
-
-        if(count($tql)==0){
-            echo $tpl->div_error("{error}||{ERROR_NO_PRIVS2}");
-            $html[]="</tbody>";
-            $html[]="";
-            $html[]="</table>";
-            $html[]="";
-            $html[]="<script>";
-            $html[]="Loadjs('$page?js-tiny=yes&function=$function')";
-            $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-            $html[]="</script>";
-            echo $tpl->_ENGINE_parse_body($html);
-            return true;
-        }
-
-        $ANDPRIVS=sprintf(" AND (%s)",@implode(" OR ",$tql));
-        $sql=sprintf("SELECT * FROM nginx_services WHERE (%s) ORDER BY zorder",@implode(" OR ",$tql));
-    }
-
-
     $SEARCH_SSL=false;
 
 
     if(strlen($search)>0) {
         if (!$tpl->is_regex($search)) {
-
             if (preg_match("#(\s+)(SSL|https)#i", $search, $re)) {
                 $SEARCH_SSL = true;
-                $search = str_replace("{$re[1]}{$re[2]}", "", $search);
+                $search = str_replace("$re[1]$re[2]", "", $search);
             }
-
             if (!is_numeric($search)) {
                 $search = "*$search*";
                 $search = str_replace("**", "*", $search);
                 $search = str_replace(".", "\.", $search);
                 $search = str_replace("*", ".*?", $search);
-            } else {
-                $sql = "SELECT * FROM nginx_services WHERE ID=$search$ANDPRIVS";
-                $search = "";
             }
         }
     }
 
-    $results=$q->QUERY_SQL($sql);
 
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/sites/list"),true);
+
+    if(!$json["Status"]){
+        $html[]=$tpl->div_error("{error} API||".$json["Error"]);
+        $html[]="<script>";
+        $html[]="Loadjs('$page?js-tiny=yes&function=$function')";
+        $html[]="</script>";
+        echo $tpl->_ENGINE_parse_body($html);
+        return false;
     }
+    $results=$json["sites"];
 
     $GLOBALS["PEITYCONF"]="{ width:200,height:25,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
 
@@ -3591,6 +3522,7 @@ function table():bool{
     $MAX_WEB_SITES=count($results);
     $NginxTableCurpage=1;
     $SessionTableOffset=$_SESSION["NginxTableOffset"];
+    VERBOSE("[START] SessionTableOffset=$SessionTableOffset",__LINE__);
     if(isset($_SESSION["NginxTableCurpage"])) {
         $NginxTableCurpage = $_SESSION["NginxTableCurpage"];
     }
@@ -3602,7 +3534,7 @@ function table():bool{
         $StopItems = $NginxTableCurpage*$SessionTableOffset;
     }
 
-    VERBOSE("SessionTableOffset=$SessionTableOffset ( Number of items per page) NginxTableCurpage=$NginxTableCurpage (page requested) Start at $StartItems Stop at $StopItems",__LINE__);
+    VERBOSE("[START] SessionTableOffset=$SessionTableOffset ( Number of items per page) NginxTableCurpage=$NginxTableCurpage (page requested) Start at $StartItems Stop at $StopItems",__LINE__);
 
     if(strlen($search)>1) {
         VERBOSE("SEARCH = [$search]",__LINE__);
@@ -3610,13 +3542,21 @@ function table():bool{
         $SessionTableOffset=0;
     }
     $spans=array();
-$ssTyle1="style='width:1%'";
-    foreach ($results as $index=>$ligne){
+    $ssTyle1="style='width:1%'";
+
+    foreach ($results as $ligne){
+
+        if(strlen($search)>1) {
+            if(!preg_match("#$search#i",serialize($ligne))){
+                continue;
+            }
+        }
+
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $ID=$ligne["ID"];
-        $sockngix=new socksngix($ID);
+
         $md="MdNginxRule$ID";
-        $badconf=null;
+
         $LOCK_ACTION=false;
         if(!$IS_LICENSE){$LOCK_ACTION=true;}
         if($DisableBuildNginxConfig==1){
@@ -3626,7 +3566,7 @@ $ssTyle1="style='width:1%'";
         $icon_type="";
         $color=null;
         $debug_ico=null;
-        $debug=intval($sockngix->GET_INFO("Debug"));
+        $debug=intval($ligne["debug"]);
         $DestinationsPrepare[$ID]=$md;
         $WebSiteType=intval($ligne["type"]);
         $enabled=intval($ligne["enabled"]);
@@ -3636,26 +3576,8 @@ $ssTyle1="style='width:1%'";
                 $tpl->td_href("{debug}",null,"Loadjs('fw.nginx.sites.debug.php?siteid=$ID')");
         }
 
-        list($serversnames,$ServerNameFields)=extract_hosts($ligne["hosts"],$ID);
-        VERBOSE("$ID) Server type: {$ligne["type"]} $ServerNameFields",__LINE__);
-
-        if($SEARCH_SSL){
-            if (!preg_match("#https:\/\/#is", strip_tags($serversnames))) {continue;}
-        }
-
-        if(is_string($serversnames)) {
-            $searchStrings = sprintf("%s %s", str_replace(array("\n", "<br>"), " ", strip_tags($serversnames)), $ligne["servicename"]);
-        }
-        if(strlen($search)>1) {
-            $FIND=false;
-            if (preg_match("#$search#i", $searchStrings)) {$FIND=true;}
-            if(!$FIND){
-                VERBOSE("#$search#i NOt found in [$searchStrings] SEARCH_SSL=$SEARCH_SSL sql=$sql",__LINE__);
-                continue;
-            }
-        }
-        VERBOSE("SessionTableOffset = $SessionTableOffset StartItems=$StartItems",__LINE__);
         $cOffset++;
+        VERBOSE("cOffset=$cOffset StopItems=$StopItems SessionTableOffset = $SessionTableOffset StartItems=$StartItems ",__LINE__);
         if ($StartItems>0) {
             if ($cOffset<$StartItems){
                 continue;
@@ -3663,6 +3585,11 @@ $ssTyle1="style='width:1%'";
         }
         if ($cOffset>=$StopItems){
             break;
+        }
+        if($StopItems==99999){
+             if($cOffset>=$_SESSION["NginxTableMaxRecs"]){
+                 break;
+             }
         }
 
 
@@ -3697,17 +3624,17 @@ $ssTyle1="style='width:1%'";
         if(strlen($peityjs)>3){
             $peity_js[]=$peityjs;
         }
-        $jssite=$tpl->td_href($ligne["servicename"],null,"Loadjs('$page?www-js=$ID')");
+        $jssite=$tpl->td_href($ligne["service_name"],null,"Loadjs('$page?www-js=$ID')");
         if(!$IS_LICENSE){
-            $jssite=$ligne["servicename"];
+            $jssite=$ligne["service_name"];
         }
-        if($ligne["type"]==1){
+        if(intval($ligne["type"])==1){
             $icon_type="<li class='fa-brands fa-php'></li>&nbsp;";
         }
 
 
         $pleasewait="<i class=\"fas fa-sync fa-spin\" style='width:35%' ></i>&nbsp;{analyze}...</span>";
-        if($enabled==0){
+        if($enabled==0 OR intval($ligne["type"])==14){
             $pleasewait="";
         }
         $RCOlor2="<span style='$color' id='rcolor2-$ID'>$icon_type$jssite$debug_ico</span>$peity_div";
@@ -3721,7 +3648,7 @@ $ssTyle1="style='width:1%'";
         $html[]="<td><span style='$color' id='rcolor3-$ID'></span></td>";
         $html[]="<td><span style='$color' id='rcolor4-$ID'></span></td>";
         $html[]="<td><span style='$color' id='rcolor7-$ID'></span></td>";
-        $html[]="<td><span style='$color;width:35%' id='rcolor5-$ID'>$ServerNameFields</span></td>";
+        $html[]="<td><span style='$color;width:35%' id='rcolor5-$ID'></span></td>";
         $html[]="<td $ssTyle1 class='center' nowrap>$is_default_icon</td>";
         $html[]="<td $ssTyle1 nowrap><span style='$color' id='rcolor7-$ID'>$TypeText</span></td>";
         $html[]="<td nowrap><span style='$color' id='rcolor9-$ID'>$pleasewait</td>";
@@ -3886,8 +3813,11 @@ function td_row_serversnames($id,$MAIN_REVERSED=array()):string{
     if($id==0) {
         $id = intval($_GET["td-status"]);
     }
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT type,hosts,enabled FROM nginx_services WHERE ID=$id");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/site/$id"),true);
+    if(!$json["Status"]){
+        return "<span class='text-danger'>".$json["Error"]."</span>";
+    }
+    $ligne=$json["config"];
     $ServerType=$ligne["type"];
     $enabled=intval($ligne["enabled"]);
     if(count($MAIN_REVERSED)==0){
@@ -4115,7 +4045,7 @@ function MAIN_REVERSED():array{
 function td_status($ligne,$sockngix,$MAIN_REVERSED=array()):string{
     VERBOSE("-------------------------- START STATUS --------------------------", __LINE__);
     $page = CurrentPageName();
-    $ssl_certificate = $sockngix->GET_INFO("ssl_certificate");
+    $ssl_certificate =$ligne["ssl_certificate"];
     $tpl = new template_admin();
     $ID = $ligne["ID"];
 
@@ -4127,7 +4057,7 @@ function td_status($ligne,$sockngix,$MAIN_REVERSED=array()):string{
     $goodconf_js = "Loadjs('$page?goodconf=$ID')";
     $sslcertificates = $GLOBALS["SSLCERTIFICATES"];
     $sslcertificates["__DEFAULT__"] = true;
-    $fname="/usr/share/artica-postfix/ressources/databases/ReverseProxy/$ID.json";
+
     if ($ligne["enabled"] == 0) {
         return "<span class='label label-default'>#$ID {disabled}</span>";
     }
@@ -4151,14 +4081,13 @@ function td_status($ligne,$sockngix,$MAIN_REVERSED=array()):string{
             $js = "Loadjs('fw.nginx.sites.php?www-parameters-ssl-js=$ID')";
             return $tpl->td_href("<span class='label label-danger'>#$ID {no_certificate}</span>", null, $js);
         }
-        $q = new lib_sqlite(NginxGetDB());
-        $sligne = $q->mysqli_fetch_array("SELECT count(*) as tcount FROM backends WHERE serviceid='$ID'");
-        $tcount = intval($sligne["tcount"]);
+
+        $tcount = count($ligne["backends"]);
         if ($tcount == 0) {
             return $tpl->td_href("<span class='label label-danger'>#$ID no backend</span>", null, $goodconf_js);
         }
 
-        $HostHeader = trim($sockngix->GET_INFO("HostHeader"));
+        $HostHeader = trim($ligne["HostHeader"]);
         if ($HostHeader == null) {
             return $tpl->td_href("<span class='label label-danger'>{HostHeader}</span>", null, $goodconf_js);
         }
@@ -4180,28 +4109,27 @@ function td_status($ligne,$sockngix,$MAIN_REVERSED=array()):string{
         VERBOSE("MAIN_REVERSED[$ID] === NONE not_saved !!!", __LINE__);
         return $tpl->td_href("<span class='label label-danger'>#$ID {not_saved}</span>", null, $goodconf_js);
     }
-    if(is_file($fname)){
-        $json=json_decode(file_get_contents($fname));
-        if(property_exists($json,"FrontendErrDetail")) {
-            $FrontendErrDetail = base64_decode($json->FrontendErrDetail);
-            $FrontendErr = $json->FrontendErr;
-            if ($FrontendErr == 1) {
-                return $tpl->td_href("<span class='label label-danger'>#$ID $FrontendErrDetail</span>",
-                    null, "Loadjs('fw.nginx.frontend.error.php?serviceid=$ID')");
-            }
-        }
+
+    $FrontendErrDetail=base64_decode($ligne["frontend_err_detail"]);
+    $FrontendErr=$ligne["frontend_err"];
+    if ($FrontendErr == 1) {
+        return $tpl->td_href("<span class='label label-danger'>#$ID $FrontendErrDetail</span>",
+        null, "Loadjs('fw.nginx.frontend.error.php?serviceid=$ID')");
     }
+
+
     return $tpl->td_href("<span class='label label-primary'>#$ID OK</span>", null, $goodconf_js);
 }
 function extract_backends($serviceid):string{
     include_once(dirname(__FILE__)."/ressources/class.nginx.reverse.http.inc");
     $sock=new socksngix($serviceid);
-    $UseSSL=intval( $sock->GET_INFO("UseSSL"));
+    $ligne=$sock->GetCache();
+    $UseSSL=intval( $ligne["UseSSL"]);
 
-    $ForwardServersDynamics =   intval($sock->GET_INFO("ForwardServersDynamics"));
+    $ForwardServersDynamics =   intval($ligne["ForwardServersDynamics"]);
     if($ForwardServersDynamics==1){
-        $FSDynamicsExt = intval($sock->GET_INFO("FSDynamicsExt"));
-        $FSDynamicsDst = trim($sock->GET_INFO("FSDynamicsDst"));
+        $FSDynamicsExt = intval($ligne["FSDynamicsExt"]);
+        $FSDynamicsDst = trim($ligne["FSDynamicsDst"]);
         $proto="http";
         if($UseSSL==1){$proto="https";}
         if($UseSSL==0){$proto="http";}
@@ -4216,13 +4144,11 @@ function extract_backends($serviceid):string{
 
     }
 
-
-    $UseSSL=intval( $sock->GET_INFO("UseSSL"));
-    $HostHeader=trim($sock->GET_INFO("HostHeader"));
+    $HostHeader=trim($ligne["HostHeader"]);
     $HostHeader=tool_nginx_clean_uri($HostHeader);
     if($HostHeader<>null){$HostHeader=" ($HostHeader)";}
 
-    $RemotePath=$sock->GET_INFO("RemotePath");
+    $RemotePath=$ligne["RemotePath"];
     if(strlen($RemotePath)<2){$RemotePath=null;}
 
     if($RemotePath<>null) {
@@ -4234,21 +4160,19 @@ function extract_backends($serviceid):string{
         }
     }
 
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT * FROM backends WHERE serviceid='$serviceid'");
+
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ServiceType=get_ServiceType($serviceid);
+    $ServiceType=intval($ligne["type"]);
 
     $T=array();
     $error_proto=null;
-    foreach ($results as $md5=>$ligne) {
+
+    foreach ($ligne["backends"] as $ligne) {
         $ID = intval($ligne["ID"]);
         $port = $ligne["port"];
         $hostname = $ligne["hostname"];
         $ssl=intval($ligne["ssl"]);
         $proto="http";
-
-
 
         if($port==443){
             $ssl=1;
@@ -4256,22 +4180,75 @@ function extract_backends($serviceid):string{
         if($ssl==1){
             $proto="https";
         }
-        if(preg_match("#^http.*?:#i",$hostname)){
-            $parse_url=parse_url($hostname);
-            $hostname=$parse_url["host"];
-            $proto="http";
+        if(!is_null($hostname)) {
+            if (preg_match("#^http.*?:#i", $hostname)) {
+                $parse_url = parse_url($hostname);
+                $hostname = $parse_url["host"];
+                $proto = "http";
+            }
         }
-        if(preg_match("#^https.*?:#i",$hostname)){
-            $parse_url=parse_url($hostname);
-            $hostname=$parse_url["host"];
-            $proto="https";
+        if(!is_null($hostname)) {
+            if (preg_match("#^https.*?:#i", $hostname)) {
+                $parse_url = parse_url($hostname);
+                $hostname = $parse_url["host"];
+                $proto = "https";
+            }
         }
         if ($ServiceType==15){
             $proto="dns";
         }
         VERBOSE("Table backends service=$serviceid ID=$ID,port=$port,hostname=$hostname,proto=$proto,ssl=$ssl",__LINE__);
         $js="Loadjs('fw.nginx.backends.php?id-js=$ID')";
-        $T[]=$tpl->td_href("$proto://{$hostname}:{$port}{$RemotePath}",null,$js);
+        $ActiveHealthCheck=intval($sock->GET_INFO("ActiveHealthCheckEnabled"));
+        if($ActiveHealthCheck==1){
+
+            $curl = new ccurl("http://localhost:9090/api/history?server={$hostname}:{$port}&limit=1", true);
+            $curl->NoLocalProxy();
+            if (!$curl->get()) {
+            }
+
+            $json=json_decode($curl->data,true);
+            if (json_last_error() > JSON_ERROR_NONE) {
+                //ADD ERROR HANDLER
+            }
+            if (!property_exists($json,"Status")){
+                //ADD ERROR HANDLER
+            }
+
+            $last = $json['metrics'][0];
+
+            $status = $last['healthy'];
+            $class="btn-success";
+            $rt     = round($last['duration']/ 1000000,2);
+            $iconFast="<i class=\"fa-solid fa-jet-fighter\"></i>";
+            $iconHealth="<i class=\"fa-solid fa-heart-circle-check\"></i>";
+            $timeText="Response Time $rt ms";
+            $healthyText="Healthy";
+            if($last['duration']>1300000000){
+                $iconFast="<i class=\"fa-solid fa-turtle\"></i>";
+                $class="btn-warning";
+                $iconHealth="<i class=\"fa-solid fa-brake-warning\"></i>";
+                $healthyText="Slow";
+
+            }
+            if($last['duration']>3000000000 || $status==0){
+                $iconFast="<i class=\"fa-solid fa-explosion\"></i>";
+                $class="btn-danger";
+                $iconHealth="<i class=\"fa-regular fa-octagon-exclamation\"></i>";
+                $healthyText="Unhealthy";
+            }
+
+            $text=$tpl->td_href("$proto://{$hostname}:{$port}{$RemotePath}",null,$js);
+            $btn='<button type="button" class="btn btn-labeled '.$class.'" style="padding-top: 0;padding-bottom: 0;margin-bottom: 10px;">
+                <span data-toggle="tooltip" data-placement="top" title="'.$healthyText.'" class="btn-label" style="position: relative;left: -12px;display: inline-block;padding: 6px 12px;background: rgba(0, 0, 0, 0.15);border-radius: 3px 0 0 3px;">'.$iconHealth.'</span>'.$text.'<span class="btn-label" style="position: relative;right: -12px;display: inline-block;padding: 6px 12px;background: rgba(0, 0, 0, 0.15);border-radius: 3px 0 0 3px;" alt="'.$timeText.'" title="'.$timeText.'">'.$iconFast.'</span></button>';
+            $T[]=$btn;
+
+
+
+        }
+        else{
+            $T[]=$tpl->td_href("$proto://{$hostname}:{$port}{$RemotePath}",null,$js);
+        }
 
     }
     if(count($T)==0){
@@ -4428,26 +4405,7 @@ function stream_ports($serviceid):string{
     if(count($f)==0){return "";}
     return @implode("<br>", $f);
 }
-function backendsOf($serviceid):string{
-    $f=array();
-    VERBOSE("Backend of $serviceid ----------------------------------------",__LINE__);
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT * FROM backends WHERE serviceid='$serviceid'");
-    foreach ($results as $md5=>$ligne){
-        $hostname=$ligne["hostname"];
-        VERBOSE("Backend of $serviceid = $hostname",__LINE__);
-        if(preg_match("#^http.*?:#i",$hostname)){
-            $parse_url=parse_url($hostname);
-            $hostname=$parse_url["host"];
-        }
 
-        $port=$ligne["port"];
-        $f[]="$hostname:$port";
-
-    }
-    return @implode("<br>", $f);
-
-}
 function td_btnCacheDisk($ID):array{
     $sock=new socksngix($ID);
     $cgicache=intval($sock->GET_INFO("cgicache"));

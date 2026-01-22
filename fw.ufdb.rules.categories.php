@@ -334,21 +334,9 @@ function categoy_add(){
     $COUNT_OF_ROWS=$q->COUNT_ROWS("personal_categories");
     VERBOSE("personal_categories: $COUNT_OF_ROWS rows",__LINE__);
 
-    if(!$q->FIELD_EXISTS("personal_categories", "compiledate")){
-        $q->QUERY_SQL("alter table personal_categories add column if not exists compiledate bigint;");
-        if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    }
-    if(!$q->FIELD_EXISTS("personal_categories", "remotecatz")){
-        $q->QUERY_SQL("alter table personal_categories add column if not exists remotecatz smallint;");
-        if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    }
-
-
-
-
     $q->QUERY_SQL("UPDATE personal_categories SET remotecatz=0 WHERE serviceid=0");
     $q->QUERY_SQL("UPDATE personal_categories SET remotecatz=0 WHERE remotecatz is NULL");
-    $sql="SELECT *  FROM personal_categories WHERE free_category=0 AND meta=0 ORDER BY categoryname";
+    $sql="SELECT *  FROM personal_categories WHERE free_category=0 AND remotecatz=0 ORDER BY categoryname";
 
     if($useCGuardCategories==1){
         $sql="SELECT *  FROM personal_categories WHERE remotecatz=0 OR serviceid=999991 ORDER BY categoryname";
@@ -390,6 +378,8 @@ function categoy_add(){
     $BlacklistedCatz[237] = true;
     $BlacklistedCatz[238] = true;
 
+    $CORP_LICENSE=$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE();
+
     while ($ligne = pg_fetch_assoc($results)) {
         $categoryname=$ligne["categoryname"];
         $items=$ligne["items"];
@@ -412,6 +402,9 @@ function categoy_add(){
         if(isset($cats[$category_id])){continue;}
         $category_table_elements=0;
         $elements=null;
+        if(($official_category==1) && !$CORP_LICENSE){
+            continue;
+        }
 
 
         if(!$ISOFFICIAL){
@@ -632,6 +625,7 @@ function table():bool{
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
     FILL_CATEGORIES_MEM();
+    $CORP_LICENSE=$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE();
 
     $tableProd      = "webfilter_blks";
     $category       = $tpl->_ENGINE_parse_body("{category}");
@@ -656,11 +650,15 @@ function table():bool{
         $del_button="Loadjs('$page?category-clean=yes&ID=$ruleid&modeblk=$modeblk')";
         $topbuttons[] = array($add_button,ico_plus,"{add_categories}");
         if($modeblk==0) {
-            $topbuttons[] = array($add_danger, ico_plus, "{dangerous_categories}");
-            $topbuttons[] = array($add_polluate, ico_plus, "{pollution_categories}");
-            $topbuttons[] = array($add_nonproduct, ico_plus, "{nonproductive}");
+            if($CORP_LICENSE) {
+                $topbuttons[] = array($add_danger, ico_plus, "{dangerous_categories}");
+                $topbuttons[] = array($add_polluate, ico_plus, "{pollution_categories}");
+                $topbuttons[] = array($add_nonproduct, ico_plus, "{nonproductive}");
+            }
         }
-        $topbuttons[] = array($all_button,ico_plus,"{all_categories}");
+        if($CORP_LICENSE) {
+            $topbuttons[] = array($all_button, ico_plus, "{all_categories}");
+        }
         $topbuttons[] = array($del_button,ico_trash,"{delete_all}");
         $btns=$tpl->th_buttons($topbuttons);
     }
@@ -721,8 +719,10 @@ function table():bool{
     if(!$q->ok){echo $q->mysql_error_html(true);}
 
 
+
     foreach ($results as $ligne){
         $ligne2=array();
+        $error="";
         $category_id=intval($ligne["category"]);
         if(isset($GLOBALS["categories_descriptions"][$category_id])){
             $ligne2["category_description"]=$GLOBALS["categories_descriptions"][$category_id]["category_description"];
@@ -731,10 +731,14 @@ function table():bool{
         }
 
         if(count($ligne2)==0) {
-            $ligne2 = pg_fetch_array($postgres->QUERY_SQL("SELECT * FROM personal_categories WHERE category_id='$category_id'"));
+            $ligne2 = pg_fetch_array($postgres->QUERY_SQL("SELECT * 
+            FROM personal_categories WHERE category_id='$category_id'"));
             if(!$ligne2){
                 $ligne2=array();
             }
+        }
+        if( !$CORP_LICENSE && $category_id < 250){
+            $error="<div style='text-align:right;margin-top:10px'><span class='label label-default'>{no_license}</span></div>";
         }
 
 
@@ -764,7 +768,7 @@ function table():bool{
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='width:1%'><img src='$category_icon'></td>";
         $html[]="<td nowrap>$categoryname</td>";
-        $html[]="<td>{$ligne['description']}</td>";
+        $html[]="<td>{$ligne['description']}$error</td>";
         $html[]="<td>$delete_icon</td>";
         $html[]="</tr>";
 

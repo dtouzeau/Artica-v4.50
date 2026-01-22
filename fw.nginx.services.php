@@ -1162,9 +1162,8 @@ function get_ServiceType($ID):int{
 function get_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    return strval($ligne["servicename"]);
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 }
 function www_parameters_isProxy($ID):bool{
     $type=get_ServiceType($ID);
@@ -4432,25 +4431,25 @@ function destinations_prepare():bool{
     $t=time();
     $Timeout=1000;
     $f=array();
+
     foreach ($data as $ID=>$md){
         $Timeout=$Timeout+50;
         $idDiv="rcolor9-$ID";
+        $sock=new socksngix($ID);
+        $ligne=$sock->GetCache();
 
-        $fname="/usr/share/artica-postfix/ressources/databases/ReverseProxy/$ID.json";
-        if(!is_file($fname)){
-            continue;
-        }
-        $json=json_decode(file_get_contents($fname));
-        if(!is_object($json)){
-            continue;
-        }
-        if(!property_exists($json,"Type")){
-            continue;
-        }
-        $f[]="// $ID Type = $json->Type";
-        if($json->Type==4){
+        $Type=intval($ligne["type"]);
+        $f[]="// $ID Type = $Type";
+        if($Type==4){
             $text=base64_encode(destinations_artica());
             $f[]="tempdata=base64_decode('$text');";
+            $f[]="\tif( document.getElementById('$idDiv') ){";
+            $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
+            $f[]="}\n";
+            continue;
+        }
+        if($Type==14){
+            $f[]="tempdata='{local}';";
             $f[]="\tif( document.getElementById('$idDiv') ){";
             $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
             $f[]="}\n";

@@ -227,7 +227,7 @@ function status_dnscatz():string{
     $page=currentPageName();
 
     $btn["ico"]=ico_save;
-    $btn["name"]="{compile_all_categories}";
+    $btn["name"]="{compile_categories}";
     $btn["js"]="Loadjs('$page?compile-all=yes');";
 
     $RbldnsdClient = new RbldnsdClient();
@@ -317,12 +317,40 @@ function status_rpz_server():string{
         $btn["ico"]=ico_params;
         $btn["name"]="{enable_feature}";
         $btn["js"]="Loadjs('$page?section-rpz-js=yes')";
-        return $tpl->widget_h("grey",ico_database,"{inactive2}","RPZ Server",$btn);
+        return $tpl->widget_h("grey",ico_database,"{inactive2}","{HTTP_ENGINE}",$btn);
+    }
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/server/rpz/check"),true);
+
+    if(isset($json["enabled"])){
+        if(!$json["enabled"]){
+            $btn["ico"]=ico_params;
+            $btn["name"]="{enable_feature}";
+            $btn["js"]="Loadjs('$page?section-rpz-js=yes')";
+            return $tpl->widget_h("grey",ico_database,"{inactive2}","{HTTP_ENGINE}",$btn);
+        }
     }
 
-    $CategoryServiceRPZInterfaceTov4=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoryServiceRPZInterface");
+    if(isset($json["status"])){
+        if(!$json["status"]){
+            $btn["ico"]=ico_refresh;
+            $btn["name"]="{reload}";
+            $btn["js"]="Loadjs('$page?rpzserver-reload-js')";
+            return $tpl->widget_h("red",ico_bug,"{not_ready}","{HTTP_ENGINE}",$btn);
+        }
+    }
+
+    if(!isset($json["ipAddr"])){
+        $btn["ico"]=ico_refresh;
+        $btn["name"]="{reload}";
+        $btn["js"]="Loadjs('$page?rpzserver-reload-js')";
+        return $tpl->widget_h("red",ico_bug,"Protocol error","{HTTP_ENGINE}",$btn);
+    }
+    $CategoryServiceRPZInterfaceTov4=$json["ipAddr"];
     $CategoryServiceRPZPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoryServicePort"));
     $CategoryServiceRPZSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoryServiceRPZSSL"));
+
+    VERBOSE("CategoryServiceRPZInterfaceTov4=$CategoryServiceRPZInterfaceTov4:$CategoryServiceRPZPort SSL=$CategoryServiceRPZSSL",__LINE__);
+
     $proto="http";
     if($CategoryServiceRPZSSL==1){
         $proto="https";
@@ -344,7 +372,7 @@ function status_rpz_server():string{
     ///categories/server/rpz/reload
 
     if(!$curl->get()){
-        return $tpl->widget_h("red",ico_bug,"{error}","RPZ Server $curl->error",$btn);
+        return $tpl->widget_h("red",ico_bug,"{error}","{HTTP_ENGINE} $curl->error",$btn);
     }
 
 
@@ -359,7 +387,7 @@ function status_rpz_server():string{
         }
     }
     $Requests=$tpl->FormatNumber($json->Requests);
-    return $tpl->widget_h("green",ico_database,"$Requests {requests}","RPZ Server",$btn);
+    return $tpl->widget_h("green",ico_database,"$Requests rqs","{HTTP_ENGINE}",$btn);
 }
 function GetCompileProgress():bool{
     $myid=time();

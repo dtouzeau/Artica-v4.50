@@ -146,7 +146,7 @@ function install_service():bool{
 
 	build_progress_reconfigure("{starting_service} Suricata FireWall",80);
 
-    $unix->framework_exec("exec.crowdsec.php --suricata");
+
 
 	$cmd="$php /usr/share/artica-postfix/exec.suricata-fw.php --build --force";
 	echo $cmd."\n";
@@ -218,7 +218,7 @@ function remove_suricata(){
 		system("$rmmod pf_ring");
 	}
 
-    $unix->framework_exec("exec.crowdsec.php --suricata");
+
 	build_progress_reconfigure("{disable_feature} Suricata",100);
     $unix->framework_exec("/usr/sbin/artica-phpfpm-service -restart-artica-status");
 	

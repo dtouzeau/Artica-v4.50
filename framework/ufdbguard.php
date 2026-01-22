@@ -17,7 +17,6 @@ if(isset($_GET["wizardxbfpage"])){wizard_webfiltering_page();exit;}
 if(isset($_GET["ufdbcat-service-events"])){ufdbcat_service_events();exit;}
 if(isset($_GET["restore-categories"])){restore_categories();exit;}
 if(isset($_GET["install-tgz"])){install_tgz();exit;}
-if(isset($_GET["compile-all-categories"])){compile_all_categories();exit;}
 if(isset($_GET["getversion"])){getversion();exit;}
 if(isset($_GET["db-size"])){db_size();exit;}
 if(isset($_GET["recompile"])){recompile();exit;}
@@ -34,7 +33,6 @@ if(isset($_GET["ufdbtail-restart"])){ufdbtail_restart();exit;}
 if(isset($_GET["services-status"])){ufdbguard_status();exit;}
 if(isset($_GET["conf"])){ufdbguardconf();exit;}
 if(isset($_GET["phishtank"])){phishtank();exit;}
-if(isset($_GET["remove-all-categories"])){remove_all_categories();exit;}
 if(isset($_GET["ufdbweb-events"])){ufdbweb_events();exit;}
 if(isset($_GET["catgorize-manu"])){catgorize_manu();exit;}
 if(isset($_GET["unlock-rules"])){unlock_rules();exit;}
@@ -199,23 +197,7 @@ function catgorize_manu(){
 
 }
 
-function compile_all_categories(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdbcat.compile.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdbcat.compile.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.compile.categories.php >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 
-}
 
 function wizard_webfiltering_page(){
     $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdberror.compile.progress";
@@ -236,23 +218,7 @@ function wizard_webfiltering_page(){
 
 }
 
-function remove_all_categories(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdbcat.compile.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdbcat.compile.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.compile.categories.php --remove-all >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 
-}
 
 function backup_delete(){
     $ID=$_GET["backup-delete"];

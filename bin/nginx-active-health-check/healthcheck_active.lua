@@ -140,7 +140,7 @@ local function start_sync_timer()
         sync_from_file()
 
         -- Schedule next run (every 5 seconds)
-        local ok, err = ngx.timer.at(5, timer_callback)
+        local ok, err = ngx.timer.at(1, timer_callback)
         if not ok then
             ngx.log(ngx.ERR, "Failed to create timer: ", err)
             sync_timer = nil
@@ -148,7 +148,7 @@ local function start_sync_timer()
     end
 
     -- Start the timer
-    local ok, err = ngx.timer.at(5, timer_callback)
+    local ok, err = ngx.timer.at(1, timer_callback)
     if not ok then
         ngx.log(ngx.ERR, "Failed to start sync timer: ", err)
     else
@@ -254,16 +254,27 @@ function _M.get_healthy_servers_with_config(upstream_name)
             is_healthy = server.healthy
         end
 
-        if is_healthy and not server.down then
-            table.insert(healthy, {
-                addr = addr,
-                weight = server.weight or 1,
-                slow_start = server.slow_start or 0,  -- in seconds
-                max_fails = server.max_fails or 0,
-                fail_timeout = server.fail_timeout or 0,
-                backup = server.backup or false
-            })
-        end
+  if is_healthy and not server.down then
+      -- Check for dynamic weight in shared dict
+      local dynamic_weight = nil
+      local weight_key = upstream_name .. ":" .. addr .. ":weight"
+      local weight_value = health_dict:get(weight_key)
+      if weight_value then
+          local wok, wdata = pcall(cjson.decode, weight_value)
+          if wok and wdata.weight then
+              dynamic_weight = wdata.weight
+          end
+      end
+
+      table.insert(healthy, {
+          addr = addr,
+          weight = dynamic_weight or server.weight or 1,
+          slow_start = server.slow_start or 0,
+          max_fails = server.max_fails or 0,
+          fail_timeout = server.fail_timeout or 0,
+          backup = server.backup or false
+      })
+  end
     end
 
     return healthy
@@ -342,6 +353,30 @@ function _M.handle_update(upstream_name, server_addr, healthy, timestamp)
 
     return ok
 end
+
+  -- Public API: Handle real-time weight update from health checker
+  function _M.handle_weight_update(upstream_name, server_addr, weight, timestamp)
+      if not health_dict then
+          ngx.log(ngx.ERR, "Shared dict 'healthcheck_status' not configured!")
+          return false
+      end
+
+      local key = upstream_name .. ":" .. server_addr .. ":weight"
+      local value = cjson.encode({
+          weight = weight,
+          timestamp = timestamp or ngx.time()
+      })
+
+      local ok, err = health_dict:set(key, value)
+      if not ok then
+          ngx.log(ngx.ERR, "Failed to set weight: ", err)
+          return false
+      end
+
+      ngx.log(ngx.INFO, "Weight update: ", upstream_name, "/", server_addr, " -> ", weight)
+      return true
+  end
+
 
 -- Initialize: called in init_by_lua phase
 function _M.init()

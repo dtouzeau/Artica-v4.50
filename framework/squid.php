@@ -231,7 +231,6 @@ if(isset($_GET["squid-realtime-cache"])){squid_realtime_cache();exit();}
 if(isset($_GET["rebuild-filters"])){rebuild_filters();exit();}
 if(isset($_GET["ufdbguardconf"])){ufdbguardconf();exit();}
 if(isset($_GET["ufdbguard-compile-database"])){ufdbguard_compile_database();exit();}
-if(isset($_GET["ufdbguard-compile-alldatabases"])){ufdbguard_compile_all_databases();exit();}
 if(isset($_GET["caches-types"])){caches_type();exit;}
 if(isset($_GET["full-version"])){root_squid_version();exit;}
 if(isset($_GET["full-dans-version"])){root_dansg_version();exit;}
@@ -1059,14 +1058,7 @@ function ufdbguard_enable_progress(){
 
 
 
-function ufdbguard_compile_all_databases(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squidguard.php --compile-all-categories >/dev/null 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
+
 
 function CICAP_TEMPLATE(){
     $unix=new unix();

@@ -3,6 +3,7 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dhcpd.inc");
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["table"])){table();exit;}
 
@@ -3119,12 +3120,8 @@ function isReverse():bool{
 function get_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    if(isset($ligne["servicename"])) {
-        return strval($ligne["servicename"]);
-    }
-    return "";
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 }
 function NginxGetDB():string{
     if(!isHarmpID()){

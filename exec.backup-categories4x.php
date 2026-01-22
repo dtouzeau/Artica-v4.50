@@ -73,15 +73,6 @@ function move_indexes(){
 
     }
 
-
-    if(count($ALREADY)>0){
-        $unix=new unix();
-        $php=$unix->LOCATE_PHP5_BIN();
-        shell_exec("$php /usr/share/artica-postfix/exec.compile.categories.php");
-    }
-
-
-
 }
 
 function restore_from_table($ID){

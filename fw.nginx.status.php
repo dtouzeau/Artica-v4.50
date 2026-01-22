@@ -791,7 +791,8 @@ function ServiceStatus():string{
         "nginx.restart.progress","nginx.restart.progress.txt",
         "progress-nginx-restart", "LoadAjax('table-nginx','$page?table=yes');");
     $ini->loadString($json->Info);
-    $html[]=$tpl->SERVICE_STATUS($ini, "APP_ACTIVE_HEALTH_CHECK",$service_restart);
+    $healthCheckVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ACTIVE_HEALTH_CHECK_DAEMON_VER");
+    $html[]=$tpl->SERVICE_STATUS($ini, "APP_ACTIVE_HEALTH_CHECK",$service_restart,$healthCheckVersion);
     return @implode("\n",$html);
 }
 
@@ -1079,15 +1080,8 @@ function graphs_pie_total_cache():bool{
 function get_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    if(!$q->ok){
-        writelogs("SELECT servicename FROM nginx_services WHERE ID=$ID $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);
-    }
-    if(!isset($ligne["servicename"])){
-        return "Unknown";
-    }
-    return strval($ligne["servicename"]);
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 }
 function isHarmpID():bool{
     if(!isset($_SESSION["HARMPID"])){

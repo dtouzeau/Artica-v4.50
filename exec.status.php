@@ -6639,9 +6639,6 @@ function Default_values(){
     if (!is_file("/etc/artica-postfix/settings/Daemons/ArticaLogDir")) {
         @touch("/etc/artica-postfix/settings/Daemons/ArticaLogDir");
     }
-    if (!is_file("/etc/cron.d/DirectoriesMonitor")) {
-        $GLOBALS["CLASS_UNIX"]->Popuplate_cron_make("DirectoriesMonitor", "30 4 * * *", "exec.philesight.php --directories");
-    }
     if (!is_file("/etc/artica-postfix/settings/Daemons/DisksBenchs")) {
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisksBenchs", 6);
         @chmod("/etc/artica-postfix/settings/Daemons/DisksBenchs", 0755);

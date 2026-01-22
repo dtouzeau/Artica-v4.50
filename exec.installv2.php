@@ -365,7 +365,7 @@ function install($product, $key,$localpath=null){
         build_progress("{reconfiguring} {{$product}} ($key)...", 55);
         if(is_file("/etc/init.d/crowdsec")){
             build_progress("{stopping} {{$product}} ($key)...", 55);
-            shell_exec("$php /usr/share/artica-postfix/exec.crowdsec.php --stop --".time());
+
         }
     }
 
@@ -1180,8 +1180,6 @@ function install($product, $key,$localpath=null){
         build_progress("{reconfiguring} {{$product}} ($key)...", 80);
         if(is_file("/etc/init.d/crowdsec")){
             build_progress("{starting} {{$product}} ($key)...", 90);
-            shell_exec("$php /usr/share/artica-postfix/exec.crowdsec.php --reconfigure --".time());
-            shell_exec("$php /usr/share/artica-postfix/exec.crowdsec.php --start --".time());
         }
         build_progress("{scanning} {{$product}} ($key)...", 95);
         system("$php $AR_ROOT/exec.status.php --process1 --force --verbose>/dev/null 2>&1");

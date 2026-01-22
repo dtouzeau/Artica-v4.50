@@ -49,9 +49,8 @@ function delete():bool{
 function get_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    return strval($ligne["servicename"]);
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 }
 
 function isHarmpID():bool{
@@ -84,8 +83,9 @@ function outgoing_popup():bool{
     $serviceid=$_GET["outgoing-popup"];
     $html[]=$tpl->field_hidden("outgoing",$serviceid);
     $sock=new socksngix($serviceid);
-    $OutGoingInterface=$sock->GET_INFO("OutGoingInterface");
-    $OutGoingTransparent=intval($sock->GET_INFO("OutGoingTransparent"));
+    $ligne=$sock->GetCache();
+    $OutGoingInterface=$ligne["OutGoingInterface"];
+    $OutGoingTransparent=$ligne["OutGoingTransparent"];
 
     $html[]=$tpl->field_interfaces("OutGoingInterface","{outgoing_interface}",$OutGoingInterface);
     $html[]=$tpl->field_checkbox("OutGoingTransparent","{transparent}",$OutGoingTransparent);
@@ -98,18 +98,21 @@ function outgoing_save():bool{
     $tpl->CLEAN_POST();
     $serviceid=$_POST["outgoing"];
     $sock=new socksngix($serviceid);
-    $sock->SET_INFO("OutGoingInterface",$_POST["OutGoingInterface"]);
-    $sock->SET_INFO("OutGoingTransparent",$_POST["OutGoingTransparent"]);
+    $ligne=$sock->GetCache();
+    $sock->SET_MULTI(array("OutGoingInterface"=>$_POST["OutGoingInterface"],"OutGoingTransparent"=>$_POST["OutGoingTransparent"]));
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
-    $servicename=get_servicename($serviceid);
+    $servicename=$ligne["servicename"];
     return admin_tracks("Save reverse-proxy $servicename Outgoing interface to {$_POST["OutGoingInterface"]} transparent={$_POST["OutGoingTransparent"]}");
 }
 
 function port_js():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+    $serviceid=0;
 	$ID=$_GET["port-js"];
-	$serviceid=$_GET["serviceid"];
+    if(isset($_GET["serviceid"])) {
+        $serviceid = intval($_GET["serviceid"]);
+    }
 	$md5=$_GET["md5"];
 	$title="{listen_port}";
 	if($md5==null){$title="{new_entry}";}
@@ -236,19 +239,23 @@ function table():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
     $tpl->CLUSTER_CLI=true;
-    $nginxsock=new socksngix(0);
     $serviceid=intval($_GET["table"]);
     $function="";
     if(isset($_GET["function"])){$function=$_GET["function"];}
     $nginxServ=new socksngix($serviceid);
-    $OutGoingInterface=$nginxServ->GET_INFO("OutGoingInterface");
-    $OutGoingTransparent=intval($nginxServ->GET_INFO("OutGoingTransparent"));
-    $NginxProxyProtocol=$nginxsock->GET_INFO("NginxProxyProtocol");
+    $ligne=$nginxServ->GetCache();
+    $OutGoingInterface=$ligne["OutGoingInterface"];
+    $OutGoingTransparent=$ligne["OutGoingTransparent"];
+    $NginxProxyProtocol=$ligne["NginxProxyProtocol"];
+    $OutGoingInterfaceText=$OutGoingInterface;
+
     if(strlen($OutGoingInterface)<3){
         $OutGoingInterface="{none}";
+        $OutGoingInterfaceText="";
     }
     if ($OutGoingTransparent==1){
         $OutGoingInterface="$OutGoingInterface {transparent}";
+
     }
 
     $topbuttons[]=array("Loadjs('$page?port-js=0&serviceid=$serviceid&md5=');",ico_plus,"{new_entry}");
@@ -259,9 +266,12 @@ function table():bool{
 	$html[]="<table id='table-listenport-$serviceid' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{interfaces}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{listen_ports}</th>";
-	$html[]="<th data-sortable=false>{delete}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'></th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{interfaces}</th>";
+	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap></th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap></th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap></th>";
+    $html[]="<th data-sortable=false>{delete}</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
 	$html[]="<tbody>";
@@ -272,6 +282,20 @@ function table():bool{
 	$results=$q->QUERY_SQL("SELECT * FROM stream_ports WHERE serviceid='{$_GET["table"]}'");
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return false;}
 
+    $OutGoingInterfaceArrow="&nbsp;";
+    $icob="";$arroww="1%";
+    if(strlen($OutGoingInterfaceText)>3){
+        $eth=new system_nic($OutGoingInterfaceText);
+        $arroww="20%";
+        if(trim($eth->NETWORK)<>null) {
+            $NICNAME = $eth->NICNAME . " -  <small>($eth->NETWORK)</small>";
+        }else{
+            $NICNAME = $eth->NICNAME;
+        }
+        $icob="<i class='".ico_nic." fa-2x'>";
+        $OutGoingInterfaceText="<strong style='font-size:18px'>$eth->IPADDR</strong><br>$NICNAME";
+        $OutGoingInterfaceArrow="<i class='".ico_arrow_right." fa-4x'></i>";
+    }
 	
 	
 	$TRCLASS=null;
@@ -284,17 +308,18 @@ function table():bool{
         $NICNAME="";
 		if($interface==null){$interface="{all}";}else{
 			$eth=new system_nic($interface);
+            $Ipaddr=$eth->IPADDR;
             if(trim($eth->NETWORK)<>null) {
-                $NICNAME = $eth->NICNAME . " - " . $eth->IPADDR . " <small>($eth->NETWORK)</small>";
+                $NICNAME = $eth->NICNAME . " -  <small>($eth->NETWORK)</small>";
             }else{
-                $NICNAME = $eth->NICNAME . " - " . $eth->IPADDR;
+                $NICNAME = $eth->NICNAME;
             }
 		}
-		$proto="HTTP";
+		$proto="http";
 		$ID=intval($ligne["ID"]);
 		$port=$ligne["port"];
 		if($options["ssl"]==1){
-            $proto="HTTPS";
+            $proto="https";
             $phttp2="&nbsp;<span class='label label-warning'>SSL</span>";
             if($options["http2"]==1){
                 $phttp2="&nbsp;<span class='label label-warning'>SSL - http2</span>";
@@ -309,10 +334,15 @@ function table():bool{
 
 		$js="Loadjs('$page?port-js=$ID&md5=$md5')";
 		if(count($options)==0){$options[]=$tpl->icon_nothing();}
+
+        //$OutGoingInterface
 		
 		$html[]="<tr class='$TRCLASS' id='$md5'>";
-		$html[]="<td nowrap>".$tpl->td_href("[{$proto}] $interface $NICNAME",null,$js)."$pproto$phttp2</td>";
-		$html[]="<td style='width:1%' nowrap>".$tpl->td_href($port,null,$js)."</td>";
+        $html[]="<td style='width:1%' nowrap><i class='".ico_nic." fa-2x'></i></td>";
+		$html[]="<td style='width:50%'>".$tpl->td_href("<span style='font-size:18px'>$proto://$Ipaddr:$port</span>",null,$js)."<br>$interface ($NICNAME) $pproto$phttp2</td>";
+		$html[]="<td style='width:$arroww' nowrap>$OutGoingInterfaceArrow</td>";
+        $html[]="<td style='width:1%'>$icob</td>";
+        $html[]="<td style='width:50%'>$OutGoingInterfaceText</td>";
 		$html[]="<td style='width:1%' class='center'>". $tpl->icon_delete("Loadjs('$page?delete=$ID&md5=$md5')","AsSystemWebMaster")."</td>";
 		$html[]="</tr>";
 	}

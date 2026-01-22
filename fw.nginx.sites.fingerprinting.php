@@ -37,9 +37,8 @@ function popup():bool{
 function get_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    return $ligne["servicename"];
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 }
 function NginxGetDB():string{
     if(!isHarmpID()){

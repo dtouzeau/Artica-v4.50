@@ -278,7 +278,7 @@ class sockets{
 
         return $resp;
     }
-    public function REST_API_POST($endpoint,$array):string{
+    public function REST_API_POST($endpoint,$array=array()):string{
         if(!function_exists("curl_init")){
             $array["Status"]=false;
             $array["Error"]="curl_init no such function";
@@ -625,11 +625,114 @@ class sockets{
         }
 
         if(function_exists("VERBOSE")){
-            VERBOSE("$endpoint= [$resp]",__LINE__);
+            if(!strpos(" $endpoint"," /getinfo/")==0) {
+                VERBOSE("$endpoint= [$resp]", __LINE__);
+            }
         }
         return $resp;
     }
 
+
+    public function REST_API_POST_DNSCATZ($endpoint,$array=array()):string{
+        if(!function_exists("curl_init")){
+            $array["Status"]=false;
+            $array["Error"]="curl_init no such function";
+            return json_encode($array);
+        }
+
+        $cURLConnection=$this->GENERIC_API_CLIENT("/run/dnscatz/dnscatz.sock",$endpoint);
+        curl_setopt($cURLConnection, CURLOPT_POST, true);
+        curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, http_build_query($array));
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error_num=curl_errno($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+        if($this->is_curl_error($curl_error_num)){
+            VERBOSE("POST $endpoint $this->mysql_error",__LINE__);
+            $this->go_exec_syslog("[FATAL] ".$this->mysql_error);
+            $array["Status"]=false;
+            $array["Error"]=$this->mysql_error;
+            return json_encode($array);
+        }
+
+        $json=json_decode($resp);
+        if (json_last_error()> JSON_ERROR_NONE) {
+            $this->mysql_error="Json Returned".json_last_error_msg()." ($resp)";
+            $array["Status"]=false;
+            $array["Error"]=$this->mysql_error;
+            return json_encode($array);
+        }
+        if(!property_exists($json,"Status")){
+            if(property_exists($json,"status")){
+                $json->Status=$json->status;
+            }
+        }
+        if(!property_exists($json,"Error")){
+            if(property_exists($json,"error")){
+                $json->Error=$json->error;
+            }
+        }
+        $resp=json_encode($json);
+        return $resp;
+    }
+    public function REST_API_DNSCATZ($endpoint):string{
+        if(!function_exists("curl_init")){
+            $array["Status"] = false;
+            $array["Error"] = "Error curl_init No such function available";
+            return json_encode($array);
+        }
+
+        $cURLConnection=$this->GENERIC_API_CLIENT("/run/dnscatz/dnscatz.sock",$endpoint);
+        $resp = curl_exec($cURLConnection);
+        $curl_error_num=curl_errno($cURLConnection);
+        $HTTP_CODE=curl_getinfo($cURLConnection,CURLINFO_HTTP_CODE);
+
+        curl_close($cURLConnection);
+        if ($curl_error_num>0){
+            writelogs("$endpoint Error $curl_error_num",__FUNCTION__,__FILE__,__LINE__);
+        }
+
+        if($this->is_curl_error($curl_error_num)){
+            $array["Status"]=false;
+            $array["Error"]="Error Connecting to the REST API server $curl_error_num $this->mysql_error";
+            $array["JsonFailed"]=true;
+            $array["Info"] ="";
+            VERBOSE("$endpoint $this->mysql_error",__LINE__);
+            $this->go_exec_syslog("[FATAL] ".$this->mysql_error);
+            return json_encode($array);
+        }
+
+        if($HTTP_CODE==404){
+            $array["Status"]=false;
+            $array["Error"]="$endpoint<br>404 Not found, did you use the Correct version of the Web API service?<br>If so, try restarting it to update it.";
+            $array["JsonFailed"]=true;
+            $array["Info"] ="";
+            $this->go_exec_syslog("[FATAL] 404 Not found");
+            return json_encode($array);
+        }
+
+        if(preg_match("#\/squidclient#",$endpoint)){
+            return $resp;
+        }
+
+        if(function_exists("json_decode")) {
+            json_decode($resp);
+            if (json_last_error() > JSON_ERROR_NONE) {
+                $array["Status"] = false;
+                $array["Error"] = "Error parsing Json [$resp] HTTP CODE $HTTP_CODE " . json_last_error_msg();
+                $array["JsonFailed"]=true;
+                $array["Info"] ="";
+                return json_encode($array);
+            }
+        }
+
+        if(function_exists("VERBOSE")){
+            VERBOSE("$endpoint= [$resp]",__LINE__);
+        }
+        return $resp;
+    }
     public function REST_API_NGINX($endpoint):string{
         if(!function_exists("curl_init")){
             $array["Status"] = false;
@@ -1592,69 +1695,18 @@ class sockets{
 
     function GET_INFO($key):string{
         $key=trim($key);
-        $value="";
-        if(!isset($GLOBALS["MEMCACHE_ENABLED"])){$this->MEMCACHE_ENABLED();}
-        if(!isset($GLOBALS["posix_getuid"])) {
-            if (function_exists("posix_getuid")) {
-                $GLOBALS["posix_getuid"] = posix_getuid();
-            }
-        }
-
-
-        if($GLOBALS["DISABLE_MEMCACHE_SETTINGS"]==1){
-            list($status,$value)=$this->GET_INFO_FILE($key);
-            if(!$status){
-                list($status,$value)=$this->GET_INFO_REST($key);
-                if($status){
-                    if($value=="!nil"){return "";}
-                    return $value;
-                }
-            }else{
-                if($value=="!nil"){return "";}
-                return $value;
-            }
-        }
-
-        if(!class_exists("lib_memcached")){
-            include_once(dirname(__FILE__)."/class.memcached.inc");
-        }
-        $memcached=new lib_memcached();
-        $X=trim($memcached->getSetting($key));
-
-        if($memcached->ok){
-            if($memcached->MemCachedFound) {
-                if (strlen($X) > 0) {
-                    if($X=="!nil"){
-                        return "";
-                    }
-                    return $X;
-                }
-            }
+        list($status,$value)=$this->GET_INFO_REST($key);
+        if($status){
+            if($value=="!nil"){return "";}
+            return $value;
         }
 
         list($status,$value)=$this->GET_INFO_FILE($key);
-
-        if($status){
-            if(strlen((string) $value)>0) {
-                $memcached->SetSetting($key, $value);
-                if($value=="!nil"){return "";}
-                return $value;
-            }
-            return "";
-        }
-
-        list($status,$value)=$this->GET_INFO_REST($key);
-        if($status){
-            if (strlen((string)$value) > 0) {
-                if($value=="!nil"){return "";}
-                return $value;
-            }
-            return "";
-        }
-        return "";
-
+        if($value=="!nil"){return "";}
+        return $value;
     }
     private function GET_INFO_REST($key):array{
+        $key=urlencode($key);
         $json=json_decode($this->REST_API("/getinfo/$key"));
         if(!$json->Status) {
             writelogs("[$key]: Status failed $json->Error",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
@@ -1728,14 +1780,7 @@ class sockets{
         }
         return $this->SET_INFO_FILE($key,$value);
     }
-    private function SET_INFO_MEMCACHED($key,$value):bool{
-        $ClassMem=dirname(__FILE__) . "/class.memcached.inc";
-        if (!class_exists("lib_memcached")) {include_once($ClassMem);}
-        $mem = new lib_memcached();
-        $mem->SetSetting($key, $value);
-        return true;
 
-    }
     private function SET_INFO_REST($key,$value):bool{
         $TheValue=strval($value);
         if(strlen($TheValue)==0){
@@ -1752,19 +1797,7 @@ class sockets{
         }
         return true;
     }
-    private function SET_INFO_REST2($key,$value):bool{
-        $KeyEnc = urlencode(base64_encode((string)$key));
-        $path=PROGRESS_DIR;
-        $tfile="$path/REST_$key";
-        if(!$this->file_put_contents($tfile,$value)){
-            return $this->SET_INFO_REST($key,$value);
-        }
-        $data = json_decode($this->REST_API("/setinfo2/$KeyEnc"));
-        if (!$data->Status) {
-            return $this->SET_INFO_REST($key,$value);
-        }
-        return true;
-    }
+
     private function SET_INFO_FILE($key,$value):bool{
         $fname="/etc/artica-postfix/settings/Daemons/$key";
 
@@ -1786,22 +1819,14 @@ class sockets{
         return true;
     }
     function SET_INFO($key,$value):bool{
-        $keyenc=urlencode($key);
-       $this->SET_INFO_MEMCACHED($key,$value);
 
-        if(!$this->SET_INFO_ROOT($key,$value)) {
-            if(!$this->SET_INFO_FILE($key,$value)) {
-                if(!$this->SET_INFO_REST2($key,$value)) {
-                    return false;
-                }
-                $this->REST_API("/flushinfo/$keyenc");
-                return true;
-            }
-            $this->REST_API("/flushinfo/$keyenc");
-            return true;
-        }
-        $this->REST_API("/flushinfo/$keyenc");
-        return true;
+        $keys["Keys"][]= array("key"=>$key,"value"=>$value);
+
+        $payload = $keys;
+        $json=json_decode($this->REST_API_PUT_JSON("/setinfo",$payload));
+        if(!$json){return false;}
+        return  boolval($json->Status);
+
     }
     function file_put_contents($filename, $data):bool {
         $datasize=strlen((string) $data);

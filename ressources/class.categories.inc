@@ -301,7 +301,7 @@ class categories{
         $PersonalCategoriesIndexFrom=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PersonalCategoriesIndexFrom"));
         if($PersonalCategoriesIndexFrom==0){$PersonalCategoriesIndexFrom=249;}
 
-        $sql="SELECT category_id FROM personal_categories WHERE category_id>$PersonalCategoriesIndexFrom ORDER BY category_id ASC";
+        $sql="SELECT category_id FROM personal_categories WHERE category_id>$PersonalCategoriesIndexFrom AND ORDER BY category_id ASC";
         $q=new postgres_sql();
         $results=$q->QUERY_SQL($sql);
 

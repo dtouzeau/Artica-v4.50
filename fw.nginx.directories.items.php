@@ -83,9 +83,10 @@ function delete_js():bool{
    return true;
 }
 function get_servicename($serviceid=0):string{
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$serviceid");
-    return strval($ligne["servicename"]);
+    $ID=intval($serviceid);
+    if($ID==0){return "Unknown";}
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 }
 function  delete(){
 	$page=CurrentPageName();

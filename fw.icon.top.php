@@ -61,7 +61,7 @@ function start():bool{
    $page=CurrentPageName();
    $tpl=new template_admin();
    header("content-type: application/x-javascript");
-   echo $tpl->RefreshInterval_Loadjs("artica-notifs-barr",$page,"refresh-interval=yes",10);
+   echo $tpl->RefreshInterval_Loadjs("artica-notifs-barr",$page,"fw.icon.top.php?notifs=yes",10);
    return true;
 }
 function SetToken(){
@@ -1379,6 +1379,24 @@ function NOTIF_LATEST_KERNEL():string{
     }
     if(is_null($json->version)){return "";}
     if(strlen($json->version)<3){return "";}
+    $json->version = str_replace( "+deb13", "",$json->version);
+    $json->version = str_replace("+deb14", "",$json->version);
+	$json->version = str_replace("+deb15", "",$json->version);
+	$json->version = str_replace( "+deb16", "",$json->version);
+	$json->version = str_replace( "+deb17", "",$json->version);
+	$json->version = str_replace( "+deb18", "",$json->version);
+	$json->version = str_replace( "+deb19", "",$json->version);
+	$json->version = str_replace( "+deb20", "",$json->version);
+
+    $json->latest = str_replace( "+deb13", "",$json->latest);
+    $json->latest = str_replace("+deb14", "",$json->latest);
+    $json->latest = str_replace("+deb15", "",$json->latest);
+    $json->latest = str_replace( "+deb16", "",$json->latest);
+    $json->latest = str_replace( "+deb17", "",$json->latest);
+    $json->latest = str_replace( "+deb18", "",$json->latest);
+    $json->latest = str_replace( "+deb19", "",$json->latest);
+    $json->latest = str_replace( "+deb20", "",$json->latest);
+    $json->latest = str_replace( "+deb20", "",$json->latest);
 
     $tpl=new template_admin();
     $upgrade_kernel1=$tpl->_ENGINE_parse_body("{upgrade_kernel1}");

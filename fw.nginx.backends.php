@@ -132,9 +132,8 @@ function NginxGetDB():string{
 function get_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    return strval($ligne["servicename"]);
+    $sock=new socksngix($ID);
+    return $sock->GetServiceName();
 }
 
 function id_js():bool{
@@ -203,7 +202,7 @@ function active_health_check_popup_0():bool{
     $ActiveHealthCheckFalls=intval($sock->GET_INFO("ActiveHealthCheckFalls"));
     $ActiveHealthCheckRaises=intval($sock->GET_INFO("ActiveHealthCheckRaises"));
     $ActiveHealthCheckPersistent=intval($sock->GET_INFO("ActiveHealthCheckPersistent"));
-    $ActiveHealthCheckMandatory=intval($sock->GET_INFO("ActiveHealthCheckMandatory"));
+    $ActiveHealthCheckInitialDown=intval($sock->GET_INFO("ActiveHealthCheckInitialDown"));
     $ActiveHealthCheckTimeout=intval($sock->GET_INFO("ActiveHealthCheckTimeout"));
     $ActiveHealthCheckInterval=intval($sock->GET_INFO("ActiveHealthCheckInterval"));
     $ActiveHealthCheckOverwritePort=intval($sock->GET_INFO("ActiveHealthCheckOverwritePort"));
@@ -272,17 +271,17 @@ function active_health_check_popup_0():bool{
     $form[]=$tpl->field_hidden("active_health_check_serviceid",$serviceid);
     $form[]=$tpl->field_hidden("active_health_check_serviceid_popup",0);
 
-    $form[]=$tpl->field_checkbox("ActiveHealthCheckEnabled","{enable} active {health} {check}",$ActiveHealthCheck,"HealthCheckTypeSelected,ActiveHealthCheckRaises,ActiveHealthCheckFalls,ActiveHealthCheckPersistent,ActiveHealthCheckMandatory,ActiveHealthCheckTimeout,ActiveHealthCheckInterval,ActiveHealthCheckOverwritePort,ActiveHealthCheckEnableDNSDiscovery,ActiveHealthCheckDNSDiscoveryDNSType,ActiveHealthCheckDNSDiscoveryDNSInterval,ActiveHealthCheckOverwriteInterface,ActiveHealthCheckEnableAdaptivePerformanceTracking");
+    $form[]=$tpl->field_checkbox("ActiveHealthCheckEnabled","{enable} active {health} {check}",$ActiveHealthCheck,"HealthCheckTypeSelected,ActiveHealthCheckRaises,ActiveHealthCheckFalls,ActiveHealthCheckPersistent,ActiveHealthCheckInitialDown,ActiveHealthCheckTimeout,ActiveHealthCheckInterval,ActiveHealthCheckOverwritePort,ActiveHealthCheckEnableDNSDiscovery,ActiveHealthCheckDNSDiscoveryDNSType,ActiveHealthCheckDNSDiscoveryDNSInterval,ActiveHealthCheckOverwriteInterface,ActiveHealthCheckEnableAdaptivePerformanceTracking");
     $form[]=$tpl->field_array_hash( $zone,"LBZone","nonull:{zone}",$LBZone);
-    $form[]=$tpl->field_array_hash( $lblMethods,"ActiveHealthChekLBMethod","nonull:{method}",$ActiveHealthChekLBMethod);
+    $form[]=$tpl->field_array_hash( $lblMethods,"ActiveHealthChekLBMethod","nonull:{load-balancer} {method}",$ActiveHealthChekLBMethod);
     $form[]=$tpl->field_array_hash( $HealthCheckType,"HealthCheckTypeSelected","nonull:{active_health_check_type}",$HealthCheckTypeSelected);
     $form[]=$tpl->field_interfaces("ActiveHealthCheckOverwriteInterface","nooloopNone:{override_outgoing_interface}",$ActiveHealthCheckOverwriteInterface);
     $form[]=$tpl->field_numeric("ActiveHealthCheckTimeout","{timeout} ({seconds})",$ActiveHealthCheckTimeout,"{active_health_check_timeout_explain}");
     $form[]=$tpl->field_numeric("ActiveHealthCheckInterval","{interval} ({seconds})",$ActiveHealthCheckInterval,"{active_health_check_interval_explain}");
-    $form[]=$tpl->field_numeric("ActiveHealthCheckRaises","{raises}",$ActiveHealthCheckRaises,"{raises_explain}");
-    $form[]=$tpl->field_numeric("ActiveHealthCheckFalls","{falls}",$ActiveHealthCheckFalls,"{falls_explain}");
+    $form[]=$tpl->field_numeric("ActiveHealthCheckRaises","{raise}",$ActiveHealthCheckRaises,"{raises_explain}");
+    $form[]=$tpl->field_numeric("ActiveHealthCheckFalls","{fall}",$ActiveHealthCheckFalls,"{falls_explain}");
     $form[]=$tpl->field_checkbox("ActiveHealthCheckPersistent","{persistent}",$ActiveHealthCheckPersistent,null,"{persistent_explain}");
-    $form[]=$tpl->field_checkbox("ActiveHealthCheckMandatory","{mandatory}",$ActiveHealthCheckMandatory,null,"{mandatory_explain}");
+    $form[]=$tpl->field_checkbox("ActiveHealthCheckInitialDown","{mandatory}",$ActiveHealthCheckInitialDown,null,"{mandatory_explain}");
     $form[]=$tpl->field_numeric("ActiveHealthCheckOverwritePort","{override_port}",$ActiveHealthCheckOverwritePort,"{override_port_explain}");
 
     $form[]=$tpl->field_checkbox("ActiveHealthCheckEnableDNSDiscovery","{enable_dns_discovery}",$ActiveHealthCheckEnableDNSDiscovery,"ActiveHealthCheckDNSDiscoveryDNS,ActiveHealthCheckDNSDiscoveryDNSType,ActiveHealthCheckDNSDiscoveryDNSInterval,ActiveHealthCheckDNSDiscoveryDNSResolver","{enable_dns_discovery_explain}");
@@ -381,6 +380,11 @@ function active_health_check_popup_1():bool
     //ARR
     $ActiveHealthCheckARROutlierThreshold =floatval($sock->GET_INFO("ActiveHealthCheckARROutlierThreshold"));
     if($ActiveHealthCheckARROutlierThreshold==0){$ActiveHealthCheckARROutlierThreshold=0.01;}
+    $ActiveHealthCheckEnableAdaptivePerformanceTracking=intval($sock->GET_INFO("ActiveHealthCheckEnableAdaptivePerformanceTracking"));
+    $adaptivePerformanceTrackingTXT="";
+    if($ActiveHealthCheckEnableAdaptivePerformanceTracking==1){
+        $adaptivePerformanceTrackingTXT="{adaptivePerformanceTrackingTXT}";
+    }
     $form[]=$tpl->field_hidden("active_health_check_serviceid",$serviceid);
     $form[]=$tpl->field_hidden("active_health_check_serviceid_popup",1);
 
@@ -406,7 +410,7 @@ function active_health_check_popup_1():bool
         $form[]=$tpl->field_text("ActiveHealthCheckHTTPMatchHeader","{http_match_headers}",$ActiveHealthCheckHTTPMatchHeader,false,"{http_match_header_explain}");
         $form[]=$tpl->field_text("ActiveHealthCheckHTTPMatchBody","{http_match_body}",$ActiveHealthCheckHTTPMatchBody,false,"{http_match_body_explain}");
         $form[]=$tpl->field_text("ActiveHealthCheckHTTPExpectedStatus","{http_expected_status}",$ActiveHealthCheckHTTPExpectedStatus,false,"{http_expected_status_explain}");
-        $form[]=$tpl->field_text("ActiveHealthCheckHTTPExpectedStatus","{http_expected_status}",$ActiveHealthCheckHTTPExpectedStatus,false,"{http_expected_status_explain}");
+
     }
     if ($HealthCheckTypeSelected==3) {
         //udp
@@ -443,18 +447,18 @@ function active_health_check_popup_1():bool
 
     }
     if($ActiveHealthCheckLBMethod==3){
-        $form[]=$tpl->field_section("{lbl_settings}","{ip_hash_p}");
+        $form[]=$tpl->field_section("{lbl_settings}","{ip_hash_p}$adaptivePerformanceTrackingTXT");
         $form[]=$tpl->field_checkbox("ActiveHealthCheckIPHashConsistent","{consistent}",$ActiveHealthCheckIPHashConsistent,"","{consistent_explain}");
         $form[]=$tpl->field_checkbox("ActiveHealthCheckIPHashUseBinary","{use_binary}",$ActiveHealthCheckIPHashUseBinary);
     }
     if($ActiveHealthCheckLBMethod==4){
-        $form[]=$tpl->field_section("{lbl_settings}","{uri_hash_p}");
+        $form[]=$tpl->field_section("{lbl_settings}","{uri_hash_p}$adaptivePerformanceTrackingTXT");
         $form[]=$tpl->field_checkbox("ActiveHealthCheckURIHashConsistent","{consistent}",$ActiveHealthCheckURIHashConsistent,"","{consistent_explain}");
         $form[]=$tpl->field_checkbox("ActiveHealthCheckURIHashUseRequestURI","{use_request_uri}",$ActiveHealthCheckURIHashUseRequestURI);
 
     }
     if($ActiveHealthCheckLBMethod==5){
-        $form[]=$tpl->field_section("{lbl_settings}","{generic_hash_p}");
+        $form[]=$tpl->field_section("{lbl_settings}","{generic_hash_p}$adaptivePerformanceTrackingTXT");
         $form[]=$tpl->field_checkbox("ActiveHealthCheckGenericHashConsistent","{consistent}",$ActiveHealthCheckGenericHashConsistent,"","{consistent_explain}");
     }
     if($ActiveHealthCheckLBMethod==6){
@@ -499,7 +503,7 @@ function active_health_check_popup_1():bool
         $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyRouteFailoverDown","{cookie_down}",$ActiveHealthCheckStickyRouteFailoverDown,"","{cookie_down_explain}");
     }
     if($ActiveHealthCheckLBMethod==11){
-        $form[]=$tpl->field_section("{lbl_settings}","{sih_p}");
+        $form[]=$tpl->field_section("{lbl_settings}","{sih_p}$adaptivePerformanceTrackingTXT");
         $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyIPHashConsistent","{consistent}",$ActiveHealthCheckStickyIPHashConsistent);
         $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyIPHashFailoverBackup","{cookie_backup}",$ActiveHealthCheckStickyIPHashFailoverBackup,"","{cookie_backup_explain}");
         $form[]=$tpl->field_checkbox("ActiveHealthCheckStickyIPHashFailoverDown","{cookie_down}",$ActiveHealthCheckStickyIPHashFailoverDown,"","{cookie_down_explain}");
@@ -682,7 +686,7 @@ function id_popup():bool{
 	$tpl=new template_admin();
 	$ID=intval($_GET["id-popup"]);
     $serviceid=0;
-    $options=array();
+
     $Type=0;
     if(isset($_GET["serviceid"])) {
         $serviceid = intval($_GET["serviceid"]);
@@ -693,7 +697,8 @@ function id_popup():bool{
     $ligne["port"]=80;
 
     if($serviceid>0) {
-        $ligne = $q->mysqli_fetch_array("SELECT `type` FROM nginx_services WHERE ID=$serviceid");
+        $sock=new socksngix($serviceid);
+        $ligne = $sock->GetCache();
         $Type = intval($ligne["type"]);
     }
 	
@@ -703,12 +708,10 @@ function id_popup():bool{
 		$ligne=$q->mysqli_fetch_array("SELECT * FROM backends WHERE ID=$ID");
 		$btname="{apply}";
 		$title="{$ligne["hostname"]}:{$ligne["port"]}";
-		$serviceid=$ligne["serviceid"];
-        $ligne2 = $q->mysqli_fetch_array("SELECT `type` FROM nginx_services WHERE ID=$serviceid");
+        $sock=new socksngix($serviceid);
+        $ligne2 = $sock->GetCache();
         $Type = intval($ligne2["type"]);
-        $options=unserialize(base64_decode($ligne["options"]));
-
-	}
+    }
 	$js="dialogInstance2.close();LoadAjaxSilent('backends-reverse-$serviceid','$page?table=$serviceid');NgixSitesReload()";
 	
 
@@ -758,8 +761,10 @@ function id_popup():bool{
         }
     }
 
+    $sock=new socksngix($serviceid);
+    $ligneH = $sock->GetCache();
+    $hostname=$ligneH["hostname"];
 
-    $hostname=get_servicename($serviceid);
 	$form[]=$tpl->field_hidden("BackendSave", $ID);
 	$form[]=$tpl->field_hidden("md5", $md5);
 	$form[]=$tpl->field_hidden("serviceid", $serviceid);
@@ -1383,7 +1388,21 @@ function top_buttons():bool{
         if ($ActiveHealthCheckEnabled == 0) {
             $topbuttons[] = array("Loadjs('$page?active-health-check-js=$serviceid&md5=&popup=0');", ico_params, "active {health} {check} OFF");
         } else {
-            $topbuttons[] = array("Loadjs('$page?active-health-check-js=$serviceid&md5=&popup=0');", ico_params, "active {health} {check} ON");
+            $lblMethods=array();
+            $lblMethods[0]="{rr}";
+            $lblMethods[1]="{weighted_rr}";
+            $lblMethods[2]="{least-connections}";
+            $lblMethods[3]="{ip_hash}";
+            $lblMethods[4]="{uri_hash}";
+            $lblMethods[5]="{generic_hash}";
+            $lblMethods[6]="{random}";
+            $lblMethods[7]="{adaptive_least_response}";
+            $lblMethods[8]="{adaptive_rr}";
+            $lblMethods[9]="{sticky_cookie}";
+            $lblMethods[10]="{sticky_route}";
+            $lblMethods[11]="{sticky_ip_hash}";
+            $ActiveHealthChekLBMethod=intval($sock->GET_INFO("ActiveHealthChekLBMethod"));
+            $topbuttons[] = array("Loadjs('$page?active-health-check-js=$serviceid&md5=&popup=0');", ico_params, "active {health} {check} ({$lblMethods["$ActiveHealthChekLBMethod"]})");
         }
     }
     else{

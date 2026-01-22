@@ -523,7 +523,18 @@ function webapi_status():bool{
     $final[]=pogocache_status();
     $final[]=webunix_status();
     $page=CurrentPageName();
-    $ARTICAREST_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARTICAREST_VERSION");
+
+    $ARTICAREST_VERSION="";
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ping"),true);
+    if($json["Status"]){
+        $ARTICAREST_VERSION=$json["Version"];
+    }
+
+    if($ARTICAREST_VERSION=="") {
+        $ARTICAREST_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARTICAREST_VERSION");
+    }
+
+
     $final[]="<script>";
     $final[]="$('#active-directory-rest-version').html('$ARTICAREST_VERSION');";
     $final[]="LoadAjaxSilent('debianagent-status','$page?debianagent-status=yes');";
@@ -655,8 +666,20 @@ function table1(){
 
 function Tiny():bool{
     $tpl                            = new template_admin();
-    $page                           = CurrentPageName();
-    $ARTICAREST_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARTICAREST_VERSION");
+    $ARTICAREST_VERSION="";
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ping"),true);
+    if($json["Status"]){
+        $ARTICAREST_VERSION=$json["Version"];
+    }
+
+    if($ARTICAREST_VERSION=="") {
+        $ARTICAREST_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARTICAREST_VERSION");
+    }
+
+
+
+
+
     $TINY_ARRAY["TITLE"]="{SQUID_AD_RESTFULL} v<span id='active-directory-rest-version'>$ARTICAREST_VERSION</span>";
     $TINY_ARRAY["ICO"]="fad fa-monitor-heart-rate";
     $TINY_ARRAY["EXPL"]="{SQUID_AD_RESTFULL_EXPLAIN}";

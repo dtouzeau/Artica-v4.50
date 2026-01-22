@@ -138,8 +138,14 @@ function xgen(){
         $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.information.php","ICO"=>"fas fa-server","TEXT"=>"{system_information}"));
         if($users->AsSystemAdministrator) {
             if(!$users->AsDockerWeb) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.hd.php", "ICO" => "fa-hdd", "TEXT" => "{your_hard_disks}"));
-                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.metrics.io.php", "ICO" => "fas fa-chart-line", "TEXT" => "{io_metrics_title}"));
+                $f[] = $tpl->LeftMenu(
+                    array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.treesize.php",
+                    "ICO" => "fa-hdd", "TEXT" => "{your_hard_disks}",
+                    "LEVEL3" => array("ID" => "fw-left-menus-hds",
+                    "PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw-left-menus-hds.php"))
+                );
+
+
 
 
                 $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.memory.config.php", "ICO" => "fad fa-memory", "TEXT" => "{memory_info}"));
@@ -723,6 +729,7 @@ function xgen(){
 
             }
         }
+
 
         // -----------------------------------------------------------------------
         $f[] ="<!-- CicapEnabled = $CicapEnabled  C_ICAP_RECORD = $C_ICAP_RECORD-->";

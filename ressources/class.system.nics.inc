@@ -306,7 +306,9 @@ class system_nic{
 		
 		}else{
 			$this->dhcp=$ligne["dhcp"];
-			$this->ROUTES=unserialize($ligne["routes"]);
+            if(!is_null($ligne["routes"])) {
+                $this->ROUTES = unserialize($ligne["routes"]);
+            }
 		}
         if(!isset($ligne["mirror"])){$ligne["mirror"]=0;}
         if(!isset($ligne["mirrorgateway"])){$ligne["mirrorgateway"]="";}

@@ -1384,10 +1384,6 @@ function articapcap_reload($usejs=true):bool{
 
 
     if(!$usejs){
-        $CrowdSecCyberCrimeIPfeed=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CrowdSecCyberCrimeIPfeed"));
-        if($CrowdSecCyberCrimeIPfeed==1){
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("crowdsec.php?restart-custom-bouncer=yes");
-        }
         return true;
     }
 
@@ -1395,9 +1391,6 @@ function articapcap_reload($usejs=true):bool{
 
 
     $CrowdSecCyberCrimeIPfeed=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CrowdSecCyberCrimeIPfeed"));
-    if($CrowdSecCyberCrimeIPfeed==1){
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("crowdsec.php?restart-custom-bouncer=yes");
-    }
     return true;
 
 }

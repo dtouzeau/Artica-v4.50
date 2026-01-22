@@ -9,6 +9,26 @@ class socksngix{
 		$this->serviceid=intval($serverid);
 	}
 
+
+    public function GetServiceName():string{
+        $ligne=$this->GetCache();
+        if(!isset($ligne["servicename"])){
+            return "Unknown";
+        }
+        return strval($ligne["servicename"]);
+    }
+    public function GetCache():array{
+        if(isset($GLOBALS["/site/$this->serviceid"])){
+            return $GLOBALS["/site/$this->serviceid"];
+        }
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/site/$this->serviceid"),true);
+        if(isset($json["config"])){
+            $GLOBALS["/site/$this->serviceid"]=$json["config"];
+            return $json["config"];
+        }
+        return array();
+    }
+
     private function isHarmpID():bool{
         if(!isset($_SESSION["HARMPID"])){
             return false;
@@ -67,7 +87,24 @@ class socksngix{
 		
 		
 	}
-	
+
+    public function SET_MULTI($vals=array()):bool{
+        $q=new lib_sqlite($this->NginxGetDB());
+        foreach($vals as $key=>$value){
+            $this->GET_INFO($key);
+            if($this->localid>0){
+                $q->QUERY_SQL("UPDATE `service_parameters` SET `zvalue`='$value' WHERE ID=$this->localid");
+                if(!$q->ok){echo $q->mysql_error;return false;}
+                continue;
+            }
+            $q->QUERY_SQL("INSERT INTO `service_parameters` (serviceid,zkey,zvalue) VALUES('$this->serviceid','$key','$value')");
+            if(!$q->ok){echo $q->mysql_error;return false;}
+        }
+        $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($this->serviceid);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/flush/$this->serviceid");
+        return true;
+    }
+
 	public function SET_INFO($key,$value):bool{
 		
 		if($key==null){return false;}
@@ -75,16 +112,16 @@ class socksngix{
 		$q=new lib_sqlite($this->NginxGetDB());
         $value=$q->sqlite_escape_string2($value);
 		if($this->localid>0){
-			writelogs("Writing UPDATE value $key=$value for serviceid:$this->serviceid keyid:$this->localid");
 			$q->QUERY_SQL("UPDATE `service_parameters` SET `zvalue`='$value' WHERE ID=$this->localid");
 			if(!$q->ok){echo $q->mysql_error;return false;}
             $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($this->serviceid);
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/flush/$this->serviceid");
 			return true;
 		}
-		writelogs("Writing INSERT value $key=$value for serviceid:$this->serviceid keyid:$this->localid");
 		$q->QUERY_SQL("INSERT INTO `service_parameters` (serviceid,zkey,zvalue) VALUES('$this->serviceid','$key','$value')");
 		if(!$q->ok){echo $q->mysql_error;return false;}
         $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($this->serviceid);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/flush/$this->serviceid");
         return true;
 	}
 	

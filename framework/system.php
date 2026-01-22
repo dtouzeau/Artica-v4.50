@@ -19,7 +19,7 @@ if(isset($_GET["dnsperf-progress"])){dnsperf_progress();exit;}
 if(isset($_GET["sysctl-reconfigure"])){sysctl_progress();exit;}
 if(isset($_GET["seeker"])){seeker();exit;}
 
-if(isset($_GET["DirectoriesMonitorSchedules"])){DirectoriesMonitorSchedules();exit;}
+
 if(isset($_GET["make-writable"])){make_www_writable();exit;}
 if(isset($_GET["phpldapadmin_installed"])){phpldapadmin_installed();exit;}
 if(isset($_GET["php-snmp-progress"])){php_snmp_progress();exit;}
@@ -1893,24 +1893,7 @@ function sysctl_progress(){
 	writelogs_framework("$nohup $php5 /usr/share/artica-postfix/exec.sysctl.php --restart --force >{$GLOBALS["LOGSFILES"]} 2>&1 & ",__FUNCTION__,__FILE__,__LINE__);	
 }
 
-function dirs_monitors_execute(){
-		$unix=new unix();
-		$php5=$unix->LOCATE_PHP5_BIN();
-		$nohup=$unix->find_program("nohup");
-		
-		$GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/system.dirmon.progress";
-		$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/system.dirmon.progress.txt";
 
-
-		@unlink($GLOBALS["CACHEFILE"]);
-		@unlink($GLOBALS["LOGSFILES"]);
-		@touch($GLOBALS["CACHEFILE"]);
-		@touch($GLOBALS["LOGSFILES"]);
-		@chmod($GLOBALS["CACHEFILE"],0777);
-		@chmod($GLOBALS["LOGSFILES"],0777);
-		system("$nohup $php5 /usr/share/artica-postfix/exec.philesight.php --directories --force >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-		writelogs_framework("$nohup $php5 /usr/share/artica-postfix/exec.philesight.php --directories --force >{$GLOBALS["LOGSFILES"]} 2>&1 & ",__FUNCTION__,__FILE__,__LINE__);
-}
 
 function dashboard_refresh(){
 	$unix=new unix();
@@ -2163,17 +2146,7 @@ function make_www_writable(){
 
 
 
-function  DirectoriesMonitorSchedules(){
-	
-	
-	$DirectoriesMonitorH=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DirectoriesMonitorH");
-	$DirectoriesMonitorM=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DirectoriesMonitorM");
-	$schedule="$DirectoriesMonitorM $DirectoriesMonitorH * * *";
-	$unix=new unix();
-	writelogs_framework("/etc/cron.d/DirectoriesMonitor -> $schedule" ,__FUNCTION__,__FILE__,__LINE__);
-	$unix->Popuplate_cron_make("DirectoriesMonitor",$schedule,"exec.philesight.php --directories");
-	shell_exec("/etc/init.d/cron reload &");
-}
+
 
 
 

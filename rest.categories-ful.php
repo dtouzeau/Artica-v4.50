@@ -126,24 +126,11 @@ function STATUS_UFDBGUARD(){
 
 function COMPILE_ALL_CATEGORIES($category_id){
 	$category_id=intval($category_id);
-    $RestAPi = new RestAPi();
-	$sock=new sockets();
-	if($category_id==0){
-		$sock->getFrameWork("ufdbguard.php?compile-all-categories=yes");
-		$array["status"]=true;
-		$array["message"]="Success launch in background mode the categories compilation.";
-		$array["category"]=0;
-		$RestAPi->response(json_encode($array),200);
-		exit;
-	}
-
-	
-	$sock->REST_API("/category/compile/$category_id");
-	$array["status"]=true;
-	$array["message"]="Success launch in background mode the $category_id category compilation.";
+	$array["status"]=false;
+	$array["message"]="API outdated";
 	$array["category"]=$category_id;
 	$RestAPi=new RestAPi();
-	$RestAPi->response(json_encode($array),200);
+	$RestAPi->response(json_encode($array),500);
 	exit;
 	
 	

@@ -3538,4 +3538,21 @@ Please refer to the documentation (click the button) to view the available remot
 <os_metrics_title>System metrics</os_metrics_title>
 <os_mon_explain>Artica monitors the vital components of your server, including CPU, load, and memory.[br]
 These metrics are stored locally to provide historical usage and consumption trends.</os_mon_explain>
+<disk_usage_analyzer>Disk Usage Analyzer</disk_usage_analyzer>
+<disk_usage_analyzer_desc>Analyze and visualize disk space consumption across directories</disk_usage_analyzer_desc>
+<no_cached_data>No Cached Data</no_cached_data>
+<showing_quick_size>Showing quick size calculation</showing_quick_size>
+<no_data_available>No data available</no_data_available>
+<please_run_scan>Please run a scan first</please_run_scan>
+<no_subdirectories>No subdirectories found</no_subdirectories>
+<directory_browser>Directory browser</directory_browser>
+<treemap>Tree map</treemap>
+<APP_CATEGORIESS_EXPLAIN>Create a Central Categorization Server that allows you to distribute domain categorization from a single central point via an API (optimized for Artica Proxy or Artica DNS Firewall).</APP_CATEGORIESS_EXPLAIN>
+<compile_categories>Compile categories</compile_categories>
+<query_artica_db_unknown>Query Artica Cloud for unknown websites</query_artica_db_unknown>
+<category_dns_explain>This category is a virtual category.[br]Its records are not stored locally.[br]However, your Artica server can still use it by querying the remote categorization server at %s via DNS or API.[br]                      This category can be used in proxy ACLs, the DNS Firewall service, and through Artica Web Filtering (ICAP v2).</category_dns_explain>
+<category_server>Category server</category_server>
+<compile_all>Compile all</compile_all>
+<category_http_explain>This category is a virtual category.[br]Data are downloaded directly from the category server (%s).[br]You cannot change, modify, or delete it.[br]
+This category is available only for Web Filtering.</category_http_explain>
 

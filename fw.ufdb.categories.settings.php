@@ -82,7 +82,7 @@ function tabs(){
 	$array["{main_parameters}"]="$page?parameters=yes";
 	$array["{schedule}"]="fw.proxy.tasks.php?microstart=yes&ForceTaskType=3";
    // $array["{export_rules}"]="fw.categories.export.php";
-	$array["{events}"]="fw.system.watchdog.php?microstart=yes&scriptname=exec.compile.categories.php,exec.update.tlse.internal.php,exec.upload.categories.php";
+	$array["{events}"]="fw.system.watchdog.php?microstart=yes&scriptname=exec.update.tlse.internal.php,exec.upload.categories.php";
 
 	echo $tpl->tabs_default($array);
 
@@ -293,6 +293,7 @@ function save(){
         $PersonalCategoriesIndexFromORG=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PersonalCategoriesIndexFrom"));
         $PersonalCategoriesIndexFrom = $_POST["PersonalCategoriesIndexFrom"];
         $PersonalCategoriesIndexPartners = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PersonalCategoriesIndexPartners"));
+        $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
 
         if($PersonalCategoriesIndexPartners==0){
             if($PersonalCategoriesIndexFrom>4999){
@@ -300,16 +301,21 @@ function save(){
                 $GLOBALS["CLASS_SOCKETS"]->SET_INFO("PersonalCategoriesIndexFrom",250);
                 return;
             }
+            if($EnableLocalUfdbCatService==1){
+                if($PersonalCategoriesIndexFrom<1500){
+                    $PersonalCategoriesIndexFrom=1500;
+                }
+            }
         }
 
         if($PersonalCategoriesIndexFrom<>$PersonalCategoriesIndexFromORG){
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("PersonalCategoriesIndexFrom",$PersonalCategoriesIndexFrom);
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("ufdbguard.php?reindexes-catz=yes");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/change-indexes");
         }
 
     }
     foreach ($_POST as $key=>$val){$GLOBALS["CLASS_SOCKETS"]->SET_INFO($key, $val);}
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("ufdbguard.php?UfdbCatsUpload=yes");
+
 	
 }
 function enable_restful_str($length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'){
