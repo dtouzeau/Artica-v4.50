@@ -285,7 +285,7 @@ El valor numérico de este par%C3¡metro debe ser menor que el n%C3%BAmero de es
 <ad_samba_member>Active Directory Member</ad_samba_member>
 <ad_samba_member_text>Make this server has a member of a Microsoft Active Directory domain</ad_samba_member_text>
 <affect_to_group>Affect to the group</affect_to_group>
-<AgenVersion>Agent version</AgenVersion>
+<AgenVersion>Versi%C3%B3n del agente</AgenVersion>
 <age_of_message>Age of message</age_of_message>
 <aggressive>Sites of obvious aggressive content. This coveres hate speech and all kinds of rassism</aggressive>
 <alias>Alias</alias>
@@ -800,7 +800,7 @@ If users are connected to the Domain, the authentication is sended silently to t
 <auto_account>Auto-create Accounts</auto_account>
 <auto_account_text>Auto-create Accounts is a feature that allow your users to create accounts themself</auto_account_text>
 <auto_apt>Automatically upgrade the system</auto_apt>
-<available>available</available>
+<available>Disponible</available>
 <aveserver_licence_add>Upload the *.key file about Kaspersky for Unix Mail server in order to update the licence.</aveserver_licence_add>
 <aveserver_main_settings>Kaspersky Anti-Virus for Postfix settings</aveserver_main_settings>
 <aveserver_status>Kaspersky Mail server status</aveserver_status>
@@ -1211,7 +1211,7 @@ You need to test this feature.[br]Sometimes cpulimit is bugged and do the opposi
 <CURLE_COULDNT_RESOLVE_HOST>Couldn't resolve host. The given remote host was not resolved</CURLE_COULDNT_RESOLVE_HOST>
 <CURLPHP_NOT_INSTALLED>curl(5)-php is not installed</CURLPHP_NOT_INSTALLED>
 <currently_scanning>Currently scanning</currently_scanning>
-<current_config>Current configuration</current_config>
+<current_config>Configuraci%C3%B3n actual</current_config>
 <current_directory>Directorio actual</current_directory>
 <current_parameters>Current parameters</current_parameters>
 <current_value>Valor actual</current_value>
@@ -2602,7 +2602,7 @@ You can also use your ISP SMTP servers of your ISP by set the appropriate authen
 <main_interfaces>Interfaces principales</main_interfaces>
 <main_parameters>Par%C3¡metros principales</main_parameters>
 <main_settings>Ajustes principales</main_settings>
-<main_settings_samba>Global configuration</main_settings_samba>
+<main_settings_samba>Configuraci%C3%B3n global</main_settings_samba>
 <main_settings_text>Define global parameters of the software, personalize daemons processes and tune performances</main_settings_text>
 <make_samba_ad>Be an Active Directory member</make_samba_ad>
 <make_samba_ad_text>If enabled, this server will be a member of your Active Directory server.[br]In this case Active Directory members will have access to this server services eg Proxy, File sharing...</make_samba_ad_text>
@@ -2886,7 +2886,7 @@ This command line will perform a silent install task.[br]In this case, it is pos
 <notify_templates>notify templates</notify_templates>
 <notif_save_conf_ldap>Parameters are saved to temporary storage,
 don't forget to - Save & Apply settings - to make them in production mode</notif_save_conf_ldap>
-<not_compiled>Not compiled</not_compiled>
+<not_compiled>No compilado</not_compiled>
 <not_enabled_in_amavis>This feature is a part of Amavis</not_enabled_in_amavis>
 <not_installed>No est%C3¡ instalado</not_installed>
 <not_match>didn't match</not_match>
@@ -4492,43 +4492,38 @@ The default limit is more than any reasonable SMTP client would send.[br]
 The limit exists to protect the local mail system against a run-away client. 
 </title_postfix_tuning_5_text>
 <title_postfix_tuning_6>Tuning the frequency of deferred mail delivery attempts</title_postfix_tuning_6>
-<title_postfix_tuning_6_text>Cuando un agente de entrega de Postfix (smtp(8), local(8), etc.) es incapaz de entregar un mensaje, puede culpar al propio mensaje, o puede culpar a la parte receptora.
+<title_postfix_tuning_6_text>Cuando un agente de entrega de Postfix (smtp(8), local(8), etc.) no puede entregar un mensaje, puede atribuir la causa al propio mensaje o al destinatario.[br]
 [ul]
-[li]Cuando el agente de entrega echa la culpa al mensaje, el gestor de colas da al archivo de la cola una marca de tiempo hacia el futuro,
-por lo que no se mirar%C3¡ durante un tiempo.[br]
-Por defecto, el tiempo de enfriamiento es la cantidad de tiempo que ha pasado desde la llegada del mensaje[br].
-Esto resulta en el llamado comportamiento de backoff exponencial.[/li]
-[li]Cuando el agente de entrega culpa a la parte receptora (por ejemplo, un usuario receptor local, o un host remoto),
-el gestor de colas no s%C3%B3lo avanza la marca de tiempo del archivo de cola, sino que también pone a la parte receptora en una lista &quot;muerta&quot; para que sea omitida durante alg%C3%BAn tiempo.[/li]
+[li]Cuando el agente de entrega culpa al mensaje, el gestor de colas asigna al archivo de cola una marca de tiempo futura para que no se procese durante un per%C3%ADodo determinado.[br]
+De forma predeterminada, el tiempo de espera corresponde al tiempo transcurrido desde la llegada del mensaje.[br]
+Este comportamiento da lugar a un mecanismo conocido como retroceso exponencial.[/li]
+[li]Cuando el agente de entrega culpa al destinatario (por ejemplo, un usuario local o un host remoto), el gestor de colas no solo adelanta la marca de tiempo del mensaje, sino que también coloca al destinatario en una lista â%80%9Cdeadâ%80%9D, para que sea omitido durante un per%C3%ADodo de tiempo determinado.[/li]
 [/ul]
-Este proceso se rige por un mont%C3%B3n de peque%C3%B1os par%C3¡metros.
+Este proceso est%C3¡ controlado por varios par%C3¡metros de configuraci%C3%B3n.
 [ul]
-[li][strong]retraso en la ejecuci%C3%B3n de la cola[/strong](por defecto: 300 segundos; antes de Postfix 2.4: 1000s)[br]La frecuencia con la que el gestor de colas escanea la cola en busca de correo diferido. [/li]
-[li][strong]tiempo m%C3%ADnimo de backoff[/strong] (por defecto: 300 segundos; antes de Postfix 2.4: 1000s)[br]
-La cantidad m%C3%ADnima de tiempo que un mensaje no ser%C3¡ mirado, y la cantidad m%C3%ADnima de tiempo para mantenerse alejado de un destino &quot;muerto&quot;.[/li]
-[li][strong]tiempo m%C3¡ximo de backoff[/strong] (por defecto: 4000 segundos)[br]La cantidad m%C3¡xima de tiempo que un mensaje no ser%C3¡ mirado después de un fallo de entrega. [/li]
-[li][strong]tiempo m%C3¡ximo de cola[/strong] (por defecto: 5 d%C3%ADas)[br]El tiempo que un mensaje permanece en la cola antes de ser devuelto como no entregable.[br]
-Especifique 0 para el correo que debe ser devuelto inmediatamente después del primer intento de entrega fallido.[/li]
-[li]bounce_queue_lifetime (por defecto: 5 d%C3%ADas, disponible con Postfix versi%C3%B3n 2.1 y posteriores) El tiempo que un mensaje MAILER-DAEMON permanece en la cola antes de ser considerado como no entregable.
-[br] Especifique 0 para el correo que debe ser intentado s%C3%B3lo una vez. [/li]
-[li][strong]L%C3%ADmite de destinatarios de mensajes qmgr (por defecto: 20000)[/li][/strong]
-El tama%C3%B1o de muchas estructuras de datos del gestor de colas en memoria[br].
-Entre otros, este par%C3¡metro limita el tama%C3%B1o de la lista a corto plazo, en memoria, de destinos &quot;muertos&quot;[br].
-Los destinos que no caben en la lista no se a%C3%B1aden.[/li]
+[li][strong]queue run delay[/strong] (valor predeterminado: 300 segundos; antes de Postfix 2.4: 1000s)[br]
+Define la frecuencia con la que el gestor de colas analiza la cola de correo diferido.[/li]
+[li][strong]minimal backoff time[/strong] (valor predeterminado: 300 segundos; antes de Postfix 2.4: 1000s)[br]
+Tiempo m%C3%ADnimo durante el cual un mensaje no ser%C3¡ reintentado y tiempo m%C3%ADnimo para evitar un destino â%80%9Cdeadâ%80%9D.[/li]
+[li][strong]maximal backoff time[/strong] (valor predeterminado: 4000 segundos)[br]
+Tiempo m%C3¡ximo durante el cual un mensaje no ser%C3¡ reintentado tras un fallo de entrega.[/li]
+[li][strong]maximal queue lifetime[/strong] (valor predeterminado: 5 d%C3%ADas)[br]
+Tiempo m%C3¡ximo que un mensaje permanece en la cola antes de ser devuelto como no entregable.[br]
+Especifique 0 para devolver el mensaje inmediatamente tras el primer intento fallido.[/li]
+[li][strong]bounce_queue_lifetime[/strong] (valor predeterminado: 5 d%C3%ADas)[br]
+Tiempo durante el cual un mensaje MAILER-DAEMON permanece en la cola antes de considerarse no entregable.[br]
+Especifique 0 para intentar la entrega solo una vez.[/li]
+[li][strong]qmgr message recipient limit[/strong] (valor predeterminado: 20000)[br]
+Define el tama%C3%B1o de varias estructuras en memoria del gestor de colas, incluida la lista de destinos â%80%9Cdeadâ%80%9D.[/li]
 [/ul]
-[i]IMPORTANTE: Si aumenta la frecuencia de los intentos de entrega de correo diferido, o si vac%C3%ADa la cola de correo diferido con frecuencia,
-entonces puede encontrar que el rendimiento de la entrega de correo de Postfix realmente empeora.[/i][br]
-[strong]Los s%C3%ADntomas son los siguientes:[/strong]
+[i]IMPORTANTE: Aumentar la frecuencia de los intentos de entrega diferida o vaciar la cola diferida con frecuencia puede degradar el rendimiento de Postfix.[/i][br]
+[strong]Los s%C3%ADntomas t%C3%ADpicos son los siguientes:[/strong]
 [ul]
-[li]La cola activa se satura con correo que tiene problemas de entrega. El nuevo correo entra en la cola activa s%C3%B3lo cuando se aplaza un mensaje antiguo.
-[br] Este es un proceso lento que suele requerir la temporizaci%C3%B3n de una o m%C3¡s conexiones SMTP[/li].
-[Todos los agentes de entrega de Postfix disponibles est%C3¡n ocupados tratando de conectarse a sitios inalcanzables, etc.[br]
-El nuevo correo tiene que esperar hasta que un agente de entrega esté disponible[br].
-Este es un proceso lento que suele requerir la temporizaci%C3%B3n de una o m%C3¡s conexiones SMTP[/li].
-[/ul]Cuando el correo se aplaza con frecuencia, siempre es mejor solucionar el problema que aumentar la frecuencia de los intentos de entrega.
-[br] Sin embargo, si s%C3%B3lo puede controlar la frecuencia de los intentos de entrega, considere la posibilidad de utilizar una m%C3¡quina &quot;cementerio&quot; de fallback_relay dedicada para los destinos malos,
-para que estos destinos no arruinen el rendimiento de las entregas de correo normales.
-[/ul]</title_postfix_tuning_6_text>
+[li]La cola activa se satura con mensajes problem%C3¡ticos. Los nuevos mensajes solo entran en la cola activa cuando mensajes antiguos son diferidos.[/li]
+[li]Todos los agentes de entrega de Postfix disponibles quedan ocupados intentando conectarse a destinos inaccesibles.[/li]
+[/ul]
+Cuando el correo se difiere con frecuencia, siempre es preferible corregir la causa del problema.[br]
+Si solo puede controlarse la frecuencia de los intentos, se recomienda utilizar un fallback_relay dedicado tipo â%80%9Ccementerioâ%80%9D para preservar el rendimiento normal del sistema.</title_postfix_tuning_6_text>
 <title_postfix_tuning_7>Tuning the number of Postfix processes</title_postfix_tuning_7>
 <title_postfix_tuning_7_text>The "default process limit" configuration parameter gives direct control over how many daemon processes Postfix will run.[br]
 As of Postfix 2.0 the default limit is 100 smtp client processes, 100 smtp server processes, and so on.[br]
@@ -4591,7 +4586,7 @@ Cada nivel de registro también incluye la informaci%C3%B3n que se registra en u
 [li]El uso del nivel de registro &amp;quot;{tls_log_field_4}&amp;quot; [br]est%C3¡ totalmente desaconsejado[/li][/ul]</tls_logging_intro>
 <tls_log_field_0>Disable logging of TLS activity</tls_log_field_0>
 <tls_log_field_1>Log TLS handshake and certificate information</tls_log_field_1>
-<tls_log_field_2>Log levels during TLS negotiation</tls_log_field_2>
+<tls_log_field_2>Niveles de registro durante la negociaci%C3%B3n TLS</tls_log_field_2>
 <tls_log_field_3>Log hexadecimal and ASCII dump of TLS negotiation process</tls_log_field_3>
 <tls_log_field_4>Log hexadecimal and ASCII dump of complete transmission after STARTTLS</tls_log_field_4>
 <tls_smtp_server>TLS SMTP Server</tls_smtp_server>
@@ -4836,7 +4831,7 @@ Para que WCCP funcione, en primer lugar necesitas configurar tu Squid Cache, y a
 <webproxy_service_text>proxy service allows you to accelerate web pages access by using a cache system.[br]
  This service also offers antivirus and web pages filtering features</webproxy_service_text>
 <webradio>Sites that offer listening to music and radiostreams.</webradio>
-<webserver_errors>Web server errors</webserver_errors>
+<webserver_errors>Errores del servidor web</webserver_errors>
 <webserver_events>Web server events</webserver_events>
 <webserver_parameters>Web server engine</webserver_parameters>
 <webserver_parameters_text>Enable/Disable personalize the dedicated web server engine</webserver_parameters_text>

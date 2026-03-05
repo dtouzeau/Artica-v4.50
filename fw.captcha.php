@@ -350,7 +350,7 @@ function captcha($return=false,$error=null){
     if($HideArticaVersion==0) {
         $SP=null;
         $CURVER=trim(@file_get_contents("VERSION"));
-        $CURPATCH=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("artica.php?SPVersion=yes");
+        $CURPATCH= $GLOBALS["CLASS_SOCKETS"]->SPVersion();
         if($CURPATCH>0){
             $SP="&nbsp;Service Pack $CURPATCH";
         }

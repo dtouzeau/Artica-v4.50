@@ -15,7 +15,7 @@ if(isset($_GET["synchronize-remote-categories"])){remote_categories_service_fetc
 if(isset($_GET["category-dns-js"])){remote_category_js();exit;}
 if(isset($_GET["category-http-js"])){remote_http_category_js();exit;}
 
-
+if(isset($_GET["remote-http-category-tabs"])){remote_http_category_tabs();exit;}
 if(isset($_GET["remote-http-category-popup"])){remote_http_category_popup();exit;}
 if(isset($_GET["remote-category-popup"])){remote_category_popup();exit;}
 
@@ -181,8 +181,6 @@ function pinger2_global_status():string{
 function pinger2():bool{
     $tpl=new template_admin();
     echo pinger2_global_status()."\n";
-    $ufdbs=array();
-
     $sock=new sockets();
     $DNSCATZREMOTE=array();
     $DNSCATZSTATUS=array();
@@ -200,10 +198,11 @@ function pinger2():bool{
 
     if(isset($_GET["ufdb"])){
         $ufdbs=explode("-",$_GET["ufdb"]);
-
+        VERBOSE("UFDB -> ". count($ufdbs));
         if( count($ufdbs)>0 ) {
             VERBOSE("UFDB -> {$_GET["ufdb"]} --> ".count($ufdbs)." -> /categories/locales",__LINE__);
             $LocalCatz=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/locales"),true);
+
             if(isset($LocalCatz["Categories"])){
                 foreach ($LocalCatz["Categories"] as $cat){
                     $LOCAL_CATEGORIES[$cat["category_id"]]=$cat["compiledate"];
@@ -217,10 +216,11 @@ function pinger2():bool{
                     $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-primary'>{active2}</span>"));
                     echo "$('#$idSpan').html(base64_decode('$t'));\n";
                     $TimeCompiles=distanceOfTimeInWords($LOCAL_CATEGORIES[$category_id],time(),true);
-                    $t = base64_encode($tpl->_ENGINE_parse_body("<small>{updated}: $TimeCompiles</small>"));
+                    $t = base64_encode($tpl->_ENGINE_parse_body("<small>{updated2}: $TimeCompiles</small>"));
                     echo "$('#$Updted').html(base64_decode('$t'));\n";
                     continue;
                 }
+                VERBOSE("\$LOCAL_CATEGORIES[$category_id] not found",__LINE__);
 
 
                 if(isset($DNSCATZREMOTE[$category_id])){
@@ -443,6 +443,25 @@ function all_categories_officials():bool{
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 
+}
+function remote_http_category_tabs(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    $function="";
+    if(isset($_GET["function"])) {
+        $function = $_GET["function"];
+    }
+
+    $category_id        = intval($_GET["remote-http-category-tabs"]);
+
+    $q=new postgres_sql();
+    $sql="SELECT * FROM personal_categories WHERE category_id='$category_id'";
+    $ligne=$q->mysqli_fetch_array($sql);
+    $array[$ligne["categoryname"]]="$page?remote-http-category-popup=$category_id&function=$function";
+    $array["{items}"]="$page?category-items=$category_id&function={$_GET["function"]}";
+    echo $tpl->tabs_default($array);
+    return true;
 }
 function tabs():bool{
     $page=CurrentPageName();
@@ -683,13 +702,19 @@ function category_remove(){
         echo "Unknown category...\n";
         return;
     }
+
     $q=new postgres_sql();
     $ligne=pg_fetch_array($q->QUERY_SQL("SELECT categoryname FROM personal_categories WHERE category_id='$category'"));
     $categoryname=$ligne["categoryname"];
 
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/$category/remove"));
-    if(!$json->Status){
-        echo "($categoryname) ".$json->Error;
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/category/delete/$category"),true);
+    if(!isset($json["Status"])){
+        echo "Bad Protocol";
+        return;
+    }
+    if(!$json["Status"]){
+        echo "($categoryname) ".$json["Error"];
         return;
     }
     admin_tracks("Removed category $categoryname ID.$category");
@@ -1001,7 +1026,7 @@ function remote_http_category_js():bool{
     $ligne=$q->mysqli_fetch_array($sql);
     $title="{category}: {$ligne["categoryname"]}";
     return $tpl->js_dialog2($title,
-        "$page?remote-http-category-popup=$category_id$function",550);
+        "$page?remote-http-category-tabs=$category_id$function",550);
 
 }
 function remote_http_category_popup(){
@@ -1150,6 +1175,7 @@ function remote_categories_service_popup():bool{
     $RemoteCategoriesServiceSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceSSL"));
     $RemoteCategoriesServicePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicePort"));
     $RemoteCategoriesServiceAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceAddr");
+    $RemoteCategoriesServiceMetaDebug=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceMetaDebug"));
 
 
     $form[]=$tpl->field_checkbox("UseRemoteCategoriesService","{enabled}",$UseRemoteCategoriesService);
@@ -1160,6 +1186,7 @@ function remote_categories_service_popup():bool{
     }
     $form[] = $tpl->field_numeric("RemoteCategoriesServicePort","{remote_server_port} (HTTP)",$RemoteCategoriesServicePort);
     $form[] = $tpl->field_checkbox("RemoteCategoriesServiceSSL","{use_ssl}",$RemoteCategoriesServiceSSL);
+    $form[]=$tpl->field_checkbox("RemoteCategoriesServiceMetaDebug","{debug}",$RemoteCategoriesServiceMetaDebug);
     echo $tpl->form_outside("", $form,"{CategoryDatabaseReplication_explain}","{apply}","$function","AsDansGuardianAdministrator");
     return true;
 }
@@ -1389,6 +1416,7 @@ function category_step_buttons():bool{
     $function=$_GET["function"];
     $tpl        = new template_admin();
     $page       = CurrentPageName();
+    $meta       = intval($_GET["meta"]);
 
     $topbuttons=array();
 
@@ -1404,8 +1432,10 @@ function category_step_buttons():bool{
     //$html[]=$tpl->_ENGINE_parse_body("<div class=\"btn-group\" data-toggle=\"buttons\">$DropDownButton");
     if($PowerDNSEnableClusterSlave==0) {
         if($categorykey>0) {
-            $add="Loadjs('$page?category-items-addjs=$categorykey&function=$function')";
-            $topbuttons[] = array("$add", ico_plus, "{add_websites}");
+            if($meta==0) {
+                $add = "Loadjs('$page?category-items-addjs=$categorykey&function=$function')";
+                $topbuttons[] = array("$add", ico_plus, "{add_websites}");
+            }
         }
     }
 
@@ -1416,7 +1446,9 @@ function category_step_buttons():bool{
 
     if($PowerDNSEnableClusterSlave==0) {
         if($categorykey>0) {
-            $topbuttons[] = array("$jsDelete", ico_trash, "{remove_all_items}");
+            if($meta==0) {
+                $topbuttons[] = array("$jsDelete", ico_trash, "{remove_all_items}");
+            }
         }
     }
 
@@ -1525,11 +1557,12 @@ function category_items_table(){
     $category_id=intval($_GET["categorykey"]);
     if($category_id==0){return;}
     $q=new postgres_sql();
-    $ligne=pg_fetch_array($q->QUERY_SQL("SELECT categorytable FROM personal_categories WHERE category_id='$category_id'"));
+    $ligne=pg_fetch_array($q->QUERY_SQL("SELECT categorytable,meta FROM personal_categories WHERE category_id='$category_id'"));
     $table=$ligne["categorytable"];
+    $meta=intval($ligne["meta"]);
     $search=trim($_GET["search"]);
     $search=$q->SearchAntiXSS($search);
-    $jsbuttons="LoadAjaxSilent('compile-category-buttons','$page?compile-category-buttons=yes&function={$_GET["function"]}&categorykey=$category_id');";
+    $jsbuttons="LoadAjaxSilent('compile-category-buttons','$page?compile-category-buttons=yes&function={$_GET["function"]}&categorykey=$category_id&meta=$meta');";
     $_SESSION["CATEGORY_SEARCH"]=$search;
     $LIMIT=250;
     $ORDER=null;
@@ -1598,6 +1631,9 @@ function category_items_table(){
 
         $zmd5=md5($pattern);
         $delete=$tpl->icon_delete("Loadjs('$page?delete-pattern=$patternenc&category_id=$category_id&md=$zmd5&function={$_GET["function"]}')");
+        if($meta==1){
+            $delete="&nbsp;";
+        }
         $ROWS[]="<tr class='$TRCLASS' id='$zmd5'>";
         $ROWS[]="<td class=\"$text_class\" style='width: 1%'>$num</td>";
         $ROWS[]="<td class=\"$text_class\" style='width: 99%'>$pattern</td>";
@@ -1634,7 +1670,7 @@ function category_items_table(){
     $html[]="</table>";
     $html[]="<small></small>";
 	$html[]="<script>";
-    $html[]="LoadAjaxSilent('compile-category-buttons','$page?compile-category-buttons=yes&function={$_GET["function"]}&categorykey=$category_id');";
+    $html[]="LoadAjaxSilent('compile-category-buttons','$page?compile-category-buttons=yes&function={$_GET["function"]}&categorykey=$category_id&meta=$meta');";
     $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$(document).ready(function() { $('#table-persocats-items').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";
@@ -1649,8 +1685,8 @@ function category_new_save():bool{
     $_POST["category_text"]=url_decode_special_tool($_POST["description"]);
     $org=$_POST["personal_database"];
     $tpl=new template_admin();
-    include_once(dirname(__FILE__)."/ressources/class.dansguardian.inc");
-    $dans=new dansguardian_rules();
+    $tpl->CLEAN_POST();
+
 
     if($_POST["personal_database"]==null){
         $tpl->post_error("No category set or wrong category name $org");
@@ -1658,31 +1694,21 @@ function category_new_save():bool{
     }
 
     if($_POST["personal_database"]=="security"){$_POST["personal_database"]="security2";}
-    $_POST["category_text"]=mysql_escape_string2($_POST["category_text"]);
 
-    if(isset($dans->array_blacksites[$_POST["personal_database"]])){
-        echo $tpl->post_error("{$_POST["personal_database"]} :{category_already_exists}<br>{category_already_exists_explain}");
+    $array=array(
+        "categoryname"=>$_POST["personal_database"],
+        "description"=>$_POST["category_text"],
+        "public_mode"=>$_POST["PublicMode"],
+        "id"=>0
+    );
+
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/category/create",$array),true);
+    if(!$json["Status"]){
+        echo $tpl->post_error($json["Error"]);
         return false;
     }
-
-    $q=new postgres_sql();
-    $ligne=$q->mysqli_fetch_array("SELECT categorykey FROM personal_categories WHERE categoryname='{$_POST["personal_database"]}'");
-    if(isset($ligne["categorykey"])){
-        if(strlen($ligne["categorykey"])>1){
-            echo $tpl->post_error("{$_POST["personal_database"]}:{category_already_exists}<br>{category_already_exists_explain}");
-            return false;
-        }
-    }
-
-
-    $category=new categories();
-    if(!$category->create_category($_POST["personal_database"], $_POST["category_text"], $_POST["PublicMode"])){
-        echo $tpl->post_error($category->mysql_error);
-    }
-
-    return admin_tracks("Adding a new personal category {$_POST["personal_database"]}");
-
-
+    return admin_tracks("Create a new personal category {$_POST["personal_database"]} ({$_POST["category_text"]})");
 }
 function filltable():bool{
     $sid=$_GET["filltable"];
@@ -2134,6 +2160,10 @@ function table(){
     $CategoryRPZ=0;
     $SOURCES=base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoriesExternalSources"));
     $SOURCES_TABLE=unserialize($SOURCES);
+    if(!$SOURCES_TABLE){
+        $SOURCES_TABLE=array();
+    }
+
     $CURRENT=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbMasterCache"));
     $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
     $CategoryServiceRPZEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoryServiceRPZEnabled"));

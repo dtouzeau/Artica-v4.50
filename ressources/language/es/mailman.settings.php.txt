@@ -258,7 +258,7 @@ When a post from a non-member is received, the message's sender is matched again
 held, rejected (bounced), and discarded addresses.[br] If no match is found, then this action is taken</generic_nonmember_action_text>
 <global_settings>Configuraci%C3%B3n global</global_settings>
 <goodbye_msg_text>Text sent to people leaving the list.  If empty, no special text will be added to the unsubscribe message.</goodbye_msg_text>
-<headers>Headers</headers>
+<headers>Encabezados</headers>
 <header_filter_rules>Reglas de la cabecera</header_filter_rules>
 <header_filter_rules_text>Reglas de filtrado para comparar con las cabeceras de un mensaje[br].
 Cada regla de filtrado de cabecera tiene dos partes, una lista de expresiones regulares, una por l%C3%ADnea, y una acci%C3%B3n a realizar.[br]

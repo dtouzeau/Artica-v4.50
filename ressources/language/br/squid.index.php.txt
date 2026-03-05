@@ -128,17 +128,14 @@ The same user can log to a maximum of 2 times from two different machines and wh
 </acl_max_user_ip_text>
 <acl_max_user_ip_title>This will be matched when the same user attempts to log in for more than the specified number of times from different ip addresses</acl_max_user_ip_title>
 <acl_method>Request Method</acl_method>
-<acl_method_text>Matching done based on the HTTP request method:
-[UL]
+<acl_method_text>[UL]
 [li]GET[/li]
 [li]PUT[/li]
 [li]HEAD[/li]
 [li]CONNECT[/li]
 [li]DELETE[/li]
 [li]PURGE[/li]
-[/UL]
-
-</acl_method_text>
+[/UL]</acl_method_text>
 <acl_method_title>Este tipo de ACL corresponde ao método HTTP nos cabeçalhos de solicitaç%C3£o. Isto inclui os métodos GET, PUT, etc.</acl_method_title>
 <acl_myip>Proxy IP Address</acl_myip>
 <acl_myip_text>Using this acl type, we can specify the local IP address on which the clients connections exists.[br]
@@ -308,18 +305,21 @@ All objects which are to be cached are stored in the disk space defined by this 
 This defines the path to cache directory, cache directory name, type and size of the cache area.
 </cache_dir_text>
 <cache_mem>ideal amount of memory</cache_mem>
-<cache_mem_text>Define a quantidade ideal de mem%C3%B3ria para ser usada para objetos em trânsito, objetos quentes e objetos em cache negativa.[br]
+<cache_mem_text>Esta configuraç%C3£o define a quantidade ideal de mem%C3%B3ria utilizada para objetos em trânsito, objetos ativos (hot) e objetos em cache negativo.[br]
 Os dados desses objetos s%C3£o armazenados em blocos de 4 KB.[br]
-Este parâmetro especifica o limite superior ideal para o tamanho total dos blocos de 4 KB alocados.[br]
-Os objetos em trânsito têm prioridade sobre os outros.[br]
-Quando for necess%C3¡rio espaço adicional para dados recebidos, os objetos em cache negativa e quentes ser%C3£o liberados.[br]
-Em outras palavras, os objetos em cache negativa e quentes ocupar%C3£o qualquer espaço n%C3£o utilizado que n%C3£o seja necess%C3¡rio para objetos em trânsito.[br]
-Se necess%C3¡rio, este limite ser%C3¡ excedido.[br]
+Este parâmetro especifica o limite superior ideal do tamanho total dos blocos de 4 KB alocados.[br]
+Os objetos em trânsito têm prioridade sobre os demais.[br]
+Quando é necess%C3¡rio espaço adicional para dados de entrada, os objetos em cache negativo e os objetos ativos s%C3£o liberados.[br]
+Em outras palavras, os objetos em cache negativo e hot ocupam o espaço n%C3£o utilizado que n%C3£o é necess%C3¡rio para os objetos em trânsito.[br]
+Se necess%C3¡rio, esse limite pode ser excedido.[br]
+Especificamente, se a taxa de requisiç%C3µes de entrada exigir mais mem%C3%B3ria do que cache_mem para armazenar objetos em trânsito, o serviço Proxy exceder%C3¡ temporariamente esse limite para atender novas requisiç%C3µes.[br]
+Quando a carga diminui, os blocos de mem%C3%B3ria s%C3£o liberados até que o limite superior seja atingido.[br]
+Depois disso, os blocos dispon%C3%ADveis passam a ser usados para armazenar objetos hot.[br]
 [blk]
-Nota: Este parâmetro n%C3£o especifica o tamanho m%C3¡ximo do processo.[br]
-Define um limite para um aspeto do uso de mem%C3%B3ria do Proxy.[br]
-O processo provavelmente ser%C3¡ duas ou três vezes maior do que o valor indicado aqui.[br]
-[/blk]</cache_mem_text>
+Nota: Esta diretiva n%C3£o define o tamanho m%C3¡ximo do processo.[br]
+Ela limita apenas um aspecto do uso de mem%C3%B3ria do serviço Proxy.[br]
+O serviço Proxy também utiliza mem%C3%B3ria para outras finalidades.[br]
+Como resultado, o tamanho do processo pode chegar a ser duas ou três vezes maior do que o valor configurado aqui.[/blk]</cache_mem_text>
 <cache_replacement_policy>Cache Replacement Policy</cache_replacement_policy>
 <cache_replacement_policy_text>[b]
 The cache replacement policy parameter determines which objects are to be replaced when disk space is needed[/b][br]

@@ -405,21 +405,17 @@ function unbound_client_status():string{
     if(!file_exists("/etc/artica-postfix/UnboundCluster.json")){
         return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}"));
     }
-    $json=json_decode(file_get_contents("/etc/artica-postfix/UnboundCluster.json"));
-
-    if ($json === false) {
+    $json=json_decode(file_get_contents("/etc/artica-postfix/UnboundCluster.json"),true);
+    if(!is_array($json)){
         return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}"));
     }
-    if (!is_object($json)) {
-        return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}"));
-    }
-    if (!property_exists($json, "Time")) {
+    if(!isset($json["Time"])){
         return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-database","-","{APP_UNBOUND} {cluster_package}"));
     }
-    $Time=$json->Time;
+
+    $Time=$json["Time"];
     $title_time=$tpl->time_to_date($Time,true);
     $time=distanceOfTimeInWords($Time,time());
-
     return $tpl->_ENGINE_parse_body($tpl->widget_h("green","fas fa-database","$Time<br><small style='color:white'>$time</small>","{cluster_package}: {APP_UNBOUND}<br>$title_time"));
 
 
@@ -464,20 +460,24 @@ function cluster_Status():string{
     }
 
 
-    $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/cluster/client/v2/status"));
-    if( !$data->Status) {
+    $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/cluster/client/v2/status"),true);
+    if(!is_array($data)){
+        return $tpl->widget_style1("bg-red", "fa-solid fa-wifi-slash", "{error}","{protocol_error}");
+    }
+
+    if( !$data["Status"]) {
         $error="{disconnected}";
-        if(preg_match("#tls:\s+(.+)#",$data->Error,$re)){
-            $data->Error=$re[1];
+        if(preg_match("#tls:\s+(.+)#",$data["Error"],$re)){
+            $data["Error"]=$re[1];
             $error="{protocol_error}";
         }
-        return $tpl->widget_style1("bg-red", "fa-solid fa-wifi-slash", $data->Error,$error);
+        return $tpl->widget_style1("bg-red", "fa-solid fa-wifi-slash", $data["Error"],$error);
     }
-    if(!property_exists($data,"Info")){
+    if(!isset($data["Info"])){
         return $tpl->widget_style1("bg-red", "fa-solid fa-wifi-slash", "{error}", "{protocol_error}");
     }
-    $json2=json_decode($data->Info);
-    return $tpl->widget_style1("navy-bg", ico_link,"{connected_to} $json2->Hostname", "{linked}");
+    $json2=json_decode($data["Info"],true);
+    return $tpl->widget_style1("navy-bg", ico_link,"{connected_to} {$json2["Hostname"]}", "{linked}");
 }
 
 function status(){

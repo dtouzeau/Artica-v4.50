@@ -29,7 +29,7 @@ Instead, this option should be used only on dedicated servers.</encrypt_explain>
 Alcuni client come Netscape si lamenteranno se non è disponibile alcun certificato (per la lista di CA in $smtpd_tls_CAfile) o
 offrirà più certificati client tra cui scegliere.[br]
 Questo pu%C3² essere fastidioso, quindi questa opzione è &quot;off&quot; per impostazione predefinita.</smtpd_tls_ask_ccert_text>
-<smtpd_tls_auth_only>Mandatory TLS communications</smtpd_tls_auth_only>
+<smtpd_tls_auth_only>Comunicazioni TLS obbligatorie</smtpd_tls_auth_only>
 <smtpd_tls_auth_only_text>When TLS encryption is optional in the Postfix SMTP server,
 do not announce or accept SASL authentication over unencrypted connections</smtpd_tls_auth_only_text>
 <smtpd_tls_received_header>Include information about the protocol</smtpd_tls_received_header>

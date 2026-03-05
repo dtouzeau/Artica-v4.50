@@ -176,9 +176,11 @@ function form_popup():bool{
     return true;
 }
 function restart_js():string{
-    $page=CurrentPageName();
+
     $tpl            = new template_admin();
-    return $tpl->js_restart_api("/dnscatz/restart","LoadAjax('table-ufdbcatstatus','$page?tabs=yes');");
+    return $tpl->framework_buildjs("/dnscatz/restart",
+    "dnscatz.restart.progress","dnscatz.restart.log","progress-ufdbcat-restart");
+
 }
 function official_js():bool{
     $tpl=new template_admin();

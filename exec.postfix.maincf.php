@@ -1558,6 +1558,7 @@ function MasterCF_DOMAINS_THROTTLE(){
 		if($GLOBALS["VERBOSE"]){echo "MasterCF_DOMAINS_THROTTLE():: Not An Array line ". __LINE__."\n";}
 		return null;
 	}
+    $moinso=array();
 
     foreach ($array as $uuid=>$conf){
 		if($conf["ENABLED"]<>1){continue;}

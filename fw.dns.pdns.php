@@ -71,8 +71,6 @@ function tabs(){
 	$HideCorporateFeatures=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideCorporateFeatures"));
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$sock=new sockets();
-	$users=new usersMenus();
 	$array["{service_status}"]="$page?table=yes";
 	$PowerDNSEnableRecursor=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableRecursor"));
 	

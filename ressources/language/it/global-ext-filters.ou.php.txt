@@ -19,10 +19,11 @@ In order for search zip to have an effect, you must either:
 use Forbidden attachments mode  and specify in the Forbidden attachments the kill or delete  actions for select extensions.
 </search_zip_text>
 <subj_deleted>Add text to Subject (deleted)</subj_deleted>
-<subj_deleted_text>Add text to Subject if an attachment is deleted for any reason.
-Undefined by default, so renattach falls through to the next valid subject directive, and eventually to add subject</subj_deleted_text>
+<subj_deleted_text>Aggiunge testo allâ%80%99oggetto (Subject) se un allegato viene eliminato per qualsiasi motivo.[br]
+Per impostazione predefinita non è definito, quindi il processo passa alla successiva direttiva dellâ%80%99oggetto valida e, infine, a add subject.</subj_deleted_text>
 <subj_renamed>Add text to Subject (renamed)</subj_renamed>
-<subj_renamed_text>Add text to Subject if an attachment is renamed for any reason.[br]Undefined by default, so renattach falls through to add subject</subj_renamed_text>
+<subj_renamed_text>Aggiunge testo allâ%80%99oggetto (Subject) se un allegato viene rinominato per qualsiasi motivo.[br]
+Per impostazione predefinita non è definito, quindi il processo passa a add subject.</subj_renamed_text>
 <users_groups_list>User's Groups list</users_groups_list>
 <warning_html>Body Html message notification</warning_html>
 <warning_html_text>Inserts a warning message into HTML portions of the email when

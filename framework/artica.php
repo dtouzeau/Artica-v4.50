@@ -36,7 +36,6 @@ if(isset($_GET["lighttpd-reload"])){lighttpd_reload();exit;}
 if(isset($_GET["webconsole-restart"])){webconsole_restart();exit;}
 if(isset($_GET["prepare-download"])){prepare_download();exit;}
 if(isset($_GET["snapshot-uploaded"])){snapshot_uploaded();exit;}
-if(isset($_GET["SPVersion"])){SPVersion();exit;}
 if(isset($_GET["PatchsBackupSize"])){PatchsBackupSize();exit;}
 if(isset($_GET["PatchsBackupRemove"])){PatchsBackupRemove();exit;}
 if(isset($_GET["snapshots-events"])){searchInSyslogSnapshots();exit;}
@@ -133,34 +132,6 @@ function uncompress(){
     shell_exec("/usr/bin/monit -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload");
     echo "<articadatascgi>".base64_encode(serialize(array("R"=>true,"T"=>"{success}: v.$VERSION")))."</articadatascgi>";
 }
-
-function SPVersion()
-{
-    $VERSION=trim(@file_get_contents("/usr/share/artica-postfix/VERSION"));
-    if (!is_dir("/usr/share/artica-postfix/SP")) {
-        @mkdir("/usr/share/artica-postfix/SP");
-        if ($GLOBALS["VERBOSE"]) {
-            echo "Creating directory SP<br>\n";
-        }
-        echo "<articadatascgi>0</articadatascgi>";
-        return;
-    }
-    if (!is_file("/usr/share/artica-postfix/SP/$VERSION")) {
-        if ($GLOBALS["VERBOSE"]) {
-            echo "/usr/share/artica-postfix/SP/$VERSION no such file<br>\n";
-        }
-        echo "<articadatascgi>0</articadatascgi>";
-        return;
-    }
-    $SP=intval(@file_get_contents("/usr/share/artica-postfix/SP/$VERSION"));
-    echo "<articadatascgi>$SP</articadatascgi>";
-}
-
-
-
-
-
-
 function restart_webconsole_wait(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");

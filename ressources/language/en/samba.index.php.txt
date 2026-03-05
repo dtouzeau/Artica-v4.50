@@ -26,21 +26,20 @@ Default: disable netbios =disabled</disable netbios_text>
 This  will also  cause  the Samba server to act as a domain controller for NT4 style domain services.[br]
 For more details on setting up this feature see the Domain Control chapter of the Samba HOWTO Collection.</domain logons_text>
 <domain master>domain master</domain master>
-<domain master_text>Tell samba to enable WAN-wide browse list collation.[br]
-Setting this option causes server to claim a special domain specific NetBIOS name that  identifies it as a domain master browser for its given workgroup.[br]
-Local master browsers in the same workgroup on broadcast-isolated subnets will give this server their local browse lists, and then ask shared server
-for a complete copy of the browse list for the  whole wide area network.
-[br]Browser clients will then contact their local master browser, and will receive the domain-wide browse list, instead of just the list for their broadcast-isolated subnet.[br]
-Note that Windows NT Primary Domain Controllers expect to be able to claim this workgroup specific special NetBIOS name that identifies
-them as domain master browsers for that workgroup by default (i.e. there is no way to prevent a Windows NT PDC from attempting to do this).[br]
-This means that if this parameter is set and this server claims the special name for a workgroup before a Windows NT PDC is able to do so then cross subnet browsing
-will behave strangely and may fail.[br]
-If  domain  logons  =  yes,  then  the default behavior is to enable the domain master parameter.[br]
-If domain logons is not enabled (the default setting), then neither will domain master be enabled by default.[br]
-When domain logons = Yes the default setting for this parameter is Yes, with the result that Samba will be a PDC.[br]
-If domain  master  = No, Samba will function as a BDC.[br]
-In general, this parameter should be set to ’No’ only on a BDC. [br]
-Default: domain master = auto</domain master_text>
+<domain master_text>Enable the File-Sharing Engine to perform WAN-wide browse list collation.[br]
+When this option is enabled, the server claims a special workgroup-specific NetBIOS name that designates it as the Domain Master Browser for that workgroup.[br]
+Local master browsers located on broadcast-isolated subnets within the same workgroup will forward their local browse lists to this server. In return, they will request a consolidated browse list representing the entire wide area network.[br]
+Client systems will continue to contact their local master browser, but will receive a domain-wide browse list instead of a subnet-limited list.[br]
+[b]Important considerations:[/b][br]
+Windows NT Primary Domain Controllers (PDCs) automatically attempt to claim the special NetBIOS name that identifies them as Domain Master Browsers for their workgroup. This behavior cannot be disabled.[br]
+If this server claims the Domain Master Browser role before a Windows NT PDC does, cross-subnet browsing may behave unpredictably or fail.[br]
+Behavior summary:[br]
+- If enabled, the server will activate the domain master parameter by default.[br]
+- If domain logons is not enabled (default setting), the domain master role will not be enabled automatically.[br]
+- When active, the File-Sharing Engine operates as a Primary Domain Controller (PDC).[br]
+- When inactive, the File-Sharing Engine operates as a Backup Domain Controller (BDC).[br]
+In general, this parameter should only be disabled on a BDC.
+</domain master_text>
 <domain_admin>Domain Administrator privileges</domain_admin>
 <domain_admin_text>Update the Administrator Account that allow to link computers to your Primary Domain Controler and be able to perform administration operations.</domain_admin_text>
 <enable_disable_samba>Enable or disable service</enable_disable_samba>

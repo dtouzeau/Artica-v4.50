@@ -1254,7 +1254,6 @@ function stop($aspid=false){
 		if($GLOBALS["OUTPUT"]){echo "Stopping......: ".date("H:i:s")." [INIT]: {$GLOBALS["TITLENAME"]} service already stopped...\n";}
 		if($GLOBALS["BYCONSOLE"]){
 			@unlink("/etc/artica-postfix/MEM_INTERFACES");
-			shell_exec("$php5 /usr/share/artica-postfix/exec.virtuals-ip.php --build");
 			$unix->THREAD_COMMAND_SET("/etc/init.d/artica-status reload");
 		}
 		return;

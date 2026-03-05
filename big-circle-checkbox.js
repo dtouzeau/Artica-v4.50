@@ -1,15 +1,19 @@
 /* Big Circle Checkbox – On-Demand (pure JS, inline style objects) */
 (function () {
     var REQUIRED_VERSION = '1.0.4';
+//  card: "#111317",
+
+
     const COLORS = {
-        card: "#111317",
-        text: "#e6eaf2",
-        muted: "#9aa4b2",
-        border: "#20242b",
+        card: "#fdfafa",
+        text: "#171717b8",
+        muted: "#111111",
+        border: "#a9a8a8cc",
         ring: "rgba(91,156,255,0.25)",
         ok: "#1AB394",      // checked
         grey: "#9aa4b2",    // unchecked
-        greyLight: "#e6e8ee"// disabled
+        greyLight: "#e6e8ee",// disabled
+        descFontWeight: "normal"
     };
 
     // Utility: create element with inline styles + attributes (supports { text, html })
@@ -79,7 +83,7 @@
             },
             content: { display: "grid", gap: "6px", minWidth: "0" },
             title:   { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            desc:    { fontSize: "16px", color: COLORS.muted }
+            desc:    { fontSize: "16px", color: COLORS.muted, fontWeight: COLORS.descFontWeight }
         };
 
         const wrap  = el("label", styles.card);
@@ -289,7 +293,7 @@
             },
             content: { display: "grid", gap: "6px", minWidth: "0", flex: "1" },
             title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            desc: { fontSize: "16px", color: COLORS.muted }
+            desc: { fontSize: "16px", color: COLORS.muted, fontWeight: COLORS.descFontWeight }
         };
 
         const wrap = el("div", styles.card);
@@ -872,17 +876,19 @@
             if (!input.disabled) wrap.style.boxShadow = `0 0 0 4px ${COLORS.ring}`;
         });
 
-        // Blur - validate and save if changed
+        // Blur - remove focus ring only, do NOT auto-save
         input.addEventListener("blur", () => {
             wrap.style.boxShadow = "none";
-            saveValue();
         });
 
-        // Enter key - save if valid
+        // Enter or Tab key - save if valid
         input.addEventListener("keydown", (e) => {
             if (e.key === "Enter" || e.keyCode === 13) {
                 e.preventDefault();
-                input.blur(); // This will trigger blur event which saves
+                saveValue();
+                input.blur();
+            } else if (e.key === "Tab" || e.keyCode === 9) {
+                saveValue();
             }
         });
 

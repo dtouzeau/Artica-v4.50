@@ -1,20 +1,16 @@
 <?php
-/**
- * Agent Network Interface Metrics Charts
- *
- * This file displays network interface bandwidth and traffic charts
- * for a network agent using Chart.js and the articarest API.
- *
- * API Endpoints Used:
- * - GET /netagents/interfaces/{id} - List interfaces
- * - GET /netagents/interfaces/{id}/metrics/{interface}?range=hour|day|week|month&aggregated=1
- *
- * Usage:
- * - Include this file in your webconsole
- * - Access: fw.netagents.interface.metrics.php?agent_id=1&interface=eth0&range=day
- */
+// Agent Network Interface Metrics Charts
+// Displays bandwidth, packets, errors & dropped charts per interface using Chart.js
+//
+// Entry points:
+//   ?agent-interface-metrics-js={id}  → opens dialog
+//   ?popup=yes&agent_id={id}          → dialog shell with auto-load
+//   ?charts=yes&agent_id={id}&interface=X&range=Y → chart content (AJAX)
+//
+// API Endpoints:
+//   GET /netagents/interfaces/details/{id}  → interface list (cached 2h)
+//   GET /netagents/interfaces/{id}/metrics/{interface}?range=hour|day|week|month&aggregated=1
 
-// Include the socket class for API communication
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.netagent.artica.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){
@@ -23,451 +19,410 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){
     }
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 }
-if(isset($_GET["popup"])){StartPoint();exit;}
+
+if(isset($_GET["charts"])){display_charts();exit;}
+if(isset($_GET["popup"])){popup_shell();exit;}
 js();
 
+// ─── Open the dialog ───
 function js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $id=intval($_GET["agent-interface-metrics-js"]);
-    $Hostname=getAgentHostname($id);
-    return $tpl->js_dialog3("#$id: $Hostname - Interface Metrics","$page?popup=yes&agent_id=$id",950);
+    $AgentObj=new ArticaNetAgents($id);
+    $hostname=$AgentObj->GetAgentHostname();
+    if(strlen($hostname)<1){$hostname="#$id";}
+    return $tpl->js_dialog3("<i class='".ico_speed."'></i> $hostname — {interface} {statistics}","$page?popup=yes&agent_id=$id",1050);
 }
 
-/**
- * Fetch interfaces list from the API
- */
-function fetch_agent_interfaces($agent_id) {
-    $sock = new sockets();
-    $data = $sock->GET_INFO("/netagents/interfaces/{$agent_id}");
-
-    if (empty($data)) {
-        return null;
-    }
-
-    $json = json_decode($data, true);
-    if (!is_array($json) || isset($json['Error'])) {
-        return null;
-    }
-
-    return $json;
-}
-
-/**
- * Fetch interface metrics from the API
- */
-function fetch_interface_metrics($agent_id, $interface_name, $range = 'day') {
-    $sock = new sockets();
-    $interface_encoded = urlencode($interface_name);
-    $data = $sock->GET_INFO("/netagents/interfaces/{$agent_id}/metrics/{$interface_encoded}?range={$range}&aggregated=1");
-
-    if (empty($data)) {
-        return null;
-    }
-
-    $json = json_decode($data, true);
-    if (!is_array($json) || isset($json['Error'])) {
-        return null;
-    }
-
-    return $json;
-}
-
-/**
- * Format bytes for human readability
- */
-function format_bytes_rate($bytes_per_sec) {
-    if ($bytes_per_sec >= 1073741824) {
-        return number_format($bytes_per_sec / 1073741824, 2) . ' GB/s';
-    } elseif ($bytes_per_sec >= 1048576) {
-        return number_format($bytes_per_sec / 1048576, 2) . ' MB/s';
-    } elseif ($bytes_per_sec >= 1024) {
-        return number_format($bytes_per_sec / 1024, 2) . ' KB/s';
-    }
-    return number_format($bytes_per_sec, 0) . ' B/s';
-}
-
-/**
- * Display the interface metrics charts page
- */
-function display_interface_metrics_charts($agent_id, $interface_name = '', $range = 'day') {
-    $page = CurrentPageName();
-
-    // Get list of interfaces
-    $interfaces_data = fetch_agent_interfaces($agent_id);
-    if (!$interfaces_data || empty($interfaces_data['interfaces'])) {
-        echo '<div class="alert alert-warning">No interfaces data available for this agent.</div>';
-        return;
-    }
-
-    $interfaces = $interfaces_data['interfaces'];
-
-    // Default to first interface if none specified
-    if (empty($interface_name) && count($interfaces) > 0) {
-        $interface_name = $interfaces[0]['name'];
-    }
-
-    // Build interface selector
-    $interface_options = '';
-    foreach ($interfaces as $iface) {
-        $name = htmlspecialchars($iface['name']);
-        $selected = ($iface['name'] === $interface_name) ? 'selected' : '';
-        $mac = !empty($iface['mac_address']) ? " ({$iface['mac_address']})" : '';
-        $state = $iface['oper_state'] ?? 'unknown';
-        $interface_options .= "<option value=\"{$name}\" {$selected}>{$name}{$mac} - {$state}</option>";
-    }
-
-    // Fetch metrics for selected interface
-    $metrics = fetch_interface_metrics($agent_id, $interface_name, $range);
-
-    if (!$metrics || empty($metrics['metrics'])) {
-        echo <<<HTML
-<div class="row">
-    <div class="col-lg-12">
-        <div class="ibox">
-            <div class="ibox-title">
-                <h5>Interface Metrics</h5>
-            </div>
-            <div class="ibox-content">
-                <div class="form-group">
-                    <label>Select Interface:</label>
-                    <select id="interfaceSelect" class="form-control" style="width: 300px; display: inline-block;" onchange="changeInterface()">
-                        {$interface_options}
-                    </select>
-                </div>
-                <div class="alert alert-info">No metrics data available for interface <strong>{$interface_name}</strong>. Metrics are collected every 5 minutes.</div>
-            </div>
-        </div>
-    </div>
-</div>
-<script>
-function changeInterface() {
-    var iface = document.getElementById('interfaceSelect').value;
-    window.location.href = '{$page}?popup=yes&agent_id={$agent_id}&interface=' + encodeURIComponent(iface) + '&range={$range}';
-}
-</script>
-HTML;
-        return;
-    }
-
-    // Prepare data for charts
-    $labels = [];
-    $rx_bytes_rate = [];
-    $tx_bytes_rate = [];
-    $rx_packets_rate = [];
-    $tx_packets_rate = [];
-    $rx_errors = [];
-    $tx_errors = [];
-    $rx_dropped = [];
-    $tx_dropped = [];
-
-    $date_format = ($range === 'hour') ? 'H:i' : (($range === 'month') ? 'm/d' : 'H:i');
-
-    foreach ($metrics['metrics'] as $point) {
-        $timestamp = strtotime($point['timestamp']);
-        $labels[] = date($date_format, $timestamp);
-        $rx_bytes_rate[] = round($point['rx_bytes_rate'] ?? 0, 2);
-        $tx_bytes_rate[] = round($point['tx_bytes_rate'] ?? 0, 2);
-        $rx_packets_rate[] = round($point['rx_packet_rate'] ?? 0, 2);
-        $tx_packets_rate[] = round($point['tx_packet_rate'] ?? 0, 2);
-        $rx_errors[] = $point['rx_errors'] ?? 0;
-        $tx_errors[] = $point['tx_errors'] ?? 0;
-        $rx_dropped[] = $point['rx_dropped'] ?? 0;
-        $tx_dropped[] = $point['tx_dropped'] ?? 0;
-    }
-
-    $labels_json = json_encode($labels);
-    $rx_bytes_rate_json = json_encode($rx_bytes_rate);
-    $tx_bytes_rate_json = json_encode($tx_bytes_rate);
-    $rx_packets_rate_json = json_encode($rx_packets_rate);
-    $tx_packets_rate_json = json_encode($tx_packets_rate);
-    $rx_errors_json = json_encode($rx_errors);
-    $tx_errors_json = json_encode($tx_errors);
-    $rx_dropped_json = json_encode($rx_dropped);
-    $tx_dropped_json = json_encode($tx_dropped);
-
-    $interface_safe = htmlspecialchars($interface_name);
-    $count = $metrics['count'];
-
-    // Get current interface info
-    $current_iface = null;
-    foreach ($interfaces as $iface) {
-        if ($iface['name'] === $interface_name) {
-            $current_iface = $iface;
-            break;
-        }
-    }
-
-    $iface_info = '';
-    if ($current_iface) {
-        $mac = htmlspecialchars($current_iface['mac_address'] ?? 'N/A');
-        $speed = htmlspecialchars($current_iface['speed'] ?? 'N/A');
-        $state = htmlspecialchars($current_iface['oper_state'] ?? 'unknown');
-        $mtu = intval($current_iface['mtu'] ?? 0);
-        $driver = htmlspecialchars($current_iface['driver'] ?? 'N/A');
-
-        $ipv4_list = '';
-        if (!empty($current_iface['ipv4_addresses'])) {
-            foreach ($current_iface['ipv4_addresses'] as $addr) {
-                $ipv4_list .= '<span class="label label-info" style="margin-right: 5px;">' . htmlspecialchars($addr['address']) . '</span>';
-            }
-        }
-
-        $iface_info = <<<HTML
-        <div class="row" style="margin-bottom: 20px;">
-            <div class="col-lg-12">
-                <table class="table table-bordered table-condensed" style="max-width: 600px;">
-                    <tr><td><strong>MAC Address</strong></td><td>{$mac}</td></tr>
-                    <tr><td><strong>Speed</strong></td><td>{$speed}</td></tr>
-                    <tr><td><strong>State</strong></td><td><span class="label label-{$state_class}">{$state}</span></td></tr>
-                    <tr><td><strong>MTU</strong></td><td>{$mtu}</td></tr>
-                    <tr><td><strong>Driver</strong></td><td>{$driver}</td></tr>
-                    <tr><td><strong>IPv4 Addresses</strong></td><td>{$ipv4_list}</td></tr>
-                </table>
-            </div>
-        </div>
-HTML;
-    }
-
-    $range_buttons = '';
-    foreach (['hour' => 'Last Hour', 'day' => 'Last 24 Hours', 'week' => 'Last Week', 'month' => 'Last Month'] as $r => $label) {
-        $active = ($r === $range) ? 'btn-primary' : 'btn-default';
-        $range_buttons .= "<button type=\"button\" class=\"btn btn-sm {$active}\" onclick=\"changeRange('{$r}')\">{$label}</button> ";
-    }
-
-    echo <<<HTML
-<div class="row">
-    <div class="col-lg-12">
-        <div class="ibox">
-            <div class="ibox-title">
-                <h5>Interface Metrics: {$interface_safe}</h5>
-                <div class="ibox-tools">
-                    <span class="label label-primary">{$count} data points</span>
-                </div>
-            </div>
-            <div class="ibox-content">
-                <!-- Interface Selector -->
-                <div class="form-group">
-                    <label>Select Interface:</label>
-                    <select id="interfaceSelect" class="form-control" style="width: 300px; display: inline-block;" onchange="changeInterface()">
-                        {$interface_options}
-                    </select>
-                </div>
-
-                <!-- Time Range Selector -->
-                <div class="btn-group" style="margin-bottom: 20px;">
-                    {$range_buttons}
-                </div>
-
-                {$iface_info}
-
-                <!-- Bandwidth Chart (RX/TX bytes per second) -->
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h4>Bandwidth (Bytes/sec)</h4>
-                        <div style="height: 300px;">
-                            <canvas id="bandwidthChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Packets Chart -->
-                <div class="row" style="margin-top: 30px;">
-                    <div class="col-lg-6">
-                        <h4>Packets/sec</h4>
-                        <div style="height: 250px;">
-                            <canvas id="packetsChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <h4>Errors & Dropped</h4>
-                        <div style="height: 250px;">
-                            <canvas id="errorsChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="angular/js/Chart.min.js"></script>
-<script>
-var currentAgentId = {$agent_id};
-var currentInterface = '{$interface_safe}';
-var currentRange = '{$range}';
-
-function changeInterface() {
-    var iface = document.getElementById('interfaceSelect').value;
-    window.location.href = '{$page}?popup=yes&agent_id=' + currentAgentId + '&interface=' + encodeURIComponent(iface) + '&range=' + currentRange;
-}
-
-function changeRange(range) {
-    window.location.href = '{$page}?popup=yes&agent_id=' + currentAgentId + '&interface=' + encodeURIComponent(currentInterface) + '&range=' + range;
-}
-
-// Chart.js configuration
-var chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-        x: {
-            display: true,
-            ticks: {
-                maxTicksLimit: 20
-            }
-        },
-        y: {
-            beginAtZero: true
-        }
-    },
-    plugins: {
-        legend: {
-            position: 'top',
-        },
-        tooltip: {
-            callbacks: {
-                label: function(context) {
-                    var label = context.dataset.label || '';
-                    var value = context.parsed.y;
-                    if (context.chart.canvas.id === 'bandwidthChart') {
-                        // Format as bytes
-                        if (value >= 1073741824) {
-                            return label + ': ' + (value / 1073741824).toFixed(2) + ' GB/s';
-                        } else if (value >= 1048576) {
-                            return label + ': ' + (value / 1048576).toFixed(2) + ' MB/s';
-                        } else if (value >= 1024) {
-                            return label + ': ' + (value / 1024).toFixed(2) + ' KB/s';
-                        }
-                        return label + ': ' + value.toFixed(0) + ' B/s';
-                    }
-                    return label + ': ' + value;
-                }
-            }
-        }
-    },
-    elements: {
-        point: {
-            radius: 1
-        },
-        line: {
-            tension: 0.3
-        }
-    }
-};
-
-// Bandwidth Chart (RX/TX bytes per second)
-var bandwidthCtx = document.getElementById('bandwidthChart').getContext('2d');
-var bandwidthChart = new Chart(bandwidthCtx, {
-    type: 'line',
-    data: {
-        labels: {$labels_json},
-        datasets: [
-            {
-                label: 'RX (Download)',
-                data: {$rx_bytes_rate_json},
-                borderColor: 'rgb(75, 192, 192)',
-                backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                fill: true
-            },
-            {
-                label: 'TX (Upload)',
-                data: {$tx_bytes_rate_json},
-                borderColor: 'rgb(255, 159, 64)',
-                backgroundColor: 'rgba(255, 159, 64, 0.1)',
-                fill: true
-            }
-        ]
-    },
-    options: chartOptions
-});
-
-// Packets Chart
-var packetsCtx = document.getElementById('packetsChart').getContext('2d');
-var packetsChart = new Chart(packetsCtx, {
-    type: 'line',
-    data: {
-        labels: {$labels_json},
-        datasets: [
-            {
-                label: 'RX Packets',
-                data: {$rx_packets_rate_json},
-                borderColor: 'rgb(54, 162, 235)',
-                backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                fill: false
-            },
-            {
-                label: 'TX Packets',
-                data: {$tx_packets_rate_json},
-                borderColor: 'rgb(153, 102, 255)',
-                backgroundColor: 'rgba(153, 102, 255, 0.1)',
-                fill: false
-            }
-        ]
-    },
-    options: chartOptions
-});
-
-// Errors & Dropped Chart
-var errorsCtx = document.getElementById('errorsChart').getContext('2d');
-var errorsChart = new Chart(errorsCtx, {
-    type: 'line',
-    data: {
-        labels: {$labels_json},
-        datasets: [
-            {
-                label: 'RX Errors',
-                data: {$rx_errors_json},
-                borderColor: 'rgb(255, 99, 132)',
-                backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                fill: false
-            },
-            {
-                label: 'TX Errors',
-                data: {$tx_errors_json},
-                borderColor: 'rgb(255, 159, 64)',
-                backgroundColor: 'rgba(255, 159, 64, 0.1)',
-                fill: false
-            },
-            {
-                label: 'RX Dropped',
-                data: {$rx_dropped_json},
-                borderColor: 'rgb(201, 203, 207)',
-                backgroundColor: 'rgba(201, 203, 207, 0.1)',
-                fill: false
-            },
-            {
-                label: 'TX Dropped',
-                data: {$tx_dropped_json},
-                borderColor: 'rgb(255, 205, 86)',
-                backgroundColor: 'rgba(255, 205, 86, 0.1)',
-                fill: false
-            }
-        ]
-    },
-    options: chartOptions
-});
-</script>
-HTML;
-}
-
-function StartPoint():bool{
-    $tpl=new template_admin();
-    $agent_id = intval($_GET['agent_id'] ?? 0);
-    $interface_name = $_GET['interface'] ?? '';
-    $range = $_GET['range'] ?? 'day';
-
-    // Validate range
-    if (!in_array($range, ['hour', 'day', 'week', 'month'])) {
-        $range = 'day';
-    }
-
-    if ($agent_id <= 0) {
-        echo '<div class="alert alert-danger">Invalid agent ID</div>';
+// ─── Dialog shell: container div + initial load ───
+function popup_shell():bool{
+    $page=CurrentPageName();
+    $agent_id=intval($_GET["agent_id"]??0);
+    if($agent_id<=0){
+        $tpl=new template_admin();
+        echo $tpl->div_error("Invalid agent ID");
         return false;
     }
-
-    display_interface_metrics_charts($agent_id, $interface_name, $range);
+    echo "<div id='ifmetrics-content'></div>";
+    echo "<script>LoadAjax('ifmetrics-content','$page?charts=yes&agent_id=$agent_id&range=day');</script>";
     return true;
 }
-?>
+
+// ─── Main chart content (loaded via AJAX) ───
+function display_charts():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $agent_id=intval($_GET["agent_id"]??0);
+    $range=$_GET["range"]??"day";
+    $sel_iface=$_GET["interface"]??"";
+
+    if(!in_array($range,["hour","day","week","month"])){$range="day";}
+
+    // ── Fetch interface list ──
+    $ifaces_raw=$GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/interfaces/details/$agent_id");
+    $ifaces_json=json_decode($ifaces_raw,true);
+    $interfaces=array();
+    if(is_array($ifaces_json)&&isset($ifaces_json["interfaces"])){
+        foreach($ifaces_json["interfaces"] as $iface){
+            $n=$iface["name"]??"";
+            if($n==="lo"){continue;}
+            $interfaces[]=$iface;
+        }
+    }
+
+    // Fallback: use /netagents/interfaces/{id} if details cache not ready
+    if(count($interfaces)===0){
+        $list_raw=$GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/interfaces/$agent_id");
+        $list_json=json_decode($list_raw,true);
+        if(is_array($list_json)&&isset($list_json["interfaces"])){
+            foreach($list_json["interfaces"] as $iface){
+                $n=$iface["name"]??"";
+                if($n==="lo"){continue;}
+                $interfaces[]=$iface;
+            }
+        }
+    }
+
+    if(count($interfaces)===0){
+        echo $tpl->div_warning("{no_data} — {interface} metrics are collected every 5 minutes.");
+        return true;
+    }
+
+    // Default to first interface
+    if(empty($sel_iface)){$sel_iface=$interfaces[0]["name"];}
+
+    // ── Current interface details ──
+    $cur=null;
+    foreach($interfaces as $iface){
+        if($iface["name"]===$sel_iface){$cur=$iface;break;}
+    }
+
+    // ── Fetch metrics ──
+    $iface_encoded=urlencode($sel_iface);
+    $metrics_raw=$GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/interfaces/$agent_id/metrics/$iface_encoded?range=$range&aggregated=1");
+    $metrics_json=json_decode($metrics_raw,true);
+    $metrics=array();
+    $count=0;
+    if(is_array($metrics_json)&&isset($metrics_json["metrics"])){
+        $metrics=$metrics_json["metrics"];
+        $count=intval($metrics_json["count"]??count($metrics));
+    }
+
+    $sel_safe=htmlspecialchars($sel_iface);
+    $f=array();
+
+    // ── Interface selector + range buttons row ──
+    $f[]="<div class='row' style='margin-bottom:15px'>";
+    $f[]="  <div class='col-md-5'>";
+    $f[]="    <label style='font-size:12px;color:#888;margin-bottom:3px'><i class='".ico_nic."'></i> {interface}</label>";
+    $f[]="    <select id='ifmetrics-iface-sel' class='form-control' onchange=\"ifmetricsReload()\">";
+    foreach($interfaces as $iface){
+        $n=htmlspecialchars($iface["name"]);
+        $selected=($iface["name"]===$sel_iface)?"selected":"";
+        $mac=!empty($iface["mac_address"])?" (".$iface["mac_address"].")":"";
+        $st=strtoupper($iface["oper_state"]??"");
+        $f[]="      <option value='$n' $selected>$n$mac — $st</option>";
+    }
+    $f[]="    </select>";
+    $f[]="  </div>";
+    $f[]="  <div class='col-md-7' style='padding-top:22px'>";
+    foreach(["hour"=>"{last_hour}","day"=>"{last_24_hours}","week"=>"{last_week}","month"=>"{last_month}"] as $r=>$label){
+        $active=($r===$range)?"btn-primary":"btn-white";
+        $f[]="    <button type='button' class='btn btn-sm $active' onclick=\"ifmetricsRange('$r')\">$label</button>";
+    }
+    $f[]="    <span class='label label-default' style='margin-left:10px'>$count {records}</span>";
+    $f[]="  </div>";
+    $f[]="</div>";
+
+    // ── Interface detail strip ──
+    if($cur){
+        $f[]=build_interface_strip($cur);
+    }
+
+    // ── Charts ──
+    if(count($metrics)===0){
+        $f[]="<div class='alert alert-info' style='margin-top:15px'>";
+        $f[]="  <i class='".ico_infoi."'></i>&nbsp;&nbsp;";
+        $f[]="  {no_data} — <strong>$sel_safe</strong>. Metrics are collected every 5 minutes.";
+        $f[]="</div>";
+    }else{
+        $f[]=build_charts_html($metrics,$range,$sel_safe,$agent_id,$page);
+    }
+
+    // ── Navigation JS ──
+    $f[]="<script>";
+    $f[]="function ifmetricsReload(){";
+    $f[]="  var iface=document.getElementById('ifmetrics-iface-sel').value;";
+    $f[]="  LoadAjax('ifmetrics-content','$page?charts=yes&agent_id=$agent_id&interface='+encodeURIComponent(iface)+'&range=$range');";
+    $f[]="}";
+    $f[]="function ifmetricsRange(r){";
+    $f[]="  var iface=document.getElementById('ifmetrics-iface-sel').value;";
+    $f[]="  LoadAjax('ifmetrics-content','$page?charts=yes&agent_id=$agent_id&interface='+encodeURIComponent(iface)+'&range='+r);";
+    $f[]="}";
+    $f[]="</script>";
+
+    echo $tpl->_ENGINE_parse_body(implode("\n",$f));
+    return true;
+}
+
+// ─── Interface detail strip (compact info bar) ───
+function build_interface_strip(array $iface):string{
+    $h=array();
+    $name=htmlspecialchars($iface["name"]);
+    $state=strtolower($iface["oper_state"]??"unknown");
+    $state_class=($state==="up")?"primary":(($state==="down")?"danger":"warning");
+
+    $h[]="<div style='background:#f9f9f9;border:1px solid #e7eaec;border-radius:3px;padding:10px 15px;margin-bottom:15px'>";
+    $h[]="  <div class='row'>";
+
+    // State
+    $h[]="    <div class='col-md-2 col-sm-4' style='margin-bottom:5px'>";
+    $h[]="      <span style='color:#999;font-size:10px;text-transform:uppercase'>{status}</span><br>";
+    $h[]="      <span class='label label-$state_class'>".strtoupper($state)."</span>";
+    $h[]="    </div>";
+
+    // MAC
+    $mac=$iface["mac_address"]??"";
+    if(!empty($mac)){
+        $h[]="    <div class='col-md-2 col-sm-4' style='margin-bottom:5px'>";
+        $h[]="      <span style='color:#999;font-size:10px;text-transform:uppercase'>MAC</span><br>";
+        $h[]="      <span style='font-family:monospace;font-size:12px'>".htmlspecialchars($mac)."</span>";
+        $h[]="    </div>";
+    }
+
+    // Speed
+    $speed=$iface["speed"]??"";
+    if(!empty($speed)){
+        $h[]="    <div class='col-md-2 col-sm-4' style='margin-bottom:5px'>";
+        $h[]="      <span style='color:#999;font-size:10px;text-transform:uppercase'>{speed}</span><br>";
+        $h[]="      <strong>".htmlspecialchars($speed)."</strong>";
+        $h[]="    </div>";
+    }
+
+    // MTU
+    $mtu=intval($iface["mtu"]??0);
+    if($mtu>0){
+        $h[]="    <div class='col-md-1 col-sm-4' style='margin-bottom:5px'>";
+        $h[]="      <span style='color:#999;font-size:10px;text-transform:uppercase'>MTU</span><br>";
+        $h[]="      <strong>$mtu</strong>";
+        $h[]="    </div>";
+    }
+
+    // Driver
+    $driver=$iface["driver"]??"";
+    if(!empty($driver)){
+        $h[]="    <div class='col-md-2 col-sm-4' style='margin-bottom:5px'>";
+        $h[]="      <span style='color:#999;font-size:10px;text-transform:uppercase'>{driver}</span><br>";
+        $h[]="      ".htmlspecialchars($driver);
+        $h[]="    </div>";
+    }
+
+    // IPs
+    $ips=array();
+    if(!empty($iface["ipv4_addresses"])){
+        foreach($iface["ipv4_addresses"] as $addr){
+            $ips[]="<span class='label' style='background:#1ab394;color:#fff;margin:1px;font-size:11px;font-family:monospace'>".htmlspecialchars($addr["cidr"]??"")."</span>";
+        }
+    }
+    if(count($ips)>0){
+        $h[]="    <div class='col-md-3 col-sm-4' style='margin-bottom:5px'>";
+        $h[]="      <span style='color:#999;font-size:10px;text-transform:uppercase'>IPv4</span><br>";
+        $h[]="      ".implode(" ",$ips);
+        $h[]="    </div>";
+    }
+
+    $h[]="  </div>";
+    $h[]="</div>";
+    return implode("\n",$h);
+}
+
+// ─── Build Chart.js HTML + script ───
+function build_charts_html(array $metrics,string $range,string $iface_safe,int $agent_id,string $page):string{
+    $labels=array();
+    $rx_bytes_rate=array();
+    $tx_bytes_rate=array();
+    $rx_packets_rate=array();
+    $tx_packets_rate=array();
+    $rx_errors=array();
+    $tx_errors=array();
+    $rx_dropped=array();
+    $tx_dropped=array();
+
+    // Date format based on range
+    $date_fmt=($range==="hour")?"H:i":(($range==="month")?"m/d H:i":(($range==="week")?"D H:i":"H:i"));
+
+    $total_rx=0;$total_tx=0;$peak_rx=0;$peak_tx=0;
+    foreach($metrics as $point){
+        $ts=strtotime($point["timestamp"]??"");
+        $labels[]=($ts>0)?date($date_fmt,$ts):"";
+        $rx=round(floatval($point["rx_bytes_rate"]??0),2);
+        $tx=round(floatval($point["tx_bytes_rate"]??0),2);
+        $rx_bytes_rate[]=$rx;
+        $tx_bytes_rate[]=$tx;
+        $rx_packets_rate[]=round(floatval($point["rx_packet_rate"]??0),2);
+        $tx_packets_rate[]=round(floatval($point["tx_packet_rate"]??0),2);
+        $rx_errors[]=intval($point["rx_errors"]??0);
+        $tx_errors[]=intval($point["tx_errors"]??0);
+        $rx_dropped[]=intval($point["rx_dropped"]??0);
+        $tx_dropped[]=intval($point["tx_dropped"]??0);
+        $total_rx+=intval($point["rx_bytes"]??0);
+        $total_tx+=intval($point["tx_bytes"]??0);
+        if($rx>$peak_rx){$peak_rx=$rx;}
+        if($tx>$peak_tx){$peak_tx=$tx;}
+    }
+
+    $labels_json=json_encode($labels);
+    $rx_bytes_json=json_encode($rx_bytes_rate);
+    $tx_bytes_json=json_encode($tx_bytes_rate);
+    $rx_pkts_json=json_encode($rx_packets_rate);
+    $tx_pkts_json=json_encode($tx_packets_rate);
+    $rx_err_json=json_encode($rx_errors);
+    $tx_err_json=json_encode($tx_errors);
+    $rx_drop_json=json_encode($rx_dropped);
+    $tx_drop_json=json_encode($tx_dropped);
+
+    // Summary totals
+    $total_rx_fmt=FormatBytes($total_rx/1024);
+    $total_tx_fmt=FormatBytes($total_tx/1024);
+    $peak_rx_fmt=format_rate($peak_rx);
+    $peak_tx_fmt=format_rate($peak_tx);
+
+    // Has any errors/drops?
+    $has_errors=(array_sum($rx_errors)+array_sum($tx_errors)+array_sum($rx_dropped)+array_sum($tx_dropped))>0;
+
+    $h=array();
+
+    // ── Summary widgets ──
+    $h[]="<div class='row' style='margin-bottom:15px'>";
+    $h[]="  <div class='col-md-3 col-sm-6'>";
+    $h[]="    <div style='text-align:center;padding:10px;background:#f8f8f8;border-radius:3px'>";
+    $h[]="      <div style='color:#1c84c6;font-size:22px;font-weight:700'>$total_rx_fmt</div>";
+    $h[]="      <div style='color:#999;font-size:11px;text-transform:uppercase'><i class='".ico_download."'></i> {total} RX</div>";
+    $h[]="    </div>";
+    $h[]="  </div>";
+    $h[]="  <div class='col-md-3 col-sm-6'>";
+    $h[]="    <div style='text-align:center;padding:10px;background:#f8f8f8;border-radius:3px'>";
+    $h[]="      <div style='color:#f8ac59;font-size:22px;font-weight:700'>$total_tx_fmt</div>";
+    $h[]="      <div style='color:#999;font-size:11px;text-transform:uppercase'><i class='".ico_upload."'></i> {total} TX</div>";
+    $h[]="    </div>";
+    $h[]="  </div>";
+    $h[]="  <div class='col-md-3 col-sm-6'>";
+    $h[]="    <div style='text-align:center;padding:10px;background:#f8f8f8;border-radius:3px'>";
+    $h[]="      <div style='color:#1c84c6;font-size:22px;font-weight:700'>$peak_rx_fmt</div>";
+    $h[]="      <div style='color:#999;font-size:11px;text-transform:uppercase'><i class='".ico_speed."'></i> Peak RX</div>";
+    $h[]="    </div>";
+    $h[]="  </div>";
+    $h[]="  <div class='col-md-3 col-sm-6'>";
+    $h[]="    <div style='text-align:center;padding:10px;background:#f8f8f8;border-radius:3px'>";
+    $h[]="      <div style='color:#f8ac59;font-size:22px;font-weight:700'>$peak_tx_fmt</div>";
+    $h[]="      <div style='color:#999;font-size:11px;text-transform:uppercase'><i class='".ico_speed."'></i> Peak TX</div>";
+    $h[]="    </div>";
+    $h[]="  </div>";
+    $h[]="</div>";
+
+    // ── Bandwidth Chart ──
+    $h[]="<div class='ibox'>";
+    $h[]="  <div class='ibox-title'><h5><i class='".ico_speed."' style='color:#1c84c6'></i>&nbsp;&nbsp;{bandwidth}</h5></div>";
+    $h[]="  <div class='ibox-content'>";
+    $h[]="    <div style='height:280px'><canvas id='ifm-bw-chart'></canvas></div>";
+    $h[]="  </div>";
+    $h[]="</div>";
+
+    // ── Packets Chart ──
+    $h[]="<div class='ibox'>";
+    $h[]="  <div class='ibox-title'><h5><i class='".ico_networks."' style='color:#ab7df6'></i>&nbsp;&nbsp;{packets}</h5></div>";
+    $h[]="  <div class='ibox-content'>";
+    $h[]="    <div style='height:220px'><canvas id='ifm-pkt-chart'></canvas></div>";
+    $h[]="  </div>";
+    $h[]="</div>";
+
+    // ── Errors & Dropped Chart (only if there's data) ──
+    if($has_errors){
+        $h[]="<div class='ibox'>";
+        $h[]="  <div class='ibox-title'><h5><i class='fas fa-exclamation-triangle' style='color:#ed5565'></i>&nbsp;&nbsp;{errors} &amp; Dropped</h5></div>";
+        $h[]="  <div class='ibox-content'>";
+        $h[]="    <div style='height:220px'><canvas id='ifm-err-chart'></canvas></div>";
+        $h[]="  </div>";
+        $h[]="</div>";
+    }else{
+        $h[]="<div class='text-center' style='padding:8px;color:#999'>";
+        $h[]="  <i class='".ico_check."' style='color:#1ab394'></i>&nbsp;&nbsp;No errors or dropped packets in this period";
+        $h[]="</div>";
+    }
+
+    // ── Chart.js Script ──
+    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[]="<script>";
+
+    // formatBytes JS helper
+    $h[]="function ifmFmtBytes(b){";
+    $h[]="  if(b>=1073741824) return (b/1073741824).toFixed(2)+' GB/s';";
+    $h[]="  if(b>=1048576) return (b/1048576).toFixed(2)+' MB/s';";
+    $h[]="  if(b>=1024) return (b/1024).toFixed(2)+' KB/s';";
+    $h[]="  return b.toFixed(0)+' B/s';";
+    $h[]="}";
+
+    // Common chart options
+    $h[]="var ifmBaseOpts={";
+    $h[]="  responsive:true,maintainAspectRatio:false,";
+    $h[]="  interaction:{mode:'index',intersect:false},";
+    $h[]="  scales:{x:{display:true,ticks:{maxTicksLimit:20,font:{size:10}}},y:{beginAtZero:true}},";
+    $h[]="  elements:{point:{radius:1,hoverRadius:4},line:{tension:0.3,borderWidth:2}},";
+    $h[]="  plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:15}}}";
+    $h[]="};";
+
+    // Bandwidth chart
+    $h[]="(function(){";
+    $h[]="var opts=JSON.parse(JSON.stringify(ifmBaseOpts));";
+    $h[]="opts.scales.y.ticks={callback:function(v){return ifmFmtBytes(v);}};";
+    $h[]="opts.plugins.tooltip={callbacks:{label:function(ctx){return ctx.dataset.label+': '+ifmFmtBytes(ctx.parsed.y);}}};";
+    $h[]="new Chart(document.getElementById('ifm-bw-chart'),{";
+    $h[]="  type:'line',";
+    $h[]="  data:{labels:$labels_json,datasets:[";
+    $h[]="    {label:'RX (Download)',data:$rx_bytes_json,borderColor:'rgb(28,132,198)',backgroundColor:'rgba(28,132,198,0.08)',fill:true},";
+    $h[]="    {label:'TX (Upload)',data:$tx_bytes_json,borderColor:'rgb(248,172,89)',backgroundColor:'rgba(248,172,89,0.08)',fill:true}";
+    $h[]="  ]},options:opts";
+    $h[]="});";
+    $h[]="})();";
+
+    // Packets chart
+    $h[]="(function(){";
+    $h[]="var opts=JSON.parse(JSON.stringify(ifmBaseOpts));";
+    $h[]="opts.plugins.tooltip={callbacks:{label:function(ctx){return ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+' pkt/s';}}};";
+    $h[]="new Chart(document.getElementById('ifm-pkt-chart'),{";
+    $h[]="  type:'line',";
+    $h[]="  data:{labels:$labels_json,datasets:[";
+    $h[]="    {label:'RX Packets',data:$rx_pkts_json,borderColor:'rgb(54,162,235)',backgroundColor:'rgba(54,162,235,0.05)',fill:false},";
+    $h[]="    {label:'TX Packets',data:$tx_pkts_json,borderColor:'rgb(171,125,246)',backgroundColor:'rgba(171,125,246,0.05)',fill:false}";
+    $h[]="  ]},options:opts";
+    $h[]="});";
+    $h[]="})();";
+
+    // Errors chart (only if data exists)
+    if($has_errors){
+        $h[]="(function(){";
+        $h[]="var opts=JSON.parse(JSON.stringify(ifmBaseOpts));";
+        $h[]="new Chart(document.getElementById('ifm-err-chart'),{";
+        $h[]="  type:'line',";
+        $h[]="  data:{labels:$labels_json,datasets:[";
+        $h[]="    {label:'RX Errors',data:$rx_err_json,borderColor:'rgb(237,85,101)',backgroundColor:'rgba(237,85,101,0.08)',fill:false},";
+        $h[]="    {label:'TX Errors',data:$tx_err_json,borderColor:'rgb(248,172,89)',backgroundColor:'rgba(248,172,89,0.08)',fill:false},";
+        $h[]="    {label:'RX Dropped',data:$rx_drop_json,borderColor:'rgb(201,203,207)',backgroundColor:'rgba(201,203,207,0.08)',fill:false},";
+        $h[]="    {label:'TX Dropped',data:$tx_drop_json,borderColor:'rgb(255,205,86)',backgroundColor:'rgba(255,205,86,0.08)',fill:false}";
+        $h[]="  ]},options:opts";
+        $h[]="});";
+        $h[]="})();";
+    }
+
+    $h[]="</script>";
+    return implode("\n",$h);
+}
+
+// ─── Format bytes/sec rate for display ───
+function format_rate(float $bytes_per_sec):string{
+    if($bytes_per_sec>=1073741824){return number_format($bytes_per_sec/1073741824,2)." GB/s";}
+    if($bytes_per_sec>=1048576){return number_format($bytes_per_sec/1048576,2)." MB/s";}
+    if($bytes_per_sec>=1024){return number_format($bytes_per_sec/1024,2)." KB/s";}
+    return number_format($bytes_per_sec,0)." B/s";
+}

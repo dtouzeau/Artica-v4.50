@@ -73,83 +73,17 @@ if ($DisableNetworking == 1) {
 
 
 if (isset($argv[1])) {
-    if ($argv[1] == "--remove-macvlan") {
-           remove_macvlan();
-           exit;
-       }
-    if ($argv[1] == "--loopback") {
-        loopback();
-        exit();
-    }
+
+
     if ($argv[1] == "--just-add") {
         exit();
-    }
-    if ($argv[1] == "--articalogon") {
-        articalogon();
-        exit();
-    }
-    if ($argv[1] == "--ifconfig") {
-        ifconfig_tests();
-        exit;
-    }
-
-    if ($argv[1] == "--parse-tests") {
-        ifconfig_parse($argv[2]);
-        exit;
-    }
-    if ($argv[1] == "--routes") {
-        exit;
     }
     if ($argv[1] == "--routes-del") {
         routes_del($argv[2]);
         exit;
     }
-    if ($argv[1] == "--vlans") {
-        build();
-        exit;
-    }
-    if ($argv[1] == "--build") {
-        build();
-        exit;
-    }
-    if ($argv[1] == "--postfix-instances") {
-        exit;
-    }
-    if ($argv[1] == "--ping") {
-        ping($argv[2]);
-        exit;
-    }
-    if ($argv[1] == "--ifupifdown") {
-        ifupifdown();
-        exit;
-    }
-    if ($argv[1] == "--reconstruct-interface") {
-        reconstruct_interface($argv[2]);
-        exit;
-    }
-    if ($argv[1] == "--main-routes") {
-        routes_main_build();
-        exit;
-    }
-    if ($argv[1] == "--routes") {
-        exit;
-    }
-
-    if ($argv[1] == "--vlans-delete") {
-        vlan_delete($argv[2]);
-        exit;
-    }
-
-    if ($argv[1] == "--virtip-delete") {
-        virtip_delete($argv[2]);
-        exit;
-    }
     if ($argv[1] == "--bridge-delete") {
         bridge_delete($argv[2]);
-        exit;
-    }
-    if ($argv[1] == "--bridge-rm") {
-        bridge_deletemanu($argv[2]);
         exit;
     }
     if ($argv[1] == "--hosts") {
@@ -220,29 +154,12 @@ function resetNic($eth, $ippref)
     writelogs("RESULT FROM DEL is " . print_r($results, TRUE), __FUNCTION__, __FILE__, __LINE__);
 }
 
-function ping($host)
-{
-    ini_set_verbosed();
-    $unix = new unix();
-    if ($unix->PingHost($host)) {
-        echo "$host:TRUE\n";
-    } else {
-        echo "$host:FALSE\n";
-    }
-
-}
 
 
 
 
-function loopback()
-{
-    $unix = new unix();
-    $ifconfig = $unix->find_program("ifconfig");
-    shell_exec("$ifconfig lo down");
-    shell_exec("$ifconfig lo 127.0.0.1 netmask 255.255.255.0 up >/dev/null 2>&1");
-    VirtualsIPSyslog("Restarting loopback...");
-}
+
+
 function VirtualsIPSyslog($text)
 {
     if (!function_exists("syslog")) {
@@ -365,54 +282,10 @@ function vlan_delete($ID)
     $q->QUERY_SQL("DELETE FROM nics_vlan WHERE ID='$ID'");
 
 }
-function virtip_delete($ID)
-{
-    if (!is_numeric($ID)) {
-        return;
-    }
-    if ($ID < 1) {
-        return;
-    }
-    $sql = "SELECT * FROM nics_virtuals WHERE ID='$ID'";
-    $q = new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-
-    $unix = new unix();
-    if (!isset($GLOBALS["moprobebin"])) {
-        $GLOBALS["moprobebin"] = $unix->find_program("modprobe");
-    }
-    if (!isset($GLOBALS["vconfigbin"])) {
-        $GLOBALS["vconfigbin"] = $unix->find_program("vconfig");
-    }
-    if (!isset($GLOBALS["ifconfig"])) {
-        $GLOBALS["ifconfig"] = $unix->find_program("ifconfig");
-    }
-    if (!isset($GLOBALS["ethtoolbin"])) {
-        $GLOBALS["ethtoolbin"] = $unix->find_program("ethtool");
-    }
-    if (!isset($GLOBALS["ipbin"])) {
-        $GLOBALS["ipbin"] = $unix->find_program("ip");
-    }
-    $ligne = $q->mysqli_fetch_array($sql);
-    $eth = "{$ligne["nic"]}:{$ligne["ID"]}";
-    shell_exec("{$GLOBALS["ifconfig"]} $eth down");
-    $q->QUERY_SQL("DELETE FROM nics_virtuals WHERE ID='$ID'", "artica_backup");
 
 
-}
 
 
-function reconstruct_interface($eth){
-    $GLOBALS["NO_GLOBAL_RELOAD"] = true;
-    if ($GLOBALS["SLEEP"]) {
-        sleep(10);
-    }
-    build();
-    ifupifdown($eth);
-    shell_exec("/usr/sbin/artica-phpfpm-service -udhcp-reconf");
-    shell_exec("/usr/sbin/artica-phpfpm-service -iptables-routers");
-    shell_exec("/usr/sbin/artica-phpfpm-service -parprouted-check");
-
-}
 function events($text, $function = null, $line = null)
 {
     $unix = new unix();
@@ -959,7 +832,6 @@ function routes_fromfile()
 
 
 function routes_main_build(){
-
 
 
     if (count($GLOBALS["SCRIPTS"]) == 0) {
@@ -1777,29 +1649,6 @@ function bridge_deletemanu($eth)
 
 
 
-function remove_macvlan():bool{
-
-    $unix=new unix();
-    $ip=$unix->find_program("ip");
-    $proc_net_dev=explode("\n",@file_get_contents("/proc/net/dev"));
-
-    foreach ($proc_net_dev as $line) {
-        $line = trim($line);
-        if ($line == null) {
-            continue;
-        }
-        if (!preg_match("#^(.+?):\s+[0-9]+#", $line, $re)) {
-            continue;
-        }
-        $Interface=trim($re[1]);
-        if(!preg_match("#^veth[0-9]+#",$Interface)){continue;}
-        shell_exec("$ip link set $Interface down");
-        shell_exec("$ip link delete $Interface");
-
-    }
-    return true;
-
-}
 
 
 function remove_service($INITD_PATH)

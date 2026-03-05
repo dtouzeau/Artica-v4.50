@@ -24,14 +24,12 @@ All emails for a "relay domain" will be forwarded to an other dedicated server.[
 <no_remote_domain_here>Currently, no relayed domain set</no_remote_domain_here>
 <relay_domain_map>others relayed domains used by your organization</relay_domain_map>
 <roundrobin>Round Robin</roundrobin>
-<roundrobin_text>Round robin DNS is a technique of load distribution, load balancing, or fault-tolerance provisioning multiple,
- redundant Mail Protocol service hosts, e.g., by managing the Domain Name System's (DNS) 
- responses to address requests from Mail server according to an appropriate statistical model.[br]
-In its simplest implementation Round-robin DNS works by responding to DNS requests not only with a single IP address,[br]
- but a list of IP addresses of several servers that host identical services.[br]
-The order in which IP addresses from the list are returned is the basis for the term round robin.[br]
- With each DNS response, the IP address sequence in the list is permuted. Usually, basic IP clients attempt connections with the first 
-address returned from a DNS query so that on different connection attempts clients would receive service from different providers, thus distributing the overall load among servers.
-</roundrobin_text>
+<roundrobin_text>DNS Round Robin ist eine Technik zur Lastverteilung, zum Lastausgleich oder zur Ausfallsicherheit, bei der mehrere redundante Mail-Dienst-Hosts bereitgestellt werden,[br]
+indem die Antworten des Domain Name Systems (DNS) auf Adressanfragen von Mailservern nach einem geeigneten statistischen Modell gesteuert werden.[br]
+In der einfachsten Implementierung beantwortet DNS Round Robin Anfragen nicht mit nur einer IP-Adresse,[br]
+sondern mit einer Liste von IP-Adressen mehrerer Server, die identische Dienste bereitstellen.[br]
+Die Reihenfolge, in der die IP-Adressen zur%C3%BCckgegeben werden, ist die Grundlage des Begriffs Round Robin.[br]
+Bei jeder DNS-Antwort wird die Reihenfolge der IP-Adressen rotiert.[br]
+In der Regel versuchen IP-Clients, sich mit der zuerst zur%C3%BCckgegebenen Adresse zu verbinden, sodass sich die Gesamtlast auf mehrere Server verteilt.</roundrobin_text>
 <target_computer_name>Target server name or IP</target_computer_name>
 <target_computer_port>Port</target_computer_port>

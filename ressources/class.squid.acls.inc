@@ -860,7 +860,7 @@ class squid_acls{
 
 
 
-       $sql="SELECT webfilters_gpslink.*,webfilters_sqgroups.GroupType,
+        $sql="SELECT webfilters_gpslink.*,webfilters_sqgroups.GroupType,
        webfilters_sqgroups.GroupName
        FROM webfilters_gpslink,webfilters_sqgroups
        WHERE webfilters_gpslink.gpid=webfilters_sqgroups.ID
@@ -931,7 +931,7 @@ class squid_acls{
                 $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"ssl_rules");
                 $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
             }
-            
+
 
 
 
@@ -959,7 +959,7 @@ class squid_acls{
 
         $LoadGroupsInMemory = $this->LoadGroupsInMemory();
         if (isset($LoadGroupsInMemory[$gpid])) {
-            $this->acls_array[] = "# Group $gpid is used by  ACLs rules " . count($LoadGroupsInMemory) . " items";
+            $this->acls_array[] = "# Not used Group: Group $gpid is used by ACLs rules " . count($LoadGroupsInMemory) . " items";
             return false;
         }
         $this->acls_array[] = "# Group $gpid is * NOT * used by  ACLs rules";
@@ -1006,8 +1006,12 @@ class squid_acls{
 
 
         $EnableKerbAuth = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
+        $EnableArticaAuthenticationAgent = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaAuthenticationAgent"));
         $HaClusterClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
         $kerberosActiveDirectoryHost=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("kerberosActiveDirectoryHost");
+        if($EnableArticaAuthenticationAgent==1){
+            $EnableKerbAuth=1;
+        }
         if($HaClusterClient==1){
             if(strlen($kerberosActiveDirectoryHost)>3){
                 $EnableKerbAuth=1;
@@ -1227,7 +1231,7 @@ class squid_acls{
 
 
             if ($ligne["GroupType"] == "proxy_auth_extad") {
-               //4depreciated
+                //4depreciated
                 continue;
             }
 
@@ -1542,7 +1546,7 @@ class squid_acls{
                 continue;
 
             }
-        //-----------------------------------------------------------------------------------
+            //-----------------------------------------------------------------------------------
 
             if ($ligne["GroupType"] == "accessrule") {
                 $this->buildItems($ligne["ID"]);
@@ -1593,77 +1597,7 @@ class squid_acls{
                 continue;
             }
             //-----------------------------------------------------------------------------------
-/*
-            if ($ligne["GroupType"] == "quota_time") {
-                if (!$GLOBALS["ArtcExtrnQuotaTimeScanner"]) {
-                    echo "$logs_ouput:[$this->instancetime] `{$ligne["GroupName"]}` - ArtcExtrnQuotaTimeScanner is disabled !!! Why ???\n";
-                    $this->acls_array[] = "";
-                    $this->acls_array[] = "# --------------------------------------------------------------------";
-                    continue;
-                }
 
-                if (!isset($GLOBALS["LoadingExtrnQuotaTime"][$ligne["ID"]])) {
-                    echo "$logs_ouput:[$this->instancetime] `{$ligne["GroupName"]}` NOT AVAILABLE\n";
-                    $this->acls_array[] = "";
-                    $this->acls_array[] = "# --------------------------------------------------------------------";
-                    continue;
-                }
-
-                $this->availableGroups[$ligne["ID"]] = true;
-                $this->acls_array[] = "acl $acls_name external ArtTime{$ligne["ID"]}";
-                $TEMPLATE = $this->acl_tpl($ligne["ID"]);
-                if ($TEMPLATE <> null) {
-                    $this->acls_array[] = "deny_info $TEMPLATE $acls_name";
-                }
-                $this->acls_array[] = "";
-                $this->acls_array[] = "# --------------------------------------------------------------------";
-                continue;
-            }
- */           //---------------------------------------------------------------------------------------
-/*
-            if ($ligne["GroupType"] == "quota_size") {
-                $this->availableGroups[$ligne["ID"]] = false;
-                if (!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()) {
-                    $this->acls_array[] = "# quota_size $acls_name skip, License Error";
-                    continue;
-                }
-                if ($SizeQuotasCheckerEmergency == 1) {
-                    $this->acls_array[] = "# quota_size $acls_name skip, Emergency (helper)";
-                    continue;
-                }
-                if ($EnableQuotaSize == 0) {
-                    $this->acls_array[] = "# quota_size $acls_name skip, Disabled";
-                    continue;
-                }
-                if ($this->SquidUrgency == 1) {
-                    $this->acls_array[] = "# quota_size $acls_name skip, Emergency (global)";
-                    continue;
-                }
-
-                $params = unserialize(base64_decode($ligne["params"]));
-                $VOLUME_DETECT = $params["VOLUME_DETECT"];
-                $VOLUME_SCHE = $params["VOLUME_SCHE"];
-                $VOLUME = $params["VOLUME"];
-                $this->availableGroups[$ligne["ID"]] = true;
-                $acls_name1 = "Intern{$ligne["ID"]}";
-                $this->acls_array[] = "# Check: $VOLUME_DETECT, for $VOLUME_SCHE and {$VOLUME}Mo";
-                $this->acls_array[] = "acl $acls_name1 external ArtQuotaSize {$ligne["ID"]}:$VOLUME_DETECT:$VOLUME_SCHE:$VOLUME";
-                $this->acls_array[] = "http_access deny !$acls_name1";
-                $this->acls_array[] = "acl $acls_name tag SIZE:{$ligne["ID"]}";
-                $TEMPLATE = $this->acl_tpl($ligne["ID"]);
-                if ($TEMPLATE <> null) {
-                    $this->acls_array[] = "deny_info $TEMPLATE $acls_name";
-                }
-                $this->acls_array[] = "";
-                $this->acls_array[] = "# --------------------------------------------------------------------";
-                continue;
-            }
-
-
-            if ($ligne["GroupType"] == "NudityScan") {
-                continue;
-            }
-*/
             if ($ligne["GroupType"] == "teamviewer") {
                 $t = new products_ip_ranges();
                 $fname="/etc/squid3/acls/teamviewer-nets.acl";
@@ -1842,17 +1776,14 @@ class squid_acls{
                 }
 
                 if (!$AUTH) {
-                    $this->acls_array[] = "# AUTH response failed " . __LINE__;
-                    continue;
-                }
-                $ligne["GroupType"] = "proxy_auth -i";
-                if ($this->AUTH == 0) {
                     $this->acls_array[] = "";
                     $this->acls_array[] = "# --------------------------------------------------------------------";
+                    $this->acls_array[] = "# {$ligne["ID"]} Did not find any authentication method for this group (".__CLASS__."/".__FUNCTION__." Line.".__LINE__.")";
                     continue;
                 }
 
-
+                $ligne["GroupType"] = "proxy_auth -i";
+                $this->acls_array[] = "# {$ligne["ID"]}  proxy_auth is OK .. continue";
             }
             if ($ligne["GroupType"] == "browser") {
                 $ligne["GroupType"] = "browser -i";
@@ -1948,7 +1879,7 @@ class squid_acls{
             if ($TEMPLATE <> null) { $this->acls_array[] = "deny_info $TEMPLATE $acls_name"; }
 
         }
-       return true;
+        return true;
     }
     private function acl_tpl($aclid){
 
@@ -2380,7 +2311,7 @@ class squid_acls{
             $domain=$this->dstdomain_parse($domain);
             $MASTERDOMAIN=$q->GetFamilySites($domain);
             if($domain==null){continue;}
-             if(isset($MAIN_MASTER["$domain"])){continue;}
+            if(isset($MAIN_MASTER["$domain"])){continue;}
             $replaced=str_ireplace(".$MASTERDOMAIN", "", $domain);
             if(stripos("   $replaced", ".")>0){continue;}
             unset($CLEANEDDOMS[$DOMAIN_SRC]);

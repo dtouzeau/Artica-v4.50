@@ -57,6 +57,10 @@ function browser_items():bool{
     $html=array();
     if(isset($BrowserItem["title"])){
         $title=base64_encode($BrowserItem["title"]);
+        if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+            $title=base64_encode($BrowserItem["title"]." - via meta");
+        }
+
         $html[]="$.address.title(base64_decode('$title'));";
     }
 
@@ -64,11 +68,20 @@ function browser_items():bool{
         $url=$BrowserItem["url"];
         $HTTP_X_ARTICA_SUBFOLDER=$url;
         $root="/";
+        echo "// BrowserItem(url) == $url\n";
         if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
             $root="/{$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]}/";
         }
+        if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+            $root="/{$_SERVER["HTTP_X_META_PREFIX"]}/";
+        }
+        $url=str_replace($root,"",$url);
+        if(substr($url,0,1)<>"/"){
+            $url="/$url";
+        }
+
         $html[] = "$.address.state('$root');";
-        $html[] = "$.address.value('$HTTP_X_ARTICA_SUBFOLDER');";
+        $html[] = "$.address.value('$url');";
     }
 
     if(count($html)==0){
@@ -122,6 +135,10 @@ function  tiny_page(){
     if($title<>null){
         $title=$tpl->_ENGINE_parse_body($title);
 
+        if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+            $title=$title." <small>(via Meta)</small>";
+        }
+
         $title=str_replace("'","\'",$title);
         $title=str_replace("\n","\\n",$title);
         $title_text=$tpl->javascript_parse_text($title);
@@ -129,16 +146,25 @@ function  tiny_page(){
 
         $title_text=str_replace("'","\'",$title_text);
         $title_text_header=strip_tags($title_text);
+
+
+
         $hostname=php_uname('n');
         $js[]="$.address.title('$hostname: $title_text_header');";
         $js[]="if(document.getElementById('tiny-title')){";
         $js[]="document.getElementById('tiny-title').innerHTML='<span id=\"$tinyuniq\">$addonclass_explain$title$addonclassend_explain</span>'";
         $js[]="}";
     }
-    if($ico<>null){
-        $js[]="if(document.getElementById('tiny-ico')){";
-        $js[]="document.getElementById('tiny-ico').innerHTML='<i class=\"{$addonclass}fa-8x $ico\"></i>'";
-        $js[]="}";
+    if($ico<>null) {
+        if (!strpos($ico, "/")) {
+            $js[] = "if(document.getElementById('tiny-ico')){";
+            $js[] = "document.getElementById('tiny-ico').innerHTML='<i class=\"{$addonclass}fa-8x $ico\"></i>'";
+            $js[] = "}";
+        }else {
+            $js[] = "if(document.getElementById('tiny-ico')){";
+            $js[] = "document.getElementById('tiny-ico').innerHTML='<img class=\"{$addonclass}\" src='$ico'>'";
+            $js[] = "}";
+        }
     }
     $js[]="if(document.getElementById('tiny-explain')){";
     if($explain<>null){
@@ -191,9 +217,14 @@ function  tiny_page(){
         if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
             $HTTP_X_ARTICA_SUBFOLDER="/$HTTP_X_ARTICA_SUBFOLDER/$url";
         }
-
+        if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+            $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_META_PREFIX"]."/";
+        }
+        if(substr($url,0,1)<>"/"){
+            $url="/$url";
+        }
         $js[] = "$.address.state('$HTTP_X_ARTICA_SUBFOLDER');";
-        $js[] = "$.address.value('$HTTP_X_ARTICA_SUBFOLDER$url');";
+        $js[] = "$.address.value('$url');";
     }
     $js[]="Animated$t()";
 

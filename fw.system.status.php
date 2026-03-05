@@ -283,7 +283,7 @@ function system_start(){
         if($c>0){
             $VERSION=trim(@file_get_contents("VERSION"));
             $SP=null;
-            $CURPATCH=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("artica.php?SPVersion=yes");
+            $CURPATCH= $GLOBALS["CLASS_SOCKETS"]->SPVersion();
             if($CURPATCH>0){
                 $VERSION="$VERSION&nbsp;Service Pack $CURPATCH";
             }
@@ -368,7 +368,7 @@ function system_start(){
 
         $didyouknow_sshportal=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("didyouknow_sshportal"));
         $Click=$tpl->ClickMouse("s_PopUpFull('https://youtu.be/_9vJEg197RA',1024,768,'Reverse SSH Proxy')");
-        $Click2=$tpl->ClickMouse("Loadjs('$HTTP_X_ARTICA_SUBFOLDER$page?didyouknow-sshportal=yes')");
+        $Click2=$tpl->ClickMouse("Loadjs('$page?didyouknow-sshportal=yes')");
         if($didyouknow_sshportal==0) {
             $html[]=Tips_paragraph($youtube,$Click,"{didyouknow_sshportal}",$Click2,"didyouknow_sshportal");
         }
@@ -420,13 +420,8 @@ function Tips_paragraph($ico,$js,$text,$hidejs=null,$id=null):string{
 
 }
 function app_status():bool{
-
-    $HTTP_X_ARTICA_SUBFOLDER="/";
-    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
-        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
-    }
     $page       = CurrentPageName();
-    echo "<div id='system-status-start'></div><script>LoadAjax('system-status-start','$HTTP_X_ARTICA_SUBFOLDER$page?system-start=yes')</script>";
+    echo "<div id='system-status-start'></div><script>LoadAjax('system-status-start','$page?system-start=yes')</script>";
     return true;
 
 }
@@ -757,9 +752,9 @@ JS;
 
     header("content-type: application/x-javascript");
     echo $js."\n";
-    echo "LoadAjaxSilent('frontend-notifications','$HTTP_X_ARTICA_SUBFOLDER$page?frontend-notifications=yes');\n";
+    echo "LoadAjaxSilent('frontend-notifications','$page?frontend-notifications=yes');\n";
     //echo "LoadAjaxSilent('widget-hostname','fw.index.php?widget-hostname=yes');\n";
-    echo "Loadjs('$HTTP_X_ARTICA_SUBFOLDER$page?doughnut-ps-mem=yes');\n";
+    echo "Loadjs('$page?doughnut-ps-mem=yes');\n";
     echo "LoadAjaxSilent('widget-info','{$HTTP_X_ARTICA_SUBFOLDER}fw.index.php?widget-info=yes&from-hostname=yes');\n";
     echo "LoadAjaxSilent('frontend-notifications','{$HTTP_X_ARTICA_SUBFOLDER}fw.system.status.php?frontend-notifications=yes');\n";
     echo "LoadAjaxSilent('artica-notifs-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?notifs=yes');\n";
@@ -820,6 +815,9 @@ function widget_sysdisk():string{
     $tpl=new template_admin();
 
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/harddrives/partitions/inodes"));
+    if(!property_exists($json,"fs_filemax_prc")){
+        return "";
+    }
     $fs_filemax_prc=$json->fs_filemax_prc;
     $fs_class=null;
     $srcjs=array();
@@ -936,9 +934,6 @@ function widget_sysdisk():string{
 
         }
     }
-
-
-
     $html[]="<script>";
     $html[]=@implode("\n",$srcjs);
     $html[]="</script>";

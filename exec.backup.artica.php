@@ -1141,11 +1141,7 @@ function restore(){
 	progress(100,"{success}");
 	$mount=new mount("/var/log/artica-postfix/backup.debug");
 	if($mount->ismounted($mountPoint)){ $mount->umount($mountPoint);}
-	
-	if($BackupArticaRestoreNetwork==1){
-		$unix->THREAD_COMMAND_SET("$php /usr/share/artica-postfix/exec.virtuals-ip.php --build");
-	}
-	
+
 	return;
 	
 }

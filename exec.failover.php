@@ -177,10 +177,7 @@ function register(){
 		build_progress("{reboot_networks} {$MAIN["SLAVE"]}:{$MAIN["SLAVE_PORT"]} {failed}",110);
 		return;
 	}	
-	
-	build_progress("{reboot_networks}",75);
-	$php=$unix->LOCATE_PHP5_BIN();
-	system("$php /usr/share/artica-postfix/exec.virtuals-ip.php --build --force");
+
 	build_progress("{reboot_networks}",80);
 	squid_admin_mysql(0, "Rebooting Network", null,__FILE__,__LINE__);
 	system("/usr/sbin/artica-phpfpm-service -restart-network --script=exec.failover.php/".__FUNCTION__);
@@ -257,12 +254,7 @@ function exunlink(){
 	}	
 	//please_wait_reconfigure_network
 	$sock->SET_INFO("HASettings", base64_encode(serialize(array())));
-	
-	build_progress("{reboot_networks}",75);
-	if(!$GLOBALS["FORCE"]){sleep(3);}
-	$php=$unix->LOCATE_PHP5_BIN();
-	system("$php /usr/share/artica-postfix/exec.virtuals-ip.php --build --force");
-	build_progress("{reboot_networks}",80);
+    build_progress("{reboot_networks}",80);
 	squid_admin_mysql(0, "Rebooting Network", null,__FILE__,__LINE__);
 	system("/usr/sbin/artica-phpfpm-service -restart-network --script=exec.failover.php/".__FUNCTION__);
 	build_progress("{starting_service}",90);

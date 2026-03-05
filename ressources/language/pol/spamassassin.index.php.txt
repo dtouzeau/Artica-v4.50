@@ -21,12 +21,10 @@ Detection is done with statistical and randomized signatures that efficiently sp
 User input is validated through reputation assignments based on consensus on report and revoke assertions which in turn is used for
 computing confidence values associated with individual signatures</razor_text>
 <report_safe>Encapsulate spam in an attachment</report_safe>
-<report_safe_text>if this option is enabled, if an incoming message is tagged as spam, instead of modifying the original message,
-SpamAssassin will create a new report message and attach the original message as a message/rfc822 MIME
-part (ensuring the original message is completely preserved, not easily opened, and easier to recover).
-If this option is disabled, incoming spam is only modified by adding some X-Spam- headers and no changes will be made to the body.[br]
-In addition, a header named X-Spam-Report will be added to spam.[br]
-</report_safe_text>
+<report_safe_text>Je%C5%9Bli ta opcja jest w%C5%82%C4%85czona i wiadomo%C5%9B%C4%87 przychodz%C4%85ca zostanie oznaczona jako spam, SpamAssassin utworzy now%C4%85 wiadomo%C5%9B%C4%87 raportu i do%C5%82%C4%85czy oryginaln%C4%85 wiadomo%C5%9B%C4%87 jako cz%C4%99%C5%9B%C4%87 MIME message/rfc822.
+Zapewnia to pe%C5%82ne zachowanie oryginalnej wiadomo%C5%9Bci, utrudnia jej bezpo%C5%9Brednie otwarcie oraz u%C5%82atwia odzyskanie.[br]
+Je%C5%9Bli opcja jest wy%C5%82%C4%85czona, spam przychodz%C4%85cy jest modyfikowany jedynie poprzez dodanie nag%C5%82%C3%B3wk%C3%B3w X-Spam-*, bez zmian w tre%C5%9Bci wiadomo%C5%9Bci.[br]
+Dodatkowo do wiadomo%C5%9Bci spam zostanie dodany nag%C5%82%C3%B3wek X-Spam-Report.</report_safe_text>
 <required_score>Score required for SpamAssassin to flag a message as spam</required_score>
 <required_score_text>
 Set the score required before a mail is considered spam.[br]

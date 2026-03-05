@@ -296,7 +296,7 @@ The numeric value for this parameter should be lower than the number for space l
 <ad_samba_member>Active Directory Member</ad_samba_member>
 <ad_samba_member_text>Make this server has a member of a Microsoft Active Directory domain</ad_samba_member_text>
 <affect_to_group>Affect to the group</affect_to_group>
-<AgenVersion>Agent version</AgenVersion>
+<AgenVersion>Vers%C3£o do agente</AgenVersion>
 <age_of_message>Age of message</age_of_message>
 <aggressive>Sites of obvious aggressive content. This coveres hate speech and all kinds of rassism</aggressive>
 <alias>Alias</alias>
@@ -812,7 +812,7 @@ If users are connected to the Domain, the authentication is sended silently to t
 <auto_account>Auto-create Accounts</auto_account>
 <auto_account_text>Auto-create Accounts is a feature that allow your users to create accounts themself</auto_account_text>
 <auto_apt>Automatically upgrade the system</auto_apt>
-<available>available</available>
+<available>Dispon%C3%ADvel</available>
 <aveserver_licence_add>Upload the *.key file about Kaspersky for Unix Mail server in order to update the licence.</aveserver_licence_add>
 <aveserver_main_settings>Kaspersky Anti-Virus for Postfix settings</aveserver_main_settings>
 <aveserver_status>Kaspersky Mail server status</aveserver_status>
@@ -1231,7 +1231,7 @@ You need to test this feature.[br]Sometimes cpulimit is bugged and do the opposi
 <CURLE_COULDNT_RESOLVE_HOST>Couldn't resolve host. The given remote host was not resolved</CURLE_COULDNT_RESOLVE_HOST>
 <CURLPHP_NOT_INSTALLED>curl(5)-php is not installed</CURLPHP_NOT_INSTALLED>
 <currently_scanning>Currently scanning</currently_scanning>
-<current_config>Current configuration</current_config>
+<current_config>Configuraç%C3£o atual</current_config>
 <current_directory>Current directory</current_directory>
 <current_parameters>Current parameters</current_parameters>
 <current_value>Current value</current_value>
@@ -2494,8 +2494,8 @@ With the default 100 SMTP server process limit, "in flow delay as 1s" limits the
 <language>L%C3%ADngua</language>
 <lastname>Last Name</lastname>
 <last_100_mails>last 100 emails</last_100_mails>
-<last_24_h>last 24 hours</last_24_h>
-<last_48_h>last 48 hours</last_48_h>
+<last_24_h>%C3%9Altimas 24 horas</last_24_h>
+<last_48_h>%C3%9Altimas 48 horas</last_48_h>
 <last_days>last days</last_days>
 <last_error>Last error</last_error>
 <last_logoff>%C3%9Altimo logoff</last_logoff>
@@ -2659,7 +2659,7 @@ You can also use your ISP SMTP servers of your ISP by set the appropriate authen
 <main_interfaces>Main Interfaces</main_interfaces>
 <main_parameters>Parâmetros principais</main_parameters>
 <main_settings>Configuraç%C3µes principais</main_settings>
-<main_settings_samba>Global configuration</main_settings_samba>
+<main_settings_samba>Configuraç%C3£o global</main_settings_samba>
 <main_settings_text>Define global parameters of the software, personalize daemons processes and tune performances</main_settings_text>
 <make_samba_ad>Be an Active Directory member</make_samba_ad>
 <make_samba_ad_text>If enabled, this server will be a member of your Active Directory server.[br]In this case Active Directory members will have access to this server services eg Proxy, File sharing...</make_samba_ad_text>
@@ -2945,7 +2945,7 @@ This command line will perform a silent install task.[br]In this case, it is pos
 <notify_templates>notify templates</notify_templates>
 <notif_save_conf_ldap>Parameters are saved to temporary storage,
 don't forget to - Save & Apply settings - to make them in production mode</notif_save_conf_ldap>
-<not_compiled>Not compiled</not_compiled>
+<not_compiled>N%C3£o compilado</not_compiled>
 <not_enabled_in_amavis>This feature is a part of Amavis</not_enabled_in_amavis>
 <not_installed>N%C3£o instalado</not_installed>
 <not_match>didn't match</not_match>
@@ -4591,45 +4591,40 @@ The default limit is more than any reasonable SMTP client would send.[br]
 The limit exists to protect the local mail system against a run-away client. 
 </title_postfix_tuning_5_text>
 <title_postfix_tuning_6>Tuning the frequency of deferred mail delivery attempts</title_postfix_tuning_6>
-<title_postfix_tuning_6_text>
- When a Postfix delivery agent (smtp(8), local(8), etc.) is unable to deliver a message it may blame the message itself, or it may blame the receiving party.[br]
- [ul]
-[li]When the delivery agent blames the message, the queue manager gives the queue file a time stamp into the future, 
-so it won't be looked at for a while.[br]
-By default, the amount of time to cool down is the amount of time that has passed since the message arrived.[br]
-This results in so-called exponential backoff behavior.[/li]
-[li]When the delivery agent blames the receiving party (for example a local recipient user, or a remote host), 
-the queue manager not only advances the queue file time stamp, but also puts the receiving party on a "dead" list so that it will be skipped for some amount of time.[/li]
-[/ul]
-This process is governed by a bunch of little parameters.
+<title_postfix_tuning_6_text>Quando um agente de entrega do Postfix (smtp(8), local(8), etc.) n%C3£o consegue entregar uma mensagem, ele pode atribuir a falha à pr%C3%B3pria mensagem ou ao destinat%C3¡rio.[br]
 [ul]
-[li][strong]queue run delay[/strong](default: 300 seconds; before Postfix 2.4: 1000s)[br]How often the queue manager scans the queue for deferred mail. [/li]
-[li][strong]minimal backoff time[/strong] (default: 300 seconds; before Postfix 2.4: 1000s)[br]
-The minimal amount of time a message won't be looked at, and the minimal amount of time to stay away from a "dead" destination.[/li]
-[li][strong]maximal backoff time[/strong] (default: 4000 seconds)[br]The maximal amount of time a message won't be looked at after a delivery failure. [/li]
-[li][strong]maximal queue lifetime[/strong] (default: 5 days)[br]How long a message stays in the queue before it is sent back as undeliverable.[br]
-Specify 0 for mail that should be returned immediately after the first unsuccessful delivery attempt.[/li]
-[li]bounce_queue_lifetime (default: 5 days, available with Postfix version 2.1 and later) How long a MAILER-DAEMON message stays in the queue before it is considered undeliverable.
-[br] Specify 0 for mail that should be tried only once. [/li]
-[li][strong]qmgr message recipient limit (default: 20000)[/li][/strong]
-The size of many in-memory queue manager data structures.[br]
-Among others, this parameter limits the size of the short-term, in-memory list of "dead" destinations.[br]
-Destinations that don't fit the list are not added.[/li]
+[li]Quando o agente de entrega atribui a falha à mensagem, o gerenciador de filas define um carimbo de tempo futuro para o arquivo da fila, de modo que ele n%C3£o seja processado por algum tempo.[br]
+Por padr%C3£o, o per%C3%ADodo de espera corresponde ao tempo decorrido desde a chegada da mensagem.[br]
+Esse comportamento resulta no chamado mecanismo de backoff exponencial.[/li]
+[li]Quando o agente de entrega atribui a falha ao destinat%C3¡rio (por exemplo, um usu%C3¡rio local ou um host remoto), o gerenciador de filas n%C3£o apenas adianta o carimbo de tempo do arquivo da fila, como também adiciona o destinat%C3¡rio a uma lista â%80%9Cdeadâ%80%9D, fazendo com que ele seja ignorado por um determinado per%C3%ADodo de tempo.[/li]
 [/ul]
-[i]IMPORTANT: If you increase the frequency of deferred mail delivery attempts, or if you flush the deferred mail queue frequently,
- then you may find that Postfix mail delivery performance actually becomes worse.[/i][br]
- [strong]The symptoms are as follows:[/strong]
- [ul]
-[li]The active queue becomes saturated with mail that has delivery problems. New mail enters the active queue only when an old message is deferred.
-[br] This is a slow process that usually requires timing out one or more SMTP connections.[/li]
-[li]All available Postfix delivery agents become occupied trying to connect to unreachable sites etc.[br]
-New mail has to wait until a delivery agent becomes available.[br]
- This is a slow process that usually requires timing out one or more SMTP connections.[/li]
-[/ul]When mail is being deferred frequently, fixing the problem is always better than increasing the frequency of delivery attempts.
-[br] However, if you can control only the delivery attempt frequency, consider using a dedicated fallback_relay "graveyard" machine for bad destinations,
- so that these destinations do not ruin the performance of normal mail deliveries. 
- [/ul]
-</title_postfix_tuning_6_text>
+Esse processo é controlado por v%C3¡rios parâmetros de configuraç%C3£o.
+[ul]
+[li][strong]queue run delay[/strong] (padr%C3£o: 300 segundos; antes do Postfix 2.4: 1000s)[br]
+Define com que frequência o gerenciador de filas examina a fila de mensagens adiadas.[/li]
+[li][strong]minimal backoff time[/strong] (padr%C3£o: 300 segundos; antes do Postfix 2.4: 1000s)[br]
+Tempo m%C3%ADnimo durante o qual uma mensagem n%C3£o ser%C3¡ reprocessada e tempo m%C3%ADnimo de afastamento de um destino â%80%9Cdeadâ%80%9D.[/li]
+[li][strong]maximal backoff time[/strong] (padr%C3£o: 4000 segundos)[br]
+Tempo m%C3¡ximo durante o qual uma mensagem n%C3£o ser%C3¡ reprocessada ap%C3%B3s uma falha de entrega.[/li]
+[li][strong]maximal queue lifetime[/strong] (padr%C3£o: 5 dias)[br]
+Tempo m%C3¡ximo que uma mensagem permanece na fila antes de ser devolvida como n%C3£o entreg%C3¡vel.[br]
+Especifique 0 para devolver a mensagem imediatamente ap%C3%B3s a primeira tentativa malsucedida.[/li]
+[li][strong]bounce_queue_lifetime[/strong] (padr%C3£o: 5 dias)[br]
+Tempo durante o qual uma mensagem MAILER-DAEMON permanece na fila antes de ser considerada n%C3£o entreg%C3¡vel.[br]
+Especifique 0 para que a mensagem seja tentada apenas uma vez.[/li]
+[li][strong]qmgr message recipient limit[/strong] (padr%C3£o: 20000)[br]
+Define o tamanho de v%C3¡rias estruturas de dados em mem%C3%B3ria do gerenciador de filas, incluindo a lista de destinos â%80%9Cdeadâ%80%9D.[/li]
+[/ul]
+[i]IMPORTANTE: Aumentar a frequência das tentativas de entrega de mensagens adiadas ou esvaziar a fila de mensagens adiadas com frequência pode degradar o desempenho do Postfix.[/i][br]
+[strong]Os sintomas t%C3%ADpicos s%C3£o os seguintes:[/strong]
+[ul]
+[li]A fila ativa torna-se saturada com mensagens que apresentam problemas de entrega. Novas mensagens s%C3%B3 entram na fila ativa quando mensagens antigas s%C3£o adiadas.[br]
+Esse é um processo lento que geralmente envolve o tempo limite de uma ou mais conex%C3µes SMTP.[/li]
+[li]Todos os agentes de entrega do Postfix dispon%C3%ADveis ficam ocupados tentando se conectar a destinos inacess%C3%ADveis.[br]
+Novas mensagens precisam aguardar até que um agente de entrega fique dispon%C3%ADvel, o que normalmente envolve tempos limite de conex%C3µes SMTP.[/li]
+[/ul]
+Quando mensagens s%C3£o frequentemente adiadas, corrigir a causa do problema é sempre prefer%C3%ADvel a aumentar a frequência das tentativas de entrega.[br]
+No entanto, se apenas a frequência das tentativas puder ser controlada, considere o uso de um fallback_relay dedicado do tipo â%80%9Ccemitérioâ%80%9D para destinos problem%C3¡ticos, evitando impactos no desempenho das entregas normais.</title_postfix_tuning_6_text>
 <title_postfix_tuning_7>Tuning the number of Postfix processes</title_postfix_tuning_7>
 <title_postfix_tuning_7_text>The "default process limit" configuration parameter gives direct control over how many daemon processes Postfix will run.[br]
 As of Postfix 2.0 the default limit is 100 smtp client processes, 100 smtp server processes, and so on.[br]
@@ -4688,14 +4683,13 @@ TLS, mais comumente conhecido como SSL, é um mecanismo popular para melhorar as
 O TLS é amplamente usado com o protocolo HTTP e também est%C3¡ sendo utilizado para adicionar segurança a muitos outros protocolos comuns que operam sobre TCP.</TLS_EXPLAIN>
 <tls_level>TLS level</tls_level>
 <tls_logging> Server-side TLS activity logging</tls_logging>
-<tls_logging_intro>To get additional information about Postfix SMTP server TLS activity you can increase the log level.[br]
-Each logging level also includes the information that is logged at a lower logging level.[br]
-[ul][li]Use log level &quot;{tls_log_field_3}&quot; [br]only in case of problems.[/li]
-[li]Use of log level &quot;{tls_log_field_4}&quot; [br]is strongly discouraged[/li][/ul]
-</tls_logging_intro>
+<tls_logging_intro>Para obter informaç%C3µes adicionais sobre a atividade TLS do servidor SMTP Postfix, você pode aumentar o n%C3%ADvel de log.[br]
+Cada n%C3%ADvel de log também inclui todas as informaç%C3µes registradas nos n%C3%ADveis inferiores.[br]
+[ul][li]Use o n%C3%ADvel de log &quot;{tls_log_field_3}&quot;[br]apenas em caso de problemas.[/li]
+[li]O uso do n%C3%ADvel de log &quot;{tls_log_field_4}&quot;[br]é fortemente desencorajado.[/li][/ul]</tls_logging_intro>
 <tls_log_field_0>Disable logging of TLS activity</tls_log_field_0>
 <tls_log_field_1>Log TLS handshake and certificate information</tls_log_field_1>
-<tls_log_field_2>Log levels during TLS negotiation</tls_log_field_2>
+<tls_log_field_2>N%C3%ADveis de log durante a negociaç%C3£o TLS</tls_log_field_2>
 <tls_log_field_3>Log hexadecimal and ASCII dump of TLS negotiation process</tls_log_field_3>
 <tls_log_field_4>Log hexadecimal and ASCII dump of complete transmission after STARTTLS</tls_log_field_4>
 <tls_smtp_server>TLS SMTP Server</tls_smtp_server>
@@ -4932,7 +4926,7 @@ Backscatter is mail you didn't ask to receive, generated by legitimate, non-spam
 <webproxy_service_text>proxy service allows you to accelerate web pages access by using a cache system.[br]
  This service also offers antivirus and web pages filtering features</webproxy_service_text>
 <webradio>Sites that offer listening to music and radiostreams.</webradio>
-<webserver_errors>Web server errors</webserver_errors>
+<webserver_errors>Erros do servidor Web</webserver_errors>
 <webserver_events>Web server events</webserver_events>
 <webserver_parameters>Web server engine</webserver_parameters>
 <webserver_parameters_text>Enable/Disable personalize the dedicated web server engine</webserver_parameters_text>

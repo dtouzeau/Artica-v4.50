@@ -1,6 +1,24 @@
 <account_created_success>Code de sécurité créé avec succès, vérifiez votre messagerie</account_created_success>
 <active_backup_mode_needs_one_primary_interface>Sélectionnez un membre principal</active_backup_mode_needs_one_primary_interface>
+<active_health_check_concurrency>Nombre maximal dâ%80%99opérations simultanées (0 = illimité)</active_health_check_concurrency>
+<active_health_check_daemon>Démon de vérification active de lâ%80%99état de santé</active_health_check_daemon>
+<active_health_check_disable>Vérification active de lâ%80%99état de santé désactivée[BR]Vous pouvez fermer la fenêtre.</active_health_check_disable>
+<active_health_check_explain>Un système de vérification active de lâ%80%99état de santé, haute performance et de niveau entreprise, pour Artica Reverse Proxy, avec découverte automatique des serveurs amont et supervision en temps réel.</active_health_check_explain>
+<active_health_check_interval_explain>Intervalle entre les vérifications, valeur par défaut : 5s</active_health_check_interval_explain>
+<active_health_check_logs_max_age>%C3%82ge maximal en jours</active_health_check_logs_max_age>
+<active_health_check_logs_max_size>Taille maximale (Mo)</active_health_check_logs_max_size>
+<active_health_check_log_level>Niveau de journalisation</active_health_check_log_level>
+<active_health_check_metrics_entries>Nombre maximal dâ%80%99entrées</active_health_check_metrics_entries>
+<active_health_check_metrics_max_age>%C3%82ge maximal en jours</active_health_check_metrics_max_age>
+<active_health_check_p_settings>Paramètres du protocole de vérification de lâ%80%99état de santé</active_health_check_p_settings>
+<active_health_check_queue>Taille de la file dâ%80%99attente</active_health_check_queue>
+<active_health_check_settings>Paramètres de contrôle de santé actif</active_health_check_settings>
+<active_health_check_timeout_explain>Temps dâ%80%99attente maximal pour la réponse, valeur par défaut : 3s</active_health_check_timeout_explain>
+<active_health_check_type>Protocole de vérification de lâ%80%99état de santé</active_health_check_type>
+<active_health_check_workers>Processus</active_health_check_workers>
 <ADANCED>Méthode avancée</ADANCED>
+<adaptive_least_response>Moindre temps de réponse adaptatif</adaptive_least_response>
+<adaptive_rr>Adaptive Round Robin</adaptive_rr>
 <adb_detected_body>Il semble que vous disposez d'une extension de navigateur qui Interdit les publicités et autres sites de tracking. Sachez que ces plugins entraînent des dysfonctionnements avec la console Web Artica.</adb_detected_body>
 <adb_detected_title>AdBlocker ou autres détectés</adb_detected_title>
 <add_bond_interface>Nouvelle Interface de liaison</add_bond_interface>
@@ -16,9 +34,15 @@ Actuellement, Artica dispose de deux méthodes pour effectuer cette opération, 
 <AD_GROUP_SEARCH_INTRO>Qu'est-ce que c'est et comment ça marche ?</AD_GROUP_SEARCH_INTRO>
 <AD_GROUP_SEARCH_SIMPLE_EXPLAIN>Cette méthode est utilisée lorsque vous avez une grande arborescence Active Directory avec plusieurs domaines enfants et/ou domaines de confiance, avec cette méthode au lieu de configurer chaque connexion manuellement, il suffit d'installer l'agent Active Directory d'Artica dans un ou plusieurs contrôleur de domaine.</AD_GROUP_SEARCH_SIMPLE_EXPLAIN>
 <agents>Agents</agents>
+<age_penalty_max>Age Penalty Max</age_penalty_max>
+<age_penalty_max_explain>Maximum penalty for old data[BR]If a server has not reported metrics for a long time, its score can be increased by up to this amount (for example, +100%).[BR]This prevents traffic from being sent to servers that might be down or unreachable.</age_penalty_max_explain>
+<age_penalty_window>Age Penalty Window</age_penalty_window>
+<age_penalty_window_explain>How fast old data becomes untrusted[BR]Time (in seconds) over which the staleness penalty grows.[BR]After this time, the maximum penalty is applied.[BR]This makes servers slowly fade out instead of disappearing suddenly.</age_penalty_window_explain>
 <Aggressive_Explain>Whether to use IKEv1 Aggressive or Main Mode (the default)</Aggressive_Explain>
 <allow_overwrite_explain>Par défaut, les configurations sur les nœuds sont verrouillées et non autorisées, si vous voulez permettre aux nœuds d'écraser les configurations du maître, activez l'option &quot;Déconnecter de la ferme&quot;.</allow_overwrite_explain>
 <almost_there_secondary_nodes>Enfin, ajoutez un nœud secondaire</almost_there_secondary_nodes>
+<alr_p>Paramètres disponibles pour la méthode du moindre temps de réponse adaptatif</alr_p>
+<APP_ACTIVE_HEALTH_CHECK>Démon de vérification active de lâ%80%99état de santé</APP_ACTIVE_HEALTH_CHECK>
 <APP_ADAGENT_CONNECTOR>AD Agent HA Connector</APP_ADAGENT_CONNECTOR>
 <APP_ADAGENT_LBL>AD Agent HA</APP_ADAGENT_LBL>
 <APP_GO_AD_GROUP_SEARCH>Go Active Directory Groups</APP_GO_AD_GROUP_SEARCH>
@@ -68,6 +92,8 @@ L'activation de cette fonctionnalité désactive certaines options telles que l'
 <APP_WIFI4EU_LANG>Langue</APP_WIFI4EU_LANG>
 <APP_WIFI4EU_TEMPLATE>Modèle Wifi4EU</APP_WIFI4EU_TEMPLATE>
 <APP_WIFI4EU_UUID>Identifiant unique Wifi4eu</APP_WIFI4EU_UUID>
+<arr_outlier_threshold>Outlier Threshold</arr_outlier_threshold>
+<arr_p>Parameters available for Adaptive Round Robin Load method</arr_p>
 <assigned_to>Assigné à</assigned_to>
 <Authby_Explain>Comment les deux passerelles de sécurité doivent s'authentifier mutuellement ; les valeurs acceptables sont secret ou psk
 pour les secrets pré-partagés, pubkey (la valeur par défaut) pour les signatures à clé publique ainsi que les synonymes rsasig
@@ -85,6 +111,11 @@ Si du trafic est détecté entre leftsubnet et rightsubnet, une connexion est é
 start charge une connexion et l'active immédiatement. ignore ignore la connexion.[br]
 immédiatement. ignore la connexion. Cela équivaut à supprimer une connexion du fichier config
 du fichier de configuration. [br]N'est pertinent que localement, l'autre extrémité n'a pas besoin de l'accepter.</Auto_Explain>
+<auto_weight_factor>Facteur de pondération automatique</auto_weight_factor>
+<auto_weight_factor_explain>Factor to dynamically adjust the server weight</auto_weight_factor_explain>
+<auto_weight_greater_remove>Le seuil de pondération automatique ne peut pas être égal ou supérieur au seuil de suppression automatique.</auto_weight_greater_remove>
+<auto_weight_threshold>Seuil automatique de pondération (ms)</auto_weight_threshold>
+<auto_weight_threshold_explain>Ajuster dynamiquement le poids du serveur selon le facteur défini lorsque le temps de réponse du serveur est égal ou supérieur au seuil configuré.</auto_weight_threshold_explain>
 <bond>Bonding</bond>
 <bonded_to>Liée à</bonded_to>
 <bond_downdelay>Retard à l'arrêt (ms)</bond_downdelay>
@@ -102,6 +133,7 @@ Les valeurs possibles sont :[br]balance-rr ou 0[br]active-backup ou 1[br]balance
 <bond_updelay>Retard au démarrage (ms)</bond_updelay>
 <bond_updelay_explain>Spécifie le temps, en millisecondes, à attendre avant d'activer un esclave après qu'une reprise de liaison ait été détectée.[br] Cette option est uniquement valable pour le moniteur de liaison miimon. [br]La valeur du délai d'actualisation doit être un multiple de la valeur miimon ; sinon, elle sera arrondie au multiple le plus proche. La valeur par défaut est 0</bond_updelay_explain>
 <build_ver>Build</build_ver>
+<caution_parameters>[BR]Use this option with caution![BR]Default values covers must of the situations/environments.[BR]Use only for very high concurrency (>10k RPS) environments</caution_parameters>
 <ChangeKernelTcp>Activer la Méthode avancée</ChangeKernelTcp>
 <ChangeKernelTcpExplain>This section allow you to tune the kernel tcp parameters according your needs, but be carefully, wrong parameters can slow down the performance of your server or even crash it.</ChangeKernelTcpExplain>
 <ChangeKernelTcpTitle>Méthode avancée</ChangeKernelTcpTitle>
@@ -114,7 +146,31 @@ to propose both compressed and uncompressed, and prefer compressed. A value of n
 <configure_peers_alert>Configuration initiale du nœud primaire, d'autres options seront disponibles après la création du nœud.</configure_peers_alert>
 <Conn_Explain>Name of connection. Don't use special characters or spaces. Example: siteX-to-siteY</Conn_Explain>
 <conn_name>Nom de la connexion</conn_name>
+<consistent>Consistent</consistent>
+<consistent_explain>Use consistent hashing (ketama) for minimal session disruption on server changes[BR]</consistent_explain>
+<cookie_backup>Failover To Backup</cookie_backup>
+<cookie_backup_explain>Use backup servers if all primary servers are down</cookie_backup_explain>
+<cookie_domain>Cookie Domain</cookie_domain>
+<cookie_domain_explain>Cookie domain (e.g., ".example.com"). Empty = current domain</cookie_domain_explain>
+<cookie_down>Failover To Down</cookie_down>
+<cookie_down_explain>Use down servers as last resort (not recommended)</cookie_down_explain>
+<cookie_http_only>HTTP Only</cookie_http_only>
+<cookie_http_only_explain>Set HttpOnly flag (prevents JavaScript access)</cookie_http_only_explain>
+<cookie_name>Cookie Name</cookie_name>
+<cookie_name_explain>Name of the sticky cookie</cookie_name_explain>
+<cookie_path>Cookie Path</cookie_path>
+<cookie_path_explain>Cookie path (e.g., "/")</cookie_path_explain>
+<cookie_secure>Secure Cookie</cookie_secure>
+<cookie_secure_explain>Set Secure flag (HTTPS only)</cookie_secure_explain>
+<cookie_time>Cookie Expiration time (seconds)</cookie_time>
+<cookie_time_explain>Cookie expiry in seconds (e.g., 3600 for 1 hour). Empty = session cookie</cookie_time_explain>
 <creating_account>Création du compte</creating_account>
+<custom_dns>Résolveur DNS personnalisé (ex. : 8.8.8.8)</custom_dns>
+<custom_hostname>Domaine DNS pour la découverte de services</custom_hostname>
+<default_rt_jitter>Default RT Jitter</default_rt_jitter>
+<default_rt_jitter_explain>Small random variation for new servers[BR]Adds a small random offset to the default response time.[BR]This prevents multiple new servers from being selected at the same time, which avoids traffic spikes during scaling or restarts.</default_rt_jitter_explain>
+<default_rt_ms>Default RT (ms)</default_rt_ms>
+<default_rt_ms_explain>Starting response time for new servers[BR]When a server has no data yet, the balancer assumes it takes this long to respond.[BR]This prevents new or restarted servers from receiving all traffic at once.</default_rt_ms_explain>
 <deleting>Suppression</deleting>
 <dev>Assigner l'interface</dev>
 <DHCP_SERVICE_STRONGSWAN>Plugin DHCP</DHCP_SERVICE_STRONGSWAN>
@@ -140,17 +196,29 @@ détecter les pairs morts.</Dpdtimeout_Explain>
 <edit_trackinterfaces>Nouvelle interface de pistage</edit_trackinterfaces>
 <edit_virtualip>Modifier l'IP flottante</edit_virtualip>
 <edit_VRRP_instance>Paramètres du nœud primaire</edit_VRRP_instance>
+<enable_active_health_check_daemon>Activer le démon de vérification active de lâ%80%99état de santé</enable_active_health_check_daemon>
+<enable_adaptive_performance_tracking>Suivi adaptatif des performances</enable_adaptive_performance_tracking>
+<enable_adaptive_performance_tracking_explain>Le suivi adaptatif des performances permet de surveiller les temps de réponse des serveurs amont et dâ%80%99appliquer des actions selon des seuils définis.[br]
+Ajustement automatique du poids ou suppression automatique du serveur du pool upstream.</enable_adaptive_performance_tracking_explain>
 <enable_check_script>Surcharger le script par défaut de vérification</enable_check_script>
+<enable_dns_discovery>Activer la découverte via DNS</enable_dns_discovery>
+<enable_dns_discovery_explain>Découvrir automatiquement les serveurs à partir des enregistrements DNS.</enable_dns_discovery_explain>
 <enable_notify>Activer la notification</enable_notify>
 <enable_ttl>Active le TTL Unicast</enable_ttl>
 <enforce_submission_port_encrypt>Renforcer le port de soumission (chiffrement)</enforce_submission_port_encrypt>
 <Esp_Explain>Liste des algorithmes de chiffrement/authentification ESP séparés par des virgules à utiliser pour la connexion, par exemple aes128-sha256. La notation est chiffrement-intégrité[-groupeDH][-modeESN]. [br]
 Pour IKEv2, plusieurs algorithmes (séparés par des tirets) du même type peuvent être inclus dans une seule proposition.[br]IKEv1 n'inclut que le premier algorithme dans une proposition. [br]
 Seul le mot-clé ah ou esp peut être utilisé, les combinaisons AH+ESP ne sont pas supportées.</Esp_Explain>
+<ewma_alpha>EWMA Alpha</ewma_alpha>
+<ewma_alpha_explain>How fast the balancer reacts to changes[BR]Controls how quickly the balancer updates a server’s response time when new requests are seen.[BR]- Low values (0.1) = slow but stable[BR]- High values (0.5) = fast but more jumpy[BR]- Default (0.3) = balanced[BR]This prevents overreacting to small spikes while still responding to real slowdowns.</ewma_alpha_explain>
 <explain_license_key_wait>Serveur en attente d'enregistrement||Votre licence est active, mais le serveur doit être enregistré sur le serveur de licences.[br]
 Si le serveur est connecté à Internet, ce processus se fera automatiquement dans les prochaines heures.[br][br][br]Vous avez encore %s jours pour enregistrer le serveur, le cas échéant, il passera en mode Edition communautaire.</explain_license_key_wait>
 <explain_license_reach_limit>Limite de la licence atteinte||Vous avez atteint la limite de votre licence qui a été attribuée pour une période d'essai de 30 jours.[br][br][br]Veuillez contacter notre service commercial pour prolonger la licence</explain_license_reach_limit>
+<failure_penalty_ms>Failure Penalty (ms)</failure_penalty_ms>
+<failure_penalty_ms_explain>Penalty added when a request fails[BR]When a server returns a 5xx error, this value is added to its response time.[BR]This makes failing servers look very slow, so they receive less traffic until they recover.</failure_penalty_ms_explain>
 <fall>Délai négatif</fall>
+<falls>Échecs</falls>
+<falls_explain>Nombre dâ%80%99échecs requis pour marquer comme non sain, valeur par défaut : 3</falls_explain>
 <fall_explain>Combien de fois le contrôle de santé doit retourner sans succès (ou time out) pour que l'hôte soit considéré comme &quot;non sain&quot;. (secondes)</fall_explain>
 <floating_ip>Adresse IP flottante</floating_ip>
 <Forceencaps_Explain>Force l'encapsulation UDP pour les paquets ESP même si aucune situation de NAT n'est détectée.[br]
@@ -164,6 +232,8 @@ taille maximale des fragments peut être configurée dans strongswan.conf). S'il
 est annoncé à l'homologue, mais le démon n'envoie pas ses propres messages en fragments.
 S'il est défini sur force (uniquement pour IKEv1), le message IKE initial sera déjà fragmenté si nécessaire.
 Disponible pour les connexions IKEv1 depuis 5.0.2 et pour les connexions IKEv2 depuis 5.2.1.</Fragmentation_Explain>
+<generic_hash>Generic Hash</generic_hash>
+<generic_hash_p>Parameters available for Generic Hash method</generic_hash_p>
 <getting_info>Obtenir des informations</getting_info>
 <getting_threads_of>Obtenir les fils de</getting_threads_of>
 <getting_ticket>Obtenir un ticket</getting_ticket>
@@ -171,9 +241,28 @@ Disponible pour les connexions IKEv1 depuis 5.0.2 et pour les connexions IKEv2 d
 <GO_SHIELD_CONNECTOR>Connecteur Proxy</GO_SHIELD_CONNECTOR>
 <GO_SHIELD_SERVER>Service de Filtrage</GO_SHIELD_SERVER>
 <GO_SQUID_AUTH_AD_AGENT>AD Agent HA Connector</GO_SQUID_AUTH_AD_AGENT>
+<grpc_service>Service gRPC</grpc_service>
+<grpc_service_explain>Nom du service gRPC[BR]Exemple : grpc_service=myapp.HealthService</grpc_service_explain>
+<grpc_settings>Paramètres gRPC</grpc_settings>
+<grpc_status_code_expected>Statut gRPC</grpc_status_code_expected>
+<grpc_status_code_expected_explain>Code de statut gRPC attendu, valeur par défaut : 12 (SERVING)[BR]Exemple : grpc_status=12</grpc_status_code_expected_explain>
 <health_checks>Service de surveillance de la santé</health_checks>
 <health_checks_small>Vérifications de la santé</health_checks_small>
 <HttpQueueTimeout>Temps imparti pour la file d'attente</HttpQueueTimeout>
+<http_expected_status>Statut attendu</http_expected_status>
+<http_expected_status_explain>Codes de statut HTTP attendus (séparés par des virgules)[BR]Exemple : expected_status=200,201</http_expected_status_explain>
+<http_headers>En-têtes</http_headers>
+<http_header_explain>Envoyer des en-têtes personnalisés.[br]
+Exemple : header=Authorization:Bearer-token[br]header=Authorization:Bearer-mytoken[br]
+header=X-Custom-Header:value</http_header_explain>
+<http_match_body>Correspondance du corps</http_match_body>
+<http_match_body_explain>Expression régulière pour le corps de la réponse[br]Example: match_body=&quot;&quot;status&quot;:&quot;ok&quot;&quot; ou match_body=&quot;(healthy|ok)&quot;</http_match_body_explain>
+<http_match_headers>Faire correspondre lâ%80%99en-tête</http_match_headers>
+<http_match_header_explain>En-tête de réponse requis[br]Exemple : match_header=Content-Type:application/json</http_match_header_explain>
+<http_settings>Paramètres HTTP/HTTPS</http_settings>
+<http_uri_path>Chemin URI</http_uri_path>
+<http_uri_path_explain>Chemin HTTP/HTTPS à vérifier, valeur par défaut /.[BR]
+Exemple : uri=/health</http_uri_path_explain>
 <Ikelifetime_Explain>Absolute time after which an IKE SA expires. Examples: 1h, 3600s, 28800s</Ikelifetime_Explain>
 <Ike_Explain>Comma-separated list of IKE/ISAKMP SA encryption/authentication algorithms to be used, e.g.
 aes128-sha256-modp3072. The notation is encryption-integrity[-prf]-dhgroup. In IKEv2, multiple algorithms
@@ -183,6 +272,8 @@ If no PRF is configured, the algorithms defined for integrity are proposed as PR
 the integrity algorithms, but have a prf prefix (such as prfsha1, prfsha256 or prfaesxcbc).</Ike_Explain>
 <interval_explain>Fréquence à laquelle le bilan de santé doit être exécuté (secondes)</interval_explain>
 <ipvlan_explain>IPvlan est similaire à la technologie MacVLAN, avec une différence majeure : IPvlan n'attribue pas d'adresses MAC uniques à ses sous-interfaces.[br]Au lieu de cela, toutes les sous-interfaces partagent l'adresse MAC de l'interface parente tout en utilisant des adresses IP uniques.</ipvlan_explain>
+<ip_hash>Hachage IP</ip_hash>
+<ip_hash_p>Parameters available for IP Hash method</ip_hash_p>
 <keepalived_log_detail>Active le mode verbeux</keepalived_log_detail>
 <keepalived_master>(Maître)</keepalived_master>
 <keepalived_not_installed>La paquetage Failover n'est pas installé sur ce noeud</keepalived_not_installed>
@@ -201,6 +292,8 @@ the integrity algorithms, but have a prf prefix (such as prfsha1, prfsha256 or p
 <lacp_rate_explain>Option spécifiant la vitesse à laquelle nous demanderons à notre partenaire de liaison de transmettre des paquets LACPDU en mode [B]802.3ad[/B].[BR]Les valeurs possibles sont :[BR]slow ou 0 - Demander au partenaire de transmettre des LACPDU toutes les 30 secondes[BR]fast ou 1 - Demander au partenaire de transmettre des LACPDU toutes les 1 seconde.[BR]La valeur par défaut est slow.</lacp_rate_explain>
 <lacp_rate_mandatory>Le taux de Lacp est obligatoire dans ce mode.</lacp_rate_mandatory>
 <lacp_rate_not_supported>Le taux Lacp n'est pas pris en charge dans ce mode.</lacp_rate_not_supported>
+<lbl_settings>Load Balancing Settings</lbl_settings>
+<lc_p>Parameters available for Least Connections method</lc_p>
 <LeftRightauth2_Explain>Same as left|rightauth, but defines an additional authentication exchange. In IKEv1, only XAuth can be used
 in the second authentication round. IKEv2 supports multiple complete authentication rounds using
 Multiple Authentication Exchanges defined in RFC 4739. This allows e.g. a separate authentication of host and user.</LeftRightauth2_Explain>
@@ -278,9 +371,13 @@ Si ce n'est pas le cas, il y aura un certain nombre de connexions remplacées à
 <list_recursive_users_groups>Liste des membres / groupes récursifs</list_recursive_users_groups>
 <local_interface_dev>Assigner l'interface</local_interface_dev>
 <LogNotCategorizedWebsite>Enregistrer les sites non catégorisés</LogNotCategorizedWebsite>
+<log_filtered_servers>Log Filtered Servers</log_filtered_servers>
+<log_filtered_servers_explain>Log when servers are ignored[BR]When enabled, logs when a server is filtered out due to being slow, stale, or unhealthy.[BR]Useful for debugging.</log_filtered_servers_explain>
 <LOG_STRONGSWAN>Log Section</LOG_STRONGSWAN>
 <LOG_STRONGSWAN_EXPLAIN>Define the retention time and if you want to send data to a remote syslog server.</LOG_STRONGSWAN_EXPLAIN>
 <management_by>Management by</management_by>
+<mandatory>Obligatoire</mandatory>
+<mandatory_explain>Le serveur démarre en état indisponible jusquâ%80%99à la première vérification réussie</mandatory_explain>
 <Margintime_Explain>How long before connection expiry or keying-channel expiry should attempts to negotiate a replacement begin; acceptable values
 as for lifetime (default 9m). Relevant only locally, other end need not agree on it.</Margintime_Explain>
 <max_ttl_1>Maximal time to live</max_ttl_1>
@@ -305,7 +402,8 @@ as for lifetime (default 9m). Relevant only locally, other end need not agree on
 <netipv4tcpfastopen>TCP Fast Open</netipv4tcpfastopen>
 <netipv4tcpfastopen_explain>Enable TCP Fast Open (RFC7413) to send and accept data in the opening SYN packet.[BR]0=TFO is not enabled.[BR]1=TFO is enabled for outgoing connections (clients).[BR]2=TFO is enabled for incoming connections (servers).[BR]3=TFO is enabled for both clients and servers.</netipv4tcpfastopen_explain>
 <NetIpv4TcpKeepAliveTime>TCP Keepalive Time</NetIpv4TcpKeepAliveTime>
-<NetIpv4TcpKeepAliveTimeExplain>How often TCP sends out keepalive messages when keepalive is enabled, time in seconds.[BR]Default: 2hours.</NetIpv4TcpKeepAliveTimeExplain>
+<NetIpv4TcpKeepAliveTimeExplain>Fréquence dâ%80%99envoi des messages keepalive TCP lorsque lâ%80%99option est activée, exprimée en secondes.[BR]
+Valeur par défaut : 2 heures.</NetIpv4TcpKeepAliveTimeExplain>
 <NetIpv4TcpLowLatency>TCP Low Latency</NetIpv4TcpLowLatency>
 <NetIpv4TcpLowLatencyExplain>The normal TCP stack behavior is set to favor decisions that maximize network throughput. This parameter, when set, tells TCP to instead make decisions that would prefer lower latency.[BR]The default value is 0 (off).[BR]For workloads or environments where latency is a higher priority, the recommended value is 1 (on).</NetIpv4TcpLowLatencyExplain>
 <NetIpv4TcpMaxSynBackLog>TCP Max Syn Backlog</NetIpv4TcpMaxSynBackLog>
@@ -313,7 +411,11 @@ as for lifetime (default 9m). Relevant only locally, other end need not agree on
 <NetIpv4TcpMaxTWBuckets>TCP Max TW Buckets</NetIpv4TcpMaxTWBuckets>
 <NetIpv4TcpMaxTWBucketsExplain>Specifies the maximum number of sockets in the “time-wait” state allowed to exist at any time. If the maximum value is exceeded, sockets in the “time-wait” state are immediately destroyed and a warning is displayed. This setting exists to thwart certain types of "“Denial of Service”" attacks. Care should be exercised before lowering this value. When changed, its value should be increased, especially when more memory has been added to the system or when the network demands are high and environment is less exposed to external threats.[BR]The default value is 262,144. When network demands are high and the environment is less exposed to external threats the value can be increased to 450,000.</NetIpv4TcpMaxTWBucketsExplain>
 <NetIpv4TcpMem>TCP Mem</NetIpv4TcpMem>
-<NetIpv4TcpMemExplain>vector of 3 INTEGERs: min, pressure, max[BR]min: below this number of pages TCP is not bothered about its memory appetite.[BR]pressure: when amount of memory allocated by TCP exceeds this number of pages, TCP moderates its memory consumption and enters memory pressure mode, which is exited when memory consumption falls under "min".[BR]max: number of pages allowed for queueing by all TCP sockets.[BR]Defaults are calculated at boot time from amount of available memory.</NetIpv4TcpMemExplain>
+<NetIpv4TcpMemExplain>Vecteur de 3 valeurs INTEGER : min, pressure, max[BR]
+min : En dessous de ce nombre de pages, TCP ne se préoccupe pas de sa consommation mémoire.[BR]
+pressure : Lorsque la quantité de mémoire allouée par TCP dépasse ce nombre de pages, TCP modère sa consommation mémoire et entre en mode de pression mémoire. Ce mode est quitté lorsque lâ%80%99utilisation mémoire repasse en dessous de « min ».[BR]
+max : Nombre maximal de pages autorisées pour la mise en file dâ%80%99attente par lâ%80%99ensemble des sockets TCP.[BR]
+Les valeurs par défaut sont calculées au démarrage en fonction de la quantité de mémoire disponible.</NetIpv4TcpMemExplain>
 <NetIpv4TcpNoMetricsSave>TCP No Metrics Save</NetIpv4TcpNoMetricsSave>
 <NetIpv4TcpNoMetricsSaveExplain>By default, TCP saves various connection metrics in the route cache when the connection closes, so that connections established in the near future can use these to set initial conditions.[BR]Usually, this increases overall performance, but may sometimes cause performance degradation.[BR]If set, TCP will not cache metrics on closing connections.
 </NetIpv4TcpNoMetricsSaveExplain>
@@ -361,6 +463,9 @@ as for lifetime (default 9m). Relevant only locally, other end need not agree on
 <online>En ligne</online>
 <online_users>Utilisateurs en ligne</online_users>
 <outgoing_range>Plage de sortie</outgoing_range>
+<override_outgoing_interface>Forcer lâ%80%99interface sortante</override_outgoing_interface>
+<override_port>Forcer le port</override_port>
+<override_port_explain>Forcer le port de vérification de lâ%80%99état de santé, valeur par défaut : 0 (Désactivé)</override_port_explain>
 <overwrite_local_dns>Surcharger les serveurs DNS locaux (DNS Cache / DNS Firewall)</overwrite_local_dns>
 <packets_in>Paquets entrants</packets_in>
 <packets_out>Paquets sortants</packets_out>
@@ -368,6 +473,8 @@ as for lifetime (default 9m). Relevant only locally, other end need not agree on
 <pconn_lifetime_text>Durée de vie maximale souhaitée d'une connexion persistante.[br][br]Lorsqu'elle est définie, le proxy fermera une connexion persistante au repos qui a dépassé la durée de vie configurée au lieu de déplacer la connexion dans le pool de connexions au repos (ou équivalent).[br] Aucun effet sur les transactions en cours/actives.[br]
 La durée de vie de la connexion est la période de temps entre l'acceptation ou l'ouverture de la connexion et &quot;maintenant&quot;[br]Cette limite est utile dans les environnements avec des connexions à longue durée de vie où la configuration du proxy ou les facteurs environnementaux changent pendant la durée de vie d'une seule connexion.[br]Si elle n'est pas limitée, certaines connexions peuvent durer des heures, voire des jours, en ignorant les changements qui auraient d%C3%BB affecter leur comportement ou leur existence.[br]Actuellement, une nouvelle valeur de durée de vie fournie par la reconfiguration de duproxy n'a aucun effet sur les connexions déjà inactives, à moins qu'elles ne deviennent occupées.[br]Lorsqu'elle est définie à 0, cette limite n'est pas utilisée.</pconn_lifetime_text>
 <peers>Les pairs</peers>
+<persistent>Persistant</persistent>
+<persistent_explain>Conserver lâ%80%99état de santé après les redémarrages</persistent_explain>
 <primary_interfaces_is_only_supported_in_active_backup_mode>Le membre primaire n'est pas pris en charge dans ce mode.</primary_interfaces_is_only_supported_in_active_backup_mode>
 <primary_member>Membre principal</primary_member>
 <primary_member_explain>Spécifier quel esclave est le dispositif primaire.[br] Le dispositif spécifié sera toujours l'esclave actif tant qu'il sera disponible. [br] Ce n'est que lorsque le primaire est hors ligne que des périphériques alternatifs seront utilisés.[br] Ceci est utile lorsqu'un esclave est préféré à un autre, par exemple, lorsqu'un esclave a un débit plus élevé qu'un autre.[br][b]L'option primaire est uniquement valable pour le mode active-backup(1),balance-tlb (5) et balance-alb (6)[/b].</primary_member_explain>
@@ -375,6 +482,12 @@ La durée de vie de la connexion est la période de temps entre l'acceptation ou
 <primary_node_keepalived>Maître</primary_node_keepalived>
 <primary_node_name>Nœud primaire</primary_node_name>
 <priority_explain>Le nœud primaire doit avoir la priorité la plus élevée par rapport au nœud secondaire. Par exemple : nœud primaire 200 / nœud secondaire 100</priority_explain>
+<queue_factor>Queue Factor</queue_factor>
+<queue_factor_explain>How much active connections matter[BR]Controls how strongly the number of active connections affects routing.[BR]Higher values make the balancer avoid busy servers even if they are fast.[BR]Lower values focus more on raw response time.</queue_factor_explain>
+<raises>Augmentations</raises>
+<raises_explain>Nombre de succès requis pour marquer comme sain, valeur par défaut : 2</raises_explain>
+<random>Aléatoire</random>
+<random_no_p>No parameters available for Random method</random_no_p>
 <recursive_search>Recursive Search</recursive_search>
 <recursive_search_explain>Cette option forcera le Hotspot à rechercher les membres et les groupes de manière récursive.[br]Exemple : Si vous ajoutez le groupe AD X dans l'authentification du Hotspot et si le groupe Y est membre du groupe X, cela signifie que les membres du groupe Y pourront également s'authentifier auprès du Hotspot.</recursive_search_explain>
 <Rekey_Explain>Si une connexion doit être renégociée lorsqu'elle est sur le point d'expirer. [br]Les deux extrémités ne doivent pas nécessairement être d'accord, mais
@@ -384,6 +497,8 @@ mais si une valeur de no empêche le démon de demander une renégociation, elle
 <remote_hosts_top>Top Traffic Flow (In / Out MB) by Remote Host</remote_hosts_top>
 <remote_ip_address>Adresse IP distante</remote_ip_address>
 <REMOTE_USERS>Utilisateurs distants</REMOTE_USERS>
+<remove_threshold>Seuil de suppression automatique (ms)</remove_threshold>
+<remove_threshold_explain>Ajouter ou supprimer dynamiquement des serveurs du pool upstream lorsque le temps de réponse du serveur est égal ou supérieur au seuil défini.</remove_threshold_explain>
 <reply_ticket>Envoi de la réponse au ticket</reply_ticket>
 <reserved_to_failover_service>Réservé pour le service failover</reserved_to_failover_service>
 <RestrictToOutgoingDomains>Restreindre les domaines sortants</RestrictToOutgoingDomains>
@@ -397,23 +512,40 @@ Depuis la version 5.0.1, une liste d'adresses IP / pools séparés par des virgu
 différentes familles d'adresses.</Rightsourceip_Explain>
 <rise>Hausse</rise>
 <rise_explain>Combien de fois le contrôle de santé doit retourner avec succès pour que le nœud soit considéré comme &quot;sain&quot;. (secondes)</rise_explain>
+<route_header>Route Header</route_header>
+<route_header_explain>HTTP header name (e.g., X-Session-ID: abc123)</route_header_explain>
+<route_param>Router Parameters</route_param>
+<route_param_explain>URL query parameter name (e.g., ?session_id=abc123)</route_param_explain>
+<rr>Round Robin</rr>
+<rr_no_p>No parameters available for Round Robin method</rr_no_p>
 <RW_CERT_EXPLAIN>Définir le certificat pour sécuriser la connexion tunnel</RW_CERT_EXPLAIN>
 <RW_CERT_EXPLAIN_USER>Indiquez le certificat SSL afin de sécuriser la connexion avec les utilisateurs distants.</RW_CERT_EXPLAIN_USER>
 <RW_LEFT_EXPLAIN>If local subnet is empty, 0.0.0.0/0 will be used.</RW_LEFT_EXPLAIN>
 <RW_RIGHTSOURCEIP>Internal source IP</RW_RIGHTSOURCEIP>
 <RW_RIGHTSOURCEIP_EXPLAIN>La tranche d'adresses internes qui sera attribuée vers le serveur distant</RW_RIGHTSOURCEIP_EXPLAIN>
 <RW_RIGHT_EXPLAIN>Si l'adresse TCP/IP distante est vide, %any sera utilisé.[br]Si le sous-réseau distant est vide, %dhcp sera utilisé ( vous devrez personnaliser le DHCP et le DNS dans la section Paramètres)</RW_RIGHT_EXPLAIN>
+<same_site>Same Site</same_site>
+<same_site_explain>SameSite attribute: "Strict", "Lax", or "None".</same_site_explain>
+<sc_p>Parameters available for Sticky Cookie method</sc_p>
 <SecCode>Code de sécurité</SecCode>
 <secondary_nodes>Nœuds secondaires</secondary_nodes>
 <secondary_nodes_explain>Artica configure et met à jour automatiquement les noeuds secondaires en fonction de la configuration du noeud primaire.[br]D'autres noeuds secondaires peuvent être ajoutés après la configuration initiale.</secondary_nodes_explain>
 <select_at_least_one_member>Sélectionnez au moins un membre de la liaison.</select_at_least_one_member>
+<set_cookie>Set Cookie</set_cookie>
+<set_cookie_explain>Enable automatic Set-Cookie in responses (load balancer manages cookies)</set_cookie_explain>
 <shards>Partitions de la base de données</shards>
+<sih_p>Parameters available for Sticky IP Hash method</sih_p>
 <SITE_TO_SITE>Site-to-Site</SITE_TO_SITE>
+<spmac>Spamc</spmac>
+<sr_p>Parameters available for Sticky Route method</sr_p>
 <sslcrtd_disable_bump_error_page>Désactiver le chiffrement SSL dans les pages d`erreurs</sslcrtd_disable_bump_error_page>
 <sslcrtd_disable_cache>Désactiver le cache SSL</sslcrtd_disable_cache>
 <state_explain>État initial MASTER|BACKUP</state_explain>
 <statscomHideMacs>Masquer les adresses MAC</statscomHideMacs>
 <statscomHideUnkownMembers>Remplace les membres inconnus avec leur adresse IP</statscomHideUnkownMembers>
+<sticky_cookie>Sticky Cookie</sticky_cookie>
+<sticky_ip_hash>Sticky IP Hash</sticky_ip_hash>
+<sticky_route>Sticky Route</sticky_route>
 <strongSwanCachecrls>Cache CRLS</strongSwanCachecrls>
 <strongSwanCachecrls_explain>If enabled, certificate revocation lists (CRLs) fetched via HTTP or LDAP will be cached in /etc/ipsec.d/crls/ under a unique file name derived from the certification authority's public key.</strongSwanCachecrls_explain>
 <strongSwanCharondebug>Niveau verbeux Charon</strongSwanCharondebug>
@@ -455,9 +587,18 @@ différentes familles d'adresses.</Rightsourceip_Explain>
 <STRONSWAN_REMOTE_ACCESS>Exemple d'accès distant</STRONSWAN_REMOTE_ACCESS>
 <STRONSWAN_SITE_TO_SITE>Exemple de site vers site</STRONSWAN_SITE_TO_SITE>
 <synchronize_tickets>Synchroniser les tickets</synchronize_tickets>
+<tcp_expect>Attente TCP</tcp_expect>
+<tcp_expect_explain>Motif de réponse attendu (expression régulière, texte ou hexadécimal).[BR]
+Exemple : tcp_expect=&quot;+PONG&quot; ou tcp_expect=&quot;OK&quot;</tcp_expect_explain>
+<tcp_send>Envoi TCP</tcp_send>
+<tcp_send_explain>Données à envoyer après lâ%80%99établissement de la connexion (texte, hexadécimal ou séquences dâ%80%99échappement).[BR]
+Exemple : tcp_send=PING[br] ou tcp_send=0x50494E47</tcp_send_explain>
+<tcp_settings>Paramètres TCP</tcp_settings>
 <tcp_slow_start_after_idle>TCP Slow Start After IDLE</tcp_slow_start_after_idle>
 <tcp_slow_start_after_idle_explain>If enabled, provide RFC 2861 behavior and time out the congestion window after an idle period.  An idle period is defined as the current RTO (retransmission timeout).  If disabled, the congestion window will not be timed out after an idle period.</tcp_slow_start_after_idle_explain>
 <ticket_n>Numéro de ticket</ticket_n>
+<tie_threshold>Tie Threshold</tie_threshold>
+<tie_threshold_explain>When two servers are considered equal[BR]If two servers are within this percentage of each other, they are treated as the same.[BR]This prevents constant switching when servers have nearly identical performance.</tie_threshold_explain>
 <timeout_explain>Temps d'attente pour le retour du bilan de santé (secondes)</timeout_explain>
 <track_interfaces>Interfaces de pistage</track_interfaces>
 <try_resolve_ip_to_hostname>Résoudre les noms d'hôtes dans les évènements proxy</try_resolve_ip_to_hostname>
@@ -468,10 +609,23 @@ différentes familles d'adresses.</Rightsourceip_Explain>
 hôte-à-sous-réseau ou sous-réseau-à-sous-réseau ;[br][b]Transport[/b] : indique le mode de transport hôte-à-hôte ;[br]
 [b]Transport_proxy[/b] : indique le mode spécial de proxy de transport Mobile IPv6 ;[br].
 [b]Passthrough[/b] : signifie qu'aucun traitement IPsec ne doit être effectué ;[br][b]Drop[/b], signifie que les paquets doivent être éliminés.</Type_Explain>
+<udp_expect>Attente UDP</udp_expect>
+<udp_expect_explain>Motif de réponse attendu (expression régulière, texte ou hexadécimal).[BR]
+Exemples : udp_expect=PONG, udp_expect=0x49, udp_expect=&quot;(OK|RUNNING|HEALTHY)&quot; ou udp_expect=&quot;OK 200&quot;</udp_expect_explain>
+<udp_send>Envoi UDP</udp_send>
+<udp_send_explain>Données à envoyer après lâ%80%99établissement de la connexion (texte ou hexadécimal).[BR]
+Il est fortement recommandé de définir udp_send ; valeur par défaut : 0x00.[BR]
+Exemple : udp_send=PING ou udp_send=0xABCD</udp_send_explain>
+<udp_settings>Paramètres UDP</udp_settings>
 <unicast_peer>N'envoyez pas de publicités VRRP sur un groupe VRRP multicast.[BR]Au lieu de cela, il envoie des publicités à la liste suivante d'adresses IP en utilisant l'unicast. Il peut être intéressant d'utiliser le FSM et les fonctionnalités du VRRP dans un environnement réseau où le multicast n'est pas pris en charge ! Les adresses IP spécifiées peuvent être aussi bien IPv4 qu'IPv6. Si min_ttl et/ou max_ttl sont spécifiés, la limite TTL/hop de tout paquet reçu est vérifiée par rapport à la plage TTL spécifiée, et est rejetée si elle est en dehors de la plage. Spécifier min_ttl ou max_ttl active check_unicast_src.</unicast_peer>
 <unicast_src_ip>Active Unicast</unicast_src_ip>
 <unicast_src_ip_explain>Les annonces de basculement sont normalement envoyées par multicast. [br]Activez l'option Unicast si la multidiffusion n'est pas prise en charge dans votre environnement ou si vous souhaitez limiter les annonces de basculement aux nœuds.</unicast_src_ip_explain>
+<uri_hash>Hachage URI</uri_hash>
+<uri_hash_p>Paramètres disponibles pour la méthode de hachage URI</uri_hash_p>
 <username_top>Top Traffic Flow (In / Out MB) by Member</username_top>
+<use_binary>Use binary_remote_addr</use_binary>
+<use_binary_explain>Use binary_remote_addr for better performance vs string remote_addr[BR]If disable, it will use proxied X-Forwarded-For</use_binary_explain>
+<use_request_uri>Use Request URI</use_request_uri>
 <use_vmac>use_vmac</use_vmac>
 <use_vmac_explain>Pour réduire l'impact des basculements, certains environnements réseau nécessitent l'utilisation de VRRP avec une adresse VMAC.[br] Pour atteindre cet objectif, le cadre VRRP de Keepalived implémente la prise en charge des VMAC.</use_vmac_explain>
 <vips>Virtual Ips</vips>
@@ -485,6 +639,9 @@ hôte-à-sous-réseau ou sous-réseau-à-sous-réseau ;[br][b]Transport[/b] : in
 <virtual_router_id_explain>Numéro unique arbitraire de 1 à 255, la valeur doit être la même pour tous les nœuds.</virtual_router_id_explain>
 <vmac_xmit_base>vmac_xmit_base</vmac_xmit_base>
 <vmac_xmit_base_explain>Force Transmit VRRP adverts over physical interface</vmac_xmit_base_explain>
+<warn_missing_metrics>Warn Missing Metrics</warn_missing_metrics>
+<warn_missing_metrics_explain>Warn when data is missing[BR]Logs a warning if a server has no performance data yet.[BR]Useful to detect monitoring or reporting problems.</warn_missing_metrics_explain>
+<weighted_rr>Round Robin pondéré</weighted_rr>
 <weight_explain>Ajuster la priorité en fonction du poids (secondes)</weight_explain>
 <WIFI4EUTEXTBODYSIZE>Taille de la police du corps (px)</WIFI4EUTEXTBODYSIZE>
 <WIFI4EUTEXTBTN>Button Text</WIFI4EUTEXTBTN>
@@ -500,6 +657,11 @@ hôte-à-sous-réseau ou sous-réseau-à-sous-réseau ;[br][b]Transport[/b] : in
 <WIFI4UEPRIVACYTEXT>Texte de la politique de confidentialité</WIFI4UEPRIVACYTEXT>
 <WIFI4UETERMSCONTENT>Contenu des termes &amp; conditions</WIFI4UETERMSCONTENT>
 <WIFI4UETERMSTEXT>Texte des termes &amp; conditions</WIFI4UETERMSTEXT>
+<wrr_max_retries>Max Retries</wrr_max_retries>
+<wrr_max_retries_explain>Lock retry attempts in strict mode[BR]Default: 3[BR]Only used when strict=true</wrr_max_retries_explain>
+<wrr_p>Paramètres disponibles pour la méthode Round Robin pondéré</wrr_p>
+<wrr_strict>Strict</wrr_strict>
+<wrr_strict_explain>Use mutex lock for perfect fairness[BR]Default: false[BR]Use true ONLY for extreme weight ratios (1000:1+)</wrr_strict_explain>
 <Xauthidentity_Explain>Defines the identity/username the client uses to reply to an XAuth request. If not defined, the IKEv1 identity will be used as XAuth identity.</Xauthidentity_Explain>
 <Xauth_Explain>Specifies the role in the XAuth protocol if activated by authby=xauthpsk or authby=xauthrsasig.</Xauth_Explain>
 <xmit_hash_policy>Politique en matière de hachage</xmit_hash_policy>

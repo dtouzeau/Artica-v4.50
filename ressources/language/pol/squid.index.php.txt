@@ -132,7 +132,7 @@ The same user can log to a maximum of 2 times from two different machines and wh
 </acl_max_user_ip_text>
 <acl_max_user_ip_title>This will be matched when the same user attempts to log in for more than the specified number of times from different ip addresses</acl_max_user_ip_title>
 <acl_method>Request Method</acl_method>
-<acl_method_text>Matching done based on the HTTP request method:
+<acl_method_text>Dopasowanie odbywa si%C4%99 na podstawie metody %C5%BC%C4%85dania HTTP:
 [UL]
 [li]GET[/li]
 [li]PUT[/li]
@@ -140,9 +140,7 @@ The same user can log to a maximum of 2 times from two different machines and wh
 [li]CONNECT[/li]
 [li]DELETE[/li]
 [li]PURGE[/li]
-[/UL]
-
-</acl_method_text>
+[/UL]</acl_method_text>
 <acl_method_title>This ACL type matches the HTTP method in the request headers. This includes the methods GET,PUT, etc</acl_method_title>
 <acl_myip>Adres IP Proxy</acl_myip>
 <acl_myip_text>Using this acl type, we can specify the local IP address on which the clients connections exists.[br]
@@ -312,22 +310,21 @@ All objects which are to be cached are stored in the disk space defined by this 
 This defines the path to cache directory, cache directory name, type and size of the cache area.
 </cache_dir_text>
 <cache_mem>ideal amount of memory</cache_mem>
-<cache_mem_text>Definiuje idealn%C4%85 ilo%C5%9B%C4%87 pami%C4%99ci do wykorzystania dla obiekt%C3%B3w w tranzycie, gor%C4%85cych obiekt%C3%B3w i obiekt%C3%B3w w negatywnej pami%C4%99ci podr%C4%99cznej.[br]
-Dane dla tych obiekt%C3%B3w s%C4%85 przechowywane w blokach o rozmiarze 4 KB.[br]
-Ten parametr okre%C5%9Bla idealny g%C3%B3rny limit ca%C5%82kowitego rozmiaru przydzielonych blok%C3%B3w 4 KB.[br]
-Obiekty w tranzycie maj%C4%85 priorytet nad innymi.[br]
-Gdy potrzebna jest dodatkowa przestrze%C5%84 na dane przychodz%C4%85ce, obiekty z negatywnej pami%C4%99ci podr%C4%99cznej oraz gor%C4%85ce obiekty zostan%C4%85 zwolnione.[br]
-Innymi s%C5%82owy, negatywna pami%C4%99%C4%87 podr%C4%99czna i gor%C4%85ce obiekty wype%C5%82ni%C4%85 wszelk%C4%85 niewykorzystan%C4%85 przestrze%C5%84, kt%C3%B3ra nie jest potrzebna dla obiekt%C3%B3w w tranzycie.[br]
-Je%C5%9Bli zajdzie taka potrzeba, ten limit zostanie przekroczony.[br]
-Je%C5%9Bli tempo %C5%BC%C4%85da%C5%84 przychodz%C4%85cych wymaga wi%C4%99cej pami%C4%99ci ni%C5%BC okre%C5%9Blone w cache_mem dla obiekt%C3%B3w w tranzycie, Squid przekroczy ten limit, aby zaspokoi%C4%87 nowe %C5%BC%C4%85dania.[br]
-Gdy obci%C4%85%C5%BCenie spadnie, bloki zostan%C4%85 zwolnione do osi%C4%85gni%C4%99cia g%C3%B3rnego progu.[br]
-Nast%C4%99pnie bloki b%C4%99d%C4%85 u%C5%BCywane do przechowywania gor%C4%85cych obiekt%C3%B3w.[br]
+<cache_mem_text>To ustawienie okre%C5%9Bla optymaln%C4%85 ilo%C5%9B%C4%87 pami%C4%99ci u%C5%BCywanej dla obiekt%C3%B3w w tranzycie, obiekt%C3%B3w aktywnych (hot) oraz obiekt%C3%B3w z negatywn%C4%85 pami%C4%99ci%C4%85 podr%C4%99czn%C4%85.[br]
+Dane tych obiekt%C3%B3w s%C4%85 przechowywane w blokach o rozmiarze 4 KB.[br]
+Parametr ten okre%C5%9Bla zalecany g%C3%B3rny limit ca%C5%82kowitego rozmiaru przydzielonych blok%C3%B3w 4 KB.[br]
+Obiekty w tranzycie maj%C4%85 najwy%C5%BCszy priorytet.[br]
+Gdy potrzebna jest dodatkowa przestrze%C5%84 dla danych przychodz%C4%85cych, obiekty z negatywn%C4%85 pami%C4%99ci%C4%85 podr%C4%99czn%C4%85 oraz obiekty hot s%C4%85 zwalniane.[br]
+Innymi s%C5%82owy, obiekty z negatywn%C4%85 pami%C4%99ci%C4%85 podr%C4%99czn%C4%85 i hot zajmuj%C4%85 niewykorzystan%C4%85 przestrze%C5%84, kt%C3%B3ra nie jest potrzebna obiektom w tranzycie.[br]
+W razie potrzeby limit ten mo%C5%BCe zosta%C4%87 przekroczony.[br]
+W szczeg%C3%B3lno%C5%9Bci, je%C5%9Bli tempo przychodz%C4%85cych %C5%BC%C4%85da%C5%84 wymaga wi%C4%99cej pami%C4%99ci ni%C5%BC cache_mem do przechowywania obiekt%C3%B3w w tranzycie, us%C5%82uga Proxy tymczasowo przekroczy ten limit.[br]
+Gdy obci%C4%85%C5%BCenie spadnie, bloki pami%C4%99ci s%C4%85 zwalniane do momentu osi%C4%85gni%C4%99cia g%C3%B3rnego progu.[br]
+Nast%C4%99pnie dost%C4%99pne bloki s%C4%85 wykorzystywane do przechowywania obiekt%C3%B3w hot.[br]
 [blk]
-Uwaga: Ten parametr nie okre%C5%9Bla maksymalnego rozmiaru procesu.[br]
-Okre%C5%9Bla limit dla jednego aspektu u%C5%BCycia pami%C4%99ci przez Squid.[br]
-Squid u%C5%BCywa tak%C5%BCe pami%C4%99ci do innych cel%C3%B3w.[br]
-Proces prawdopodobnie b%C4%99dzie dwa lub trzy razy wi%C4%99kszy ni%C5%BC okre%C5%9Blona tutaj warto%C5%9B%C4%87.[br]
-[/blk]</cache_mem_text>
+Uwaga: Ta dyrektywa nie okre%C5%9Bla maksymalnego rozmiaru procesu.[br]
+Ogranicza jedynie jeden aspekt wykorzystania pami%C4%99ci przez us%C5%82ug%C4%99 Proxy.[br]
+Us%C5%82uga Proxy wykorzystuje pami%C4%99%C4%87 tak%C5%BCe do innych cel%C3%B3w.[br]
+W efekcie rozmiar procesu mo%C5%BCe by%C4%87 dwu- lub trzykrotnie wi%C4%99kszy ni%C5%BC warto%C5%9B%C4%87 skonfigurowana tutaj.[/blk]</cache_mem_text>
 <cache_replacement_policy>Cache Replacement Policy</cache_replacement_policy>
 <cache_replacement_policy_text>[b]
 The cache replacement policy parameter determines which objects are to be replaced when disk space is needed[/b][br]

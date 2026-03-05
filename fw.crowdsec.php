@@ -1257,7 +1257,7 @@ function threats_search():bool{
     $modtools=new modesctools();
     $function=$_GET["function"];
     $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
+    if(!$q->ok){echo $tpl->div_error($q->mysql_error);return false;}
     $ipclass=new IP();
     $now=time();
     while ($ligne = pg_fetch_assoc($results)) {

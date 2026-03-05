@@ -755,7 +755,7 @@ Cette fonctionnalit&eacute; permet d'afficher un popup d'authentification si et 
 <auto_account>Auto-cr&eacute;ation de Comptes</auto_account>
 <auto_account_text>Auto-cr&eacute;ation de comptes par vos utilisateurs</auto_account_text>
 <auto_apt>Mettre &agrave; jour automatiquement le syst&egrave;me</auto_apt>
-<available>disponible</available>
+<available>Disponible</available>
 <aveserver_licence_add>Envoyez le fichier cl&eacute;  *.key de Kaspersky pour Unix Mail serveur afin de mettre &agrave; jour la licence.</aveserver_licence_add>
 <aveserver_main_settings>Param&egrave;tres Anti-Virus Kaspersky  pour Postfix</aveserver_main_settings>
 <aveserver_status>Etat du serveur de Mail Kaspersky</aveserver_status>
@@ -4213,41 +4213,31 @@ Le param&egrave;tre [strong]&quot;limite des destinataires smtpd&quot;[/strong] 
 La limite par d&eacute;faut est plus &eacute;lev&eacute;e que celle que n'importe quel client SMTP raisonnable pourrait envoyer.[br]
 La limite existe pour prot&eacute;ger le syst&egrave;me de messagerie local contre un client qui s'emballe.</title_postfix_tuning_5_text>
 <title_postfix_tuning_6>R&eacute;glage de la fr&eacute;quence des tentatives de reporter la livraison du courrier</title_postfix_tuning_6>
-<title_postfix_tuning_6_text>Quand un agent de livraison de Postfix (smtp(8), local(8), etc) n'arrive pas &agrave; livrer un message, il peut mettre en cause le message lui-m&ecirc;me, ou il peut mettre en cause la celui qui le re&ccedil;oit. [br]
+<title_postfix_tuning_6_text>Lorsquâ%80%99un agent de distribution Postfix (smtp(8), local(8), etc.) nâ%80%99est pas en mesure de livrer un message, il peut en imputer la cause soit au message lui-même, soit au destinataire.[br]
 [ul]
-[li]Lorsque l'agent de livraison met en cause le message, le gestionnaire de file d'attente donne au fichier de file d'attente un horodatage ult&eacute;rieur,
-de sorte qu'il ne sera pas examin&eacute; pendant un certain temps.[br]
-Par d&eacute;faut, le d&eacute;lai de recharge correspond &agrave; la quantit&eacute; de temps qui s'est &eacute;coul&eacute; depuis que le message est arriv&eacute;.[br]
-Il en r&eacute;sulte ce que l'on appelle un  comportement  de retour exponentielle.[/li]
-[li]Lorsque l'agent de livraison met en cause la partie r&eacute;ceptrice (par exemple un utilisateur destinataire local, ou d'un h&ocirc;te distant),
-le gestionnaire de file d'attente, non seulement, avances l'horodatage du fichier file d'attente, mais met &eacute;galement la partie qui re&ccedil;oit sur %u200B%u200Bune liste &quot;morte&quot; afin qu'elle soit ignor&eacute; pour certains laps de temps.[/li]
+[li]Lorsque lâ%80%99agent incrimine le message, le gestionnaire de file attribue au message un horodatage futur afin quâ%80%99il ne soit pas retraité immédiatement.[br]
+Par défaut, la période dâ%80%99attente correspond au temps écoulé depuis lâ%80%99arrivée du message.[br]
+Cela conduit à un mécanisme de temporisation exponentielle.[/li]
+[li]Lorsque lâ%80%99agent incrimine le destinataire (utilisateur local ou hôte distant), le gestionnaire de file avance lâ%80%99horodatage du message et ajoute le destinataire à une liste « morte », afin quâ%80%99il soit ignoré pendant une certaine durée.[/li]
 [/ul]
-Ce processus est r&eacute;gi par un tas de petits param&egrave;tres.
+Ce mécanisme est contrôlé par plusieurs paramètres.
 [ul]
-[li][strong]d&eacute;lai d'ex&eacute;cution de la file d'attente [/strong](par d&eacute;faut: 300 secondes; avant Postfix 2.4: 1000s)[br] &Agrave; quelle fr&eacute;quence le gestionnaire de file d'attente balaye la file d'attente pour le courrier diff&eacute;r&eacute;.[/li]
-[li][strong]temps minimal de retour[/strong] (par d&eacute;faut: 300 secondes, avant Postfix 2.4: 1000s)[br]
-D&eacute;lai minimum durant lequel un message ne sera pas examin&eacute;, et le minimum de temps &agrave; maintenir loin d'une destination &quot;morte&quot;.[/li]
-[li][strong]temps maximal de retour[/strong] (par d&eacute;faut: 4000 secondes)[br] D&eacute;lai maximal durant le quel un message ne sera pas examin&eacute; apr&egrave;s une d&eacute;faillance de livraison.[/li]
-[li] [strong] dur&eacute;e de vie maximale de la file d'attente[/strong] (par d&eacute;faut: 5 jours).[br] Temps pendant lequel un message reste dans la file d'attente avant qu'il ne soit renvoy&eacute; &agrave; l'exp&eacute;diteur[br]
-Sp&eacute;cifiez 0 pour le courrier qui doit &ecirc;tre renvoy&eacute; imm&eacute;diatement apr&egrave;s la premi&egrave;re tentative de livraison infructueuse.[/li]
-[li] bounce_queue_lifetime (par d&eacute;faut: 5 jours, disponible avec la version Postfix 2.1 et versions ult&eacute;rieures) Temps pendant lequel un message MAILER-DAEMON reste dans la file d'attente avant qu'il ne soit consid&eacute;r&eacute; comme non distribuable.
-[br]Sp&eacute;cifiez 0 pour le courrier qui n'a droit qu'&agrave; un seul essai.[/li]
-[li][strong] limite de destinataire qmgr(par d&eacute;faut: 20000)[/li][/strong]
-Taille des nombreuses structures de donn&eacute;es du gestionnaire de file d'attente en m&eacute;moire.[br]
-Entre autres, ce param&egrave;tre limite la taille de la liste des destinations &quot;mortes&quot; &agrave; court terme en m&eacute;moire.[br]
-Les destinations qui ne cadrent pas avec la liste ne sont pas ajout&eacute;s.[/li]
+[li][strong]queue run delay[/strong] (défaut : 300 secondes ; avant Postfix 2.4 : 1000s)[br]
+Fréquence dâ%80%99analyse de la file dâ%80%99attente pour le courrier différé.[/li]
+[li][strong]minimal backoff time[/strong] (défaut : 300 secondes ; avant Postfix 2.4 : 1000s)[br]
+Durée minimale avant une nouvelle tentative et durée minimale dâ%80%99évitement dâ%80%99une destination « morte ».[/li]
+[li][strong]maximal backoff time[/strong] (défaut : 4000 secondes)[br]
+Durée maximale avant une nouvelle tentative après un échec.[/li]
+[li][strong]maximal queue lifetime[/strong] (défaut : 5 jours)[br]
+Durée maximale de conservation dâ%80%99un message avant retour en erreur.[br]
+Spécifiez 0 pour un retour immédiat après le premier échec.[/li]
+[li][strong]bounce_queue_lifetime[/strong] (défaut : 5 jours)[br]
+Durée de conservation des messages MAILER-DAEMON avant rejet définitif.[br]
+Spécifiez 0 pour une seule tentative.[/li]
+[li][strong]qmgr message recipient limit[/strong] (défaut : 20000)[br]
+Taille maximale des structures mémoire du gestionnaire de file, notamment la liste des destinations « mortes ».[/li]
 [/ul]
-[i]IMPORTANT: Si vous augmentez la fr&eacute;quence des tentatives de livraison du courrier report&eacute;, ou si vous videz la file d'attente diff&eacute;r&eacute;e fr&eacute;quemment, alors vous pourrez constater que les performances de livraison du courrier de Postfix devient vraiment pire.[/i][br]
-[/ul]
-[li] La file d'attente active devient satur&eacute;e avec du courrier qui a des probl&egrave;mes de livraison. Le nouveau courrier entre dans la file d'attente active seulement quand un ancien message est diff&eacute;r&eacute;.
-[br] C'est un processus lent qui n&eacute;cessite g&eacute;n&eacute;ralement la mise en pose d'une ou plusieurs connexions SMTP.[/li]
-[li] Tous les agents de livraison disponibles de Postfix deviennent occup&eacute;es &agrave; tenter de se connecter &agrave; des sites inaccessibles etc...[br]
-Le nouveau courrier doit attendre qu'un agent de livraison soit disponible.[br]
-[br] C'est un processus lent qui n&eacute;cessite g&eacute;n&eacute;ralement la mise en pose d'une ou plusieurs connexions SMTP.[/li]
-[/ul]Lorsque le courrier est diff&eacute;r&eacute;e fr&eacute;quemment, r&eacute;gler le probl&egrave;me est toujours mieux que d'augmenter la fr&eacute;quence des tentatives de livraison.
-[br] Cependant, si vous ne pouvez contr&ocirc;ler que la fr&eacute;quence des tentatives de livraison, pensez &agrave; utiliser une fallback_relay, machine &laquo;cimeti&egrave;re&raquo; d&eacute;di&eacute; aux mauvaises destinations,
-de sorte que ces destinations ne ruinent pas les performances de la distribution du courrier normal.
-[/ul]</title_postfix_tuning_6_text>
+[i]IMPORTANT : Augmenter la fréquence des tentatives ou purger souvent la file différée peut dégrader les performances.[/i]</title_postfix_tuning_6_text>
 <title_postfix_tuning_7>R&eacute;glage du nombre de processus Postfix</title_postfix_tuning_7>
 <title_postfix_tuning_7_text>Le param&egrave;tre de configuration &quot;limite de processus par d&eacute;faut&quot; donne un contr&ocirc;le direct sur le nombre de processus d&eacute;mon que Postfix ex&eacute;cutera.[br]
 Depuis Postfix 2.0 la limite par d&eacute;faut est de 100 processus client smtp, 100 processus serveur SMTP, etc.[br]

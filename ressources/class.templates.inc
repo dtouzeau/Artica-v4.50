@@ -104,7 +104,17 @@ $GLOBALS['_LANG'] = array(
 
 function CurrentPageName(){
     $phpPage=basename($_SERVER["SCRIPT_FILENAME"]);
-    return $phpPage;}
+    $HTTP_X_ARTICA_SUBFOLDER="";
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+        $HTTP_X_ARTICA_SUBFOLDER=$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+    }
+
+    if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_META_PREFIX"]."/";
+    }
+
+    return $HTTP_X_ARTICA_SUBFOLDER.$phpPage;
+}
 class templates{
     var $head;
     var $body;
@@ -1647,12 +1657,14 @@ function _sessions_syslog($text):bool{
 }
 
 
-function FormatBytes($kbytes,$nohtml=false):string{
+function FormatBytes($kbytes=0,$nohtml=false):string{
 
     $spacer="&nbsp;";
     $value=0;
+    $kbytes=intval($kbytes);
     if($nohtml){$spacer="";}
     if($kbytes<1024){
+        $kbytes=round($kbytes,2);
         return "$kbytes{$spacer}KB";
     }
 

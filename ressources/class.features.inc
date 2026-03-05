@@ -2146,7 +2146,7 @@ class features{
 
     public function APP_ARTICA_META():string{
         $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_ARTICA_META}";
+        $config["TITLE"]="{APP_ARTICA_META} (Beta)";
         $config["EXPLAIN"]="{network_agents_explain}";
         $config["TOKEN"]="EnableArticaMeta";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/meta.progress";
@@ -2334,6 +2334,26 @@ class features{
         return $this->build_paragraph($config);
     }
 
+    public function ARTICAAUTHAGENT():string{
+        if($this->ASReverseProxyAppliance){
+            return "";
+        }
+        if(!is_file("/usr/share/artica-postfix/bin/artica-auth-helper")){
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ARTICAAUTHAGENT_INSTALLED", "0");
+        }
+        $config["SECURITY"]="AsSystemAdministrator";
+        $config["LICENSE"]=true;
+        $config["TITLE"]="{artica_auth_agent}";
+        $config["EXPLAIN"]="{feature_artica_auth_agent_explain}";
+        $config["TOKEN"]="EnableArticaAuthenticationAgent";
+        $config["CMD_ON"]="/aaa/install";
+        $config["CMD_OFF"]="/aaa/uninstall";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/ArticaAuthenticationAgent.progress";
+        $config["LOG_FILE"]=PROGRESS_DIR."/ArticaAuthenticationAgent.log";
+        $config["WIKI"]="https://wiki.articatech.com/en/proxy-service/authentication/artica-authentication-agent";
+        return $this->build_paragraph($config);
+    }
+
     public function ACTIVEDIRECTORY_AD_AGENT():string{
         if($this->ASReverseProxyAppliance){
             return "";
@@ -2425,22 +2445,7 @@ class features{
         return $this->build_paragraph($config);
     }
 
-    public function SQUID_WCCP():string{
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $config["SECURITY"]="AsSquidAdministrator";
-        $config["TOKEN_INSTALLED"]="SQUIDEnable";
-        $config["TOKEN_REQUIRE"]="{proxy_service}";
-        $config["TITLE"]="{WCCP_NAME} (WCCP)";
-        $config["EXPLAIN"]="{WCCP_NAME_EXPLAIN}";
-        $config["TOKEN"]="SquidWCCPEnabled";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/squid.wccp.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/squid.wccp.log";
-        $config["CMD_ON"]="/proxy/wccp/install";
-        $config["CMD_OFF"]="/proxy/wccp/uninstall";
-        return $this->build_paragraph($config);
-    }
+
 
 
     public function SQUID_CACHE():string{

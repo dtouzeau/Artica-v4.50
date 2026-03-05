@@ -212,7 +212,7 @@ function table(){
     $html[]=$headsjs;
     $html[]="</script>";
     echo $tpl->_ENGINE_parse_body($html);
-
+    return true;
 }
 
 

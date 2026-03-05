@@ -24,14 +24,12 @@ All emails for a "relay domain" will be forwarded to an other dedicated server.[
 <no_remote_domain_here>Currently, no relayed domain set</no_remote_domain_here>
 <relay_domain_map>others relayed domains used by your organization</relay_domain_map>
 <roundrobin>Round Robin</roundrobin>
-<roundrobin_text>Round robin DNS is a technique of load distribution, load balancing, or fault-tolerance provisioning multiple,
- redundant Mail Protocol service hosts, e.g., by managing the Domain Name System's (DNS) 
- responses to address requests from Mail server according to an appropriate statistical model.[br]
-In its simplest implementation Round-robin DNS works by responding to DNS requests not only with a single IP address,[br]
- but a list of IP addresses of several servers that host identical services.[br]
-The order in which IP addresses from the list are returned is the basis for the term round robin.[br]
- With each DNS response, the IP address sequence in the list is permuted. Usually, basic IP clients attempt connections with the first 
-address returned from a DNS query so that on different connection attempts clients would receive service from different providers, thus distributing the overall load among servers.
-</roundrobin_text>
+<roundrobin_text>O DNS Round Robin é uma técnica de distribuiç%C3£o de carga, balanceamento ou tolerância a falhas que fornece v%C3¡rios hosts redundantes de serviços de e-mail,[br]
+gerenciando as respostas do sistema DNS às solicitaç%C3µes de endereços dos servidores de e-mail de acordo com um modelo estat%C3%ADstico apropriado.[br]
+Na implementaç%C3£o mais simples, o DNS Round Robin responde às solicitaç%C3µes DNS n%C3£o com um %C3%BAnico endereço IP,[br]
+mas com uma lista de endereços IP de v%C3¡rios servidores que hospedam serviços idênticos.[br]
+A ordem em que os endereços IP s%C3£o retornados d%C3¡ origem ao termo round robin.[br]
+A cada resposta DNS, a sequência de endereços IP é rotacionada.[br]
+Normalmente, os clientes IP tentam se conectar ao primeiro endereço retornado pela consulta DNS, distribuindo a carga geral entre os servidores.</roundrobin_text>
 <target_computer_name>Target server name or IP</target_computer_name>
 <target_computer_port>Port</target_computer_port>

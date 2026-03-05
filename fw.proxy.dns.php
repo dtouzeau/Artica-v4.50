@@ -15,6 +15,7 @@ if(isset($_GET["dns-rules-list"])){dnsrules_table();exit;}
 if(isset($_GET["dns-rules-id"])){dnsrules_js();exit;}
 if(isset($_GET["dns-rules-popup"])){dnsrules_popup();exit;}
 if(isset($_GET["dns-rules-delete"])){dnsrules_delete_js();exit;}
+if(isset($_GET["proxy-dns-hacluster-btns"])){dnsrules_btns();exit;}
 if(isset($_POST["dns-rules-delete"])){dnsrules_delete_confirm();exit;}
 if(isset($_GET["dns-rules-enabled"])){dnsrules_enable();exit;}
 if(isset($_GET["statistics"])){statistics();exit;}
@@ -43,48 +44,45 @@ function tabs(){
 
     echo $tpl->tabs_default($array);
 }
-function delete(){
+function delete():bool{
     $hostname=$_GET["delete"];
     $sock=new sockets();
     $sock->getFrameWork("squid2.php?ipdns-delete=$hostname");
     $md=$_GET["md"];
     echo "$('#$md').remove();\n";
-}
-function dnsrules_enable(){
-    $ID=intval($_GET["dns-rules-enabled"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM squid_dns_rules WHERE ID=$ID");
-    $enabled=intval($ligne["enabled"]);
-    if($enabled==0){
-        admin_tracks("Set Proxy DNS rule $ID to enabled");
-        $q->QUERY_SQL("UPDATE squid_dns_rules SET enabled=1 WHERE ID=$ID");
-        return true;
-    }
-    admin_tracks("Set Proxy DNS rule $ID to disabled");
-    $q->QUERY_SQL("UPDATE squid_dns_rules SET enabled=0 WHERE ID=$ID");
     return true;
-
 }
-function dnsrules_delete_js(){
+function dnsrules_enable():bool{
+    $ID=intval($_GET["dns-rules-enabled"]);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/hacluster/client/dns/backend/rules/$ID/toggle", new stdClass()));
+    if(isset($json->data->enabled)){
+        $state=intval($json->data->enabled)==1?"enabled":"disabled";
+        admin_tracks("Set Proxy DNS rule $ID to $state");
+    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/dns/backend/restart");
+    return true;
+}
+function dnsrules_delete_js():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $ID=intval($_GET["dns-rules-delete"]);
     $md=$_GET["md"];
-    $tpl->js_confirm_delete("{rule} #$ID","dns-rules-delete",$ID,"$('#$md').remove();");
+    return $tpl->js_confirm_delete("{rule} #$ID","dns-rules-delete",$ID,"$('#$md').remove();");
 }
-function dnsrules_delete_confirm(){
+function dnsrules_delete_confirm():bool{
     $ID=intval($_POST["dns-rules-delete"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("DELETE FROM squid_dns_rules WHERE ID=$ID");
-    if($q->ok){
-        echo $q->mysql_error;
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_DELETE("/hacluster/client/dns/backend/rules/$ID"));
+    if(!isset($json->success) || !$json->success){
+        $err=isset($json->error)?$json->error:"unknown error";
+        $tpl=new template_admin();
+        echo $tpl->post_error($err);
         return false;
     }
-    admin_tracks("Removed Proxy DNS rule $ID");
-    return true;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/dns/backend/restart");
+    return admin_tracks("Removed Proxy DNS rule $ID");
 }
 
-function page(){
+function page():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $html=$tpl->page_header("{dns_settings}","fas fa-database","{dns_settings_proxy_explain}",
@@ -94,96 +92,144 @@ function page(){
     if(isset($_GET["main-page"])){
         $tpl=new template_admin(null,$html);
         echo $tpl->build_firewall();
-        return;
+        return true;
     }
     $tpl=new template_admin();
     echo $tpl->_ENGINE_parse_body($html);
+    return true;
 }
 function dnsrules_popup(){
     $ID=intval($_GET["dns-rules-popup"]);
-    $page=CurrentPageName();
+    $function=$_GET["function"];
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $jsafter="dialogInstance1.close();LoadAjax('dns-lb-proxy-rules','$page?dns-rules-list=yes');";
+    $jsafter="dialogInstance1.close();$function();";
     if($ID>0){
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM squid_dns_rules WHERE ID=$ID");
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/dns/backend/rules/$ID"));
+        if(isset($json->success) && $json->success){
+            $ligne["sitename"]=$json->data->sitename;
+            $ligne["dnsservers"]=$json->data->dnsservers;
+            $ligne["enabled"]=intval($json->data->enabled);
+        }else{
+            $ligne["enabled"]=1;
+        }
         $title="{rule} $ID";
         $btname="{apply}";
-
     }else{
         $ligne["enabled"]=1;
+        $ligne["sitename"]="";
+        $ligne["dnsservers"]="";
         $title="{new_rule}";
         $btname="{add}";
-        $jsafter="dialogInstance1.close();LoadAjax('dns-lb-proxy-rules','$page?dns-rules-list=yes');";
     }
     $form[]=$tpl->field_hidden("ID",$ID);
     $form[]=$tpl->field_checkbox("enabled","{enabled}",$ligne["enabled"],"sitename,dnsservers");
-    $form[]=$tpl->field_textarea("sitename","{domains}",$ligne["sitename"],"100%","100px");
-    $form[]=$tpl->field_textarea("dnsservers","{dns_servers}",$ligne["dnsservers"],"100%","75px");
+    $form[]=$tpl->field_textareacode("sitename","{domains}",$ligne["sitename"],"100%","100px");
+    $form[]=$tpl->field_textareacode("dnsservers","{dns_servers}",$ligne["dnsservers"],"100%","75px");
     echo $tpl->form_outside($title,$form,null,$btname,$jsafter);
-
-
 }
-function dnsrules_save(){
+function dnsrules_save():bool{
     $tpl=new template_admin();
+
     $tpl->CLEAN_POST();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $ackdoms=str_replace("\n",", ",$_POST['sitename']);
     $ackdns=str_replace("\n",", ",$_POST['dnsservers']);
-    if($_POST["ID"]==0){
-        $q->QUERY_SQL("INSERT INTO squid_dns_rules (sitename,dnsservers,enabled)
-        VALUES ('{$_POST['sitename']}','{$_POST['dnsservers']}','{$_POST['enabled']}')");
+    $ID=intval($_POST["ID"]);
+    $data=array(
+        "sitename"=>$_POST['sitename'],
+        "dnsservers"=>$_POST['dnsservers'],
+        "enabled"=>intval($_POST['enabled'])
+    );
+    if($ID==0){
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/hacluster/client/dns/backend/rules", $data));
         $atrck="Create a new Proxy DNS rule for $ackdoms using DNS servers $ackdns";
     }else{
-        $q->QUERY_SQL("UPDATE squid_dns_rules SET sitename='{$_POST['sitename']}',dnsservers='{$_POST['dnsservers']}',enabled='{$_POST['dnsservers']}' WHERE ID=$ID)");
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/hacluster/client/dns/backend/rules/$ID", $data));
         $atrck="Update Proxy DNS rule $ID for $ackdoms using DNS servers $ackdns";
     }
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
+    if(!isset($json->success) || !$json->success){
+        $err=isset($json->error)?$json->error:"unknown error";
+        echo $tpl->post_error($err);
         return false;
     }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/dns/backend/restart");
     admin_tracks($atrck);
     return true;
 }
 
-function dnsrules_js(){
+function dnsrules_js():bool{
     $ID=intval($_GET["dns-rules-id"]);
+    $function=$_GET["function"];
     $page=CurrentPageName();
     $tpl=new template_admin();
 
     if($ID==0) {
-        $tpl->js_dialog1("{new_rule}","$page?dns-rules-popup=$ID");
+        $tpl->js_dialog1("{new_rule}","$page?dns-rules-popup=$ID&function=$function");
         return true;
     }
-    $tpl->js_dialog1("{rule}: $ID","$page?dns-rules-popup=$ID");
-    return true;
+    return $tpl->js_dialog1("{rule}: $ID","$page?dns-rules-popup=$ID&function=$function");
+
 }
 
-function dnsrules_start(){
+function dnsrules_start():bool{
+    $page=CurrentPageName();
+    $addon="";
+    if(isset($_GET["hacluster"])){
+        $addon="&hacluster=yes";
+    }
+    $tpl=new template_admin();
+    echo "<div style='margin-top:5px;margin-bottom:5px' id='proxy-dns-hacluster-btns'></div>";
+    echo $tpl->search_block($page,"","","","&dns-rules-list=yes$addon");
+
     return true;
 }
-function dnsrules_table(){
+function dnsrules_btns():bool{
+    $function=$_GET["function"];
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $topbuttons[]=array("Loadjs('$page?dns-rules-id=0&function=$function');",
+        ico_plus,"{new_rule}");
+    echo $tpl->th_buttons($topbuttons);
+    return true;
+}
+function dnsrules_table():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $t=time();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+    $addon="";
+    $hacluster=false;
+    if(isset($_GET["hacluster"])){
+        $hacluster=true;
+        $addon="&hacluster=yes";
+    }
+    if($hacluster){
+        $HaClusterProxyUseBackendDNSDIST=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseBackendDNSDIST"));
+        $HaClusterProxyUseOwnDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseOwnDNS"));
+        if($HaClusterProxyUseOwnDNS==0){
+            $HaClusterProxyUseBackendDNSDIST=0;
+        }
+        if($HaClusterProxyUseBackendDNSDIST==0){
+            echo $tpl->_ENGINE_parse_body($tpl->div_warning("{use_local_dns_service}||{dnsrules_only_dnsdist}"));
+            return true;
+        }
 
-    $sql="CREATE TABLE IF NOT EXISTS `squid_dns_rules` (
-				`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-				`sitename` TEXT NOT NULL ,
-				`dnsservers` TEXT NOT NULL ,
-				`enabled` INTEGER NOT NULL 
-				) ";
 
-    $q->QUERY_SQL($sql);
 
-    $sql="SELECT * FROM squid_dns_rules ORDER BY ID DESC";
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);}
 
+    }
+
+
+
+    $function=$_GET["function"];
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/dns/backend/rules"));
+    $results=array();
+    if(isset($json->success) && $json->success && is_array($json->data)){
+        $results=$json->data;
+    }
+    $search=$_GET["search"];
     $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:20px'>";
     $html[]="<thead>";
     $html[]="<tr>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'></th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{source}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{dns_servers}</th>";
     $html[]="<th data-sortable=true class='text-capitalize center' >{enabled}</th>";
@@ -193,23 +239,31 @@ function dnsrules_table(){
     $html[]="<tbody>";
     $TRCLASS=null;
     foreach ($results as $index=>$ligne) {
-        $md=md5(serialize($ligne));
+        $md=md5(json_encode($ligne));
+
+        if(strlen($search)>1){
+            if(!preg_match("#$search#",serialize($ligne))){
+                continue;
+            }
+        }
+
         if ($TRCLASS == "footable-odd") {
             $TRCLASS = null;
         } else {
             $TRCLASS = "footable-odd";
         }
-        $sitename=$ligne["sitename"];
+        $sitename=$ligne->sitename;
         $sitename=str_replace("\n",", ",$sitename );
-        $ID=$ligne["ID"];
-        $destination=$ligne["dnsservers"];
+        $ID=intval($ligne->ID);
+        $destination=$ligne->dnsservers;
         $destination=str_replace("\n",", ",$destination );
 
-        $enabled=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?dns-rules-enabled=$ID')",null,"AsSquidAdministrator");
-        $delete=$tpl->icon_delete("Loadjs('$page?dns-rules-delete=$ID&md=$md')","AsSquidAdministrator");
+        $enabled=$tpl->icon_check(intval($ligne->enabled),"Loadjs('$page?dns-rules-enabled=$ID$addon')",null,"AsSquidAdministrator");
+        $delete=$tpl->icon_delete("Loadjs('$page?dns-rules-delete=$ID&md=$md$addon')","AsSquidAdministrator");
 
-        $sitename=$tpl->td_href("$sitename",null,"Loadjs('$page?dns-rules-id=$ID');");
+        $sitename=$tpl->td_href("$sitename",null,"Loadjs('$page?dns-rules-id=$ID$addon');");
         $html[]="<tr class='$TRCLASS' id='$md'>";
+        $html[]="<td style='width:1%' class='center' nowrap><i class='".ico_server."'</td>";
         $html[]="<td style='width:70%' class='left'><strong>$sitename</strong></td>";
         $html[]="<td style='width:30%' class='left' nowrap>$destination</td>";
         $html[]="<td style='width:1%' class='center' nowrap>$enabled</td>";
@@ -220,28 +274,25 @@ function dnsrules_table(){
     }
 
     $jsafter=$tpl->framework_buildjs(
-        "squid2.php?proxy-lb-reload=yes",
-        "proxydns.progress",
-        "proxydns.log",
+        "/hacluster/client/dns/backend/restart",
+        "HaClusterBackendDNS.progress",
+        "HaClusterBackendDNS.log",
         "proxydns-progress");
 
-
-    $btns[] = "<div class=\"btn-group\" data-toggle=\"buttons\">";
-    $btns[] = "<label class=\"btn btn btn-info\" OnClick=\"Loadjs('$page?dns-rules-id=0');\">
-	<i class='fa fa-plus'></i> {new_rule} </label>";
-    $btns[] = "<label class=\"btn btn btn-primary\" OnClick=\"$jsafter\">
-	<i class='fa fa-plus'></i> {apply config} </label>";
-
-
-    $btns[] = "</div>";
+    $topbuttons[]=array("Loadjs('$page?dns-rules-id=0&function=$function');",
+        ico_plus,"{new_rule}");
+    $topbuttons[] = array($jsafter, ico_retweet, "{apply config}");
 
 
     $TINY_ARRAY["TITLE"]="{dns_forwarding_rules}";
     $TINY_ARRAY["ICO"]="far fa-exchange";
     $TINY_ARRAY["EXPL"]="{forward_rules_dns_explain}";
-    $TINY_ARRAY["BUTTONS"]=@implode("",$btns);
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
 
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+    if($hacluster){
+        $headsjs="LoadAjaxSilent('proxy-dns-hacluster-btns','$page?proxy-dns-hacluster-btns=yes&function=$function');";
+    }
 
     $html[]="</tbody>";
     $html[]="<tfoot>";
@@ -259,7 +310,7 @@ function dnsrules_table(){
     $html[]="</script>";
 
     echo $tpl->_ENGINE_parse_body($html);
-
+    return true;
 }
 
 

@@ -10,6 +10,9 @@ function CheckSessions(){
     $SessionInactivitytime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SessionInactivitytime"));
     if(!isset($GLOBALS["DEBUG_TEMPLATE"])){$GLOBALS["DEBUG_TEMPLATE"]=false;}
     $page=CurrentPageName();
+    if(preg_match("#^\/netagents\/webconsole\/proxy\/[0-9]+\/(.+)#",$page,$re)){
+        $page=$re[1];
+    }
     ExecTBtime($start,"CheckSessions",__LINE__);
     $start = microtime(true);
     $getmypid="";

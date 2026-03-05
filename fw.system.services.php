@@ -241,11 +241,13 @@ function features():bool{
     $SQUID_RESTFULL=$features->SQUID_RESTFULL();
     $SQUID_CACHE=$features->SQUID_CACHE();
     $SQUID_PARENTS=$features->SQUID_PARENTS();
+    $APP_ARTICA_META=$features->APP_ARTICA_META();
 
 //  $UFDBGUARD=$features->UFDBGUARD();
 //    $PERSONAL_CATEGORIES=$features->PERSONAL_CATEGORIES();
     $ACTIVEDIRECTORY=$features->ACTIVEDIRECTORY();
     $ACTIVEDIRECTORY_AD_AGENT=$features->ACTIVEDIRECTORY_AD_AGENT();
+    $ARTICAAUTHAGENT=$features->ARTICAAUTHAGENT();
     $FAIL2BAN=$features->FAIL2BAN();
 //  $FIREQOS=$features->FIREQOS();
     $PROFTPD=$features->PROFTPD();
@@ -323,7 +325,6 @@ function features():bool{
     $CLOUD_CATEGORIES=$features->CLOUD_CATEGORIES();
     $APP_DHCP_RELAY=$features->APP_DHCP_RELAY();
     $APP_SSHPORTAL=$features->APP_SSHPORTAL();
-    $SQUID_WCCP=$features->SQUID_WCCP();
     $APP_SYNCTHING=$features->APP_SYNCTHING();
     $SQUID_MIKROTIK=$features->SQUID_MIKROTIK();
     $IT_CHARTERS=$features->IT_CHARTERS();
@@ -587,6 +588,7 @@ function features():bool{
     $members_services[]="<tr><td colspan=4 class=label style='text-align:left'><H2>{members_services}</td></tr>";
     $members_services[]=$ACTIVEDIRECTORY;
     $members_services[]=$ACTIVEDIRECTORY_AD_AGENT;
+    $members_services[]=$ARTICAAUTHAGENT;
     $members_services[]=$APP_POSTGRESQL;
     $members_services[]=$APP_MANTICORE;
     $members_services[]=$APP_FREERADIUS;
@@ -602,7 +604,7 @@ function features():bool{
     if($VMWARE_HOST==1){
         $network_monitoring[]=$APP_VMTOOLS;
     }
-
+    $network_monitoring[]=$APP_ARTICA_META;
     $network_monitoring[]=$speedtest;
     $network_monitoring[]=$ADMIN_TRACK;
     $network_monitoring[]=$SYSTEM_RESTFULL;
@@ -723,7 +725,6 @@ function features():bool{
         $proxy_features[] = $SQUID_ACLS;
         $proxy_features[] = $APP_GOSHIELD;
         $proxy_features[] = $SQUID_CACHE;
-        $proxy_features[] = $SQUID_WCCP;
         $proxy_features[] = $SQUID_PARENTS;
         $proxy_features[] = $PROXY_PAC;
         $proxy_features[] = $CICAP;

@@ -78,6 +78,7 @@ function section_passive_popup():bool{
     $ZabbixInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZabbixInterface"));
     $ZabbixPassiveCheckEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZabbixPassiveCheckEnabled"));
     $ZabbixListenPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZabbixListenPort"));
+    $ZabbixAgentPSK=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZabbixAgentPSK"));
     $ZabbixAgentServerIP=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZabbixAgentServerIP"));
     if($ZabbixListenPort==0){$ZabbixListenPort="10050";}
 
@@ -86,7 +87,7 @@ function section_passive_popup():bool{
     $form[]=$tpl->field_interfaces("ZabbixInterface","nooloopNoDef:{listen_interface}",$ZabbixInterface);
     $form[]=$tpl->field_numeric("ZabbixListenPort","{listen_port}",$ZabbixListenPort);
     $form[]=$tpl->field_text("ZabbixAgentServerIP", "{ZabbixAgentServerIP}", $ZabbixAgentServerIP,false,"{ZabbixAgentServerIP_explain}");
-
+    $form[]=$tpl->field_checkbox("ZabbixAgentPSK","TLS+PSK",$ZabbixAgentPSK,false,"{tls_psk_zabbix}");
 
 
     $security="AsSystemAdministrator";
@@ -186,7 +187,7 @@ function table1(){
     if($ZabbixListenPort==0){$ZabbixListenPort="10050";}
     $ZabbixRefreshActiveChecks=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZabbixRefreshActiveChecks"));
     if($ZabbixRefreshActiveChecks==0){$ZabbixRefreshActiveChecks=120;}
-
+    $ZabbixAgentPSK=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZabbixAgentPSK"));
     $ZabbixDebugLevel=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZabbixDebugLevel"));
     if($ZabbixDebugLevel==0){$ZabbixDebugLevel=3;}
     $LogLevels[1]="{critical_events}";
@@ -214,6 +215,12 @@ function table1(){
     }else{
         $fleche="&nbsp;&nbsp;<i class='fa fa-arrow-right'></i>&nbsp;&nbsp;";
         $tpl->table_form_field_text("{passive_checks}","$ZabbixAgentServerIP$fleche$ZabbixInterface:$ZabbixListenPort",ico_health_check);
+        if($ZabbixAgentPSK==1){
+            $tpl->table_form_field_js("");
+            $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/zabbix/psk"),true);
+            $tpl->table_form_field_text("PSK","<span style='text-transform:none'>".$json["TLSPSKData"]."</span>",ico_certificate);
+            $tpl->table_form_field_text("{identity}","<span style='text-transform:none'>".$json["TLSPSKIdentity"]."</span>",ico_user);
+        }
     }
 
     $tpl->table_form_field_js("Loadjs('$page?section-active-js=yes')");

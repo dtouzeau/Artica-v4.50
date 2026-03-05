@@ -21,12 +21,10 @@ Detection is done with statistical and randomized signatures that efficiently sp
 User input is validated through reputation assignments based on consensus on report and revoke assertions which in turn is used for
 computing confidence values associated with individual signatures</razor_text>
 <report_safe>Encapsulate spam in an attachment</report_safe>
-<report_safe_text>if this option is enabled, if an incoming message is tagged as spam, instead of modifying the original message,
-SpamAssassin will create a new report message and attach the original message as a message/rfc822 MIME
-part (ensuring the original message is completely preserved, not easily opened, and easier to recover).
-If this option is disabled, incoming spam is only modified by adding some X-Spam- headers and no changes will be made to the body.[br]
-In addition, a header named X-Spam-Report will be added to spam.[br]
-</report_safe_text>
+<report_safe_text>Se esta opç%C3£o estiver ativa e uma mensagem recebida for marcada como spam, o SpamAssassin ir%C3¡ criar uma nova mensagem de relat%C3%B3rio e anexar a mensagem original como uma parte MIME message/rfc822.
+Isto garante que a mensagem original seja totalmente preservada, n%C3£o seja facilmente aberta e seja mais simples de recuperar.[br]
+Se esta opç%C3£o estiver desativada, o spam recebido é apenas modificado através da adiç%C3£o de cabeçalhos X-Spam-*, sem alteraç%C3µes ao corpo da mensagem.[br]
+Além disso, ser%C3¡ adicionado aos spams um cabeçalho denominado X-Spam-Report.</report_safe_text>
 <required_score>Score required for SpamAssassin to flag a message as spam</required_score>
 <required_score_text>Definir a pontuaç%C3£o necess%C3¡ria antes de um e-mail ser considerado spam[br].
 n.nn pode ser um n%C3%BAmero inteiro ou um n%C3%BAmero real [br].

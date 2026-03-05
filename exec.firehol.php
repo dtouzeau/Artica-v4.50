@@ -330,7 +330,6 @@ function uninstall_link_balancer(){
     $unix->Popuplate_cron_make("link-balancer","*/{$LinkBalancerSchedule} * * * *",$linkbalancerbin);
     lb_progress("{uninstall} {APP_LINK_BALANCER}",50);
     @unlink("/etc/firehol/link-balancer.conf");
-    system("$php /usr/share/artica-postfix/exec.virtuals-ip.php --build");
     lb_progress("{uninstall} {APP_LINK_BALANCER} {success}",100);
 
 

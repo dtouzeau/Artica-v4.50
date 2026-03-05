@@ -84,8 +84,7 @@ function itchard_ad_save():bool{
     return true;
 }
 
-function itchart_ad_save(){
-
+function itchart_ad_save():bool{
     $ClusterEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ITChartClusterEnabled"));
     $ClusterMaster=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ITChartClusterMaster"));
     $tpl=new template_admin();
@@ -130,13 +129,11 @@ function itchart_ad_save(){
             echo $tpl->js_mysql_alert("Save Entry: ".$redis->getLastError());
             return false;
         }
-        writelogs("Saving $key = $val in $redis_server:$redis_port",__FUNCTION__,__FILE__,__LINE__);
+        $bytes=strlen($val);
+        admin_tracks("Saving ITChart $key $bytes in $redis_server:$redis_port");
     }
-
-    return true;
-
-
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/reconfigure");
+   return true;
 }
 
 function itchard_ad_link(){
@@ -200,13 +197,9 @@ function itchart_ad_table(){
 
     $TRCLASS=null;
 
-    $ARRAY=array();
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ichart.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/itchart.log";
-    $ARRAY["CMD"]="/itcharter/reconfigure";
-    $ARRAY["TITLE"]="{compile2}";
-    $ARRAY["AFTER"]="LoadAjax('itcharters-table','$page?table=yes');";
     $jsRestart="Loadjs('$page?itchart-adsave=$ID')";
+
+
 
 
 
@@ -375,6 +368,7 @@ function itchart_headers(){
 function itchart_pdf(){
     $page=CurrentPageName();
     $ID=intval($_GET["itchart-pdf"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/permissions");
     echo "<div id='itcharter-pdf-$ID' style='margin-top:20px'></div><script>LoadAjax('itcharter-pdf-$ID','$page?itchart-pdf2=$ID');</script>";
 
 
@@ -419,8 +413,8 @@ function itchart_pdf_uploaded():bool{
         return false;
     }
 
-    if(!preg_match("#^.*?\.pdf$#",$filename)){
-        $tpl->js_error($filepath ." NOT A PDF");
+    if(!preg_match("#^.*?\.pdf$#i",$filename)){
+        $tpl->js_error($filename ." NOT A PDF");
         @unlink($filepath);
         return false;
     }
@@ -429,7 +423,9 @@ function itchart_pdf_uploaded():bool{
     $data=base64_encode(@file_get_contents($filepath));
     @unlink($filepath);
 
-
+    $filename=replace_accents($filename);
+    $filename=str_replace(" ","_",$filename);
+    $filename=str_replace("'","_",$filename);
 
     $q->QUERY_SQL("UPDATE itcharters SET enablepdf=1,PdfFileName='$filename',PdfFileSize='$size',PdfContent='$data' WHERE ID=$ID");
     if(!$q->ok){echo $tpl->js_error($q->mysql_error); return false;}
@@ -504,7 +500,7 @@ function itchart_pdf2():bool{
     return true;
 }
 
-function itchart_pdf_save(){
+function itchart_pdf_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $ID=intval($_POST["itchart-pdf"]);
@@ -514,17 +510,23 @@ function itchart_pdf_save(){
     $pdfheight=intval($_POST["pdfheight"]);
 
     $q->QUERY_SQL("UPDATE itcharters SET enablepdf=$enablepdf,pdfwidth=$pdfwidth,pdfheight=$pdfheight WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
+
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/reconfigure");
+    return admin_tracks("Update ITChart with pdf enable=$enablepdf , $pdfwidth x $pdfheight");
 }
 
-function itchart_content_save(){
+function itchart_content_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $ID=intval($_POST["itchart-content"]);
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $content=base64_encode($_POST["ChartContent"]);
     $q->QUERY_SQL("UPDATE itcharters SET ChartContent='$content' WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/reconfigure");
+    $len=strlen($content);
+    return admin_tracks("Update ITChart #$ID with content $len bytes, ");
 }
 
 function itchart_tabs(){
@@ -639,14 +641,8 @@ function table(){
     $add="Loadjs('$page?itchart-js=0');";
     $TRCLASS=null;
 
-    $ARRAY=array();
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ichart.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/itchart.log";
-    $ARRAY["CMD"]="/itcharter/reconfigure";
-    $ARRAY["TITLE"]="{compile2}";
-    $ARRAY["AFTER"]="LoadAjax('itcharters-table','$page?table=yes');";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-itcharter-restart')";
+     $jsRestart=$tpl->framework_buildjs("/itcharter/reconfigure","ichart.progress",
+        "itchart.log","progress-itcharter-restart","LoadAjax('itcharters-table','$page?table=yes');");
 
 
 
@@ -769,5 +765,6 @@ function itchart_compile():bool{
     } catch (Exception $e) {}
 
     $redis->close();
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/reconfigure");
     return true;
 }

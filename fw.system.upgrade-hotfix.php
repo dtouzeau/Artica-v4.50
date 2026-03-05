@@ -80,7 +80,7 @@ function popup():bool{
     $md5=md5(serialize($main));
     $html[]="<tr id='$md5'>";
     $html[]="<td style='width:1%' nowrap>".$tpl->time_to_date($time,true)."s</td>";
-    $html[]="<td width=99% nowrap style='font-weight:bold'><a href=\"$URI\">$version</a></td>";
+    $html[]="<td style='width:99%;font-weight:bold'><a href=\"$URI\">$version</a></td>";
 	$html[]="<td style='width:1%' nowrap>$size</td>";
 
         $jsrestart=$tpl->framework_buildjs("/system/artica/hotfix/update/devs/$vbin",
@@ -110,15 +110,12 @@ function file_uploaded(){
 
     $product=$_GET["product"];
     $key=$_GET["key"];
-    $file=urlencode($_GET["file-uploaded"]);
-
-
+    $file=urlencode(base64_encode("/usr/share/artica-postfix/ressources/conf/upload/{$_GET["file-uploaded"]}"));
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/system.installsoft.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/system.installsoft.progress.txt";
-    $ARRAY["CMD"]="system.php?installv2=yes&product=$product&key=$key&file-uploaded=$file";
+    $ARRAY["CMD"]="/system/softwares/install-local/$product/$key/$file";
     $ARRAY["TITLE"]="{installing} $product";
     $ARRAY["AFTER"]="LoadAjax('table-loader-versions-service','fw.versions.php?table=yes');";
-
     $prgress=base64_encode(serialize($ARRAY));
     $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=$product-$key-progress-install')";
     echo $jsrestart;

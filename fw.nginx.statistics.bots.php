@@ -400,7 +400,7 @@ function data_find():bool{
     while($ligne=@pg_fetch_assoc($results)){
 
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $md=md5($ligne);
+        $md=md5(serialize($ligne));
         $category=$ligne["category"];
         $srcip=$ligne["srcip"];
         $trusted=$ligne["trusted"];

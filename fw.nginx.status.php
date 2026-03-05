@@ -6,9 +6,12 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.ccurl.inc");
 
+if(isset($_GET["mtls-install"])){mtls_install();exit;}
+if(isset($_GET["mtls-uninstall"])){mtls_uninstall();exit;}
 if(isset($_GET["chart-top-sites-hours"])){chart_top_sites_hours();exit;}
 if(isset($_GET["chart-top-sites-days"])){chart_top_sites_days();exit;}
-
+if(isset($_GET["vitrification-enable"])){vitrification_enabled();exit;}
+if(isset($_GET["vitrification-disable"])){vitrification_disabled();exit;}
 if(isset($_POST["nginxCachesDir"])){section_cache_save();exit;}
 if(isset($_GET["uninstall-service"])){uninstall_service_js();exit;}
 if(isset($_POST["uninstall-service"])){uninstall_service_confirm();exit;}
@@ -1317,11 +1320,19 @@ function nginx_status_line():bool{
     $widget_connections=widget_connections($json);
     $widget_requests=widget_requests($json);
     $widget_domains=widget_domains($json);
+    $widget_vitrification=widget_vitrification($json);
+    $widget_DecisionIP=widget_DecisionIP();
+    $widget_AdminClient=widget_AdminClient();
 
     $html[]="<tr>";
     $html[]="<td style='$sstyle;width:$width'>$widget_connections</td>";
     $html[]="<td style='$sstyle;width:$width'>$widget_requests</div>";
     $html[]="<td style='$sstyle;width:$width'>$widget_domains</div>";
+    $html[]="</tr>";
+    $html[]="<tr>";
+    $html[]="<td style='$sstyle;width:$width'>$widget_vitrification</td>";
+    $html[]="<td style='$sstyle;width:$width'>$widget_DecisionIP</div>";
+    $html[]="<td style='$sstyle;width:$width'>$widget_AdminClient</div>";
     $html[]="</tr>";
     $html[]="</table>";
     echo $tpl->_ENGINE_parse_body($html);
@@ -1359,6 +1370,154 @@ function widget_requests($json):string{
     return $tpl->widget_h("green","far fa-cloud-showers-heavy",$tpl->FormatNumber($json->Stats->connections->requests),  "{requests}",$button);
 
 }
+function vitrification_enabled():bool{
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("Vitrification",1);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/flush-cache");
+    return admin_tracks("Enable reverse-proxy Vitrification feature");
+}
+function vitrification_disabled():bool{
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("Vitrification",0);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/flush-cache");
+    return admin_tracks("Disable reverse-proxy Vitrification feature");
+}
+function widget_vitrification($json):string{
+    $button = array();
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+    $ico="fas far fa-wine-glass";
+    $page=CurrentPageName();
+    $Vitrification=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Vitrification"));
+    if($Vitrification==0) {
+        $button["name"] = "{enable_feature}";
+        $button["js"] = "Loadjs('$page?vitrification-enable=yes')";
+        $button["ico"]=ico_check;
+
+        $button2["ico"]="fa-solid fa-headset";
+        $button2["name"] = "{online_help}";
+        $button2["js"] = "s_PopUp('https://wiki.articatech.com/reverse-proxy/vitrification','1024','800')";
+
+        return $tpl->widget_h("gray", $ico, "{disabled}", "{vitrification}", $button,$button2);
+    }
+
+    $array=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/vitrification/all"),true);
+
+    $button["name"] = "{disable_feature}";
+    $button["js"] = "Loadjs('$page?vitrification-disable=yes')";
+    $button["ico"]=ico_check;
+
+    $button2["ico"]="fa-solid fa-headset";
+    $button2["name"] = "{online_help}";
+    $button2["js"] = "s_PopUp('https://wiki.articatech.com/reverse-proxy/vitrification','1024','800')";
+
+    if(!isset($array["Data"])){
+        return $tpl->widget_h("gray", $ico, 0, "{vitrification}: {websites}", $button,$button2);
+
+    }
+    if(count($array["Data"])==0){
+        return $tpl->widget_h("gray", $ico, 0, "{vitrification}: {websites}", $button,$button2);
+    }
+    return $tpl->widget_h("green", $ico, count($array["Data"]), "{vitrification}: {websites}", $button,$button2);
+
+
+
+}
+function mtls_install():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/mtls/install"),true);
+    if(!isset($json["Status"])){
+        return $tpl->js_error("{protocol_error}");
+    }
+    if(!$json["Status"]){
+        return $tpl->js_error($json["Error"]);
+    }
+    header("content-type: application/x-javascript");
+    echo "document.location.href=\"/admin-clients\";";
+    return admin_tracks("Install Admin Clients feature");
+}
+function mtls_uninstall():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/mtls/uninstall"),true);
+    if(!isset($json["Status"])){
+        return $tpl->js_error("{protocol_error}");
+    }
+    if(!$json["Status"]){
+        return $tpl->js_error($json["Error"]);
+    }
+    header("content-type: application/x-javascript");
+    echo "LoadAjaxSilent('nginx_status_line','$page?nginx-status-line=yes');";
+    return admin_tracks("Uninstall Admin Clients feature");
+}
+function widget_AdminClient():string{
+    $page=CurrentPageName();
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+    $ReverseAppClients=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ReverseAppClients");
+    $button2["ico"] = "fa-solid fa-headset";
+    $button2["name"] = "{online_help}";
+    $button2["js"] = "s_PopUp('https://wiki.articatech.com/en/reverse-proxy/security/decisionip','1024','800')";
+
+    if($ReverseAppClients==1){
+
+        $installjs="Loadjs('$page?mtls-uninstall=yes');";
+        $button["name"] = "{disable_feature}";
+        $button["js"] = $installjs;
+        $button["ico"] = ico_check;
+        return $tpl->widget_h("green", ico_admin, "{admin_clients}", "{active2}", $button, $button2);
+    }
+
+    $installjs="Loadjs('$page?mtls-install=yes');";
+    $button["name"] = "{enable_feature}";
+    $button["js"] = $installjs;
+    $button["ico"] = ico_check;
+    return $tpl->widget_h("grey", ico_admin, "{admin_clients}", "{inactive2}", $button, $button2);
+}
+
+function widget_DecisionIP():string{
+    $page=CurrentPageName();
+    $EnableDecisionIP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDecisionIP"));
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+
+    $button2["ico"] = "fa-solid fa-headset";
+    $button2["name"] = "{online_help}";
+    $button2["js"] = "s_PopUp('https://wiki.articatech.com/en/reverse-proxy/security/decisionip','1024','800')";
+
+    if($EnableDecisionIP==0) {
+        $installjs=$tpl->framework_buildjs("/decisionip/install",
+            "decisionip.install.progress",
+            "decisionip.install.log",
+            "progress-nginx-restart","document.location.href='/decisionip'");
+//
+        $button["name"] = "{enable_feature}";
+        $button["js"] = $installjs;
+        $button["ico"] = ico_check;
+        return $tpl->widget_h("gray", "fa-decisionip", "DecisionIP", "{inactive2}", $button, $button2);
+    }
+
+    if(!isKey()){
+        $button["name"] = "{disable_feature}";
+        $button["js"] = "Loadjs('$page?uninstall-decisionip=yes')";
+        $button["ico"] = ico_check;
+        return $tpl->widget_h("yellow", "fa-decisionip", "{register}!", "DecisionIP", $button, $button2);
+    }
+
+    $button["name"] = "{disable_feature}";
+    $button["js"] = "Loadjs('$page?uninstall-decisionip=yes')";
+    $button["ico"] = ico_check;
+    return $tpl->widget_h("green", "fa-decisionip", "DecisionIP", "{active2}", $button, $button2);
+}
+function isKey():bool{
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/decisionip/config"),true);
+
+    if(!isset($json["data"]["sections"])){
+        return false;
+    }
+    $user_key=$json["data"]["sections"]["auth"]["user_key"];
+    if(strlen($user_key)<5){
+        return false;
+    }
+    return true;
+}
+
 function widget_domains($json):string{
     $button = "";
     $ico="far fa-globe";

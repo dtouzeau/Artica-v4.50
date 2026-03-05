@@ -275,6 +275,10 @@ function dnscache_edit_safesearch_popup():bool{
 	return true;
 }
 function dnscache_edit_options_js():bool{
+	$EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+	if($EnableDebianAgent==1){
+		return true;
+	}
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$function=$_GET["function"];
@@ -282,6 +286,10 @@ function dnscache_edit_options_js():bool{
 	return true;
 }
 function dnscache_edit_watchdog_js():bool{
+	$EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+	if($EnableDebianAgent==1){
+		return true;
+	}
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$function=$_GET["function"];
@@ -290,27 +298,43 @@ function dnscache_edit_watchdog_js():bool{
 
 }
 function dns_standards_js():bool{
+	$EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+	if($EnableDebianAgent==1){
+		return true;
+	}
 	$tpl = new template_admin();
 	$page = CurrentPageName();
 	return $tpl->js_dialog2("modal:{dns_used_by_the_system}", "$page?dns-standard-popup=yes");
 
 }
 function dnscache_add_js():bool{
+	$EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+	if($EnableDebianAgent==1){
+		return true;
+	}
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$function=$_GET["function"];
 	$tpl->js_dialog2("modal:{new_dns_server}","$page?dnscache-add-popup=yes&function=$function");
 	return true;
 }
-function dnsdomains_edit_js(){
+function dnsdomains_edit_js():bool{
+	$EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+	if($EnableDebianAgent==1){
+		return true;
+	}
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$function=$_GET["function"];
-	$tpl->js_dialog2("modal:{InternalDomain}","$page?dns-domains-popup=yes&function=$function");
-	return true;
+	return $tpl->js_dialog2("modal:{InternalDomain}","$page?dns-domains-popup=yes&function=$function");
+
 
 }
 function dnscache_edit_js():bool{
+	$EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+	if($EnableDebianAgent==1){
+		return true;
+	}
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$function=$_GET["function"];
@@ -904,6 +928,8 @@ function table_dnscache():bool{
 	$results=$q->QUERY_SQL($sql);
 	$TRCLASS=null;
 	$INT[]="<table style='width:100%;margin-top:20px'>";
+	$EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+
 
 
     $UseDNSForEUBackends=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseDNSForEUBackends"));
@@ -911,6 +937,9 @@ function table_dnscache():bool{
 
     if($UseDNSForEUBackends==0){
         $edit=$tpl->icon_parameters("Loadjs('fw.dns.dnsforeu.php')","AsDnsAdministrator");
+		if($EnableDebianAgent==1){
+			$edit="&nbsp;";
+		}
         $color="rgb(185, 182, 182)";
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $INT[] = "<tr class='$TRCLASS' style='height: 60px' id='UseDNSForEUBackends'>";
@@ -947,6 +976,11 @@ function table_dnscache():bool{
 		$md=md5(serialize($ligne));
 		$ID=$ligne["ID"];
 		$delete=$tpl->icon_delete("Loadjs('$page?dnscache-del-js=$ID&function=RefreshDNSMainSection&md=$md')","AsDnsAdministrator");
+
+		if($EnableDebianAgent==1){
+			$delete="&nbsp;";
+		}
+
 		$INT[] = "<tr class='$TRCLASS' style='height: 60px' id='$md'>";
 		$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-duotone fa fa-server fa-2x' id='$index'></i></td>";
 		$INT[] = "<td style='width:1%;font-size:large;text-align:left;padding-left:10px' nowrap>$zone:</td>";
@@ -991,6 +1025,9 @@ function table_dnscache():bool{
 
 
 		$edit=$tpl->icon_parameters("Loadjs('$page?dns-edit-js=$i&function=RefreshDNSMainSection')","AsDnsAdministrator");
+		if($EnableDebianAgent==1){
+			$edit="&nbsp;";
+		}
 		$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 		$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-duotone fa fa-server fa-2x'></i></td>";
 		$INT[] = "<td style='width:1%;font-size:large;text-align:left;padding-left:10px' nowrap>$labelName:</td>";
@@ -1004,6 +1041,9 @@ function table_dnscache():bool{
 		$edit=$tpl->icon_parameters("Loadjs('$page?dns-domains-js=yes&domain=$i&function=RefreshDNSMainSection')","AsDnsAdministrator");
 		$labelName="{InternalDomain} $i";
 		$DomainName=$resolv->MainArray["DOMAINS$i"];
+		if($EnableDebianAgent==1){
+			$edit="&nbsp;";
+		}
 		$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 		$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-duotone fa-earth-americas fa-2x'></i></td>";
 		$INT[] = "<td style='width:1%;font-size:large;text-align:left;padding-left:10px' nowrap>$labelName:</td>";
@@ -1020,6 +1060,9 @@ function table_dnscache():bool{
 
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$edit=$tpl->icon_parameters("Loadjs('$page?dnscache-edit-options-js=yes&domain=".time()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	$DNSCacheListenInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSCacheListenInterface"));
 	if($DNSCacheListenInterface==null){
 		$DNSCacheListenInterface_text="{none} (127.0.0.55)";
@@ -1052,7 +1095,9 @@ function table_dnscache():bool{
 
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$edit=$tpl->icon_parameters("Loadjs('$page?dnscache-edit-options-js=yes&domain=".time()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
-
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-duotone far fa-tools fa-2x'></i></td>";
 	$INT[] = "<td style='width:1%;font-size:large;text-align:left;padding-left:10px' nowrap>{xtimeout}:</td>";
@@ -1062,7 +1107,9 @@ function table_dnscache():bool{
 
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$edit=$tpl->icon_parameters("Loadjs('$page?dnscache-edit-options-js=yes&domain=".time()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
-
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	$DnsProxyCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DnsProxyCache"));
 	if($DnsProxyCache==0){$DnsProxyCache=10485760;}
 	$DnsProxyCacheKB=$DnsProxyCache/1024;
@@ -1091,7 +1138,9 @@ function table_dnscache():bool{
 
 
 	$edit=$tpl->icon_parameters("Loadjs('$page?SafeSearch-edit-options-js=yes&domain=".microtime()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
-
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-brands fa-google fa-2x'></i></td>";
@@ -1102,6 +1151,9 @@ function table_dnscache():bool{
 
 
 	$edit=$tpl->icon_parameters("Loadjs('$page?SafeSearch-edit-options-js=yes&domain=".microtime()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-brands fa-youtube fa-2x'></i></td>";
@@ -1111,6 +1163,9 @@ function table_dnscache():bool{
 	$INT[] = "</tr>";
 
 	$edit=$tpl->icon_parameters("Loadjs('$page?SafeSearch-edit-options-js=yes&domain=".microtime()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-brands fa-youtube fa-2x'></i></td>";
@@ -1120,6 +1175,9 @@ function table_dnscache():bool{
 	$INT[] = "</tr>";
 
 	$edit=$tpl->icon_parameters("Loadjs('$page?SafeSearch-edit-options-js=yes&domain=".microtime()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-brands fa-edge-legacy fa-2x'></i></td>";
@@ -1130,6 +1188,9 @@ function table_dnscache():bool{
 
 
 	$edit=$tpl->icon_parameters("Loadjs('$page?SafeSearch-edit-options-js=yes&domain=".microtime()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-solid fa-shield-minus fa-2x'></i></td>";
@@ -1139,6 +1200,9 @@ function table_dnscache():bool{
 	$INT[] = "</tr>";
 
 	$edit=$tpl->icon_parameters("Loadjs('$page?SafeSearch-edit-options-js=yes&domain=".microtime()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-solid fa-shield-minus fa-2x'></i></td>";
@@ -1148,6 +1212,9 @@ function table_dnscache():bool{
 	$INT[] = "</tr>";
 
 	$edit=$tpl->icon_parameters("Loadjs('$page?SafeSearch-edit-options-js=yes&domain=".microtime()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-solid fa-shield-minus fa-2x'></i></td>";
@@ -1157,6 +1224,9 @@ function table_dnscache():bool{
 	$INT[] = "</tr>";
 
 	$edit=$tpl->icon_parameters("Loadjs('$page?SafeSearch-edit-options-js=yes&domain=".microtime()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-solid fa-shield-minus fa-2x'></i></td>";
@@ -1166,6 +1236,9 @@ function table_dnscache():bool{
 	$INT[] = "</tr>";
 
 	$edit=$tpl->icon_parameters("Loadjs('$page?SafeSearch-edit-options-js=yes&domain=".microtime()."&function=RefreshDNSMainSection')","AsDnsAdministrator");
+	if($EnableDebianAgent==1){
+		$edit="&nbsp;";
+	}
 	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 	$INT[] = "<tr class='$TRCLASS' style='height: 60px'>";
 	$INT[] = "<td style='width:1%;padding-left:10px'><i class='fa-solid fa-shield-minus fa-2x'></i></td>";
@@ -1268,15 +1341,108 @@ function dnsdomains_edit_save():bool{
 	return true;
 }
 
-function table2(){
+function table2_hacluster_client():bool{
+	$tpl=new template_admin();
+	$page=CurrentPageName();
+
+
+	$TINY_ARRAY["TITLE"]="{dns_used_by_the_system}";
+	$TINY_ARRAY["ICO"]="fa fa-server";
+	$TINY_ARRAY["EXPL"]="{dns_servers_explain}";
+	$TINY_ARRAY["URL"]="dns-servers";
+	$TINY_ARRAY["BUTTONS"]=null;
+	$jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+	$js=$tpl->RefreshInterval_js("dnscache-status",$page,"dnscache-status=yes");
+
+	$html[]="<table style='width:100%'>";
+	$html[]="<tr>";
+	$html[]="<td style='width:337px;vertical-align: top'>";
+	$html[]="<div id='dnscache-status' style='min-width: 337px !important'></div></td>";
+	$html[]="<td style='padding-left:20px;vertical-align:top'>";
+	$html[]=$tpl->div_warning("{APP_HACLUSTER_CLIENT}||{hacluster_via_lb}");
+
+	$json=json_decode($GLOBALS["CLASS_SOCKETS"]->HACLUSTERCLIENT_API("/config"),true);
+	if(isset($json["Status"])){
+		if(!$json["Status"]){
+			$html[]=$tpl->_ENGINE_parse_body($tpl->div_error($json["Error"]));
+			$html[]="</td>";
+			$html[]="</tr>";
+			$html[]="</table>";
+			$html[]="<script>$jstiny;$js;</script>";
+			echo $tpl->_ENGINE_parse_body($html);
+			return false;
+		}
+	}
+	$HaClusterGBConfig=unserialize($json["HaClusterGBConfig"]);
+	if(!$HaClusterGBConfig){
+		$HaClusterGBConfig=array();
+	}
+	if(!is_array($HaClusterGBConfig)){
+		$HaClusterGBConfig=array();
+	}
+	if(!isset($HaClusterGBConfig["HaClusterUseLBAsDNS"])){
+		$HaClusterGBConfig["HaClusterUseLBAsDNS"]=0;
+	}
+	if(!isset($HaClusterGBConfig["DNS1"])){
+		$HaClusterGBConfig["DNS1"]="";
+	}
+	if(!isset($HaClusterGBConfig["DNS2"])){
+		$HaClusterGBConfig["DNS2"]="";
+	}
+	if(!isset($json["HaClusterUseAddr"])){
+		$json["HaClusterUseAddr"]="0.0.0.0";
+	}
+	if(!isset($json["HaClusterUseLocalDNSCache"])){
+		$json["HaClusterUseLocalDNSCache"]=0;
+	}
+	if(intval($HaClusterGBConfig["HaClusterUseLBAsDNS"]==1)) {
+		$tpl->table_form_field_text("{primary_dns}", $json["HaClusterUseAddr"], ico_server);
+		$html[]=$tpl->table_form_compile();
+		$html[]="</td>";
+		$html[]="</tr>";
+		$html[]="</table>";
+		$TINY_ARRAY["TITLE"]="{dns_used_by_the_system}";
+		$TINY_ARRAY["ICO"]="fa fa-server";
+		$TINY_ARRAY["EXPL"]="{dns_servers_explain}";
+		$TINY_ARRAY["URL"]="dns-servers";
+		$TINY_ARRAY["BUTTONS"]=null;
+		$jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+		$js=$tpl->RefreshInterval_js("dnscache-status",$page,"dnscache-status=yes");
+		$html[]="<script>$jstiny;$js;</script>";
+		echo $tpl->_ENGINE_parse_body($html);
+		return true;
+	}
+	if(intval($json["HaClusterUseLocalDNSCache"])==1){
+		$tpl->table_form_field_bool("{local_dns_service}", 1, ico_server);
+	}
+	$tpl->table_form_field_text("{primary_dns}", $HaClusterGBConfig["DNS1"], ico_server);
+	$tpl->table_form_field_text("{secondary_dns}", $HaClusterGBConfig["DNS2"], ico_server);
+	$html[]=$tpl->table_form_compile();
+	$html[]="</td>";
+	$html[]="</tr>";
+	$html[]="</table>";
+
+	$html[]="<script>$jstiny;$js;</script>";
+	echo $tpl->_ENGINE_parse_body($html);
+	return true;
+}
+
+function table2():bool{
 	$DoNotUseLocalDNSCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DoNotUseLocalDNSCache"));
 	VERBOSE("DoNotUseLocalDNSCache=$DoNotUseLocalDNSCache",__LINE__);
+	$tpl=new template_admin();
+	$EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+	if($EnableDebianAgent==1){
+		echo $tpl->_ENGINE_parse_body($tpl->div_warning("Artica Meta||{block_by_meta}"));
+	}
+
+
 	if($DoNotUseLocalDNSCache==0){
 		table_dnscache();
 		exit;
 	}
 	$DNSAdded=false;
-	$tpl=new template_admin();
+
 	$page=CurrentPageName();
 	$resolv=new resolv_conf();
 	if(!isset($resolv->MainArray["DNS3"])){$resolv->MainArray["DNS3"]="";}
@@ -1284,6 +1450,9 @@ function table2(){
 	$UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
 	if(!$resolv->isValidDomain($resolv->MainArray["DOMAINS1"])){$resolv->MainArray["DOMAINS1"]="localhost.local";}
 	$HaClusterClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
+	if($HaClusterClient==1){
+		return table2_hacluster_client();
+	}
 
 	if($HaClusterClient==0) {
 		if ($UnboundInstalled == 1) {
@@ -1458,6 +1627,7 @@ function table2(){
 	$js=$tpl->RefreshInterval_js("dnscache-status",$page,"dnscache-status=yes");
 	$html[]="<script>$jstiny;$js;</script>";
 	echo $tpl->_ENGINE_parse_body($html);
+	return true;
 }
 
 function dns_standards_popup():bool{

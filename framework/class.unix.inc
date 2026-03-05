@@ -1213,6 +1213,9 @@ class unix {
         return false;
     }
     public function SystemGetMemberID($username){
+        if(!function_exists("posix_getpwnam")){
+            return -1;
+        }
         $userinfo = posix_getpwnam($username);
         if(isset($userinfo["uid"])){
             if(is_numeric($userinfo["uid"])){return intval($userinfo["uid"]);}

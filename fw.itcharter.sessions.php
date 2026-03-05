@@ -208,6 +208,9 @@ function itchart_pdf_uploaded(){
         $q->QUERY_SQL("ALTER TABLE `itcharters` ADD `PdfContent` TEXT NULL");
         if(!$q->ok){echo $tpl->js_error($q->mysql_error); @unlink($filepath);return;}
     }
+    $filename=replace_accents($filename);
+    $filename=str_replace(" ","_",$filename);
+    $filename=str_replace("'","_",$filename);
 
     $q->QUERY_SQL("UPDATE itcharters SET enablepdf=1,PdfFileName='$filename',PdfFileSize='$size',PdfContent='$data' WHERE ID=$ID");
     if(!$q->ok){echo $tpl->js_error($q->mysql_error); return;}
@@ -433,7 +436,7 @@ function table(){
     $t=time();
     $tpl=new template_admin();
     $tpl->CLUSTER_CLI=true;
-    $add="Loadjs('$page?itchart-js=0');";
+    $HaClusterClient= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
     $TRCLASS=null;
     $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
 
@@ -448,8 +451,11 @@ function table(){
     }
 
     if($PowerDNSEnableClusterSlave==1){$ClusterEnabled=1;}
+    if($HaClusterClient==1){
+        $ClusterEnabled=1;
+        echo $tpl->_ENGINE_parse_body($tpl->div_info("{feature_to_hacluster}"));
+    }
 
-    $html[]="</div>";
 
     $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";
@@ -480,15 +486,15 @@ function table(){
         $title=$itchart_compile[$ChartID];
         $md=md5($key);
         $delete     = $tpl->icon_delete("Loadjs('$page?session-delete=". urlencode($key)."&md=$md')");
-
+        if($HaClusterClient==1){
+            $delete     = $tpl->icon_delete("");
+        }
         $html[]="<tr class='$TRCLASS' id='$md'>";
-
         $html[]="<td style='font-weight:bold;width=1%' nowrap><i class=\"fas fa-user\"></i>&nbsp;$User</td>";
         $html[]="<td style='width:99%'>$title</td>";
         $html[]="<td $td1prc>$zdate</td>";
         $html[]="<td $td1prc>$delete</td>";
         $html[]="</tr>";
-
     }
 
     $html[]="</tbody>";

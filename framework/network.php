@@ -19,13 +19,10 @@ if(isset($_GET["NetworkManager-check-redhat"])){NetworkManager_redhat();exit;}
 if(isset($_GET["reconfigure-postfix-instances"])){postfix_reconfigures_multiples_instances();exit;}
 if(isset($_GET["ping"])){pinghost();exit;}
 if(isset($_GET["OpenVPNServerLogs"])){OpenVPN_ServerLogs();exit;}
-if(isset($_GET["ipdeny"])){ipdeny();exit;}
 if(isset($_GET["fw-inbound-rules"])){iptables_inbound();exit;}
 if(isset($_GET["fw-spamhaus-rules"])){iptables_spamhausrules();exit;}
 if(isset($_GET["fqdn"])){fqdn();exit;}
 if(isset($_GET["iptaccount-installed"])){iptaccount_check();exit;}
-if(isset($_GET["ifup-ifdown"])){ifup_ifdown();exit;}
-if(isset($_GET["reconstruct-interface"])){reconstruct_interface();exit;}
 if(isset($_GET["reconstruct-all-interfaces"])){reconstruct_all_interfaces();exit;}
 if(isset($_GET["arp-delete"])){arptable_delete();exit;}
 if(isset($_GET["arp-edit"])){arptable_edit();exit;}
@@ -44,11 +41,7 @@ if(isset($_GET["ucarp-down"])){ucarp_down();exit;}
 if(isset($_GET["install-vlan"])){install_vlan();exit;}
 if(isset($_GET["uninstall-vlan"])){uninstall_vlan();exit;}
 if(isset($_GET["build-vlans"])){build_vlans();exit;}
-
-
-if(isset($_GET["routes-build"])){build_routes();exit;}
 if(isset($_GET["delayed-nets"])){delayed_net();exit;}
-
 if(isset($_GET["masquerade-interfaces"])){masquerade_interfaces();exit;}
 if(isset($_GET["crc32"])){build_crc32();}
 
@@ -328,28 +321,7 @@ function postfix_reconfigures_multiples_instances(){
 
 }
 
-function build_routes(){
 
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/reconfigure-newtork.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/exec.virtuals-ip.php.log";
-
-    @unlink($ARRAY["PROGRESS_FILE"]);
-    @unlink($ARRAY["LOG_FILE"]);
-
-    @touch($ARRAY["PROGRESS_FILE"]);
-    @touch($ARRAY["LOG_FILE"]);
-
-    @chmod($ARRAY["PROGRESS_FILE"], 0755);
-    @chmod($ARRAY["LOG_FILE"], 0755);
-
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php /usr/share/artica-postfix/exec.virtuals-ip.php --routes-build >{$ARRAY["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-
-}
 
 
 
@@ -404,16 +376,7 @@ function pinghost(){
 
 
 	
-function ifup_ifdown(){
-	$eth=$_GET["ifup-ifdown"];
-	$unix=new unix();
-	$php=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	@unlink("/etc/artica-postfix/MEM_INTERFACES");
-	$cmd=trim("$nohup $php /usr/share/artica-postfix/exec.virtuals-ip.php --ifupifdown $eth >/dev/null 2>&1 &");
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);		
-}
+
 
 
 function OpenVPN_ServerLogs(){
@@ -439,16 +402,7 @@ function iptables_inbound(){
 	shell_exec($cmd);
 }
 
-function reconstruct_interface(){
-	$eth=$_GET["reconstruct-interface"];
-	$unix=new unix();
-	$php=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	@unlink("/etc/artica-postfix/MEM_INTERFACES");
-	$cmd=trim("$nohup $php /usr/share/artica-postfix/exec.virtuals-ip.php --reconstruct-interface $eth --sleep >/dev/null 2>&1 &");
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-}
+
 function reconstruct_all_interfaces(){
 	$unix=new unix();
 	$php=$unix->LOCATE_PHP5_BIN();

@@ -150,6 +150,7 @@ class HeadsBuilder{
         $starter[]="$jsroot/form-builder.min.js";
         $starter[]="$jsroot/adbdetector.js";
         $starter[]="$jsroot/jquery-picklist.js";
+        $starter[]="js/popper.min.js";
         // DropDownlist v2
         $starter[]="$jsroot/select2.full.min.js";
         $starter[]="$jsroot/apexcharts/apexcharts.min.js";
@@ -204,6 +205,7 @@ class HeadsBuilder{
         $cssCode103[]="angular/style.css";
         $cssCode103[]="angular/fonts.css";
         $cssCode103[]="angular/plugins/colorpicker/bootstrap-colorpicker.min.css";
+        $cssCode103[]="angular/plugins/chosen/bootstrap-chosen.css";
         $cssCode103[]="angular/animate.css";
         $cssCode103[]="angular/plugins/footable/footable.core.css";
         $cssCode103[]="angular/plugins/toogle/bootstrap-toggle.css";
@@ -263,6 +265,7 @@ class HeadsBuilder{
         $jsCode104[]="js/Chart.bundle.min.js";
         $jsCode104[]="angular/js/plugins/chartJs/Chart.min.4.4.7.js";
         $jsCode104[]="angular/js/plugins/chartJs/chartjs-plugin-datalabels.min.js";
+        $jsCode104[]="angular/js/plugins/chartJs/chartjs-adapter-date-fns.bundle.min.js";
         $jsCode104[]="$pluginRoot/chosen/chosen.jquery.js";
         $jsCode104[]="$pluginRoot/flot/jquery.flot.js";
         $jsCode104[]="$pluginRoot/flot/angular-flot.js";

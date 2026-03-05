@@ -4,10 +4,26 @@ $GLOBALS["CLASS_SOCKETS"] = new sockets();
 $GLOBALS["GENPROGGNAME"] = "go.exec.progress";
 $GLOBALS["TITLENAME"] = "Go Exec";
 $GLOBALS["CLASS_SOCKETS"]->heads_exec_root($argv);
-if ($argv[1] == "--update") {$GLOBALS["OUTPUT"] = true;update_version();exit();}
-if ($argv[1] == "--forker") {$GLOBALS["OUTPUT"] = true;forker();exit();}
-if ($argv[1] == "--init") {create_service();exit();}
-if ($argv[1] == "--monit") {build_monit();exit();}
+if(isset($argv[1])) {
+    if ($argv[1] == "--update") {
+        $GLOBALS["OUTPUT"] = true;
+        update_version();
+        exit();
+    }
+    if ($argv[1] == "--forker") {
+        $GLOBALS["OUTPUT"] = true;
+        forker();
+        exit();
+    }
+    if ($argv[1] == "--init") {
+        create_service();
+        exit();
+    }
+    if ($argv[1] == "--monit") {
+        build_monit();
+        exit();
+    }
+}
 
 run();
 function run(){

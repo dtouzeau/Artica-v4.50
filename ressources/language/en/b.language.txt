@@ -3869,7 +3869,7 @@ By using this service, you have to tranfert all Mailboxes stored on the main MyS
 <CommonName>Common Name</CommonName>
 <level_encryption>Encryption level</level_encryption>
 <system_events>System events</system_events>
-<pools>pools</pools>
+<pools>Pools</pools>
 <new_pool>New pool</new_pool>
 <link_source>Link a source</link_source>
 <max_failed>MAX fails</max_failed>
@@ -7274,10 +7274,10 @@ If you want to safe performance, turn to red this feature.
 <unlink_host>Unlink host</unlink_host>
 <activate_webfiltering_wizard>If green, then the Web-Filtering service will be linked and activated during the wizard task</activate_webfiltering_wizard>
 <activate_dhcp_service_wizard>If green, then this Artica server will act as DHCP server and is able to provide TCP/IP settings through the network</activate_dhcp_service_wizard>
-<act_has_categories>Act has categories appliance</act_has_categories>
+<act_has_categories>Acts as categories appliance</act_has_categories>
 <act_has_categories_wizard>If turned to green then this server will be only act as categories appliance.[br]
 In this case, Artica Proxy servers are allowed to use this Appliance in order to retrieve category for a defined website</act_has_categories_wizard>
-<act_has_categories_explain>This server will act has Categories Appliance.[br]
+<act_has_categories_explain>This server will act as Categories Appliance.[br]
 This means that it will not a proxy service but a service that will able to retrieve websites categories from requests sent by Artica Proxy/statistics servers.[br]
 If your are agree with this setup, click on Next button.[br]
 Artica Customers with a valid Enterprise license are able to use this appliance for free.[br]

@@ -273,7 +273,7 @@ It will reduce searching speed somewhat so unless you have a local caching DNS s
 <rules_text>Definir reglas de filtrado web.[br]Estas reglas se aplicar%C3¡n al %C3¡mbito del usuario</rules_text>
 <rule_behavior>Rule behavior</rule_behavior>
 <safelabel>Safe Labels</safelabel>
-<scancleancache>Scan clean cache</scancleancache>
+<scancleancache>Limpiar la caché</scancleancache>
 <scancleancache_text>Clean cache for content (AV) scan results[br]
 By default, to save CPU, files scanned and found to be clean are inserted into the clean cache and NOT scanned again for a while.[br]
 If you don't like this then choose to disable it.</scancleancache_text>

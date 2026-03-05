@@ -340,93 +340,21 @@ class categories{
         }
     }
 
-    public function create_category($categoryname,$description=null,$publicmode=0,$ID=0){
-        $q=new postgres_sql();
-        $time=time();
-        $this->PatchTables();
+    public function create_category($categoryname,$description=null,$publicmode=0,$ID=0):bool{
+        $array=array(
+            "categoryname"=>$categoryname,
+            "description"=>$description,
+            "public_mode"=>$publicmode,
+            "id"=>$ID
+        );
 
-
-        if($ID>0){
-            $SERVICE_ID=$publicmode;
-            $libmem=new lib_memcached();
-            $q=new postgres_sql();
-            $categorykey=str_replace([':', '.','\\', '/', '*',' ','-','_','(',')','{','}','[',']','%','$',';',',','?','=','#','~','&','`'], '', $categoryname);
-
-            if(strlen($categorykey)+strlen($ID)>24){
-                $categorykey=substr($categorykey,0,24-strlen($ID));
-            }
-
-            $categorykey=$categorykey."$ID";
-
-            $sql="INSERT INTO personal_categories (category_id,categorykey,categoryname,categorytable,category_description,category_icon,master_category,official_category,enabled,publicmode,meta,remotecatz,serviceid,created) VALUES ($ID,'$categorykey','$categoryname','','From remote server','',0,0,1,0,0,1,$SERVICE_ID,$time) ON CONFLICT DO NOTHING";
-            if($this->output){
-                echo "INSERT INTO personal_categories.... ($ID,'$categorykey','$categoryname','','From remote server','',0,0,1,0,0,1,$SERVICE_ID)\n";
-            }
-            $q->QUERY_SQL($sql);
-
-            if(!$q->ok){
-                if($this->output){
-                    echo "$q->mysql_error\n";
-                }
-
-                if(preg_match("#column.*?remotecatz#",$q->mysql_error)){
-                    $q->QUERY_SQL("ALTER TABLE personal_categories ADD remotecatz smallint NOT NULL DEFAULT 0");
-                    $q->create_index("personal_categories","idx_rcatz",array("remotecatz"));
-                    $q->QUERY_SQL($sql);
-                }
-            }
-            if(!$q->ok){
-                if(preg_match("#column.*?serviceid#",$q->mysql_error)){
-                    $q->QUERY_SQL("ALTER TABLE personal_categories ADD serviceid bigint NOT NULL DEFAULT 0");
-                    $q->create_index("personal_categories","idx_serviceid",array("serviceid"));
-                    $q->QUERY_SQL($sql);
-                }
-            }
-
-
-            if(!$q->ok){
-                $this->mysql_error=$q->mysql_error;
-                return false;
-            }
-            $libmem->saveKey("categories_descriptions", serialize(array()),1600);
-            return true;
+        $this->mysql_error="";
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/category/create",$array),true);
+        if(!$json["Status"]){
+            $this->mysql_error=$json["Error"];
+            return false;
         }
-
-
-        $html=new htmltools_inc();
-        $categorykey=strtolower($html->StripSpecialsChars($categoryname));
-        $categorykey=str_replace([':', '.','\\', '/', '*',' ','-','_','(',')','{','}','[',']','%','$',';',',','?','=','#','~','&','`'], '', $categorykey);
-        $publicmode=intval($publicmode);
-        $MyNewLastID=$this->FreeIndex();
-        $this->last_id=$MyNewLastID;
-
-        $categorytable="category_{$categorykey}";
-        $category_description=str_replace("'", "`", $description);
-        $categoryname=$html->replace_accents($categoryname);
-        $categoryname=str_replace("'","",$categoryname);
-
-        $f[]=$MyNewLastID;
-        $f[]="'$categorykey'";
-        $f[]="'$categoryname'";
-        $f[]="'$categorytable'";
-        $f[]="'$category_description'";
-        $f[]="'/img/20-categories-personnal.png'";
-        $f[]="''";
-        $f[]="'0'";
-        $f[]="'1'"; // enabled
-        $f[]="'$publicmode'";
-        $f[]="'0'"; // meta
-        $f[]="'0'"; // remotecatz
-        $f[]="'$time'"; //created
-
-        $sql="INSERT INTO personal_categories (category_id,categorykey,categoryname,categorytable,category_description,category_icon,master_category,official_category,enabled,publicmode,meta,remotecatz,created) VALUES
-		(".@implode(",", $f). ") ON CONFLICT DO NOTHING";
-
-        $q=new postgres_sql();
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){$this->mysql_error=$q->mysql_error."<br><small>$sql</small>";return false;}
-        $q->CREATE_CATEGORY_TABLE($categorytable);
-        return true;
+        return admin_tracks("Create a new personal category $categoryname ($description)");
     }
 
     public function remote_categories_server_del($index){

@@ -11,7 +11,7 @@ Seu sistema conseguir%C3&iexcl; servir v%C3&iexcl;rios clientes Macintosh simult
 Note que &eacute; dispon&iacute;vel apenas se tiver habilitado a autentica&ccedil;&atilde;o de proxy</acl_proxy_auth_explain>
 <ActAsSMTPGatewayStatistics>Atuar como Gateway SMTP logs / estat&iacute;stica</ActAsSMTPGatewayStatistics>
 <ActAsSMTPGatewayStatistics_text>Se ativado este servidor SMTP estat&iacute;sticas do servidor eventos e ser&aacute; respons&aacute;vel por gerenciar / backup / restore logs do sistema SMTP</ActAsSMTPGatewayStatistics_text>
-<ActHasMaster>Acto &eacute; principal</ActHasMaster>
+<ActHasMaster>Atua como n%C3%B3 mestre</ActHasMaster>
 <ActHasSlave>Acto &eacute; escravo</ActHasSlave>
 <activate_openvpn_connection>Ativar a conex&atilde;o VPN e conectar ao servidor VPN</activate_openvpn_connection>
 <activate_sync_port>Ative a porta de sincroniza&ccedil;&atilde;o</activate_sync_port>
@@ -511,7 +511,7 @@ example: "Mary had a little lamb" or "76b42abc1cd0fdcaf6e943dcbc93b826"
 <bypass_minitext>Bypassing the webfilter in order to answer to the question: [b]How can I have some users bypass the webfilter wall?[/b]</bypass_minitext>
 <cache-size_text>Set the size of dnsmasq's cache. The default is 1500 items. Setting the cache size to zero disables caching.</cache-size_text>
 <CacheDefaultExpire>Expiration time</CacheDefaultExpire>
-<CacheDefaultExpire_explain>sets an expiration time for resources that don't specify an expiry date or a last-modified date</CacheDefaultExpire_explain>
+<CacheDefaultExpire_explain>Define um tempo de expiraç%C3£o para recursos que n%C3£o especificam uma data de expiraç%C3£o nem uma data de %C3%BAltima modificaç%C3£o.</CacheDefaultExpire_explain>
 <CacheDisable_explain>This section disable caching by specified urls , set the urls like /index.php /images</CacheDisable_explain>
 <CacheMaxFileSize>Maximum file size to cache</CacheMaxFileSize>
 <cachemgr>Squid Cache Manager</cachemgr>
@@ -520,7 +520,7 @@ about the squid process as it runs.[br]
 The cache manager is a convenient way to manage the cache and view statistics 
 without logging into the server</cachemgr_text>
 <CacheMinExpire>Minimum expiration time</CacheMinExpire>
-<CacheMinExpire_explain>specifies the minimum expiration time for resources, even if the resource itself specifies a shorter expiry date.</CacheMinExpire_explain>
+<CacheMinExpire_explain>Especifica o tempo m%C3%ADnimo de expiraç%C3£o dos recursos, mesmo que o pr%C3%B3prio recurso defina uma data de expiraç%C3£o mais curta.</CacheMinExpire_explain>
 <CacheMinFileSize>Minimum file size to cache</CacheMinFileSize>
 <CacheMinFileSize_explain>If a file is too small, there's no performance benefit to caching it. If it's too large, you'll consume your cache space too quickly</CacheMinFileSize_explain>
 <caches>Caches</caches>
@@ -2213,7 +2213,7 @@ The path is formatted as a character string consisting of characters from the NV
 <quota_disk>Quotas</quota_disk>
 <quota_hard>Quota Hard</quota_hard>
 <quota_soft>Quota Soft</quota_soft>
-<random>Random</random>
+<random>Aleat%C3%B3rio</random>
 <ratio>Ratio</ratio>
 <Raw_Read_Error_Rate>Raw Read Error Rate</Raw_Read_Error_Rate>
 <Raw_Read_Error_Rate_text>Frequency of errors appearance while reading RAW data from a disk</Raw_Read_Error_Rate_text>
@@ -2820,7 +2820,7 @@ and values greater than 100 permit the kernel to swap out pages that are part of
 <sync_packages_explain>Check if there is new supported softwares and install them</sync_packages_explain>
 <syslog_server>System Log (server mode)</syslog_server>
 <system_grace_period_explain>The grace period,which determines the lenght if time that a user is allowed to exceed the soft limit</system_grace_period_explain>
-<system_is_uptodate>System is up-to-date</system_is_uptodate>
+<system_is_uptodate>O sistema est%C3¡ atualizado</system_is_uptodate>
 <system_log>System logging</system_log>
 <system_log_text>Define parameters in order to send system events to a central server or to transform Artica has en central log server</system_log_text>
 <system_packages_can_be_upgraded>Pacotes de sistema que devem ser atualizados/atualizados</system_packages_can_be_upgraded>
@@ -2884,7 +2884,7 @@ If the value of this attribute is decreasing there is a high probability that th
 <top_visited_categories>Visited categories</top_visited_categories>
 <top_visited_categories_mostwieght>The main category browsed by this user that consume the bandwith was X with Y downloaded size</top_visited_categories_mostwieght>
 <top_visited_websites>TOP Visited Websites</top_visited_websites>
-<totalsize>Total size</totalsize>
+<totalsize>Tamanho total</totalsize>
 <total_memory>Total memory</total_memory>
 <total_requests>Total requests</total_requests>
 <total_threshold>Total threshold</total_threshold>
@@ -2913,7 +2913,7 @@ If the value of this attribute is decreasing there is a high probability that th
 [/ul]
 </transparent_mode_limitations>
 <treshold>Treshold</treshold>
-<TrustMyNetwork>Trust networks</TrustMyNetwork>
+<TrustMyNetwork>Redes confi%C3¡veis</TrustMyNetwork>
 <TrustMyNetwork_text>If green, the server will allow any IP address (inside the trusted networks) sending messages to Internet.[br]
 Enable this feature is dangerous if you using your server in public mode or if you using a load balancer system
 that using an IP adress in the defined trusted network.[br]

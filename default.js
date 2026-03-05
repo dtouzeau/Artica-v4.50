@@ -1075,14 +1075,32 @@ function s_PopUpScroll(url,l,h,mtitle){
 	PopupWindow.focus();
 	PopupWindow.moveTo(0,0);
 	}
-        
-function s_PopUpFull(url,l,h,mtitle){
-	var PopupWindow=null;
-	settings='width='+l +',height='+h +',location=no,directories=no,menubar=yes,toolbar=yes,status=yes,scrollbars=yes,resizable=yes,dependent=yes';
-	PopupWindow=window.open(url,mtitle,settings);
-	PopupWindow.focus();
-	PopupWindow.moveTo(0,0);
-	}      
+
+function s_PopUpFull(url, l, h, mtitle) {
+	var left = (screen.width - l) / 2;
+	var top  = (screen.height - h) / 2;
+
+	var settings =
+		"width=" + l +
+		",height=" + h +
+		",top=" + top +
+		",left=" + left +
+		",location=no" +
+		",directories=no" +
+		",menubar=no" +
+		",toolbar=no" +
+		",status=no" +
+		",scrollbars=yes" +
+		",resizable=yes";
+
+	var PopupWindow = window.open(url, mtitle, settings);
+
+	if (PopupWindow) {
+		PopupWindow.focus();
+	} else {
+		alert("Popup blocked by browser.");
+	}
+}
 
 function CheckBoxValidate(id){
 	if(document.getElementById(id).checked){return 1;}
@@ -3355,124 +3373,148 @@ function loadjs(src,lock){
 	Loadjs(src,lock);
 }
 
-function Loadjs(src,lock){
-	var n = src.indexOf("?");
-	if(n>0){src=src+'&jQueryLjs=yes'}else{src=src+'?jQueryLjs=yes';}
-	
-	if(lock===true){
-		LockPage();
-		$.getScript( src )
-		.done(function( script, textStatus ) {
-		
-		})
-		.fail(function( jqxhr, settings, exception ) {
+function Loadjs(src, lock, opts) {
+	opts = opts || {};
+	var target = opts.target || null;   // e.g. "#main-content" if you want HTML injection
+	var maxRetries = (opts.maxRetries != null) ? opts.maxRetries : 3;
+	var retryDelay = (opts.retryDelay != null) ? opts.retryDelay : 800;
+	var expect = opts.expect || "js";   // "js" | "html" | "auto"
 
-			if(! exception){
-    				var t=setTimeout(function(){ $.getScript(src,true); },800);
-				UnlockPage();
-				return;
-			};
-
-			 if(exception==='Service Not Available'){
-				 UnlockPage();
-				 var t=setTimeout(function(){ $.getScript(src,true); },800);
-				
-				 return;
-			 }
-			 
-			 if(exception==='Parent proxy unreacheable'){
-				 UnlockPage();
-				 var t=setTimeout(function(){ $.getScript(src,true); },800);
-				 return;
-			 }
-
-			if(exception==='Internal Server Error'){
-				 UnlockPage();
-				 var t=setTimeout(function(){ $.getScript(src,true); },1500);
-				return;
-			}
-
-			if(exception==='Bad Gateway'){
-				var t=setTimeout(function(){ $.getScript(src,false); },5000);
-				return;
-			}
-			 
-			 if(exception.length===0){
-				 UnlockPage();
-				 var t=setTimeout(function(){ $.getScript(src,true); },800);
-				 return; 
-			 }
-
-
-			if(exception===""){
-			  UnlockPage();
-			  var t=setTimeout(function(){ $.getScript(src,true); },1000);
-			  return; 
-			 }
-
-
-
-			if(exception.IndexOf("is null")>0){
-			 	UnlockPage();
-			 	return; 
-			}
-			alert('Loadjs()version 1.2\nCannot load javascript: '+src+'\nError ( length:<'+exception.length+'>)\nException:"'+exception+'"');
-			 UnlockPage();
-		});
-		 UnlockPage();
-		return;
-		
-		
+	// add marker ONCE
+	if (src.indexOf("jQueryLjs=yes") === -1) {
+		src += (src.indexOf("?") >= 0 ? "&" : "?") + "jQueryLjs=yes";
 	}
-	
-	$.getScript( src )
-	.done(function( script, textStatus ) {
-	
-	})
-	.fail(function( jqxhr, settings, exception ) {
 
+	// per-URL retry counter (prevents infinite loops even if called again)
+	Loadjs.__retries = Loadjs.__retries || {};
+	var key = src;
+	Loadjs.__retries[key] = Loadjs.__retries[key] || 0;
 
-		if(!exception){
-		  var t=setTimeout(function(){ $.getScript(src,true); },800);
-		  UnlockPage();
-		 return; 
+	function isHTML(txt) { return /^\s*</.test(txt); }
+	function unlock() { if (lock === true) { try { UnlockPage(); } catch(e) {} } }
+	function lockIt() { if (lock === true) { try { LockPage(); } catch(e) {} } }
 
-		}
+	function doRetry(reason) {
+		Loadjs.__retries[key]++;
 
-		 if(exception=='Service Not Available'){
-			 var t=setTimeout(function(){ $.getScript(src,false); },800);
-			 return;}
-
-		
-		if(exception=='Internal Server Error'){
-			var t=setTimeout(function(){ $.getScript(src,false); },3000);
+		if (Loadjs.__retries[key] > maxRetries) {
+			console.error("Loadjs(): giving up after", maxRetries, "retries. Reason:", reason, "URL:", src);
+			unlock();
 			return;
 		}
 
-		if(exception=='Bad Gateway'){
-		   var t=setTimeout(function(){ $.getScript(src,false); },5000);
-		   return;
-		}
-		 
-		 if(exception=='Parent proxy unreacheable'){
-			 var t=setTimeout(function(){ $.getScript(src,true); },800);
-			 UnlockPage();
-			 return;
-		 }	
-		 
-		 if(exception.lenth==0){
-			 var t=setTimeout(function(){ $.getScript(src,true); },800);
-			 UnlockPage();
-			 return; 
-		 }
-		 
-		 alert('Loadjs: [LINE: 3637] Cannot load javascript: '+src+'\nError:<'+exception+'>\nException lenght:<'+exception.lenth+'>');
-	});
+		var delay = retryDelay * Math.pow(2, Loadjs.__retries[key] - 1); // exponential backoff
+		console.warn("Loadjs(): retry", Loadjs.__retries[key], "in", delay, "ms. Reason:", reason, "URL:", src);
 
+		unlock();
+		setTimeout(function () { Loadjs(src, lock, opts); }, delay);
+	}
+
+	lockIt();
+
+	$.ajax({
+		url: src,
+		cache: false,
+		dataType: "text",
+		timeout: 30000
+	})
+		.done(function (txt) {
+			// reset retry counter on success response
+			Loadjs.__retries[key] = 0;
+
+			var html = isHTML(txt);
+
+			// Decide how to handle HTML vs JS
+			if (html) {
+				if (expect === "js") {
+					// If you EXPECT JS but got HTML, this is not recoverable by retrying usually.
+					console.error("Loadjs(): HTML returned but JS expected:", src);
+					console.log(txt.substring(0, 200));
+					unlock();
+					return; // STOP (no infinite retry)
+				}
+
+				// If auto or html: inject HTML if target provided
+				if (target) {
+					$(target).html(txt);
+				} else {
+					console.warn("Loadjs(): HTML returned (no target to inject). URL:", src);
+					console.log(txt.substring(0, 200));
+				}
+				unlock();
+				return;
+			}
+
+			// Not HTML => treat as JS
+			try {
+				$.globalEval(txt);
+				unlock();
+			} catch (e) {
+				console.error("Loadjs(): JS eval error:", e, "URL:", src);
+				doRetry("eval error");
+			}
+		})
+		.fail(function (jqxhr, textStatus, errorThrown) {
+			var status = jqxhr && typeof jqxhr.status === "number" ? jqxhr.status : 0;
+			var msg = (errorThrown || textStatus || "").toString();
+
+			// Retry only on actual transient HTTP errors
+			if (status === 0 || status === 500 || status === 502 || status === 503 || status === 504) {
+				doRetry("HTTP " + status + " " + msg);
+				return;
+			}
+
+			console.error("Loadjs(): request failed:", status, msg, "URL:", src);
+			unlock();
+		});
 }
 
+function closeAllPopoversPopup() {
+	$('[data-toggle="popover"]').each(function () {
+		var $el = $(this);
+		if ($el.data('bs.popover')) {
+			$el.popover('hide');
+		}
+	});
+}
+$(function () {
 
+	function forceRemovePopovers() {
+		$('.popover').remove();
+		$('[data-toggle="popover"]').each(function () {
+			$(this).removeData('bs.popover');
+		});
+	}
 
+	$(document).off('.articaPopover');
+
+	$(document).on('mouseenter.articaPopover', '[data-toggle="popover"]', function () {
+
+		forceRemovePopovers(); // 🔥 full cleanup
+
+		var $el = $(this);
+
+		$el.popover({
+			trigger: 'manual',
+			html: true,
+			container: 'body',
+			placement: ($el.attr('data-placement') || 'right')
+		});
+
+		$el.popover('show');
+	});
+
+	// Close if mouse leaves trigger
+	$(document).on('mouseleave.articaPopover', '[data-toggle="popover"]', function () {
+		forceRemovePopovers();
+	});
+
+	// Close if touching popover
+	$(document).on('mouseenter click.articaPopover', '.popover', function () {
+		forceRemovePopovers();
+	});
+
+});
 function applysettings_dansguardian(){
       Loadjs('/dansguardian.index.php?CompilePolicies=yes');  
         

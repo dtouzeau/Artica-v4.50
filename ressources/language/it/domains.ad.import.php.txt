@@ -4,7 +4,7 @@
 [br]You can give here the name of the Administrator or the full "DN" path
 [br]The suffix is the first branch of your Active Directory Branch.[br]Usually if your server is named has server.domain.tld,the suffix will be "dc=server,dc=domain,dc=tld"
 </admin_dn_text>
-<ad_server>Active Directory server address</ad_server>
+<ad_server>Indirizzo del server Active Directory</ad_server>
 <ad_server_text>Give here the IP address or server name of your Active Directory/MS Exchange server</ad_server_text>
 <bdu>Nome utente o password errati</bdu>
 <cls>Impossibile eseguire il binding al server Active Directory</cls>

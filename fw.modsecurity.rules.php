@@ -728,10 +728,9 @@ function table(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
     $t=time();
-	$eth_sql=null;
-	$token=null;
-	$class=null;
-	$t=$_GET["t"];
+    if(isset($_GET["t"])) {
+        $t = $_GET["t"];
+    }
 	if(!is_numeric($t)){$t=time();}
     $function=$_GET["function"];
 
@@ -751,7 +750,7 @@ function table(){
 	$html[]="</thead>";
 	$html[]="<tbody>";
 
-	$jsAfter="LoadAjax('table-loader','$page?table=yes&eth={$_GET["eth"]}');";
+	$jsAfter="LoadAjax('table-loader','$page?table=yes');";
 	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
 
     $search=$_GET["search"];

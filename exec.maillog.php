@@ -2240,7 +2240,6 @@ if(preg_match("#fatal: parameter inet_interfaces: no local interface found for (
 		squid_admin_mysql(0,"Postfix: Interface {$re[1]} is not available",
 		"Postfix claim \n$buffer\nArtica will try to restore TCP/IP interfaces.",__FILE__,__LINE__);
 		@unlink("/etc/artica-postfix/MEM_INTERFACES");
-		shell_exec_maillog(trim("{$GLOBALS["NOHUP_PATH"]} {$GLOBALS["PHP5_BIN"]} /usr/share/artica-postfix/exec.virtuals-ip.php >/dev/null 2>&1 &"));
 		@unlink($file);
 		@unlink($file);@file_put_contents($file,"#");
 	}else{error_log("Postfix: Interface {$re[1]} is not available: {$timefile}Mn/5Mn",0);}

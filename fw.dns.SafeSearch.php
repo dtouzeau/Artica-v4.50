@@ -35,13 +35,21 @@ function table_start(){
         $tpl=new template_admin();
         echo $tpl->div_error($tpl->_ENGINE_parse_body("{no_license}"));
     }
-    echo "<div id='safesearch-table'></div><script>LoadAjax('safesearch-table','$page?table-flat=yes')</script>";
+    $addon="";
+    if(isset($_GET["byHacluster"])){
+        $addon="&byHacluster=1";
+    }
+    echo "<div id='safesearch-table'></div><script>LoadAjax('safesearch-table','$page?table-flat=yes$addon')</script>";
 }
 
 function table_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    return $tpl->js_dialog2("SafeSearchs","$page?table=yes");
+    $addon="";
+    if(isset($_GET["byHacluster"])){
+        $addon="&byHacluster=1";
+    }
+    return $tpl->js_dialog4("SafeSearchs","$page?table=yes$addon");
 
 }
 
@@ -57,10 +65,32 @@ function table_flat(){
     $EnableBingSafeSearch=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableBingSafeSearch"));
     $EnableYoutubeSafeSearch=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableYoutubeSafeSearch"));
     $EnbaleYoutubeModerate=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnbaleYoutubeModerate"));
+    $addon="";
+    if(!isset($_GET["byHacluster"])){
+        $_GET["byHacluster"]=0;
+    }else{
+        $addon="&byHacluster=1";
+    }
+    $byHacluster=$_GET["byHacluster"];
+    $jsOpen="Loadjs('$page?table-js=yes$addon')";
+    $LocalDNS=false;
+    if($byHacluster==1){
+        $HaClusterProxyUseBackendDNSDIST=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseBackendDNSDIST"));
+        $HaClusterUseLocalDNSCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseLocalDNSCache"));
+        if ($HaClusterProxyUseBackendDNSDIST==1){
+            $LocalDNS=true;
+        }
+        if ($HaClusterUseLocalDNSCache==1){
+            $LocalDNS=true;
+        }
+        if(!$LocalDNS){
+            echo $tpl->div_warning("HaCluster||{hacluster_no_feature_nodns}");
+            $jsOpen="";
+        }
+    }
 
-    $tpl->table_form_field_js("Loadjs('$page?table-js=yes')");
 
-
+    $tpl->table_form_field_js($jsOpen);
     if (!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()) {
         $tpl->table_form_field_js("");
         $EnableGoogleSafeSearch=0;
@@ -108,26 +138,28 @@ function table(){
     $EnbaleYoutubeModerate=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnbaleYoutubeModerate"));
 	$form[]=$tpl->field_checkbox("EnableGoogleSafeSearch","Google SafeSearch",$EnableGoogleSafeSearch,false,"{safesearch_explain}");
 	$form[]=$tpl->field_checkbox("EnableQwantSafeSearch","Qwant SafeSearch",$EnableQwantSafeSearch,false,"{qwant_safesearch_explain}");
-
     $form[]=$tpl->field_checkbox("EnableBraveSafeSearch","Brave SafeSearch",$EnableBraveSafeSearch,false,"{qwant_safesearch_explain}");
-
-
     $form[]=$tpl->field_checkbox("EnableBingSafeSearch","Bing SafeSearch",$EnableBingSafeSearch,false,"");
 	$form[]=$tpl->field_checkbox("EnableYoutubeSafeSearch","Youtube (strict)",$EnableYoutubeSafeSearch,false,"");
 	$form[]=$tpl->field_checkbox("EnbaleYoutubeModerate","Youtube (Moderate)",$EnbaleYoutubeModerate,false,"");
-
 	$form[]=$tpl->field_checkbox("EnableDuckduckgoSafeSearch","Duckduckgo",$EnableDuckduckgoSafeSearch,"");
     $form[]=$tpl->field_checkbox("EnableYandexSafeSearch","Yandex",$EnableYandexSafeSearch,"");
     $form[]=$tpl->field_checkbox("EnablePixabaySafeSearch","Pixabay",$EnablePixabaySafeSearch,"");
 
     $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
     $page=CurrentPageName();
-    $js="dialogInstance2.close();LoadAjax('safesearch-table','$page?table-flat=yes');Loadjs('fw.dns.unbound.restart.php');";
+    $js="dialogInstance4.close();LoadAjax('safesearch-table','$page?table-flat=yes');Loadjs('fw.dns.unbound.restart.php');";
 
-    if($UnboundEnabled==1){
+    if(isset($_GET["byHacluster"])){
+        $form[]=$tpl->field_hidden("byHacluster",1);
+        $js="dialogInstance4.close();LoadAjax('safesearch-table','$page?table-flat=yes');";
+    }
+
+
+    if (($UnboundEnabled==1)  && (!isset($_GET["byHacluster"]) ) ){
         $js=$tpl->framework_buildjs("/unbound/reconfigure",
             "unbound.reconfigure.progress","unbound.reconfigure.progress.log",
-            "unbound-restart-progress","dialogInstance2.close();LoadAjax('safesearch-table','$page?table-flat=yes');","LoadAjax('safesearch-table','$page?table-flat=yes');");
+            "unbound-restart-progress","dialogInstance4.close();LoadAjax('safesearch-table','$page?table-flat=yes');","LoadAjax('safesearch-table','$page?table-flat=yes');");
     }
     $html[]="<div id='unbound-restart-progress'></div>";
     $html[]=$tpl->form_outside(null, $form,null,"{apply}",$js,"AsDnsAdministrator",true);
@@ -136,8 +168,18 @@ function table(){
 
 
 function save(){
+    $byHacluster=false;
 	$tpl=new template_admin();
-	$tpl->SAVE_POSTs();
+	if(isset($_POST["byHacluster"])){
+        $byHacluster=true;
+        unset($_POST["byHacluster"]);
+    }
+
+    $tpl->SAVE_POSTs();
+    if($byHacluster){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+    }
+
 }
 
 

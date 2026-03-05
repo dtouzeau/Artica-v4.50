@@ -24,14 +24,12 @@ All emails for a "relay domain" will be forwarded to an other dedicated server.[
 <no_remote_domain_here>Currently, no relayed domain set</no_remote_domain_here>
 <relay_domain_map>others relayed domains used by your organization</relay_domain_map>
 <roundrobin>Round Robin</roundrobin>
-<roundrobin_text>Round robin DNS is a technique of load distribution, load balancing, or fault-tolerance provisioning multiple,
- redundant Mail Protocol service hosts, e.g., by managing the Domain Name System's (DNS) 
- responses to address requests from Mail server according to an appropriate statistical model.[br]
-In its simplest implementation Round-robin DNS works by responding to DNS requests not only with a single IP address,[br]
- but a list of IP addresses of several servers that host identical services.[br]
-The order in which IP addresses from the list are returned is the basis for the term round robin.[br]
- With each DNS response, the IP address sequence in the list is permuted. Usually, basic IP clients attempt connections with the first 
-address returned from a DNS query so that on different connection attempts clients would receive service from different providers, thus distributing the overall load among servers.
-</roundrobin_text>
+<roundrobin_text>DNS Round Robin to technika dystrybucji obci%C4%85%C5%BCenia, r%C3%B3wnowa%C5%BCenia lub tolerancji na awarie, zapewniaj%C4%85ca wiele redundantnych host%C3%B3w us%C5%82ug pocztowych,[br]
+poprzez zarz%C4%85dzanie odpowiedziami systemu DNS na zapytania adresowe serwer%C3%B3w pocztowych zgodnie z odpowiednim modelem statystycznym.[br]
+W najprostszej implementacji DNS Round Robin odpowiada na zapytania DNS nie jedn%C4%85, lecz list%C4%85 adres%C3%B3w IP,[br]
+reprezentuj%C4%85cych kilka serwer%C3%B3w %C5%9Bwiadcz%C4%85cych identyczne us%C5%82ugi.[br]
+Kolejno%C5%9B%C4%87 zwracanych adres%C3%B3w IP stanowi podstaw%C4%99 dzia%C5%82ania mechanizmu round robin.[br]
+Przy ka%C5%BCdej odpowiedzi DNS sekwencja adres%C3%B3w IP jest rotowana.[br]
+Zazwyczaj klienci IP pr%C3%B3buj%C4%85 po%C5%82%C4%85czy%C4%87 si%C4%99 z pierwszym adresem zwr%C3%B3conym przez zapytanie DNS, co pozwala roz%C5%82o%C5%BCy%C4%87 obci%C4%85%C5%BCenie mi%C4%99dzy serwery.</roundrobin_text>
 <target_computer_name>Target server name or IP</target_computer_name>
 <target_computer_port>Port</target_computer_port>

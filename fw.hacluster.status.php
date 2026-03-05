@@ -14,6 +14,17 @@ if(isset($_POST["HaClusterAsAD"])){SaveParams();exit;}
 if(isset($_POST["HaClusterUseHaClient"])){SaveParams();exit;}
 if(isset($_POST["HaClusterUseAddr"])){SaveParams();exit;}
 if(isset($_POST["HaClusterUseLBAsDNS"])){SaveParams();exit;}
+if(isset($_POST["HaClusterServeDNS"])){SaveParams();exit;}
+if(isset($_POST["HaClusterSquidNameServer1"])){SaveParams();exit;}
+if(isset($_POST["HaClusterSquidNameServer2"])){SaveParams();exit;}
+if(isset($_POST["HaClusterSquidNameServer3"])){SaveParams();exit;}
+if(isset($_POST["HaClusterUseLocalDNSCache"])){SaveParams();exit;}
+if(isset($_POST["DNS1"])){SaveParams();exit;}
+if(isset($_POST["DNS2"])){SaveParams();exit;}
+if(isset($_POST["DOMAINS1"])){SaveParams();exit;}
+if(isset($_POST["DOMAINS2"])){SaveParams();exit;}
+if(isset($_POST["HaClusterProxyUseOwnDNS"])){SaveParams();exit;}
+if(isset($_POST["HaClusterProxyUseBackendDNSDIST"])){SaveParams();exit;}
 if(isset($_POST["HaClusterEnableProxyProtocol"])){SaveParams();exit;}
 if(isset($_POST["HaClusterDecryptSSL"])){SaveParams();exit;}
 if(isset($_POST["HaClusterRemoveRealtimeLogs"])){SaveParams();exit;}
@@ -79,7 +90,11 @@ if(isset($_GET["section-haclient-js"])){section_haclient_js();exit;}
 if(isset($_GET["section-haclient-popup"])){section_haclient_popup();exit;}
 
 if(isset($_GET["section-dns-js"])){section_dns_js();exit;}
+if(isset($_GET["section-dns-general"])){section_dns_general();exit;}
 if(isset($_GET["section-dns-popup"])){section_dns_popup();exit;}
+if(isset($_GET["section-dns-tabs"])){section_dns_tabs();exit;}
+if(isset($_GET["section-dns-proxy-start"])){section_dns_proxy_start();exit;}
+if(isset($_GET["section-dns-proxy"])){section_dns_proxy_popup();exit;}
 
 if(isset($_GET["section-ssl-js"])){section_ssl_js();exit;}
 if(isset($_GET["section-ssl-popup"])){section_ssl_popup();exit;}
@@ -244,7 +259,7 @@ function section_haclient_js():bool{
 function section_dns_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    return $tpl->js_dialog2("{dns_used_by_the_system}","$page?section-dns-popup=yes",650);
+    return $tpl->js_dialog2("{dns_parameters}","$page?section-dns-tabs=yes",950);
 }
 function section_ssl_js():bool{
     $tpl=new template_admin();
@@ -409,6 +424,7 @@ function tabs(){
     $tpl=new template_admin();
     $array["{status}"]="$page?table-start=yes";
     $array["{parameters}"]="$page?parameters=yes";
+
 
 
     if($EnableZabbixAgent==1) {
@@ -1283,7 +1299,7 @@ function parameters_dns($tpl){
     if($HaClusterServeDNS==1){
         $HaClusterGBConfig["HaClusterUseLBAsDNS"]=0;
     }
-    $HaClusterProxyUseUnbound=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseUnbound"));
+    $HaClusterProxyUseBackendDNSDIST=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseBackendDNSDIST"));
 
     if($HaClusterGBConfig["HaClusterUseLBAsDNS"]==1){
         $tpl->table_form_field_text("{dns_servers}","{use_load_balancer_as_dns}",ico_database);
@@ -1298,9 +1314,9 @@ function parameters_dns($tpl){
             $ff[]="{hacluster_lb_dns}";
         }
 
-    if($HaClusterProxyUseOwnDNS==0){ $HaClusterProxyUseUnbound=0; }
+    if($HaClusterProxyUseOwnDNS==0){ $HaClusterProxyUseBackendDNSDIST=0; }
 
-        if($HaClusterProxyUseUnbound==1){
+        if($HaClusterProxyUseBackendDNSDIST==1){
             $ff[]="<small>{use_local_dns_service}</small>";
         }
 
@@ -1427,42 +1443,122 @@ function section_haclient_popup():bool{
     echo $tpl->form_outside(null,$form,null,"{apply}",form_paramsjs(),"AsSquidAdministrator",true);
     return true;
 }
-function section_dns_popup():bool{
+function section_dns_tabs():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $array["{main_settings_samba}"]="$page?section-dns-general=yes";
+    $array["{dns_used_by_the_system}"]="$page?section-dns-popup=yes";
+    $array["{dns_used_by_the_proxy}"]="$page?section-dns-proxy-start=yes";
+    $array["DNS {rules}"]="fw.proxy.dns.php?dns-rules=yes&hacluster=yes";
+    $array["SafeSearch(s)"]="fw.dns.SafeSearch.php?table-start=yes&byHacluster=yes";
+    echo $tpl->tabs_default($array);
+    return true;
+
+}
+function section_dns_proxy_start():bool{
+    $page=CurrentPageName();
+    echo "<div id='section-dns-proxy-popup'></div>";
+    echo "<script>LoadAjaxSilent('section-dns-proxy-popup','$page?section-dns-proxy=yes');</script>";
+    return true;
+}
+
+function section_dns_proxy_popup():bool{
+    $page=CurrentPageName();
     $tpl = new template_admin();
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
+    $js="LoadAjaxSilent('section-dns-proxy-popup','$page?section-dns-proxy=yes');";
+    $HaClusterUseLBAsDNS=intval($HaClusterGBConfig["HaClusterUseLBAsDNS"]);
 
-    $form[]=$tpl->field_checkbox("HaClusterUseLBAsDNS","{use_load_balancer_as_dns}",intval($HaClusterGBConfig["HaClusterUseLBAsDNS"]));
-    $HaClusterUseLocalDNSCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseLocalDNSCache"));
-    $HaClusterProxyUseUnbound=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseUnbound"));
-    $HaClusterProxyUseDNSCacheDenyPTR=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseDNSCacheDenyPTR"));
+    if($HaClusterUseLBAsDNS==1){
+        echo $tpl->div_warning("{use_load_balancer_as_dns}||{use_load_balancer_as_dns_explain}");
+        return true;
+    }
 
-    $HaClusterServeDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterServeDNS"));
-
-    $form[]=$tpl->field_checkbox("HaClusterServeDNS","{hacluster_lb_dns}",$HaClusterServeDNS,false,"{hacluster_use_dns_service_explain}");
-
-    $form[]=$tpl->field_checkbox("HaClusterUseLocalDNSCache","{local_dns_service}",$HaClusterUseLocalDNSCache,false,"{hacluster_local_dns_service_explain}");
+    $form[]="<div style='margin-top:10px'>";
 
     $HaClusterProxyUseOwnDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseOwnDNS"));
+
+    $form[]=$tpl->BigCircleCheckbox("HaClusterProxyUseOwnDNS",
+        "{proxy_use_its_own_dns}","{proxy_use_its_own_dns_explain}",
+        $HaClusterProxyUseOwnDNS,$js.form_paramsjs(true));
+
+    if($HaClusterProxyUseOwnDNS==0){
+        $form[]="</div>";
+        echo $tpl->_ENGINE_parse_body($form);
+        return true;
+    }
     $SquidNameServer1=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterSquidNameServer1");
     $SquidNameServer2=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterSquidNameServer2");
     $SquidNameServer3=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterSquidNameServer3");
 
+    $HaClusterProxyUseBackendDNSDIST=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseBackendDNSDIST"));
+    $HaClusterProxyUseDNSCacheDenyPTR=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseDNSCacheDenyPTR"));
+    $form[]=$tpl->BigCircleCheckbox("HaClusterProxyUseBackendDNSDIST",
+        "{use_local_dns_service}","{hacluster_use_local_dns_service_explain}",
+        $HaClusterProxyUseBackendDNSDIST,$js.form_paramsjs(true));
 
-    $form[]=$tpl->field_ipv4("DNS1", "{primary_dns} ", $HaClusterGBConfig["DNS1"]);
-    $form[]=$tpl->field_ipv4("DNS2", "{secondary_dns} ", $HaClusterGBConfig["DNS2"]);
-    $form[]=$tpl->field_text("DOMAINS1", "{InternalDomain} 1", $HaClusterGBConfig["DOMAINS1"]);
-    $form[]=$tpl->field_text("DOMAINS2", "{InternalDomain} 2", $HaClusterGBConfig["DOMAINS2"]);
-    $form[]=$tpl->field_section("{dns_used_by_the_proxy_service}");
+    if($HaClusterProxyUseBackendDNSDIST==1){
+        $form[]=$tpl->BigCircleCheckbox("HaClusterProxyUseDNSCacheDenyPTR",
+            "{deny} PTR","{hacluster_use_local_dns_service_ptr_explain}",
+            $HaClusterProxyUseDNSCacheDenyPTR,$js.form_paramsjs(true));
+    }
 
-    $form[]=$tpl->field_checkbox("HaClusterProxyUseOwnDNS","{proxy_use_its_own_dns}",$HaClusterProxyUseOwnDNS,"HaClusterSquidNameServer1,HaClusterSquidNameServer2,HaClusterSquidNameServer3,HaClusterProxyUseUnbound");
-    $form[]=$tpl->field_checkbox("HaClusterProxyUseUnbound","{use_local_dns_service}",$HaClusterProxyUseUnbound,"HaClusterProxyUseDNSCacheDenyPTR");
-    $form[]=$tpl->field_checkbox("HaClusterProxyUseDNSCacheDenyPTR","{deny} PTR",$HaClusterProxyUseDNSCacheDenyPTR);
+    $form[]=$tpl->BigTextField("HaClusterSquidNameServer1","{primary_dns}","",$SquidNameServer1,
+        $js.form_paramsjs(true));
+    $form[]=$tpl->BigTextField("HaClusterSquidNameServer2","{secondary_dns}","",
+        $SquidNameServer2,$js.form_paramsjs(true));
+    $form[]=$tpl->BigTextField("HaClusterSquidNameServer3","{nameserver} 3","",
+        $SquidNameServer3,$js.form_paramsjs(true));
+    $form[]="</div>";
+    echo $tpl->_ENGINE_parse_body($form);
+    return true;
 
-    $form[]=$tpl->field_text("HaClusterSquidNameServer1","{primary_dns}",$SquidNameServer1);
-    $form[]=$tpl->field_text("HaClusterSquidNameServer2","{secondary_dns}",$SquidNameServer2);
-    $form[]=$tpl->field_text("HaClusterSquidNameServer3","{nameserver} 3",$SquidNameServer3);
+}
+function section_dns_general():bool{
+    $page=CurrentPageName();
+    $tpl = new template_admin();
+    $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
+    $HaClusterServeDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterServeDNS"));
+    $form[]="<div style='margin-top:10px'>";
+    $form[]=$tpl->BigCircleCheckbox("HaClusterServeDNS","{hacluster_lb_dns}",
+        "{hacluster_use_dns_service_explain}",$HaClusterServeDNS,form_paramsjs(true));
+    $form[]=$tpl->BigCircleCheckbox("HaClusterUseLBAsDNS","{use_load_balancer_as_dns}",
+        "{use_load_balancer_as_dns_explain}",
+        intval($HaClusterGBConfig["HaClusterUseLBAsDNS"]),form_paramsjs(true));
+    $form[]="</div>";
+    echo $tpl->_ENGINE_parse_body($form);
 
-    echo $tpl->form_outside(null,$form,null,"{apply}",form_paramsjs(),"AsSquidAdministrator",true);
+    return true;
+}
+
+function section_dns_popup():bool{
+    $tpl = new template_admin();
+    $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
+
+    $HaClusterUseLBAsDNS=intval($HaClusterGBConfig["HaClusterUseLBAsDNS"]);
+
+    if($HaClusterUseLBAsDNS==1){
+        echo $tpl->div_warning("{use_load_balancer_as_dns}||{use_load_balancer_as_dns_explain}");
+        return true;
+    }
+    $form[]="<div style='margin-top:10px'>";
+
+
+    $HaClusterUseLocalDNSCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseLocalDNSCache"));
+    $form[]=$tpl->BigCircleCheckbox("HaClusterUseLocalDNSCache",
+        "{local_dns_service}","{hacluster_local_dns_service_explain}",
+        $HaClusterUseLocalDNSCache,form_paramsjs(true));
+
+       $form[]=$tpl->BigTextField("DNS1","{primary_dns}","",$HaClusterGBConfig["DNS1"],
+           form_paramsjs(true));
+       $form[]=$tpl->BigTextField("DNS2","{secondary_dns}","",$HaClusterGBConfig["DNS2"],
+           form_paramsjs(true));
+       $form[]=$tpl->BigTextField("DOMAINS1","{InternalDomain} 1","",$HaClusterGBConfig["DOMAINS1"],
+           form_paramsjs(true));
+       $form[]=$tpl->BigTextField("DOMAINS2","{InternalDomain} 2","",$HaClusterGBConfig["DOMAINS2"],
+           form_paramsjs(true));
+    $form[]="</div>";
+    echo $tpl->_ENGINE_parse_body($form);
     return true;
 }
 function section_ssl_popup():bool{
@@ -1619,8 +1715,6 @@ function section_listen_popup():bool{
     $form[]=$tpl->field_interfaces("HaClusterOutface","{outgoing_interface}",$HaClusterOutface);
 
 
-
-
     $form[]=$tpl->field_section("{APP_SQUID}");
     $form[]=$tpl->field_numeric("HaClusterPort","{listen_port}",$HaClusterPort);
     echo $tpl->form_outside(null,$form,null,"{apply}",restart_js(),"AsSquidAdministrator",true);
@@ -1679,7 +1773,7 @@ function form_js():string{
     return @implode(";",$f);
 
 }
-function form_paramsjs():string{
+function form_paramsjs($Noclose=false):string{
     $tpl=new template_admin();
     $page=CurrentPageName();
 
@@ -1692,7 +1786,9 @@ function form_paramsjs():string{
     );
 
     $f[]="LoadAjaxSilent('hacluster-parameters','$page?parameters-table=yes');";
-    $f[]="dialogInstance2.close()";
+    if(!$Noclose) {
+        $f[] = "dialogInstance2.close()";
+    }
     $f[]=$prgress;
     return @implode(";",$f);
 
@@ -1724,9 +1820,9 @@ function SaveParams():bool{
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterProxyUseDNSCacheDenyPTR",$_POST["HaClusterProxyUseDNSCacheDenyPTR"]);
         unset($_POST["HaClusterProxyUseDNSCacheDenyPTR"]);
     }
-    if(isset($_POST["HaClusterProxyUseUnbound"])){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterProxyUseUnbound",$_POST["HaClusterProxyUseUnbound"]);
-        unset($_POST["HaClusterProxyUseUnbound"]);
+    if(isset($_POST["HaClusterProxyUseBackendDNSDIST"])){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterProxyUseBackendDNSDIST",intval($_POST["HaClusterProxyUseBackendDNSDIST"]));
+        unset($_POST["HaClusterProxyUseBackendDNSDIST"]);
     }
     if(isset($_POST["HaClusterSquidNameServer1"])){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterSquidNameServer1",$_POST["HaClusterSquidNameServer1"]);

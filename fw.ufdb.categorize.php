@@ -168,15 +168,15 @@ function test_categories(){
 
 }
 
-function test_categories_perform(){
+function test_categories_perform():bool{
     $sitenametest   = url_decode_special_tool(trim(strtolower($_GET["sitenametest"])));
     $sitenametest   = trim($sitenametest);
     $action         = null;
-    if($sitenametest==null){return;}
-    $category       = 0;
+    if($sitenametest==null){return false;}
+
     $sitenametest   = str_replace(";",".",$sitenametest);
     $sitenametest   = str_replace("?","",$sitenametest);
-    $srnprovider    = null;
+
     if(preg_match("#(.+?)VERBOSE#i", $sitenametest,$re)){
         $GLOBALS["VERBOSE"]=true;
         $GLOBALS["NOCACHE"]=true;
@@ -189,23 +189,32 @@ function test_categories_perform(){
     $categories_descriptions=$catz->categories_descriptions();
     unset($_SESSION["TEST_CATEGORIES"]);
     $time_start = $catz->microtime_float();
-    $category = $catz->GET_CATEGORIES($sitenametest);
 
-    if(!is_array($catz->THESHIELD_MAIN)){
-        $error_text="&nbsp;-&nbsp;<strong>{connection_error}</strong>";
+    $sitenameEnc=urlencode($sitenametest);
+    VERBOSE("/category/get/$sitenameEnc",__LINE__);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/category/get/$sitenameEnc"),true);
+    if(!$json["Status"]){
+        VERBOSE("{$json["Error"]}",__LINE__);
+        $catz->events[]=$json["Error"];
     }
-    $data = json_decode($catz->THESHIELD_MAIN,true);
-    //print_r($data);
-
-    $error_text=null;$cached=null;
-    VERBOSE("catz->GET_CATEGORIES($sitenametest)=$category",__LINE__);
-
-
-
-    if($data["engine"]=="HIT"){
-        $action="&nbsp;<small><strong>{cached}</strong></small>";
+    if(!isset($json["Engine"])){
+        $json["Engine"]="{none}";
     }
-    $srnprovider=$data["engine"];
+    if(!isset($json["category_id"])){
+        $json["category_id"]=0;
+    }
+    if(!isset($json["time"])){
+        $json["time"]=0;
+    }
+    if(!isset($json["Events"])){
+        $json["Events"]=array();
+    }
+
+
+    $srnprovider=$json["Engine"];
+    $category=$json["category_id"];
+    $categoryname=$json["categoryname"];
+
 
     if(count($catz->CategoriesList)>0){
         $action=null;
@@ -367,8 +376,8 @@ function test_categories_perform(){
         $_SESSION["TEST_CATEGORIES"]["RESULTS"]=$categories_descriptions[$category];
     }
     elseif (isset($lemCatz[$category])){
-        $_SESSION["TEST_CATEGORIES"]["RESULTS"]["categoryname"]=$data["category_name"];
-        $_SESSION["TEST_CATEGORIES"]["RESULTS"]["category_description"]="Lemnia {$data["category_name"]} database";
+        $_SESSION["TEST_CATEGORIES"]["RESULTS"]["categoryname"]=$categoryname;
+        $_SESSION["TEST_CATEGORIES"]["RESULTS"]["category_description"]="Lemnia $categoryname database";
 
         $_SESSION["TEST_CATEGORIES"]["RESULTS"]["category_icon"]="/img/20-categories-personnal.png";
         $_SESSION["TEST_CATEGORIES"]["category_id"]=$category;
@@ -380,6 +389,10 @@ function test_categories_perform(){
         $GLOBALS["categories_descriptions"]=array();
         $libmem->saveKey("categories_descriptions", serialize(array()),1600);
         $categories_descriptions=$catz->categories_descriptions();
+        if(!isset($categories_descriptions[$category])){
+            $categories_descriptions[$category]["RESULTS"]["category_icon"]="";
+            $categories_descriptions[$category]["RESULTS"]["categoryname"]="{none}";
+        }
         $_SESSION["TEST_CATEGORIES"]["RESULTS"]=$categories_descriptions[$category];
 
     }
@@ -389,9 +402,9 @@ function test_categories_perform(){
     $provider_text=null;
     if(isset($_SESSION["TEST_CATEGORIES"]["PROVIDER"])){
         $provider=$_SESSION["TEST_CATEGORIES"]["PROVIDER"];
-        $took = (intval($data["time"]))/1000;
+        $took = (intval($json["time"]))/1000;
         if($provider<>null){
-            $provider_text="&nbsp;<small style='color:rgb(60, 118, 61)'>( The Shields: $provider -> $took ms)</small>";
+            $provider_text="&nbsp;<small style='color:rgb(60, 118, 61)'>( $provider -> $took ms)</small>";
         }
     }
 
@@ -415,12 +428,16 @@ function test_categories_perform(){
         $html[]="<H2>{category}:$category_text{$provider_text}</H2>";
         $html[]="<div><i>{$_SESSION["TEST_CATEGORIES"]["RESULTS"]["category_description"]}</i></div><hr>";
     }
+
+
+    foreach ($json["Events"] as $line){
+            $html[]="<div><small>$line</small></div>";
+    }
     foreach ($_SESSION["TEST_CATEGORIES"]["EVENTS"] as $line){
         $html[]="<div><small>$line</small></div>";
-
     }
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html)."</div><script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>");
-
+return true;
 }
 
 

@@ -11,10 +11,20 @@ xgen();
 function xgen(){
 	$tpl=new template_admin();
     $f[]="                	<ul class='nav nav-third-level'>";
+    $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.DecisionIP.honeypot.php", "ICO" => "fa-regular fa-honey-pot",
+        "TEXT" => "Honeypot"));
     $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.DecisionIP.events.php", "ICO" => ico_eye,
         "TEXT" => "{DETECTED_THREATS}"));
     $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.DecisionIP.statistics.php", "ICO" => ico_chart_line,
-        "TEXT" => "{realtime_graphs}"));
+        "TEXT" => "{statistics}"));
+    $EnableNginx=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNginx"));
+    if($EnableNginx==1){
+        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.DecisionIP.sent.php", "ICO" => ico_chart_line,
+            "TEXT" => "{feed_submissions}"));
+
+    }
+
+
     $f[]="					</ul>";
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $f));
 }

@@ -267,7 +267,7 @@ When a post from a non-member is received, the message's sender is matched again
 held, rejected (bounced), and discarded addresses.[br] If no match is found, then this action is taken</generic_nonmember_action_text>
 <global_settings>Configuraç%C3µes globais</global_settings>
 <goodbye_msg_text>Text sent to people leaving the list.  If empty, no special text will be added to the unsubscribe message.</goodbye_msg_text>
-<headers>Headers</headers>
+<headers>Cabeçalhos</headers>
 <header_filter_rules>Header rules</header_filter_rules>
 <header_filter_rules_text>Filter rules to match against the headers of a message.[br]
 Each header filter rule has two parts, a list of regular expressions, one per line, and an action to take.[br]

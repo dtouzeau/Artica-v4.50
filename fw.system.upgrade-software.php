@@ -201,14 +201,7 @@ function popup():bool{
         "system.installsoft.progress","system.installsoft.progress.txt",
         "{$_GET["popup"]}-$integ-progress-install","dialogInstance2.close();Loadjs('$page?jsafter=yes');");
 
-        if(strlen($uuid)>5){
-            $jsrestart=$tpl->framework_buildjs("hamrp.php?installv2=yes&product={$_GET["popup"]}&key=$integ&uuid=$uuid",
-                "system.installsoft.$uuid.progress","system.installsoft.$uuid.progress.txt",
-                "{$_GET["popup"]}-$integ-progress-install","dialogInstance2.close();Loadjs('$page?jsafter=yes');");
 
-        }
-
-		
 		$bton=$tpl->button_autnonome("{install_upgrade}",
 				"$jsrestart",
 				"fa-download","AsSystemAdministrator",0,"btn-primary btn-xs");
@@ -261,12 +254,10 @@ function file_uploaded(){
 
     $product=$_GET["product"];
     $key=$_GET["key"];
-    $file=urlencode($_GET["file-uploaded"]);
-
-
+    $file=urlencode(base64_encode("/usr/share/artica-postfix/ressources/conf/upload/{$_GET["file-uploaded"]}"));
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/system.installsoft.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/system.installsoft.progress.txt";
-    $ARRAY["CMD"]="system.php?installv2=yes&product=$product&key=$key&file-uploaded=$file";
+    $ARRAY["CMD"]="/system/softwares/install-local/$product/$key/$file";
     $ARRAY["TITLE"]="{installing} $product";
     $ARRAY["AFTER"]="LoadAjax('table-loader-versions-service','fw.versions.php?table=yes');";
 

@@ -1,8 +1,10 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
+include_once(dirname(__FILE__)."/ressources/class.artica-samba.inc");
 
 if(isset($_GET["service-status"])){service_status();exit;}
+if(isset($_GET["samba-daemon-status"])){samba_daemon_status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_POST["SambaInterfaces"])){save_config();exit;}
@@ -155,10 +157,10 @@ function save_config(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
 	$sock=new sockets();
-	while (list ($num, $val) = each ($_POST)){
+	foreach($_POST as $num=>$val){
 		$sock->SET_INFO("$num", $val);
 	}
-	
+
 }
 
 
@@ -168,9 +170,41 @@ function tabs(){
 	$sock=new sockets();
 
 	$array["{status}"]="$page?status=yes";
-	//$array["{events}"]="fw.sshd.events.php";
+	$array["artica-samba {status}"]="$page?samba-daemon-status=yes";
 
-	
-	echo $tpl->tabs_default($array);	
-	
+
+	echo $tpl->tabs_default($array);
+
+}
+
+function samba_daemon_status(){
+	$tpl=new template_admin();
+	$page=CurrentPageName();
+	$samba=new ArticaSamba();
+	try{
+		$health=$samba->health();
+	}catch(\RuntimeException $e){
+		echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars($e->getMessage())));
+		return;
+	}
+
+	$status=$health["status"] ?? "unknown";
+	$version=$health["version"] ?? "";
+	$uptime=$health["uptime"] ?? "";
+	$instances=$health["instances"] ?? 0;
+
+	$statusColor=($status==="healthy")?"#1ab394":"#ed5565";
+	$statusLabel=($status==="healthy")?"{running}":"{error}";
+
+	$tpl->table_form_field_text("{service}","artica-samba","fas fa-server");
+	$tpl->table_form_field_text("{status}","<span class='label' style='background:$statusColor;color:#fff'>$statusLabel</span>","fas fa-heartbeat");
+	if(strlen($version)>0){
+		$tpl->table_form_field_text("{version}",$version,ico_update);
+	}
+	if(strlen($uptime)>0){
+		$tpl->table_form_field_text("{uptime}",$uptime,"fas fa-clock");
+	}
+	$tpl->table_form_field_text("{instances}",strval($instances),"fas fa-layer-group");
+
+	echo $tpl->table_form_compile();
 }

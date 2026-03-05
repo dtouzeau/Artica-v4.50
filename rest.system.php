@@ -768,7 +768,7 @@ function REST_ACTIVEDIRECTORY($action,$value=null){
 function ARTICA_VERSION(){
     $datas=@file_get_contents("/usr/share/artica-postfix/VERSION");
     if(trim($datas)==null){$datas="0.00";}
-    $CURPATCH=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("artica.php?SPVersion=yes");
+    $CURPATCH= $GLOBALS["CLASS_SOCKETS"]->SPVersion();
 
     $array["status"]=true;
     $array["message"]="Artica Version $datas Service Pack $CURPATCH";

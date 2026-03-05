@@ -89,6 +89,10 @@ function widget_status($jsonStatus):string{
 function widget_scan($jsonStatus):string{
     $tpl=new template_admin();
     $page=currentPageName();
+
+
+
+
     if($jsonStatus->success && $jsonStatus->data->scanning){
 
         $btn = array();

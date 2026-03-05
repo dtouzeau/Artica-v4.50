@@ -1623,10 +1623,9 @@ function CheckIptablesPorts($startProgress):bool{
 
     $MIKROTIK_FIREWALL=unserialize(@file_get_contents("/etc/squid3/MIKROTIK_FIREWALL.array"));
     $TRANSPARENT_FIREWALL=unserialize(@file_get_contents("/etc/squid3/TRANSPARENT_FIREWALL.array"));
-    $WCCP_FIREWALL=unserialize(@file_get_contents("/etc/squid3/WCCP_FIREWALL.array"));
     if(!$MIKROTIK_FIREWALL){$MIKROTIK_FIREWALL=array();}
     if(!$TRANSPARENT_FIREWALL){$TRANSPARENT_FIREWALL=array();}
-    if(!$WCCP_FIREWALL){$WCCP_FIREWALL=array();}
+
 
 
     $MIKROTIK_FIREWALL_C=count($MIKROTIK_FIREWALL);
@@ -1643,21 +1642,6 @@ function CheckIptablesPorts($startProgress):bool{
         build_progress("{restarting_firewall} (Secure gateway)",$startProgress++);
         shell_exec("/bin/artica-secure-gateway.sh");
     }
-
-
-
-    if($SUM>0){
-        if(count($WCCP_FIREWALL)>0){
-            build_progress("{checking_wccp_mode}",$startProgress++);
-            system("/usr/sbin/artica-phpfpm-service -wccp");
-        }
-    }else {
-       if (count($WCCP_FIREWALL) > 0) {
-            build_progress("{checking_wccp_mode}", $startProgress++);
-            system("/usr/sbin/artica-phpfpm-service -wccp");
-        }
-    }
-
 
     cluster_mode();
     return true;

@@ -1,7 +1,7 @@
 <ADD_BAN_SERVER>Ban a new server</ADD_BAN_SERVER>
 <ADD_BAN_SERVER_TEXT>Add a rule to bann a server by name, parent domains, client address, or networks</ADD_BAN_SERVER_TEXT>
 <ADD_FILTER_EXPRESSION>Add a new expression filter</ADD_FILTER_EXPRESSION>
-<ADD_FILTER_EXPRESSION_TEXT>Add a new rule that matches expressions in Mail headers</ADD_FILTER_EXPRESSION_TEXT>
+<ADD_FILTER_EXPRESSION_TEXT>Adicionar uma nova regra que corresponda a express%C3µes nos cabeçalhos de e-mail</ADD_FILTER_EXPRESSION_TEXT>
 <blockips>Reject IP/Name addresses</blockips>
 <blockip_msg>
 Give the value of the address you want to bann.

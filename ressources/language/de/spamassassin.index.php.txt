@@ -21,11 +21,10 @@ Detection is done with statistical and randomized signatures that efficiently sp
 User input is validated through reputation assignments based on consensus on report and revoke assertions which in turn is used for
 computing confidence values associated with individual signatures</razor_text>
 <report_safe>Encapsulate spam in an attachment</report_safe>
-<report_safe_text>Wenn diese Option aktiviert ist, wird eine eingehende Nachricht als Spam markiert, anstatt die urspr%C3%BCngliche Nachricht zu %C3%A4ndern,
-SpamAssassin eine neue Berichtsnachricht und f%C3%BCgt die urspr%C3%BCngliche Nachricht als message/rfc822 MIME
-Teil an (wodurch sichergestellt wird, dass die Originalnachricht vollst%C3%A4ndig erhalten bleibt, nicht leicht zu %C3%B6ffnen ist und leichter wiederhergestellt werden kann).
-Wenn diese Option deaktiviert ist, wird eingehender Spam nur durch Hinzuf%C3%BCgen einiger X-Spam-Header modifiziert und keine %C3%84nderungen am Textk%C3%B6rper vorgenommen.
-Zus%C3%A4tzlich wird ein Header mit dem Namen X-Spam-Report an die Spam-Mails angeh%C3%A4ngt [br].</report_safe_text>
+<report_safe_text>Wenn diese Option aktiviert ist und eine eingehende Nachricht als Spam markiert wird, erstellt SpamAssassin eine neue Berichtsnachricht und h%C3%A4ngt die Originalnachricht als MIME-Teil message/rfc822 an.
+Dadurch bleibt die Originalnachricht vollst%C3%A4ndig erhalten, l%C3%A4sst sich nicht leicht %C3%B6ffnen und ist einfacher wiederherzustellen.[br]
+Ist diese Option deaktiviert, wird eingehender Spam lediglich durch das Hinzuf%C3%BCgen von X-Spam-*-Headern ver%C3%A4ndert; der Nachrichteninhalt bleibt unver%C3%A4ndert.[br]
+Zus%C3%A4tzlich wird Spam-Nachrichten ein Header mit dem Namen X-Spam-Report hinzugef%C3%BCgt.</report_safe_text>
 <required_score>Score required for SpamAssassin to flag a message as spam</required_score>
 <required_score_text>
 Set the score required before a mail is considered spam.[br]

@@ -11,7 +11,7 @@ El sistema ser&aacute; capaz de servir a muchos clientes Macintosh simult&aacute
 Tenga en cuenta que s&oacute;lo est&aacute; disponible si ha activado la autenticaci&oacute;n del proxy.</acl_proxy_auth_explain>
 <ActAsSMTPGatewayStatistics>Actuar como los registros y estad&iacute;sticas de puerta de enlace SMTP</ActAsSMTPGatewayStatistics>
 <ActAsSMTPGatewayStatistics_text>Si se habilita este servidor SMTP del servidor de estad&iacute;sticas de eventos, este se encargar&aacute; de gestionar / almacenar / restablecer registros SMTP del sistema</ActAsSMTPGatewayStatistics_text>
-<ActHasMaster>Act tiene Primario (Master)</ActHasMaster>
+<ActHasMaster>Act%C3%BAa como maestro</ActHasMaster>
 <ActHasSlave>Act tiene Secundario (Esclavo)</ActHasSlave>
 <activate_openvpn_connection>Activar la conexion openvpn y conectarse al VPN</activate_openvpn_connection>
 <activate_sync_port>Activar el puerto de sincronizaci&oacute;n</activate_sync_port>
@@ -509,7 +509,7 @@ example: "Mary had a little lamb" or "76b42abc1cd0fdcaf6e943dcbc93b826"
 <bypass_minitext>Bypassing the webfilter in order to answer to the question: [b]How can I have some users bypass the webfilter wall?[/b]</bypass_minitext>
 <cache-size_text>Establece el tama%C3%B1o de la caché del servicio DNS. El valor por defecto es 1500 %C3%ADtems. Fijar el tama%C3%B1o del cache a cero deshabilita el cache.</cache-size_text>
 <CacheDefaultExpire>Expiration time</CacheDefaultExpire>
-<CacheDefaultExpire_explain>sets an expiration time for resources that don't specify an expiry date or a last-modified date</CacheDefaultExpire_explain>
+<CacheDefaultExpire_explain>Establece un tiempo de caducidad para los recursos que no especifican una fecha de expiraci%C3%B3n ni una fecha de %C3%BAltima modificaci%C3%B3n.</CacheDefaultExpire_explain>
 <CacheDisable_explain>This section disable caching by specified urls , set the urls like /index.php /images</CacheDisable_explain>
 <CacheMaxFileSize>Tama%C3%B1o m%C3¡ximo del archivo a almacenar en caché</CacheMaxFileSize>
 <cachemgr>Squid Cache Manager</cachemgr>
@@ -518,7 +518,7 @@ about the squid process as it runs.[br]
 The cache manager is a convenient way to manage the cache and view statistics 
 without logging into the server</cachemgr_text>
 <CacheMinExpire>Minimum expiration time</CacheMinExpire>
-<CacheMinExpire_explain>specifies the minimum expiration time for resources, even if the resource itself specifies a shorter expiry date.</CacheMinExpire_explain>
+<CacheMinExpire_explain>Especifica el tiempo m%C3%ADnimo de caducidad de los recursos, incluso si el propio recurso define una fecha de caducidad m%C3¡s corta.</CacheMinExpire_explain>
 <CacheMinFileSize>Tama%C3%B1o m%C3%ADnimo del archivo a almacenar en caché</CacheMinFileSize>
 <CacheMinFileSize_explain>Si un archivo es demasiado peque%C3%B1o, no hay ninguna ventaja de rendimiento en su almacenamiento en caché. Si es demasiado grande, consumir%C3¡ el espacio de la caché demasiado r%C3¡pido</CacheMinFileSize_explain>
 <caches>Cachés</caches>
@@ -2165,7 +2165,7 @@ The path is formatted as a character string consisting of characters from the NV
 <quota_disk>Quotas</quota_disk>
 <quota_hard>Quota Hard</quota_hard>
 <quota_soft>Quota Soft</quota_soft>
-<random>Random</random>
+<random>Aleatorio</random>
 <ratio>Ratio</ratio>
 <Raw_Read_Error_Rate>Raw Read Error Rate</Raw_Read_Error_Rate>
 <Raw_Read_Error_Rate_text>Frequency of errors appearance while reading RAW data from a disk</Raw_Read_Error_Rate_text>
@@ -2764,7 +2764,7 @@ y valores mayores a 100 permiten al kernel intercambiar p%C3¡ginas que son part
 <sync_packages_explain>Check if there is new supported softwares and install them</sync_packages_explain>
 <syslog_server>System Log (server mode)</syslog_server>
 <system_grace_period_explain>The grace period,which determines the lenght if time that a user is allowed to exceed the soft limit</system_grace_period_explain>
-<system_is_uptodate>System is up-to-date</system_is_uptodate>
+<system_is_uptodate>El sistema est%C3¡ actualizado</system_is_uptodate>
 <system_log>System logging</system_log>
 <system_log_text>Define parameters in order to send system events to a central server or to transform Artica has en central log server</system_log_text>
 <system_packages_can_be_upgraded>Paquetes del sistema que deben ser actualizados</system_packages_can_be_upgraded>
@@ -2828,7 +2828,7 @@ If the value of this attribute is decreasing there is a high probability that th
 <top_visited_categories>Visited categories</top_visited_categories>
 <top_visited_categories_mostwieght>The main category browsed by this user that consume the bandwith was X with Y downloaded size</top_visited_categories_mostwieght>
 <top_visited_websites>TOP Visited Websites</top_visited_websites>
-<totalsize>Total size</totalsize>
+<totalsize>Tama%C3%B1o total</totalsize>
 <total_memory>Total memory</total_memory>
 <total_requests>Total requests</total_requests>
 <total_threshold>Total threshold</total_threshold>
@@ -2855,7 +2855,7 @@ If the value of this attribute is decreasing there is a high probability that th
 [li]Hay algunas limitaciones de carga cuando se utiliza Dansguardian tiene el principal plugin de filtro web[/li]
 [/ul]</transparent_mode_limitations>
 <treshold>Treshold</treshold>
-<TrustMyNetwork>Trust networks</TrustMyNetwork>
+<TrustMyNetwork>Redes de confianza</TrustMyNetwork>
 <TrustMyNetwork_text>Si se activa, el servidor permitir%C3¡ que cualquier direcci%C3%B3n IP (dentro de las redes de confianza) env%C3%ADe mensajes a Internet[br].
 Activar esta funci%C3%B3n es peligroso si utiliza su servidor en modo p%C3%BAblico o si utiliza un sistema de balanceo de carga
 que utiliza una direcci%C3%B3n IP en la red de confianza definida.[br]

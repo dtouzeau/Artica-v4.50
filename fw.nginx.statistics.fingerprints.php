@@ -136,6 +136,10 @@ function json_data_popup():bool{
 }
 function GetPlateForm($jsondata){
     $jsondata=json_decode($jsondata);
+    if(!is_object($jsondata)){
+        return "NO_COMP";
+    }
+
     if(!property_exists($jsondata,"components")){
         return "NO_COMP";
     }

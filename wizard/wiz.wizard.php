@@ -299,6 +299,9 @@ function step_products():bool{
     $LIST[6] = array(
         "LABEL" => "{APP_POSTFIX}", "EXPLAIN" => "{wizard_smtp_explain}", "PIC" => "SMTP");
 
+    $LIST[12]=array(
+        "LABEL"=>"Artica Meta","EXPLAIN"=>"{network_agents_explain}","PIC"=>"META");
+
     $LIST[2]=array(
         "LABEL"=>"{minimalist_gateway}","EXPLAIN"=>"{minimalist_gateway_short}","PIC"=>"FW");
 

@@ -55,6 +55,21 @@ function page(){
 function start():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
+
+
+    $uninstall=$tpl->framework_buildjs("/filebeat/uninstall",
+        "filebeat.progress","filebeat.log",
+        "progress-filebeat-restart","document.location.href='/index';");
+
+    $Version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("FILEBEAT_VERSION");
+    $topbuttons[] = array($uninstall, ico_trash, "{uninstall_feature}");
+    $TINY_ARRAY["TITLE"]="{APP_FILEBEAT} v$Version";
+    $TINY_ARRAY["ICO"]="fas fa-file-medical-alt";
+    $TINY_ARRAY["EXPL"]="{APP_FILEBEAT_EXPLAIN}";
+    $TINY_ARRAY["URL"]="filebeat-status";
+    $TINY_ARRAY["BUTTONS"]=$tpl->_ENGINE_parse_body($tpl->table_buttons($topbuttons));
+    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
     $html[]="<table style='width:100%'>";
     $html[]="<tr>";
     $html[]="<td style='width:240px;vertical-align: top'><div id='filebeat-status'></div></td>";
@@ -64,6 +79,7 @@ function start():bool{
     $html[]="<script>";
     $html[]=$tpl->RefreshInterval_js("filebeat-status",$page,"service-status=yes");
     $html[]="LoadAjax('flat-config','$page?flat-config=yes');";
+    $html[]=$jstiny;
     $html[]="</script>";
     echo @implode("\n",$html);
     return true;
@@ -329,7 +345,7 @@ function table(){
     }
     $ElasticSearchAddress=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchAddress"));
     $ElasticsearchRemotePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchRemotePort"));
-    $ElasticSearchProtocol=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchProtocol"));
+
     if($ElasticsearchRemotePort==0){$ElasticsearchRemotePort=9200;}
     $ElasticsearchEnableAuthFilebeat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticsearchEnableAuthFilebeat"));
     $ElasticSearchUsernameFilebeat=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchUsernameFilebeat"));

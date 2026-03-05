@@ -12,8 +12,8 @@ Your system will be able to serve many Macintosh clients simultaneously as an Ap
 Note that it is only available if your have enabled the Proxy Authentication</acl_proxy_auth_explain>
 <ActAsSMTPGatewayStatistics>Act as SMTP Gateway logs/statistics</ActAsSMTPGatewayStatistics>
 <ActAsSMTPGatewayStatistics_text>If enabled this server will server SMTP events statistics and will be in charge of manage/backup/restore SMTP system logs</ActAsSMTPGatewayStatistics_text>
-<ActHasMaster>Act has Master</ActHasMaster>
-<ActHasSlave>Act has slave</ActHasSlave>
+<ActHasMaster>Agiert als Master</ActHasMaster>
+<ActHasSlave>Acts as a slave</ActHasSlave>
 <activate_openvpn_connection>Activate the VPN connection and connect to the VPN server</activate_openvpn_connection>
 <activate_sync_port>Activate the synchronize port</activate_sync_port>
 <activate_sync_port_mgreylist_text>If you enable this feature, remote MX server are able to connect in order to retreive the greylisting database trough the 5252 port.[br]
@@ -528,7 +528,7 @@ example: "Mary had a little lamb" or "76b42abc1cd0fdcaf6e943dcbc93b826"
 <bypass_minitext>Bypassing the webfilter in order to answer to the question: [b]How can I have some users bypass the webfilter wall?[/b]</bypass_minitext>
 <cache-size_text>Set the size of dnsmasq's cache. The default is 1500 items. Setting the cache size to zero disables caching.</cache-size_text>
 <CacheDefaultExpire>Expiration time</CacheDefaultExpire>
-<CacheDefaultExpire_explain>sets an expiration time for resources that don't specify an expiry date or a last-modified date</CacheDefaultExpire_explain>
+<CacheDefaultExpire_explain>Legt eine Ablaufzeit f%C3%BCr Ressourcen fest, die weder ein Ablaufdatum noch ein Datum der letzten %C3%84nderung angeben.</CacheDefaultExpire_explain>
 <CacheDisable_explain>This section disable caching by specified urls , set the urls like /index.php /images</CacheDisable_explain>
 <CacheMaxFileSize>Maximum file size to cache</CacheMaxFileSize>
 <cachemgr>Squid Cache Manager</cachemgr>
@@ -537,7 +537,7 @@ about the squid process as it runs.[br]
 The cache manager is a convenient way to manage the cache and view statistics 
 without logging into the server</cachemgr_text>
 <CacheMinExpire>Minimum expiration time</CacheMinExpire>
-<CacheMinExpire_explain>specifies the minimum expiration time for resources, even if the resource itself specifies a shorter expiry date.</CacheMinExpire_explain>
+<CacheMinExpire_explain>Legt die minimale Ablaufzeit f%C3%BCr Ressourcen fest, selbst wenn die Ressource selbst ein k%C3%BCrzeres Ablaufdatum angibt.</CacheMinExpire_explain>
 <CacheMinFileSize>Minimum file size to cache</CacheMinFileSize>
 <CacheMinFileSize_explain>If a file is too small, there's no performance benefit to caching it. If it's too large, you'll consume your cache space too quickly</CacheMinFileSize_explain>
 <caches>Caches</caches>
@@ -2220,7 +2220,7 @@ The path is formatted as a character string consisting of characters from the NV
 <quota_disk>Quotas</quota_disk>
 <quota_hard>Quota Hard</quota_hard>
 <quota_soft>Quota Soft</quota_soft>
-<random>Random</random>
+<random>Zuf%C3%A4llig</random>
 <ratio>Ratio</ratio>
 <Raw_Read_Error_Rate>Raw Read Error Rate</Raw_Read_Error_Rate>
 <Raw_Read_Error_Rate_text>Frequency of errors appearance while reading RAW data from a disk</Raw_Read_Error_Rate_text>
@@ -2821,7 +2821,7 @@ and values greater than 100 permit the kernel to swap out pages that are part of
 <sync_packages_explain>Check if there is new supported softwares and install them</sync_packages_explain>
 <syslog_server>System Log (server mode)</syslog_server>
 <system_grace_period_explain>The grace period,which determines the lenght if time that a user is allowed to exceed the soft limit</system_grace_period_explain>
-<system_is_uptodate>System is up-to-date</system_is_uptodate>
+<system_is_uptodate>Das System ist auf dem neuesten Stand</system_is_uptodate>
 <system_log>System logging</system_log>
 <system_log_text>Define parameters in order to send system events to a central server or to transform Artica has en central log server</system_log_text>
 <system_packages_can_be_upgraded>Systempakete, die aktualisiert/aufger%C3%BCstet werden sollten</system_packages_can_be_upgraded>
@@ -2885,7 +2885,7 @@ If the value of this attribute is decreasing there is a high probability that th
 <top_visited_categories>Visited categories</top_visited_categories>
 <top_visited_categories_mostwieght>The main category browsed by this user that consume the bandwith was X with Y downloaded size</top_visited_categories_mostwieght>
 <top_visited_websites>TOP Visited Websites</top_visited_websites>
-<totalsize>Total size</totalsize>
+<totalsize>Gesamtgr%C3%B6%C3%9Fe</totalsize>
 <total_memory>Total memory</total_memory>
 <total_requests>Total requests</total_requests>
 <total_threshold>Total threshold</total_threshold>
@@ -2914,7 +2914,7 @@ If the value of this attribute is decreasing there is a high probability that th
 [/ul]
 </transparent_mode_limitations>
 <treshold>Treshold</treshold>
-<TrustMyNetwork>Trust networks</TrustMyNetwork>
+<TrustMyNetwork>Vertrauensw%C3%BCrdige Netzwerke</TrustMyNetwork>
 <TrustMyNetwork_text>If green, the server will allow any IP address (inside the trusted networks) sending messages to Internet.[br]
 Enable this feature is dangerous if you using your server in public mode or if you using a load balancer system
 that using an IP adress in the defined trusted network.[br]

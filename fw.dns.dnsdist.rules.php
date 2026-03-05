@@ -134,6 +134,7 @@ function rule_enable():bool{
     echo "// ID = $ID, src=$enabled_src, enabled =$enabled\n";
     echo $js."\n";
     echo "Loadjs('$page?filltable=$ID');\n";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
     return true;
 }
 function change_method_js():bool{
@@ -196,6 +197,7 @@ function change_method_save():bool{
         return false;
     }
     admin_tracks("Change DNS Firewall $rulename rule method from type $ruletype to $ruletype2");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
     return true;
 }
 
@@ -224,7 +226,8 @@ function rule_cache_save():bool{
     $cache_settings=base64_encode(serialize($_POST));
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $q->QUERY_SQL("UPDATE dnsdist_rules SET `dns_caches`='$cache_settings' WHERE ID=$ID");
-    if(!$q->ok){$tpl->post_error($q->mysql_error);}
+    if(!$q->ok){$tpl->post_error($q->mysql_error);return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
     return true;
 }
 
@@ -278,7 +281,9 @@ function rule_safesearch_save(){
     $cache_settings=base64_encode(serialize($safe_settings));
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $q->QUERY_SQL("UPDATE dnsdist_rules SET `dns_caches`='$cache_settings' WHERE ID=$ID");
-    if(!$q->ok){$tpl->post_error($q->mysql_error);}
+    if(!$q->ok){$tpl->post_error($q->mysql_error);return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
+    return true;
 }
 function rule_cache(){
     $page=CurrentPageName();
@@ -588,17 +593,13 @@ if(isset($_POST["checkInterval"])){
         $edit_fields[]="`$key`='$val'";
     }
 
-
-
     $sql="UPDATE dnsdist_rules SET ".@implode(",", $edit_fields)." WHERE ID='$ID'";
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-
-
     patch_table();
-
     $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error;}
+    if(!$q->ok){echo $q->mysql_error;return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
+    return true;
 }
 function view_rules_js(){
     $page=CurrentPageName();
@@ -780,7 +781,7 @@ function rule_move(){
         if($GLOBALS["VERBOSE"]){echo "UPDATE dnsdist_rules SET zOrder=$c WHERE `ID`={$ligne["ID"]}\n";}
         $c++;
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
 
 }
 
@@ -1380,6 +1381,7 @@ function new_rule_save():bool{
 function rule_delete($ID){
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $q->QUERY_SQL("DELETE FROM dnsdist_rules WHERE ID='$ID'");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
     return true;
 }
 

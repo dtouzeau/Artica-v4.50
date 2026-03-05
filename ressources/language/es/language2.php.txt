@@ -106,7 +106,7 @@ Refresh web page or check events in order to display task status.</install_app>
 <IS_A_VMWARE_VIRTUAL_MACHINE>Is a VMWare Virtual Machine</IS_A_VMWARE_VIRTUAL_MACHINE>
 <join>join</join>
 <large_server>Large server</large_server>
-<last_seen>Last seen</last_seen>
+<last_seen>%C3%9Altima actividad</last_seen>
 <ldap_user_dn>Usuario LDAP (DN)</ldap_user_dn>
 <leaf_result_attribute>leaf result attribute</leaf_result_attribute>
 <less_than_a_minute>Menos de un minuto</less_than_a_minute>
@@ -198,7 +198,7 @@ You can use your own LDAP Database by setting access in this form</SAMBA_LDAP_EX
 <specify_an_internet_domain>Specify an Internet Domain first</specify_an_internet_domain>
 <specify_an_organization_first>Please specify an organization first</specify_an_organization_first>
 <specify_a_server_first>Please specify the server first</specify_a_server_first>
-<synchronization>synchronization</synchronization>
+<synchronization>Sincronizaci%C3%B3n</synchronization>
 <synchronize_server>Synchronize server</synchronize_server>
 <sync_user>Sync user</sync_user>
 <template-spam-admin>Spam Notification Admin template</template-spam-admin>

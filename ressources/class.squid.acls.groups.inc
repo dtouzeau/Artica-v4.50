@@ -70,7 +70,11 @@ class squid_acls_groups{
 		
 		$EnableOpenLDAP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenLDAP"));
 		if($EnableOpenLDAP==0){$this->LDAP_AUTH=0;}
-		
+        $EnableArticaAuthenticationAgent = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaAuthenticationAgent"));
+
+        if($EnableArticaAuthenticationAgent==1){
+            $this->EnableKerbAuth=1;
+        }
 		
 		if(!is_numeric($this->smartphones_port)){$this->smartphones_port=0;}
 		if(!is_numeric($this->EnableKerbAuth)){$this->EnableKerbAuth=0;}

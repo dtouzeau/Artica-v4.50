@@ -768,6 +768,8 @@ function tabs(){
 	$tpl=new template_admin();
 	$array["{connected_ports}"]="$page?connected-ports=yes";
 	$array["{transparent_ports}"]="fw.proxy.transparent.php";
+    $array["Fortigate"]="fw.proxy.transparent.fortigate.php";
+   // $array["WCCP"]="fw.proxy.wccp.php";
     $array["{remote_ports}"]="fw.proxy.general.php?SafePorts=yes";
 	$array["{communications_ports}"]="$page?communications-ports=yes";
     $array["{troubleshooting}"]="$page?troubleshooting=yes";

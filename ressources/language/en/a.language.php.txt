@@ -1720,7 +1720,7 @@ This is used in archive configurations, where only full dumps are done and the t
 <useGreenSQL>Use GreenSQL</useGreenSQL>
 <DisableDisplayVersion>Disable the display version feature</DisableDisplayVersion>
 <chroot>chroot</chroot>
-<ActHasMaster>Act has Master</ActHasMaster>
+<ActHasMaster>Acts as master</ActHasMaster>
 <recheck_net_items>Re-check network items</recheck_net_items>
 <dumpcycle>DUMP cycle</dumpcycle>
 <estimate>Estimate</estimate>

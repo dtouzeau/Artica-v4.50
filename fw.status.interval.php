@@ -8,7 +8,9 @@ function Loadjs(){
     $Main = CurUnserializeb64($_GET["Loadjs"]);
     $div = $Main["DIV"];
     $page = $Main["PAGE"];
+    echo "// page = $page\n";
     $Query = $Main["QUERY"];
+    echo "// QUERY = $Query\n";
     $Interval = intval($Main["INTERVAL"]);
     if($Interval<3){
         $Interval=3;
@@ -16,6 +18,11 @@ function Loadjs(){
     if(preg_match("#^\?(.+)#",$Query,$re)){
         $Query=$re[1];
     }
+    if(preg_match("#\.php\?(.+)#",$Query,$re)){
+        $Query=$re[1];
+    }
+
+    echo "// QUERY = $Query\n";
     $Interval=$Interval*1000;
     $MemoryVal = "Mem" . md5("$page?$Query");
     $MemoryFunc = "Func" . md5("$page?$Query");

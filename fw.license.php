@@ -25,6 +25,7 @@ if(isset($_GET['reset-uuid'])){reset_uuid();exit;}
 if(isset($_GET["ch-uuid"])){change_uuid_js();exit;}
 if(isset($_GET["ch-uuid-popup"])){change_uuid_popup();exit;}
 if(isset($_GET["tiny-js"])){tiny_js();exit;}
+
 if (isset($_GET["table"])) {
     table();
     exit;
@@ -67,14 +68,26 @@ function reset_license_js():bool{
         $tpl->js_no_privileges();
         die();
     }
+    if(isset($_GET["without-confirm"])){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/license/reset");
+        header("content-type: application/x-javascript");
+        echo "LoadAjax('table-loader-license-service','$page?table=yes');";
+        return admin_tracks("Artica License was reseted");
+    }
 
-    $tpl->js_dialog_confirm_action("{reset_the_license}","reset","Reset the Current License","LoadAjax('table-loader-license-service','$page?table=yes');");
+    $tpl->js_dialog_confirm_action("{reset_the_license}",
+        "reset","Reset the Current License",
+        "LoadAjax('table-loader-license-service','$page?table=yes');");
 
     return true;
 }
 function reset_license_perform():bool{
-    $sock=new sockets();
-    $sock->REST_API("/license/reset");
+    $LicenseInfos=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseInfos"));
+    $LicenseInfos["X-API-KEY"]="";
+    $NewLicenseInfos=base64_encode(serialize($LicenseInfos));
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LicenseInfos",$NewLicenseInfos);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("TokenRequest","");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/license/reset");
     return admin_tracks("Artica License was reseted");
 }
 function reset_uuid(){
@@ -1037,7 +1050,6 @@ function table(){
     }
     $uuid_text=$uuid;
     $sidentity              = new sidentity();
-    $RegisterCloudBadEmail  = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RegisterCloudBadEmail"));
     $LicenseInfos           = unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseInfos"));
     VERBOSE("License_number: {$LicenseInfos["license_number"]}");
     if(isset($LicenseInfos["license_number"])){
@@ -1058,7 +1070,6 @@ function table(){
     $WizardSavedSettings    = unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardSavedSettings")));
     $WizardSavedSettings    = $sidentity->RepairSidentity($WizardSavedSettings);
     $FINAL_TIME             = intval($LicenseInfos["FINAL_TIME"]);
-    $TIME                   = intval($LicenseInfos["TIME"]);
     $GOLDKEY                = $GLOBALS["CLASS_SOCKETS"]->CORP_GOLD();
     $head_error             = null;
     if(!isset($WizardSavedSettings["employees"])){
@@ -1068,7 +1079,6 @@ function table(){
     if(!isset($LicenseInfos["EMPLOYEES"])){$LicenseInfos["EMPLOYEES"]="";}
 
     if($LicenseInfos["ABOUT_PP"]==null){
-
         $Link="s_PopUpFull(' https://licensing.artica.center/','1024','900');";
         $no_assigned_license_explain=$tpl->_ENGINE_parse_body("{no_assigned_license_explain}");
         $url=$tpl->td_href("https://licensing.artica.center/","",$Link);
@@ -1089,6 +1099,7 @@ function table(){
     }
 
 
+
     if(!isset($LicenseInfos["X-API-KEY"])){$LicenseInfos["X-API-KEY"]=null;}
     if(!isset($LicenseInfos["REQUEST_BY"])){$LicenseInfos["REQUEST_BY"]=null;}
     if(!isset($LicenseInfos["ABOUT_PP"])){$LicenseInfos["ABOUT_PP"]=null;}
@@ -1101,17 +1112,28 @@ function table(){
     }
 
     $step_text="";
+    $REMOVE_LIC_STATUS=false;
     $License_explain=$tpl->_ENGINE_parse_body("{artica_license_explain}");
     $reset_trial_explain="";
     if(isset($LicenseInfos["assigned_to_company"])){
         if(intval($LicenseInfos["assigned_to_company"])==1807){
             $reset_license=$tpl->button_autnonome("{reset_the_license}","Loadjs('$page?reset-js=yes')",
                 "fa-solid fa-link-simple-slash","AsSystemAdministrator",0,"btn-info");
-            $reset_trial_explain=$tpl->div_explain("{trial_mode}||{trial_mode_reset_explain}<hr>
-            <div style='text-aling:right;margin:30px;text-align:right'>$reset_license</div>");
+            $reset_trial_explain=$tpl->div_explain("{trial_mode}||{trial_mode_reset_explain}<hr><div style='text-aling:right;margin:30px;text-align:right'>$reset_license</div>");
+            $jsonKey=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/license/apikey/status"),true);
+            if($jsonKey["Status"]){
+                if(!$jsonKey["ApiKeyStatus"]){
+                    $REMOVE_LIC_STATUS=true;
+                    $reset_trial_explain="";
+                    $reset_license=$tpl->button_autnonome("{by_a_license}",
+                        "Loadjs('$page?reset-js=yes&without-confirm=yes')",
+                    ico_certificate,"AsSystemAdministrator",350,"btn-primary");
+                }
+
+            }
         }
     }
-
+    $DateCreated=intval($LicenseInfos["date_created"]);
 
     if (!isset($LicenseInfos["LICENCE_REQUEST"])) {
         $LicenseInfos["LICENCE_REQUEST"]=null;
@@ -1132,6 +1154,10 @@ function table(){
         $users->CORP_LICENSE=true;
         $License_explain=null;
     }
+    if($REMOVE_LIC_STATUS){
+        $License_explain="{license_explain_com_reset}<hr><div style='margin-top:10px;text-align:right;padding-right:50px;margin-bottom:30px'>$reset_license</div>";
+    }
+
     if ($LicenseInfos["GoldKey"]<>null) {$LicenseInfos["license_number"]=$LicenseInfos["GoldKey"]; }
     list($ExpiresSoon_label,$expiredate)=expire_text($FINAL_TIME);
     $tpl->table_form_section("{artica_license}$ExpiresSoon_label",$License_explain);
@@ -1140,9 +1166,17 @@ function table(){
         if ($GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()) {
             $step_text = "{license_active}";
         } else {
-            $tpl->table_form_field_info("{license_request}","{request_an_evaluation_license}",ico_certificate);
+            if(!$REMOVE_LIC_STATUS) {
+                $tpl->table_form_field_info("{license_request}", "{request_an_evaluation_license}", ico_certificate);
+            }
         }
-        $tpl->table_form_field_info("{step}",$step_text,ico_certificate);
+        if(!$REMOVE_LIC_STATUS) {
+            $tpl->table_form_field_info("{step}", $step_text, ico_certificate);
+        }
+    }
+
+    if($DateCreated>0){
+        $tpl->table_form_field_info("{install_date}",$tpl->time_to_date($DateCreated),ico_clock);
     }
 
     if (is_numeric($LicenseInfos["TIME"])) {
@@ -1154,7 +1188,9 @@ function table(){
         $LicenseInfos["license_status"]="{license_active}";
     }
 
-    $tpl->table_form_field_info("{expiredate}",$expiredate,ico_timeout);
+    if(!$REMOVE_LIC_STATUS) {
+        $tpl->table_form_field_info("{expiredate}", $expiredate, ico_timeout);
+    }
 
     $tpl=ReverseProxyLicenseRow($tpl);
 
@@ -1171,9 +1207,11 @@ function table(){
         }
 
         if($LicenseInfos["X-API-KEY"]<>null && $LicenseInfos["max_server"]==null){
-            $tpl->table_form_field_js("LoadAjax('table-loader-license-service','$page?change-token=yes')","AsSystemAdministrator");
-            $tpl->table_form_field_button("{insert_token}","{change_private_key}",ico_key);
-            $tpl->table_form_field_js(null);
+            if(!$REMOVE_LIC_STATUS) {
+                $tpl->table_form_field_js("LoadAjax('table-loader-license-service','$page?change-token=yes')", "AsSystemAdministrator");
+                $tpl->table_form_field_button("{insert_token}", "{change_private_key}", ico_key);
+                $tpl->table_form_field_js(null);
+            }
         }
 
         $LicenseINGP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseINGP"));
@@ -1187,19 +1225,25 @@ function table(){
         }
 
         if(!$GOLDKEY) {
-            $tpl->table_form_button($button_text,"RegisterSave()","AsSystemAdministrator",ico_refresh);
+            if(!$REMOVE_LIC_STATUS) {
+                $tpl->table_form_button($button_text, "RegisterSave()", "AsSystemAdministrator", ico_refresh);
+            }
             $tpl->table_form_field_info("{license_status}", $LicenseInfos["license_status"],ico_infoi);
         }
 
         $tpl->table_form_field_js("Loadjs('$page?ch-uuid=$uuid')","AsSystemAdministrator");
         $tpl->table_form_field_info("{uuid}",$uuid_text,ico_server);
         $tpl->table_form_field_js(null);
-        $tpl->table_form_field_info("{company}", $LicenseInfos["COMPANY"],ico_city);
+        if(!$REMOVE_LIC_STATUS) {
+            $tpl->table_form_field_info("{company}", $LicenseInfos["COMPANY"], ico_city);
+        }
 
 
         if(!$GOLDKEY) {
-            $tpl->table_form_field_info("{requested_by}", $LicenseInfos["REQUEST_BY"],ico_admin);
-            $tpl->table_form_field_info("{type}", $LicenseInfos["ABOUT_PP"],ico_diplome);
+            if(!$REMOVE_LIC_STATUS) {
+                $tpl->table_form_field_info("{requested_by}", $LicenseInfos["REQUEST_BY"], ico_admin);
+                $tpl->table_form_field_info("{type}", $LicenseInfos["ABOUT_PP"], ico_diplome);
+            }
             $tpl->table_form_field_info("{insert_token}", $LicenseInfos["X-API-KEY"],ico_key);
         }
     } else {
@@ -1227,11 +1271,6 @@ function table(){
     $ARRAY["REFRESH-MENU"]="yes";
 
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-license-restart')";
-
-
-
-
     $no_internet_connection=$tpl->javascript_parse_text("{no_internet_connection}");
     $registerFunc="
     function RegisterSave(){

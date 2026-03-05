@@ -25,7 +25,7 @@ if(isset($_GET["apikey"])){apikey();exit;}
 if(isset($_GET["disconnect"])){disconnect();exit;}
 if(isset($_SESSION["uid"])){
     $HTTP_X_ARTICA_SUBFOLDER=null;
-    //if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){$HTTP_X_ARTICA_SUBFOLDER=$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/"; }
+    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){$HTTP_X_ARTICA_SUBFOLDER=$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/"; }
    // echo "Location: /{$HTTP_X_ARTICA_SUBFOLDER}index";die();
     header("Location: /{$HTTP_X_ARTICA_SUBFOLDER}index");exit();
 }
@@ -468,7 +468,7 @@ function new_login($return=false,$error=null){
     if($HideArticaVersion==0) {
         $SP=null;
         $CURVER=trim(@file_get_contents("VERSION"));
-        $CURPATCH=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("artica.php?SPVersion=yes");
+        $CURPATCH= $GLOBALS["CLASS_SOCKETS"]->SPVersion();
         if($CURPATCH>0){
             $SP="&nbsp;Service Pack $CURPATCH";
         }
@@ -544,17 +544,11 @@ function new_login($return=false,$error=null){
         }
     }
 
-    $HTTP_X_ARTICA_SUBFOLDER=null;
-    if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
-        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
-    }
-
-
 
 $f[]="<body class=\"wrapper\" onload=\"initial();\">";
     $f[]="<iframe name=\"hidden_frame\" id=\"hidden_frame\" width=\"0\" height=\"0\" style='border:0'></iframe>";
     $f[]="<iframe id=\"dmRedirection\" width=\"0\" height=\"0\" frameborder=\"0\" scrolling=\"no\" src=\"\"></iframe>";
-    $f[]="<form method=\"post\" name=\"form\" action=\"$HTTP_X_ARTICA_SUBFOLDER$page\" target=\"\">";
+    $f[]="<form method=\"post\" name=\"form\" action=\"$page\" target=\"\">";
     $rquire[]="userfont";
     $rquire[]="artica-language";
     $rquire[]="StandardDropDown";
@@ -793,7 +787,7 @@ function login($return=false,$error=null){
     if($HideArticaVersion==0) {
         $SP=null;
         $CURVER=trim(@file_get_contents("VERSION"));
-        $CURPATCH=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("artica.php?SPVersion=yes");
+        $CURPATCH= $GLOBALS["CLASS_SOCKETS"]->SPVersion();
         if($CURPATCH>0){
             $SP="&nbsp;Service Pack $CURPATCH";
         }

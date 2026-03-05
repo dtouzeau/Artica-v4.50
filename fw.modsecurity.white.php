@@ -123,7 +123,7 @@ function rule_popup(){
         $js[]="Loadjs('$page?reconfigure=yes&silent=yes');";
     }
 
-
+    $spath="";$description="";
     $tpl->field_hidden("ruleid",$ID);
     $form[]=$tpl->field_checkbox("enabled","{enabled}",$ligne["enabled"]);
     if($ligne["wfrule"]==1){$ligne["wfrule"]=0;}
@@ -140,10 +140,15 @@ function rule_popup(){
     if($ligne["serviceid"]>0){
         $title=$title." {website} #{$ligne["serviceid"]}";
     }
-
+    if(isset($ligne["spath"])){
+        $spath=$ligne["spath"];
+    }
+    if(isset($ligne["description"])){
+        $description=$ligne["description"];
+    }
     $form[]=$tpl->field_numeric("wfrule","Web Firewall: {rule_number}",intval($ligne["wfrule"]));
-    $form[]=$tpl->field_text("spath","{url}",$ligne["spath"]);
-    $form[]=$tpl->field_text("description","{description}",$ligne["description"]);
+    $form[]=$tpl->field_text("spath","{url}",$spath);
+    $form[]=$tpl->field_text("description","{description}",$description);
 
 
     $html[]="<div id='modsecurity-compile-{$ligne["serviceid"]}'></div>";
@@ -306,13 +311,7 @@ function table() {
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $TRCLASS=null;
-    $ruleid=intval($_GET["active-list"]);
     $t=time();
-    $function=$_GET["function"];
-
-
-
-
     $results=$q->QUERY_SQL("SELECT * FROM modsecurity_whitelist");
     $html[]="<table id='table-$t' class=\"footable table table-stripped\" style='margin-top:10px' data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";

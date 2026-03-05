@@ -1463,12 +1463,6 @@ function www_parameters2():bool{
         $function=$_GET["function"];
     }
 
-    if(!$q->FIELD_EXISTS("nginx_services", "isDefault")){
-        $q->QUERY_SQL("ALTER TABLE nginx_services ADD isDefault INTEGER DEFAULT 0");
-    }
-    if(!$q->FIELD_EXISTS("nginx_services", "HamrpSaved")){
-        $q->QUERY_SQL("ALTER TABLE nginx_services ADD HamrpSaved INTEGER NOT NULL DEFAULT 0");
-    }
 
     $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
     $servicename=get_servicename($ID);

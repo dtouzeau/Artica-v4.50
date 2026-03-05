@@ -7,6 +7,7 @@ include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
 if(isset($_GET["service-js"])){service_js();exit;}
 if(isset($_GET["popup-main"])){popup_main();exit;}
 if(isset($_GET["popup-table"])){popup_table();exit;}
+if(isset($_GET["popup-tabs"])){popup_tabs();exit;}
 if(isset($_GET["popup-table2"])){popup_table2();exit;}
 if(isset($_GET["pattern-remove"])){rule_remove();exit;}
 if(isset($_GET["pattern-enable"])){rule_enable();exit;}
@@ -34,12 +35,21 @@ function enable_feature():bool{
     return admin_tracks("Turn feature to $enable for deny User-Agents on  $get_servicename reverse-proxy site");
 
 }
+function popup_tabs():bool{
+    $page=CurrentPageName();
+    $serviceid=intval($_GET["popup-tabs"]);
+    $tpl=new template_admin();
+    $array["{rules}"]="$page?popup-main=$serviceid";
+    $array["ASNs"]="fw.nginx.urisblock.FloodBlockASNs.php?popup-main=$serviceid";
+    echo $tpl->tabs_default($array);
+    return true;
+}
 
 function service_js():bool{
     $serviceid  = intval($_GET["service-js"]);
     $tpl        = new template_admin();$tpl->CLUSTER_CLI=true;
     $page       = CurrentPageName();
-    return $tpl->js_dialog4("{urls} {deny}","$page?popup-main=$serviceid");
+    return $tpl->js_dialog4("{urls} {deny}","$page?popup-tabs=$serviceid");
 }
 function rule_js():bool{
     $serviceid  = intval($_GET["serviceid"]);
@@ -113,11 +123,9 @@ function rule_popup():bool{
     $serviceid  = intval($_GET["serviceid"]);
     $ruleid     = intval($_GET["popup-rule"]);
     $tpl        = new template_admin();$tpl->CLUSTER_CLI=true;
-    $bt="{add}";
-    $form[]=$tpl->field_hidden("ruleid",$ruleid);
-    $form[]=$tpl->field_hidden("serviceid",$serviceid);
-    $form[]=$tpl->field_text("FURL","{url}","",true);
-    $html[]=$tpl->form_outside(null,$form,null,$bt,refresh_global($serviceid),"AsWebMaster");
+
+    $html[]=$tpl->BigTextField("ruleid:$ruleid|serviceid:$serviceid|FURL","{pattern}",
+        "{urisblock_explain}","",refresh_global($serviceid),null,null,"AsWebMaster");
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
@@ -181,7 +189,7 @@ function rule_save():bool{
 function popup_main():bool{
     $serviceid  = intval($_GET["popup-main"]);
     $page       = CurrentPageName();
-    echo "<div id='main-popup-$serviceid'></div>
+    echo "<div id='main-popup-$serviceid' style='margin-top:5px;margin-bottom:5px'></div>
     <script>LoadAjax('main-popup-$serviceid','$page?popup-table=$serviceid')</script>";
     return true;
 }
@@ -423,9 +431,12 @@ function popup_table2():bool{
         $c++;
 
         if($c>250){break;}
-
+        $len=strlen($pattern);
+        if($len>75){
+            $pattern=substr($pattern,0,72)."...";
+        }
     $html[]="<tr id='$md'>
-				<td style='width:100%'>$pattern</td>
+				<td style='width:100%'><code style='font-size:15px'>$pattern</code></td>
 				<td style='width:1%' nowrap>$enable</td>
 				<td style='width:1%' nowrap>$delete</td>
 				</tr>";

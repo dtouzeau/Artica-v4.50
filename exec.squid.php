@@ -602,10 +602,6 @@ function build(){
 
 		}
 
-		build_progress("{checking_wccp_mode}",95);
-		system("/usr/sbin/artica-phpfpm-service -wccp");
-
-
 		build_progress("{reconfigure}",96);
 		$GLOBALS["OUTPUT"]=true;
 		if($GLOBALS["NOAPPLY"]){

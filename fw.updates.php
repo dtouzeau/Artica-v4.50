@@ -332,7 +332,7 @@ function widget_current_version():array{
 
     $OfficialServicePack=null;
     $CURPATCH_TEXT=null;
-    $CURPATCH=intval($GLOBALS["CLASS_SOCKETS"]->getFrameWork("artica.php?SPVersion=yes"));
+    $CURPATCH= $GLOBALS["CLASS_SOCKETS"]->SPVersion();
     VERBOSE("Current version = $CURVER Service Pack [$CURPATCH]",__LINE__);
     $perform_update_js = "Loadjs('$page?perform-update=yes')";
 
@@ -533,8 +533,7 @@ function table_left():bool{
     $key_offical=update_find_latest($ArticaUpdateRepos);
 
 	$CURVER=@file_get_contents("VERSION");
-
-    $CURPATCH=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("artica.php?SPVersion=yes");
+    $CURPATCH= $GLOBALS["CLASS_SOCKETS"]->SPVersion();
 	VERBOSE("Current patch [$CURPATCH]",__LINE__);
 	$CURVER_KEY=intval(str_replace(".", "", $CURVER));
 	$OFFICIALS=$ArticaUpdateRepos["OFF"];
@@ -949,7 +948,7 @@ function update_find_hotfix_unstable($array):array{
     if(!isset($array["HOTFIX"])){return array();}
     $VERSION=trim(@file_get_contents("VERSION"));
     if(!isset($array["HOTFIX"][$VERSION])){return array();}
-    $CURPATCH=intval($GLOBALS["CLASS_SOCKETS"]->getFrameWork("artica.php?SPVersion=yes"));
+    $CURPATCH= $GLOBALS["CLASS_SOCKETS"]->SPVersion();
     if($CURPATCH==0){$CURPATCH="000";}
     if(!isset($array["HOTFIX"][$VERSION][$CURPATCH])){return array();}
     $ARRAY=$array["HOTFIX"][$VERSION][$CURPATCH];

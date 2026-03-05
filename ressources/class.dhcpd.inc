@@ -95,6 +95,7 @@ class dhcpd{
 	public $OnlySetGateway=0;
 	public $subnet;
 	public $broadcast=null;
+    public $DisableAllwaysBrodcast=0;
     public $deny_unkown_clients=0;
 	public $WINS=null;
 	public $noload=0;
@@ -150,13 +151,14 @@ class dhcpd{
         $this->do_no_verify_range=intval($dhcp_socks->GET("do_no_verify_range"));
         $this->ping_check=trim($dhcp_socks->GET("ping_check"));
         $this->service_enabled=intval($dhcp_socks->GET("service_enabled"));
+        $this->DisableAllwaysBrodcast=intval($dhcp_socks->GET("DisableAllwaysBrodcast"));
 		
 		if($this->listen_nic==null){$this->GetDefaultNic();}
 		
 		if(trim($this->subnet)==null){
 			if($ipClass->isIPv4($this->gateway)){
 				if(preg_match('#^([0-9]+)\.([0-9]+)\.([0-9]+)#',trim($this->gateway),$re)){
-					$this->subnet="{$re[1]}.{$re[2]}.{$re[3]}.0";
+					$this->subnet="$re[1].$re[2].$re[3].0";
 					if(trim($this->range1)==null){$this->range1="{$re[1]}.{$re[2]}.{$re[3]}.50";}
 					if(trim($this->range2)==null){$this->range2="{$re[1]}.{$re[2]}.{$re[3]}.254";}
 				}
@@ -230,6 +232,7 @@ class dhcpd{
 		}
 
         $dhcp_socks=new dhcp_socks($InterfaceService);
+        $dhcp_socks->SET("DisableAllwaysBrodcast",$this->DisableAllwaysBrodcast);
         $dhcp_socks->SET("ddns_domainname",$this->ddns_domainname);
         $dhcp_socks->SET("max_lease_time",$this->max_lease_time);
         $dhcp_socks->SET("listen_nic",$this->listen_nic);

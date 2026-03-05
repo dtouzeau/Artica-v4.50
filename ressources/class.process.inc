@@ -132,7 +132,7 @@ function MemoryInstances(){
 		$arrayK["exec.squid.stats.hours.php"]=59;
 		$arrayK["exec.initslapd.php"]=10;
 		$arrayK["exec.c-icap.php"]=10;
-        $arrayK["exec.installv2.php"]=1440;
+
 		
 		$arrayK["exec.openvpn.php"]=10;
 		$arrayK["exec.squid.stats.not-categorized.php"]=45;

@@ -132,7 +132,7 @@ function uninstall(){
 	build_progress(80, "{reconfiguring}");
 	$unix=new unix();
 	$php=$unix->LOCATE_PHP5_BIN();
-	system("$php /usr/share/artica-postfix/exec.virtuals-ip.php --build");
+	system("/usr/sbin/artica-phpfpm-service -networking-start");
 	build_progress(100, "{uninstalling} {success}");
 }
 

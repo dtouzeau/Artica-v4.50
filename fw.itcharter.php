@@ -79,29 +79,6 @@ function itcharter_config_static(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     if(!class_exists("Redis")) {return false;}
-    $ClusterEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ITChartClusterEnabled"));
-    $ClusterMaster=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ITChartClusterMaster"));
-    $redis=new Redis();
-
-    $redis_server='127.0.0.1';
-    $redis_port=6123;
-    if($ClusterEnabled==1){
-        if(strpos($ClusterMaster,":")>0){
-            $ff=explode(":",$ClusterMaster);
-            $redis_server=$ff[0];
-            $redis_port=$ff[1];
-        }else{$redis_server=$ClusterMaster;}
-    }
-
-
-    try {
-        $redis->connect($redis_server,$redis_port);
-    } catch (Exception $e) {
-        echo $tpl->FATAL_ERROR_SHOW_128($e->getMessage());
-        die();
-    }
-    $redis->close();
-
     $ITChartVerbose=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ITChartVerbose"));
     $ITChartDatabaseSize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ITChartDatabaseSize"));
     $IChartRecursive=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IChartRecursive"));
@@ -152,38 +129,30 @@ function itcharter_config_static(){
     $tpl->table_form_field_text("{squidguard_database_size}",$ITChartDatabaseSize." MB",ico_database);
     $tpl->table_form_field_text("{listen}","$ITChartListenInterface:6123",ico_interface);
 
-    $ClusterEnabled=intval($redis->get("ITChartClusterEnabled"));
-    $ClusterMaster=trim($redis->get("ITChartClusterMaster"));
-    $AsCluster=false;
-    $PowerDNSEnableClusterMaster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterMaster"));
-    if($PowerDNSEnableClusterMaster==1){
-        $AsCluster=true;
-        $tpl->table_form_field_js("","AsDansGuardianAdministrator");
-        $ClusterMaster=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterMasterAddress"));
-        $tpl->table_form_field_text("{cluster}","$ClusterMaster:6123",ico_server);
-    }else{
-        if($ClusterEnabled==1){
-            $AsCluster=true;
-            $tpl->table_form_field_text("{cluster}","$ClusterMaster:6123",ico_server);
+    $ITCharterBuildedConfig=json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ITCharterBuildedConfig"),true);
+    if(isset($ITCharterBuildedConfig["SaveTime"])){
+        $tpl->table_form_field_js("");
+        $tpl->table_form_field_text("{created}",$tpl->time_to_date($ITCharterBuildedConfig["SaveTime"],true),ico_clock);
+
+        if($ITCharterBuildedConfig["ClusterEnabled"]){
+            $Cltype="{ActHasSlave}";
+            if($ITCharterBuildedConfig["HaClusterClient"]){
+                $Cltype="{act_hacluster_client}";
+            }
+            if($ITCharterBuildedConfig["ClusterClient"]){
+                $tpl->table_form_field_text("{type}",$Cltype,ico_server);
+                $tpl->table_form_field_text("{cluster_master_address}",$ITCharterBuildedConfig["ClusterMaster"].":6123",ico_server);
+            }else{
+                $tpl->table_form_field_text("{type}","{ActHasMaster}",ico_server);
+            }
+
         }
     }
-    if(!$AsCluster){
-        $tpl->table_form_field_js("","AsDansGuardianAdministrator");
-        $tpl->table_form_field_bool("{cluster}",0,ico_server);
-    }
-
-
-
     echo $tpl->table_form_compile();
 
-    $ARRAY=array();
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ichart.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/itchart.log";
-    $ARRAY["CMD"]="/itcharter/reconfigure";
-    $ARRAY["TITLE"]="{compile2}";
-    $ARRAY["AFTER"]="LoadAjax('itcharters-table','$page?table=yes');";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-itcharter-restart')";
+    $jsRestart=$tpl->framework_buildjs("/itcharter/reconfigure","ichart.progress",
+        "itchart.log","progress-itcharter-restart","LoadAjax('itcharters-table','$page?table=yes');");
+
 
     $uninstall=$tpl->framework_buildjs("/itcharter/uninstall","ichart.progress",
         "ichart.install.log","progress-itcharter-restart",
@@ -254,7 +223,8 @@ function itcharter_config():bool{
 
 
 
-    $restart=$tpl->framework_buildjs("/itcharter/install","ichart.progress","ichart.install.log","itchart-progress-install",
+    $restart=$tpl->framework_buildjs("/itcharter/install","ichart.progress","ichart.install.log",
+        "itchart-progress-install",
         "dialogInstance2.close();LoadAjax('itcharter-config','$page?itcharter-config-static=yes');");
 
     $html[]="<div id='itchart-progress-install' style='margin-left: 10px;'></div>";
@@ -330,7 +300,7 @@ function itcharter_status():bool{
         $jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-itcharter-restart')";
         $final[]=$tpl->SERVICE_STATUS($bsini, "APP_ITCHARTER",$jsRestart);
         echo $tpl->_ENGINE_parse_body($final);
-        echo "<script>LoadAjax('redis-status','$page?redis-status=yes');</script>";
+        echo "<script>LoadAjaxSilent('redis-status','$page?redis-status=yes');</script>";
         return true;
 }
 function redis_status(){
@@ -348,7 +318,7 @@ function redis_status(){
     echo $tpl->widget_vert("{memory_use}","{$perc}");
 
 }
-function main_status(){
+function main_status():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $html[]="<div style='margin-top:20px'>";
@@ -367,6 +337,7 @@ function main_status(){
     $html[]="LoadAjax('itcharter-config','$page?itcharter-config-static=yes');";
     $html[]="</script>";
     echo @implode("\n",$html);
+    return true;
 }
 function SquidTemplateSimple(){
 	$tpl=new template_admin();

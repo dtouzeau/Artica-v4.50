@@ -15,8 +15,10 @@ define("ico_shield_disabled","fa-solid fa-shield-xmark");
 define("ico_servcloud2","fa-solid fa-sensor-cloud");
 define("ico_health_check","fas fa-heart-rate");
 define("ico_server","fa-solid fa-server");
+define("ico_debian","fa-brands fa-debian");
 define("ico_hacker","fa-solid fa-user-hoodie");
 define("ico_hacker2cols","fa-duotone fa-solid fa-user-hoodie");
+define("ico_package","fa-solid fa-box-isometric");
 
 
 define("ico_spinner","<div class=\"sk-circle2 sk-circle\"></div><div class=\"sk-circle3 sk-circle\"></div><div class=\"sk-circle4 sk-circle\"></div><div class=\"sk-circle5 sk-circle\"></div><div class=\"sk-circle6 sk-circle\"></div><div class=\"sk-circle7 sk-circle\"></div><div class=\"sk-circle8 sk-circle\"></div><div class=\"sk-circle9 sk-circle\"></div><div class=\"sk-circle10 sk-circle\"></div><div class=\"sk-circle11 sk-circle\"></div><div class=\"sk-circle12 sk-circle\"></div>");
@@ -66,7 +68,11 @@ define("ico_dropdown","fa-solid fa-list-dropdown");
 define("ico_check","fa-solid fa-square-check");
 define("ico_check_double","fas fa-check-double");
 define("ico_plus","fa fa-plus");
+define("ico_agent","fa-solid fa-user-hat-tie");
+define("ico_edit","fas fa-edit");
 define("ico_computer_ssh","fa-solid fa-display-code");
+define("ico_arrow_up","fas fa-arrow-alt-up");
+define("ico_box","fas fa-box-open");
 define("ico_smtp_send","fa-solid fa-paper-plane-top");
 define("ico_options","fa fa-cogs");
 define("ico_list_opt","fa fa-list-ol");

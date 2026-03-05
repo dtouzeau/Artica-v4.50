@@ -1602,11 +1602,15 @@ function search():bool{
 
 
     $results=$q->QUERY_SQL($sql);
-
     writelogs($sql,__FUNCTION__,__FILE__,__LINE__);
 
-    if(!$q->ok){
+    if(!$q->ok ){
         echo $tpl->div_error($q->mysql_error."<hr>$sql");
+        return false;
+    }
+    if(!$results){
+        echo $tpl->div_error("{protocol_error}<hr>$sql");
+        return false;
     }
 
     if($GLOBALS["VERBOSE"]){

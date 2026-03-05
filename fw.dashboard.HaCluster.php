@@ -15,6 +15,9 @@ if(isset($_GET["form"])){form_js();exit;}
 if(isset($_GET["form-popup"])){form_popup();exit;}
 if(isset($_GET["action"])){action();exit;}
 if(isset($_GET["hacluster-server-ping"])){hacluster_server_ping();exit;}
+if(isset($_GET["debug-mode-js"])){hacluster_clientdebug_js();exit;}
+if(isset($_GET["debug-mode-popup"])){hacluster_clientdebug_popup();exit;}
+if(isset($_POST["HaClusterClientDebug"])){hacluster_clientdebug_save();exit;}
 start();
 
 function purge(){
@@ -169,7 +172,36 @@ function HaClusterClientStatus():string{
 
 
 }
+function hacluster_clientdebug_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog1("{debug_mode}","$page?debug-mode-popup=yes");
+}
+function hacluster_clientdebug_popup():bool{
+    $tpl=new template_admin();
+    $json = json_decode($GLOBALS["CLASS_SOCKETS"]->HACLUSTERCLIENT_API("/status"));
 
+    if(!property_exists($json,"HaClusterClientDebug")){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}||{protocol_error}"));
+        return false;
+    }
+    $expl="{debug_on}";
+
+    if($json->HaClusterClientDebug==1){
+        $expl="{debug_off}";
+    }
+    $js="dialogInstance1.close();";
+    $form[]=$tpl->BigCircleCheckbox("HaClusterClientDebug","{debug_mode}",$expl,$json->HaClusterClientDebug,$js);
+    echo $tpl->_ENGINE_parse_body($form);
+    return true;
+}
+function hacluster_clientdebug_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $HaClusterClientDebug=$_POST["HaClusterClientDebug"];
+    $GLOBALS["CLASS_SOCKETS"]->HACLUSTERCLIENT_API("/debug/$HaClusterClientDebug");
+    return admin_tracks("Set HaCluster Client debug mode to $HaClusterClientDebug");
+}
 
 function haclient_flat(){
     $kerberosActiveDirectorySuffix=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("kerberosActiveDirectorySuffix"));
@@ -247,7 +279,9 @@ function haclient_flat(){
 
 
             $tpl->table_form_field_text("{version}", $json->version, ico_infoi);
+            $tpl->table_form_field_js("Loadjs('$page?debug-mode-js=yes')","AsSystemAdministrator");
             $tpl->table_form_field_bool("{debug}", $json->HaClusterClientDebug, ico_bug);
+            $tpl->table_form_field_js("","AsSystemAdministrator");
             $tpl->table_form_field_bool("{monitor_cpu_usage}", $json->HaClusterForceAgentForceMoniCPU, ico_cpu);
             $tpl->table_form_field_text("{Max_Load}", $json->HaClusterClientMaxLoad . " ($HaPeriod)", ico_timeout);
             $tpl->table_form_field_text("{Max_Load} ({emergency})", $json->HaClusterClientEmergencyLoad . " ($HaPeriod)", ico_timeout);
@@ -281,6 +315,11 @@ function haclient_flat(){
     }else{
         $tpl->table_form_field_bool("{master_server}",0,ico_server);
     }
+    if($json->ITCharter==1){
+        $tpl->table_form_field_bool("{APP_ITCHARTER}",1,ico_params);
+    }else{
+        $tpl->table_form_field_bool("{APP_ITCHARTER}",0,ico_params);
+    }
 
     $tpl->table_form_field_js("Loadjs('$page?form=yes')","AsSystemAdministrator");
     $tpl->table_form_field_text("{ID}",$hacluster_id,ico_sensor);
@@ -291,6 +330,8 @@ function haclient_flat(){
         $tpl->table_form_field_text("{outgoing_interface}","{all}",ico_nic);
     }
 
+
+    $tpl->table_form_field_js("Loadjs('$page?form=yes')","AsSystemAdministrator");
     $tpl->table_form_field_text("{listen_port}","27899,$HaClusterClientListenPort ($HaClusterClientListenPort_status)",ico_nic);
     $tpl->table_form_field_text("{lb_ipaddr}",$HaClusterIP,ico_server);
     $tpl->table_form_section("Active Directory");

@@ -4,13 +4,18 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 $users=new usersMenus();if(!$users->AsSquidAdministrator){$users->pageDie();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+if(isset($_GET["auth-method-js"])){form_auth_method_js();exit;}
+if(isset($_GET["auth-method-popup"])){form_auth_method_popup();exit;}
+if(isset($_POST["HotSpotHardwareIdent1"])){form_auth_method_save();exit;}
+if(isset($_POST["HotSpotHardwareIdent2"])){form_auth_method_save();exit;}
+if(isset($_GET["debug-switch-js"])){debug_switch();exit;}
+
 
 if(isset($_POST["HotSpotWIFI4EU_ENABLE"])){Save();exit;}
 if(isset($_POST["HotSpotAutoLogin"])){Save();exit;}
 if(isset($_POST["HotSpotTermsConditions"])){Save();exit;}
-if(isset($_POST["HotSpotDebug"])){Save();exit;}
-if(isset($_POST["HotSpotAuthenticateEach"])){Save();exit;}
 if(isset($_POST["HotSpotTemplateID"])){Save();exit;}
+if(isset($_POST["HotSpotAuthenticateEach"])){Save();exit;}
 if(isset($_POST["HotSpotVoucherRemovePass"])){Save();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -279,6 +284,13 @@ function form_browsers_redirect_js():bool{
     $tpl->js_dialog2("{CaptivePortalDetectionURLs}","$page?browser-redirect-popup=yes");
     return true;
 }
+function form_auth_method_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $tpl->js_dialog2("{authentication_method}","$page?auth-method-popup=yes");
+    return true;
+}
+
 
 function form_service_js():bool{
     $tpl=new template_admin();
@@ -365,7 +377,7 @@ function form_service_popup():bool{
     if($HotSpotListenSSLPort==0){$HotSpotListenSSLPort=8026;}
     if($HotSpotListenPort==0){$HotSpotListenPort=8025;}
     $HotSpotBindInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotBindInterface"));
-    $HotSpotDebug=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotDebug"));
+
 
     if($EnableNginx==1) {
         $form[] = $tpl->field_section("{UfdbUseInternalService}", "{UfdbUseInternalService_nginx_explain}");
@@ -380,13 +392,6 @@ function form_service_popup():bool{
     }
     $form[]=$tpl->field_hidden("HotSpotTemplateID",4);
 
-    $zHotSpotHardwareIdent[0]="{ipaddr} {or} {ComputerMacAddress}";
-    $zHotSpotHardwareIdent[1]="{ipaddr}";
-    $zHotSpotHardwareIdent[2]="{ComputerMacAddress}";
-    $HotSpotHardwareIdent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotHardwareIdent"));
-
-    $form[]=$tpl->field_array_hash($zHotSpotHardwareIdent, "zHotSpotHardwareIdent", "{authentication_method}", $HotSpotHardwareIdent);
-    $form[]=$tpl->field_checkbox("HotSpotDebug", "{debug}", $HotSpotDebug);
 
 
     $jsrestart[]="LoadAjaxSilent('hotspot-main-status','$page?table=yes');";
@@ -403,7 +408,95 @@ function form_service_popup():bool{
     return true;
 
 }
+function form_auth_method_save():bool{
+    $HotSpotHardwareIdent1=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotHardwareIdent1"));
+    $HotSpotHardwareIdent2=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotHardwareIdent2"));
+    $HotSpotHardwareIdent1_text=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotHardwareIdent1"));
+    if($HotSpotHardwareIdent1_text==""){
+        $HotSpotHardwareIdent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotHardwareIdent"));
+        if($HotSpotHardwareIdent==0){
+            $HotSpotHardwareIdent1=1;
+            $HotSpotHardwareIdent2=1;
+        }
+        if($HotSpotHardwareIdent==1){
+            $HotSpotHardwareIdent1=1;
+            $HotSpotHardwareIdent2=0;
+        }
+        if($HotSpotHardwareIdent==2){
+            $HotSpotHardwareIdent1=0;
+            $HotSpotHardwareIdent2=1;
+        }
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotHardwareIdent1",$HotSpotHardwareIdent1);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotHardwareIdent2",$HotSpotHardwareIdent2);
+    }
 
+
+    $tpl=new template_admin();
+    $tpl->SAVE_POSTs();
+
+    if(isset($_POST["HotSpotHardwareIdent1"])){
+        $HotSpotHardwareIdent1=intval($_POST["HotSpotHardwareIdent1"]);
+    }
+    if(isset($_POST["HotSpotHardwareIdent2"])){
+        $HotSpotHardwareIdent2=intval($_POST["HotSpotHardwareIdent2"]);
+    }
+    if( ($HotSpotHardwareIdent1==1) && ($HotSpotHardwareIdent2==1)){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotHardwareIdent",0);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/install");
+        return admin_tracks("Set Hotspot authentication method to IP and MAC");
+    }
+    if ($HotSpotHardwareIdent1==1){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotHardwareIdent",1);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/install");
+        return admin_tracks("Set Hotspot authentication method to IP only");
+    }
+    if ($HotSpotHardwareIdent2==1){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotHardwareIdent",2);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/install");
+        return admin_tracks("Set Hotspot authentication method to MAC only");
+    }
+
+
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotHardwareIdent",0);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotHardwareIdent1",1);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotHardwareIdent2",1);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/install");
+    return admin_tracks("Set Hotspot authentication method to IP and MAC");
+
+}
+function form_auth_method_popup():bool{
+
+    $zHotSpotHardwareIdent[0]="{ipaddr} {or} {ComputerMacAddress}";
+    $zHotSpotHardwareIdent[1]="{ipaddr}";
+    $zHotSpotHardwareIdent[2]="{ComputerMacAddress}";
+    $HotSpotHardwareIdent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotHardwareIdent"));
+    $HotSpotHardwareIdent1=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotHardwareIdent1"));
+    $HotSpotHardwareIdent2=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotHardwareIdent2"));
+
+    if($HotSpotHardwareIdent==0){
+        $HotSpotHardwareIdent1=1;
+        $HotSpotHardwareIdent2=1;
+    }
+    if($HotSpotHardwareIdent==1){
+        $HotSpotHardwareIdent1=1;
+        $HotSpotHardwareIdent2=0;
+    }
+    if($HotSpotHardwareIdent==2){
+        $HotSpotHardwareIdent1=0;
+        $HotSpotHardwareIdent2=1;
+    }
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+
+
+    $form[]=$tpl->BigCircleCheckbox("HotSpotHardwareIdent1","{ipaddr}",
+        "{hotspot_ident_1}",$HotSpotHardwareIdent1,"LoadAjaxSilent('hotspot-main-status','$page?table=yes');");
+    $form[]=$tpl->BigCircleCheckbox("HotSpotHardwareIdent2","{ComputerMacAddress}","{hotspot_ident_2}",
+        $HotSpotHardwareIdent2,"LoadAjaxSilent('hotspot-main-status','$page?table=yes');");
+    echo $tpl->_ENGINE_parse_body($form);
+    return true;
+
+}
 function form_browsers_redirect_popup():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -473,7 +566,20 @@ function form_timeout_popup():bool{
     echo $tpl->form_outside("{last_config}:&nbsp;<span id='last-config'>$last_config</span>", $form,null,"{apply}",@implode("\n",$jsrestart),"AsSquidAdministrator");
     return true;
 }
-
+function debug_switch():bool{
+    $HotSpotDebug=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotDebug"));
+    if($HotSpotDebug==1){
+        $HotSpotDebug=0;
+    }else{
+        $HotSpotDebug=1;
+    }
+    $page=CurrentPageName();
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotDebug",$HotSpotDebug);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/install");
+    header("content-type: application/x-javascript");
+    echo "LoadAjaxSilent('hotspot-main-status','$page?table=yes');";
+    return admin_tracks("Set Hotspot debug to $HotSpotDebug");
+}
 function table():bool{
 	$tpl=new template_admin();
     $page=CurrentPageName();
@@ -580,8 +686,10 @@ function table():bool{
     $tpl->table_form_field_js("Loadjs('$page?browser-redirect-js=yes')");
     $tpl->table_form_field_bool("{CaptivePortalDetectionURLs}",$EnableHotSpotBrowsersRedirects,ico_ie);
 
-
+    $tpl->table_form_field_js("Loadjs('$page?auth-method-js=yes')");
     $tpl->table_form_field_text("{authentication_method}",$zHotSpotHardwareIdent[$HotSpotHardwareIdent],ico_computer_down);
+
+    $tpl->table_form_field_js("Loadjs('$page?debug-switch-js=yes')");
     $tpl->table_form_field_bool("{debug}",$HotSpotDebug,ico_bug);
 
     $tpl->table_form_section("{pages}/{Terms_Conditions}");
@@ -695,6 +803,9 @@ if($HOTSPOTWEB_VERSION==null){$HOTSPOTWEB_VERSION="4.x";}
         $last_config=distanceOfTimeInWords($lasttime,time());
     }
 
+    if($HotSpotDebug==1){
+        echo $tpl->div_warning("{verbose_mode}||{mode_debug_warn}");
+    }
 
 	echo $tpl->table_form_compile();
     echo "<script>";

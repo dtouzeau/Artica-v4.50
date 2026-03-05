@@ -14,6 +14,8 @@ if(isset($_POST["hostname"])){chhostname_save();exit;}
 if(isset($_GET["main-page"])){ header("location:fw.system.information.php?main-page=yes");die();}
 
 $page=CurrentPageName();
+
+
 echo "<div id='fw-system-info' class='row border-bottom white-bg'></div>
 <script>LoadAjax('fw-system-info','$page?infos=yes');</script>		
 ";

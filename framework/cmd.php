@@ -115,8 +115,6 @@ if(isset($_GET["notifier-restart"])){EMAILRELAY_RESTART();exit;}
 if(isset($_GET["cdir-calc"])){IP_CALC_CDIR();exit;}
 if(isset($_GET["ip-get-default-getway"])){getDefaultGateway();exit;}
 if(isset($_GET["ip-get-default-dns"])){GetMyDNSServers();exit;}
-if(isset($_GET["ip-del-route"])){IP_DEL_ROUTE();exit;}
-if(isset($_GET["ip-build-routes"])){IP_ROUTES();exit;}
 
 if(isset($_GET["DeleteAllIpTablesRules"])){IpTables_delete_all_rules();exit;}
 if(isset($_GET["WhiteListResolvMX"])){IpTables_WhiteListResolvMX();exit;}
@@ -400,10 +398,6 @@ if(isset($_GET["ou-ldap-import-schedules"])){LDAP_IMPORT_SCHEDULE();exit;}
 //exec.hamachi.php
 if(isset($_GET["list-nics"])){TCP_LIST_NICS();exit;}
 if(isset($_GET["virtuals-ip-reconfigure"])){writelogs_framework("TCP_VIRTUALS()",__FUNCTION__,__FILE__,__LINE__);TCP_VIRTUALS();exit;}
-if(isset($_GET["vlan-ip-reconfigure"])){TCP_VLANS();exit;}
-
-
-
 if(isset($_GET["QueryArticaLogs"])){artica_update_query_fileslogs();exit;}
 if(isset($_GET["ReadArticaLogs"])){artica_update_query_logs();exit;}
 
@@ -3414,25 +3408,7 @@ function TCP_VIRTUALS(){
 	
 }
 
-function TCP_VLANS(){
-	
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=LOCATE_PHP5_BIN2();
-	@unlink("/etc/artica-postfix/MEM_INTERFACES");
 
-	
-	if(isset($_GET["stay"])){
-		@unlink("/etc/artica-postfix/MEM_INTERFACES");
-		shell_exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.virtuals-ip.php --vlans");
-		return;
-	}
-	@unlink("/etc/artica-postfix/MEM_INTERFACES");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.virtuals-ip.php --vlans >/dev/null 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	
-}
 
 
 
@@ -7522,22 +7498,6 @@ function postfinder(){
 	$cmd=trim($nohup." ".LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.postfix.finder.php >/dev/null 2>&1 &");
 	shell_exec($cmd);
 }
-
-function IP_DEL_ROUTE(){
-	@unlink("/etc/artica-postfix/MEM_INTERFACES");
-	$cmd=trim(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.virtuals-ip.php --routes-del {$_GET["ip-del-route"]}");
-	shell_exec($cmd);
-}
-function IP_ROUTES(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	@unlink("/etc/artica-postfix/MEM_INTERFACES");
-	$cmd=trim($nohup." ".LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.virtuals-ip.php --routes >/dev/null 2>&1 &");
-	shell_exec($cmd);
-	$cmd=trim($nohup." ".LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.virtuals-ip.php --main-routes >/dev/null 2>&1 &");
-	shell_exec($cmd);	
-}
-
 function disks_quotas_list(){
 	$unix=new unix();
 	echo "<articadatascgi>". base64_encode(serialize($unix->GET_QUOTA_MOUNTED()))."</articadatascgi>";

@@ -4,14 +4,10 @@ if(isset($_GET["shutdown-js"])){shutdown_js();exit;}
 if(isset($_POST["defrag"])){defrag();exit;}
 if(isset($_GET["restart-js"])){reboot_js();exit;}
 if(isset($_GET["defrag-js"])){defrag_js();exit;}
-
-
-
 if(isset($_GET["menus"])){
 	echo menus();
 	exit;
 }
-
 if(isset($_GET["perform"])){
 	perform();
 	exit;
@@ -25,7 +21,7 @@ function defrag(){
 	$sock=new sockets();
 	$DisableRebootOrShutDown=$sock->GET_INFO('DisableRebootOrShutDown');		
 	if($DisableRebootOrShutDown==1){return;}
-	$sock->getFrameWork("services.php?system-defrag=yes");	
+	$sock->getFrameWork("services.php?system-defrag=yes");
 	echo "See you !! :=)\n";
 }
 function perform(){
@@ -76,7 +72,6 @@ turningoff$t();
 	echo $html;	
 	
 }
-
 function shutdown_js(){
 	include_once(dirname(__FILE__) . "/ressources/class.sockets.inc");
 	include_once(dirname(__FILE__) . "/ressources/class.users.menus.inc");
@@ -110,7 +105,6 @@ var x_turnoff= function (obj) {
 	echo $html;
 	
 }
-
 function defrag_js(){
 	include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
 	$tpl=new templates();
@@ -140,10 +134,6 @@ RestartDefragComputer$t();";
 	
 	
 }
-
-
-
-
 
 if(is_file("ressources/templates/{$_COOKIE["artica-template"]}/i/pattern.png")){$pattern="ressources/templates/{$_COOKIE["artica-template"]}/i/pattern.png";}
 if($pattern==null){$pattern="ressources/templates/default/img/pattern.png";}
@@ -189,30 +179,45 @@ foreach ($_SESSION as $num=>$ligne){
 }
 
 session_destroy();
+
 $URL="fw.login.php";
-if(isset($_GET["goto"])){
-$URL=$_GET["goto"];	
+
+$pREFIX="/";
+
+if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+    $URL="/".$_SERVER["HTTP_X_META_PREFIX"]."/fw.login.php";
+    $pREFIX="/".$_SERVER["HTTP_X_META_PREFIX"]."/";
 }
+
+
+
+if(isset($_GET["goto"])){
+    $URL=$_GET["goto"];
+    if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+        $URL="/".$_SERVER["HTTP_X_META_PREFIX"]."/$URL";
+    }
+}
+$URL=str_replace("//","/",$URL);
 
 echo "
 <html>
 <head>
 <META HTTP-EQUIV=\"Refresh\" CONTENT=\"0; URL=$URL\"> 
-	<link href='css/styles_main.css' rel=\"styleSheet\" type='text/css' />
-	<link href='css/styles_header.css' rel=\"styleSheet\" type='text/css' />
-	<link href='css/styles_middle.css' rel=\"styleSheet\" type='text/css' />
-	<link href='css/styles_forms.css' rel=\"styleSheet\" type='text/css' />
-	<link href='css/styles_tables.css' rel=\"styleSheet\" type='text/css' />
-	<link rel=\"stylesheet\" type=\"text/css\" href=\"/fonts.css.php\" />
+	<link href='{$pREFIX}css/styles_main.css' rel=\"styleSheet\" type='text/css' />
+	<link href='{$pREFIX}css/styles_header.css' rel=\"styleSheet\" type='text/css' />
+	<link href='{$pREFIX}css/styles_middle.css' rel=\"styleSheet\" type='text/css' />
+	<link href='{$pREFIX}css/styles_forms.css' rel=\"styleSheet\" type='text/css' />
+	<link href='{$pREFIX}css/styles_tables.css' rel=\"styleSheet\" type='text/css' />
+	<link rel=\"stylesheet\" type=\"text/css\" href=\"{$pREFIX}fonts.css.php\" />
 
 </head>
 <body style='padding:100px;background-image:url($pattern)'>
 
-	<center style='border:3px solid white;padding:5px'><a style='font-size:22px;font-family:arial,tahoma;font-weight:bold;color:white' href='logon.php'>
+	<center style='border:3px solid white;padding:5px'><a style='font-size:22px;font-family:arial,tahoma,serif;font-weight:bold;color:white' href='{$pREFIX}logon.php'>
 	Waiting please, redirecting to logon page</a>
 	</center>
 
-<center style='padding:15px;background-image:url($logo);background-repeat:no-repeat;background-position:center top;width:100%;height:768px'>
+<center style='padding:15px;background-image:url($pREFIX$logo);background-repeat:no-repeat;background-position:center top;width:100%;height:768px'>
 
 </body>
 </html>

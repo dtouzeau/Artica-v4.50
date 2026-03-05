@@ -1850,6 +1850,7 @@ spamassassin.template.php
 exec.spamassassin.urls.php
 fw.dashboard.philesight.php
 framework/philesight.php
+itcharter.php
 framework/mimedefang.php
 exec.mimedefang.php
 bin/install/mimedefang/The MIMEDefang HOWTO.html
@@ -1870,6 +1871,7 @@ exec.frontail-nginx.php
 exec.glances.php
 exec.bandwhich.php
 exec.philesight.php
+exec.itchart.php
 exec.crowdsec.php
 framework/frontail.php
 framework/glances.php
@@ -1878,3 +1880,7 @@ bin/siege-deb12
 bin/metasrv
 bin/articarest.tar.gz
 exec.compile.categories.php
+exec.installv2.php
+js/swfobject.js
+img/Makefile
+exec.squid.wccp.php

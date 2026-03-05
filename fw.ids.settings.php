@@ -223,9 +223,6 @@ function DataShieldIPv4Blocklist_parameters():bool{
 
     $explain[]="<table style='width:100%;'>";
     $explain[]="<tr><td style='width:1%;vertical-align: top;padding:3px' nowrap><img src='img/lminne.png'></td><td style='padding-left:10px'>{laurentMinneIDS}</td></tr></table>";
-
-
-
     $html[]=$tpl->BigCircleCheckbox("DataShieldIPv4BlocklistEnabled","Data-Shield IPv4 Blocklist",@implode("",$explain),$GlobalConfig);
     $html[]="<div style='margin-top:20px'>";
     $html[]=$tpl->div_explain("notitle:{laurentMinneMoney}");

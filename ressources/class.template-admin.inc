@@ -554,7 +554,7 @@ return implode(', ', $timeParts);
                 $minAttr
                 $maxAttr
                 onSave: function(value) {
-                    // POST on save (Enter key or blur if value changed)
+                    // POST on save (Enter or Tab key)
                     $.post('$page', { $fftxt })
                       .done(function (resp, textStatus, jqXHR) {
                         console.log('Integer saved:', value, 'Response:', resp);
@@ -652,7 +652,7 @@ return implode(', ', $timeParts);
 
         $fftxt=@implode(",",$f);
 
-        return "<div id=\"domainbox-$id\"></div>
+        return "<div id=\"domainbox-results-$id\"></div><div id=\"domainbox-$id\"></div>
         <script>
             renderBigDomainListSafe('domainbox-$id', [
             {
@@ -665,6 +665,7 @@ return implode(', ', $timeParts);
                     $.post('$page', { $fftxt })
                       .done(function (resp, textStatus, jqXHR) {
                         console.log('Domain saved:', value, 'Response:', resp);
+                        $('#domainbox-results-$id').html(resp);
                         $after
                       })
                       .fail(function (jqXHR, textStatus, errorThrown) {
@@ -774,7 +775,7 @@ return implode(', ', $timeParts);
                 $minAttr
                 $maxAttr
                 onSave: function(value) {
-                    // POST on save (Enter key or blur if value changed)
+                    // POST on save (Enter or Tab key)
                     $.post('$page', { $fftxt })
                       .done(function (resp, textStatus, jqXHR) {
                         console.log('Text saved:', value, 'Response:', resp);
@@ -938,11 +939,11 @@ return implode(', ', $timeParts);
 
     }
 
-    public function table_form_button($button_text,$js=null,$security=null,$ico=null){
+    public function table_form_button($button_text,$js=null,$security=null,$ico=null,$class="btn-primary"):bool{
         if($ico==null){$ico="fa-regular fa-ellipsis";}
-        $class="btn-primary";
         if($ico==ico_trash){$class="btn-danger";}
         $this->TABLE_FORM_BUTTONS[]= $this->button_autnonome($button_text,$js, $ico, $security,300,$class);
+        return true;
     }
 
     public function table_form_field_buttons($buttons=array(),$security=null):bool{
@@ -1413,6 +1414,10 @@ return implode(', ', $timeParts);
             $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
         }
 
+        if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+            $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_META_PREFIX"]."/";
+        }
+
         $f[]=$this->build_heads();
         $f[]="<body id=\"page-top\" class='pace-done mini-navbar'>";
         $f[]="<input type='hidden' id='cronos-id' value='0'>";
@@ -1614,6 +1619,22 @@ return implode(', ', $timeParts);
         return $subject;
     }
 
+    function Round($size=64,$color="#1ab394"):string{
+
+        return "<span aria-hidden=\"true\" 
+        style=\"flex: 0 0 auto; width: {$size}px; height: {$size}px; border-radius: 50%; display: grid;
+         place-items: center; border: 2px solid $color; 
+         background: $color; 
+         box-shadow: rgba(26, 179, 148, 0.5) 0px 10px 22px -10px;
+          transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.02s;\">
+              <svg viewbox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" 
+              stroke-width=\"3\" stroke-linecap=\"round\" 
+              stroke-linejoin=\"round\" 
+              style=\"width: 34px; height: 34px; opacity: 1; transform: scale(1); 
+              transition: opacity 0.18s, transform 0.18s; color: rgb(255, 255, 255);\">
+              </svg>
+          </span>";
+    }
 
     public function RefreshInterval_js($div,$page,$Query,$Interval=3):string{
         $Target="fw.status.interval.php";
@@ -1679,6 +1700,10 @@ return implode(', ', $timeParts);
         if(function_exists("utf8_encode")){
             return utf8_encode($string);
         }
+        if(!function_exists("mb_convert_encoding")) {
+            return $string;
+        }
+
         return strval(mb_convert_encoding($string, 'UTF-8'));
     }
     public function CLEAN_GET_XSS():bool{
@@ -2637,11 +2662,19 @@ if($forceFunc<>null){
         $ARRAY=array();
         $UnboundVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundVersion");
         $version=explode(".",$UnboundVersion);
-        $ARRAY["MAJOR"]=intval($version[0]);
-        $ARRAY["MINOR"]=intval($version[1]);
-        $ARRAY["REVISION"]=$version[2];
-        return $ARRAY;
-
+        $ARRAY["MAJOR"]=0;
+        $ARRAY["MINOR"]=0;
+        $ARRAY["REVISION"]=0;
+        if(isset($version[0])) {
+            $ARRAY["MAJOR"] = intval($version[0]);
+        }
+        if(isset($version[1])) {
+            $ARRAY["MINOR"] = intval($version[1]);
+        }
+        if(isset($version[2])) {
+            $ARRAY["REVISION"] = $version[2];
+        }
+       return $ARRAY;
     }
 
     public function ClickMouse($js,$bold=false){
@@ -2841,13 +2874,13 @@ if($forceFunc<>null){
 
     }
 
-    public function icon_list($js=null,$security=null){
+    public function icon_list($js=null,$security=null,$tooltip=null){
         $pic="fad fa-list-ul";
-        return $this->__icon_defaults($pic,$js,$security);
+        return $this->__icon_defaults($pic,$js,$security,$tooltip);
 
     }
 
-    private function __icon_defaults($pic,$js,$security){
+    private function __icon_defaults($pic,$js,$security,$tooltip=null):string{
         $color="#18a689";
         if(preg_match("#color:(.+?):(.+)#",$pic,$re)){
             $color=$re[1];
@@ -2868,21 +2901,26 @@ if($forceFunc<>null){
                 <i class='$pic' style='color:#c2ccd1'></i></button>";
             }
         }
+        $id=md5("$pic,$js,$security,$tooltip".microtime(false));
+        list($ztool,$none)=$this->Tooltips($id,$tooltip);
 
         if($js==null){
             $color="#c2ccd1";
             $js="Blur();";
+            $ztool="";
         }
+
+
         $jsav="OnClick=\"$js\"";
         if(preg_match("#direct:(.+)#", $js,$re)){
             $jsav="OnClick=\"document.location.href='{$re[1]}'\"";
             return "<button type='button' class='$btclass' $jsav >
-            <i class='$pic' style='color:$color'></i>
+            <i class='$pic' style='color:$color' id='$id' $ztool></i>
         </button>";
         }
         $md=md5("$jsav$pic".microtime(true));
         $jsav="OnClick=\"function$md();\"";
-        $html[]="<button type='button' class='$btclass' $jsav >";
+        $html[]="<button type='button' class='$btclass' $jsav id='$id' $ztool>";
         $html[]="<i class='$pic' style='color:$color' id='btn-$md'></i>";
         $html[]="</button>";
         $html[]="<script>";
@@ -2934,6 +2972,96 @@ if($forceFunc<>null){
 
     }
 
+    private function td_ipaddr_DecisionIP($ip,$js):string{
+
+        if(!isset($GLOBALS["td_ipaddr_DecisionIP"])){
+            $GLOBALS["td_ipaddr_DecisionIP"]=time();
+        }
+        $GLOBALS["td_ipaddr_DecisionIP"]++;
+        $id=md5($js.microtime(true). $GLOBALS["td_ipaddr_DecisionIP"]);
+        $icon="<i class='fa fa-arrow-right'></i>";
+        return $this->_ENGINE_parse_body("<span id=\"ip_$id\"
+      style=\"border-bottom:1px solid #ccc;font-weight:bold;cursor:pointer;\"
+      onmouseover=\"this.style.color='#337AB7'\"
+      onmouseout=\"this.style.color=''\">$ip</span>
+
+<div class='ip-context-menu' id=\"menu_ip_$id\"
+     style=\"display:none;background:#fff;border:1px solid #ccc;
+            box-shadow:0 4px 8px rgba(0,0,0,0.1);min-width:160px;z-index:2147483647;\">
+    <div style=\"padding:8px;cursor:pointer;\"
+         onclick=\"Loadjs('fw.modsecurity.threats.php?zoom-ip-js=$ip')\">$icon {details}</div>
+    <div style=\"padding:8px;cursor:pointer;\"
+         onclick=\"s_PopUp('https://dashboard.decisionip.io/ip?ip=$ip','1024','800')\">
+         $icon DecisionIP Intelligence
+    </div>
+</div>
+
+<script>
+
+(function(){
+    var span = document.getElementById(\"ip_$id\");
+    var menu = document.getElementById(\"menu_ip_$id\");
+
+    // move to body once (table-safe)
+    if (menu.parentNode !== document.body) {
+        document.body.appendChild(menu);
+    }
+
+    function closeMenu(){
+        menu.classList.remove(\"show\");
+    }
+
+    function showMenu(){
+        var rect = span.getBoundingClientRect();
+
+        menu.style.position = \"fixed\";
+        menu.classList.add(\"show\");
+
+        var left = rect.left;
+        var top  = rect.bottom + 6;
+
+        // measure after visible (so offsetWidth/Height are correct)
+        var mw = menu.offsetWidth || 220;
+        var mh = menu.offsetHeight || 80;
+
+        if (left + mw > window.innerWidth - 6) left = window.innerWidth - mw - 6;
+        if (top + mh > window.innerHeight - 6) top = rect.top - mh - 6;
+
+        if (left < 6) left = 6;
+        if (top < 6) top = 6;
+
+        menu.style.left = left + \"px\";
+        menu.style.top  = top + \"px\";
+    }
+
+    // toggle on IP click
+    span.addEventListener(\"click\", function(e){
+        e.stopPropagation();
+        if (menu.classList.contains(\"show\")) {
+            closeMenu();
+        } else {
+            showMenu();
+        }
+    });
+
+    // prevent \"outside click\" close when clicking inside the menu
+    menu.addEventListener(\"click\", function(e){
+        e.stopPropagation();
+        // close after choosing an item
+        closeMenu();
+    });
+
+    // close on outside click
+    document.addEventListener(\"click\", function(){
+        closeMenu();
+    }, true);
+
+    // close on scroll/resize
+    window.addEventListener(\"scroll\", closeMenu, true);
+    window.addEventListener(\"resize\", closeMenu, true);
+})();
+</script>");
+    }
 
     public function td_href($text,$tooltip="{click_to_edit}",$js=null,$security=null):string{
         if(!is_null($text)) {
@@ -2941,6 +3069,15 @@ if($forceFunc<>null){
         }
         if(is_null($text)){
             return "";
+        }
+
+        if( strpos($js,"zoom-ip-js=")>0){
+            if(!isset($GLOBALS["CLASS_SOCKETS_EnableDecisionIP"])){
+                $GLOBALS["CLASS_SOCKETS_EnableDecisionIP"]=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDecisionIP"));
+            }
+            if($GLOBALS["CLASS_SOCKETS_EnableDecisionIP"]==1){
+                return $this->td_ipaddr_DecisionIP($text,$js);
+            }
         }
 
         if(is_null($tooltip)){$tooltip="";}
@@ -2975,7 +3112,7 @@ if($forceFunc<>null){
         $f[]="OnMouseOut=\"this.style.cursor='default';this.style.color=''\"";
         $f[]="style=\"{$border}font-weight:bold\"";
         $f[]="data-toggle=\"popover\"";
-        $f[]="data-placement=\"auto right\"";
+        $f[]="data-placement=\"right\"";
         $f[]="data-content=\"$tooltip\"";
         $f[]="OnClick=\"$js\" id=\"$id\">$text</span>
 		<script type=\"text/javascript\">$(\"#$id\").popover({ trigger: 'hover',html: true,});</script>";
@@ -2983,6 +3120,22 @@ if($forceFunc<>null){
         $GLOBALS[__CLASS__][__FUNCTION__][$memmd]=@implode(" ", $f);
         return @implode(" ", $f);
 
+    }
+
+    public function Tooltips($id,$text):array{
+        $tooltip=$this->_ENGINE_parse_body($text);
+        if (strlen($tooltip)<3){
+            return array("","");
+        }
+        $tooltip=str_replace('"','\"',$tooltip);
+        $f[]="data-toggle=\"popover\"";
+        $f[]="data-html=\"true\"";
+        $f[]="data-placement=\"right\"";
+        $f[]="data-content=\"$tooltip\"";
+        $f[]="data-container=\"body\"";
+        $f[]="data-trigger=\"hover\"";
+
+        return array(@implode(" ",$f),"$(\"#$id\").popover({ trigger: 'hover',html: true,});");
     }
 
     public function js_confirm_empty($text,$field,$value,$jsafter=null):bool{
@@ -3555,7 +3708,7 @@ $jsb[]="}";
         }
         if($add<>null){$add=" $add";}
         $text=str_replace("&nbsp;"," ",$text);
-        $period="<i class='fa-solid fa-period$add'></i>";
+        $period="<i class='fa-solid fa-period$add' style='margin-right:-15px'></i>";
         $str_split=str_split($text);
         $CURVERz=array();
         foreach ($str_split as $char) {
@@ -3571,10 +3724,10 @@ $jsb[]="}";
                 continue;
             }
             if(is_numeric($char)) {
-                $CURVERz[] = "<i class='fa-solid fa-$char$add'></i>";
+                $CURVERz[] = "<i class='fa-solid fa-$char$add' style='margin-right:-15px'></i>";
                 continue;
             }
-            $CURVERz[] = "<i class='fa-solid fa-$char$add'></i>";
+            $CURVERz[] = "<i class='fa-solid fa-$char$add' style='margin-right:-15px'></i>";
         }
         if(count($CURVERz)==0){return "";}
         return @implode("",$CURVERz);
@@ -3688,7 +3841,7 @@ $jsb[]="}";
 
     }
 
-    public function icon_edit_field($js=null,$security=null):string{
+    public function icon_edit_field($js=null,$security=null,$tooltip=null):string{
         $faloup="";
         if(preg_match("#^([0-9]+)x:(.+)#",$js,$re)){
             $faloup=" fa-$re[1]x";
@@ -3701,34 +3854,88 @@ $jsb[]="}";
             return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"blur()\" ><i class='far fa-tools'></i></button>";
         }
 
-
-        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" ><i class='fa-solid fa-pen-field$faloup' style='color:#21b9bb'></i></button>";
+        $id=md5("$js$tooltip". microtime(true));
+        list($ztooltip,$none)=$this->Tooltips($id,$tooltip);
+        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" id='$id' $ztooltip><i class='fa-solid fa-pen-field$faloup' style='color:#21b9bb'></i></button>";
     }
 
-    public function icon_parameters($js=null,$security=null):string{
+    public function icon_services($js=null,$security=null,$tooltip=null):string{
+
+        if(!$this->IsSecurity($security)){return "<button type='button' class='btn btn-default btn-bitbucket' 
+OnClick=\"blur()\" ><i class='fa-brands fa-whmcs'></i></button>";}
+        if($js==null){
+            return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"blur()\" >
+<i class='fa-brands fa-whmcs'></i></button>";
+        }
+        $id=md5($js.$security.$tooltip.microtime(false));
+        list($ztool,$none)=$this->Tooltips($id,$tooltip);
+        return "<button type='button' class='btn btn-white btn-bitbucket' 
+        OnClick=\"$js\" id='$id' $ztool><i class='fa-brands fa-whmcs' style='color:#21b9bb'></i></button>";
+    }
+    public function icon_parameters($js=null,$security=null,$tooltip=null):string{
 
         if(!$this->IsSecurity($security)){return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"blur()\" ><i class='far fa-tools'></i></button>";}
         if($js==null){
             return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"blur()\" ><i class='far fa-tools'></i></button>";
         }
 
-
-        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" ><i class='far fa-tools' style='color:#21b9bb'></i></button>";
+        $id=md5("$js$security$tooltip".microtime(false));
+        list($ztooltip,$none)=$this->Tooltips($id,$tooltip);
+        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" id='$id' $ztooltip><i class='far fa-tools' style='color:#21b9bb'></i></button>";
     }
 
+    public function icon_vitrification($js=null,$on=false,$err=false){
+        $ico2="fas far fa-wine-glass";
+        $ico = "<i class='$ico2' style='color:#CCCCCC'></i>";
+        $btn="btn-white";
+        if($err){
+            $ico2="fas far fa-wine-glass";
+            $ico = "<i class='text-danger $ico2'></i>";
+            if($js==null) {
+                $js = "blur();";
+            }
+            return "<button type='button' class='btn btn-danger btn-bitbucket' OnClick=\"$js\" >$ico</button>";
+        }
 
-    public function icon_refresh($js=null){
+        if($on) {
+            $ico2="fas far fa-wine-glass";
+            $ico = "<i class='$ico2'></i>";
+            $btn="btn-warning";
+        }
+
+        if($js==null){
+            $js="blur();";
+            $ico="<i class='$ico2' style='color:#CCCCCC'></i>";
+        }
+        return "<button type='button' class='btn $btn btn-bitbucket' OnClick=\"$js\" >$ico</button>";
+    }
+
+    public function icon_refresh_animate($js=null):string{
+        $ico2=ico_refresh_animate;
+
+        $ico="<i class='$ico2' style='color:#21b9bb'></i>";
+
+        if($js==null){
+            $js="blur();";
+            $ico="<i class='$ico2' style='color:#CCCCCC'></i>";
+        }
+        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" >$ico</button>";
+    }
+
+    public function icon_refresh($js=null,$tooltip=null):string{
         $ico="<i class='fa fa-repeat' style='color:#21b9bb'></i>";
 
         if($js==null){
             $js="blur();";
             $ico="<i class='fa fa-repeat' style='color:#CCCCCC'></i>";
         }
-        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" >$ico</button>";
+        $id=md5($js.$tooltip.microtime(false));
+        list($ztool,$none)=$this->Tooltips($id,$tooltip);
+        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" id='$id' $ztool>$ico</button>";
     }
 
 
-    public function button_dropdown_table($title,$array=array(),$security=null,$btclass=null){
+    public function button_dropdown_table($title,$array=array(),$security=null,$btclass=null):string{
         if($this->label_class==null){$this->label_class="btn-warning";}
         if($this->label_class=="btn-primary"){$this->label_class="btn-warning";}else{$this->label_class="btn-primary";}
         if(!is_null($btclass)) {
@@ -3986,7 +4193,7 @@ $jsb[]="}";
         return $this->icon_gen($ico,$iconoff,$js);
     }
 
-    public function icon_add($js=null,$security=null){
+    public function icon_add($js=null,$security=null,$tooltip=null){
         $icon="<i class=\"fas fa-plus-circle\" style='color:#CCCCCC'></i>";
         if($this->CLUSTER_CLI){
             $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
@@ -4002,9 +4209,12 @@ $jsb[]="}";
             $js="blur();";
             $icon="<i class=\"fas fa-plus-circle\" style='color:#CCCCCC'></i>";
         }
-        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" >$icon</button>";
+        $id=md5("$js$tooltip". microtime(true));
+        list($ztooltip,$none)=$this->Tooltips($id,$tooltip);
+
+        return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" id='$id' $ztooltip>$icon</button>";
     }
-    public function icon_cd($js=null,$security=null):string{
+    public function icon_cd($js=null,$security=null,$tooltip=null):string{
 
         $ico="fad fa-compact-disc";
         $iconoff="fal fa-compact-disc";
@@ -4016,8 +4226,7 @@ $jsb[]="}";
                 return $this->icon_gen($ico,$iconoff,$js,false);
             }
         }
-
-        return $this->icon_gen($ico,$iconoff,$js);
+         return $this->icon_gen($ico,$iconoff,$js,true,"",$tooltip);
     }
     public function icon_bash($js=null,$security=null):string{
 
@@ -4203,6 +4412,28 @@ $jsb[]="}";
         return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" >$ico</button>";
 
     }
+    public function icon_badge_bell($Nums=0,$js=null,$security=null,$class="text-warning",$tooltip=null):string{
+        if((int)$Nums <= 0){
+            return "<span style='position:relative;display:inline-block;'>
+                    <i class='$class fas fa-bell-on'></i>
+                </span>";
+        }
+       $colors["text-danger"]="#ed5565";
+       $colors["text-warning"]="#f8ac59";
+        $colors["text-default"]="#d2d2d2";
+        $bg=$colors[$class];
+        $id=md5("$Nums$js$class$tooltip".microtime(false));
+        $badgecount="position:absolute;top:-12px;right:-12px;background:$bg;color:#fff;font-size:10px;font-weight:bold;line-height:1;padding:3px 3px;border-radius:2px;min-width:14px;text-align:center;";
+
+        $bb= "<span id=\"pp-$id\" style='position:relative;display:inline-block;'>
+                <i class='$class fas fa-bell-on'></i>
+                <span style='$badgecount'>".htmlspecialchars((string)$Nums, ENT_QUOTES, 'UTF-8')."</span>
+            </span>";
+        if(strlen($js)<2){
+            return $bb;
+        }
+        return $this->td_href($bb,$tooltip,$js);
+    }
 
     public function icon_delete($js=null,$security=null){
         $icon_class=ico_trash;
@@ -4225,14 +4456,15 @@ $jsb[]="}";
         }
         return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" >$ico</button>";
     }
-    public function icon_browser($js=null):string{
+    public function icon_browser($js=null,$tooltip=null):string{
         $ico="fab fa-internet-explorer";
+
         if($js==null){
             return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"blur()\" ><i class='$ico'></i></button>";
         }
-
-
-        return "<button type='button' class='btn btn-primary btn-bitbucket' OnClick=\"$js\" ><i class='$ico'></i></button>";
+        $id=md5($js.microtime(false));
+        list($tooltip,$none)=$this->Tooltips($id,$tooltip);
+        return "<button type='button' id='$id' class='btn btn-primary btn-bitbucket' OnClick=\"$js\" $tooltip><i class='$ico'></i></button>";
     }
     public function icon_support($url=null):string{
         $ico=ico_support;
@@ -4268,7 +4500,12 @@ $jsb[]="}";
     }
 
 
-
+    public function icon_restart($js=null,$security=null){
+        $ico="fa-solid fa-arrow-rotate-right";
+        if(!$this->IsSecurity($security)){return $this->icon_gen($ico,$ico,$js,false);}
+        if($js==null){return $this->icon_gen($ico,$ico,$js,false);}
+        return $this->icon_gen($ico,$ico,$js,true);
+    }
     public function icon_recycle($js=null,$security=null){
         $ico="fa fa-recycle";
         if(!$this->IsSecurity($security)){return $this->icon_gen($ico,$ico,$js,false);}
@@ -4298,6 +4535,38 @@ $jsb[]="}";
 
         if($js==null){return $this->icon_gen($ico,$iconff,$js,false);}
         return $this->icon_gen($ico,$iconff,$js,true,"f7a54a");
+    }
+    public function icon_logs($js=null,$security=null,$ForceDisabled=false,$tooltip=null):string{
+        $ico=ico_list;
+        $iconff=ico_list;
+
+
+        if(!$this->IsSecurity($security)){return $this->icon_gen($ico,$iconff,$js,false);}
+
+        if($ForceDisabled){
+            return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"$js\" >
+                            <i class='$iconff'></i>
+                    </button>";
+        }
+
+        if($js==null){return $this->icon_gen($ico,$iconff,$js,false);}
+        return $this->icon_gen($ico,$iconff,$js,true,null,$tooltip);
+    }
+    public function icon_shell($js=null,$security=null,$ForceDisabled=false,$tooltip=null):string{
+        $ico="fa-solid fa-square-terminal";
+        $iconff="fa-regular fa-square-terminal";
+
+
+        if(!$this->IsSecurity($security)){return $this->icon_gen($ico,$iconff,$js,false);}
+
+        if($ForceDisabled){
+            return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"$js\" >
+                            <i class='$iconff'></i>
+                    </button>";
+        }
+
+        if($js==null){return $this->icon_gen($ico,$iconff,$js,false);}
+        return $this->icon_gen($ico,$iconff,$js,true,null,$tooltip);
     }
     public function icon_shield($js=null,$security=null,$ForceDisabled=false):string{
         $ico="fad fa-shield-alt";
@@ -4390,7 +4659,7 @@ $jsb[]="}";
     }
 
 
-    private function icon_gen($ico=null,$icoff=null,$js=null,$enabled=true,$color=null):string{
+    private function icon_gen($ico=null,$icoff=null,$js=null,$enabled=true,$color=null,$tooltip=null):string{
         if($color==null){
             $color="18a689";
         }
@@ -4402,8 +4671,10 @@ $jsb[]="}";
                             <i class='$icoff'></i>
                     </button>";
         }
+        $id=md5("$ico$icoff$js$enabled$color$tooltip".microtime(false));
+        list($ztool,$none)=$this->Tooltips($id,$tooltip);
         return "<button type='button' class='btn btn-white btn-bitbucket' 
-            OnClick=\"$js\" >
+            OnClick=\"$js\" $ztool>
                 <i class='$ico' style='color:#$color'></i>
             </button>";
 
@@ -4467,7 +4738,7 @@ $jsb[]="}";
 
 
 
-    public function icon_user_lock($js=null,$security=null){
+    public function icon_user_lock($js=null,$security=null,$tooltip=null):string{
         $pic="fad fa-user-lock";
         $ico="<i class='$pic' style='color:#CCCCCC'></i>";
         $class="btn btn-white btn-bitbucket";
@@ -4477,11 +4748,12 @@ $jsb[]="}";
         if($js==null){ return "<button type='button' class='$class' OnClick=\"blur()\" >$ico</button>"; }
         $jsav="OnClick=\"$js\"";
         if(preg_match("#direct:(.+)#", $js,$re)){
-            $jsav="OnClick=\"document.location.href='{$re[1]}'\"";
+            $jsav="OnClick=\"document.location.href='$re[1]'\"";
         }
-
+        $id=md5("$js$security$tooltip".microtime(false));
+        list($ztool,$none)=$this->Tooltips($id,$tooltip);
         $ico="<i class='$pic' style='color:#18a689'></i>";
-        return "<button type='button' class='$clasw' $jsav >$ico</button>";
+        return "<button type='button' class='$clasw' $jsav id='$id' $ztool>$ico</button>";
 
     }
     public function icon_user($js=null,$security=null){
@@ -4971,10 +5243,9 @@ $jsb[]="}";
 
 
 
-    public function icon_check($enabled=false,$js=null,$id=null,$security=null):string{
-        $checked="";
-        $opts=null;
+    public function icon_check($enabled=false,$js=null,$id=null,$security=null,$tooltips=null):string{
         $disabled=0;
+        $tooltip="";
         if(is_bool($enabled)){if($enabled){$enabled=1;}else{$enabled=0;} }
 
         if($this->IsAsSecurityLabel($id)){$id=null;}
@@ -4997,43 +5268,43 @@ $jsb[]="}";
                 $disabled=1;
             }
         }
+
         if($js==null){$color="#CCCCCC";$Over=null;$disabled=1;}
+        if(!is_null($tooltips) && strlen($tooltips)>2){
+            list($tooltip,$jsadd)=$this->Tooltips("span-$id",$tooltips);
+        }
 
         if($disabled==1){
 
             if($enabled==1){
                 $ico="<i class=\"fas fa-check\" style=\"color:$color\" id=\"ico-$id\"></i>";
-                return  "<button type=\"button\" class=\"btn btn-white btn-bitbucket\" id=\"btn-$id\" >$ico</button>";
+                return  "<button type=\"button\" class=\"btn btn-white btn-bitbucket\" 
+                id=\"btn-$id\" $tooltip>$ico</button>";
             }
 
             if($enabled==0){
                 $ico="<i class=\"fas fa-check\" style=\"color:white\" id=\"ico-$id\"></i>";
-                return  "<button type=\"button\" class=\"btn btn-white btn-bitbucket\" id=\"btn-$id\" >$ico</button>";
+                return  "<button type=\"button\" class=\"btn btn-white btn-bitbucket\" 
+                id=\"btn-$id\" $tooltip>$ico</button>";
             }
         }
 
 
         if($disabled==0) {
-
             $color = "#EEEEEE";
             if ($enabled == 1) {
                 $color = "#18a689";
-            }
-
-        }else{
-            if($disabled==0) {
-                $color = "#EEEEEE";
             }
         }
 
 
         $Over="OnMouseOver=\"BtSwitchHover$id(this)\" OnMouseOut=\"BtSwitchOut$id(this)\"";
-
-
         $ico="<i class=\"fas fa-check\" style=\"color:$color\" id=\"ico-$id\"></i>";
-        $f[]="
-        <input type=\"hidden\" id=\"hide-$id\" value=\"$enabled\">
-        <button type=\"button\" class=\"btn btn-white btn-bitbucket\" id=\"btn-$id\" OnClick=\"BtSwitch$id(this)\" $Over onclick=\"BtSwitch$id(this)\">$ico</button>";
+
+        $f[]="<input type=\"hidden\" id=\"hide-$id\" value=\"$enabled\">
+        <button type=\"button\" class=\"btn btn-white btn-bitbucket\" 
+            id=\"btn-$id\" OnClick=\"BtSwitch$id(this)\" $Over 
+            onclick=\"BtSwitch$id(this)\" $tooltip>$ico</button>";
 
 
 
@@ -5043,6 +5314,7 @@ $jsb[]="}";
         var disabled=$disabled;
         if(disabled==1){return;}
         var value=document.getElementById(\"hide-$id\").value;
+       
 
         if(value==1){
             document.getElementById(\"btn-$id\").innerHTML=\"<i class='fas fa-check' style='color:#EEEEEE' id='ico-$id'></i>\";
@@ -5065,6 +5337,7 @@ $jsb[]="}";
         e.style.cursor='default';
         $(e).removeClass('hover');
     }
+     
     ";
 
         return @implode("\n",$f);
@@ -7893,12 +8166,26 @@ if(typeof dialogInstance == 'object'){
 
             }
         }
+        $HTTP_X_ARTICA_SUBFOLDER="";
+        if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+            $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"];
+        }
+        if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+            $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_META_PREFIX"]."/";
+        }
+
+        if(substr($url,0,1)<>"/"){
+            $url="/".$url;
+        }
+        $rpgressPage="$HTTP_X_ARTICA_SUBFOLDER/fw.progress.php";
+        $rpgressPage=str_replace("//","/",$rpgressPage);
+
         if(isset($_GET["tiny-page"])){
             $TINY_ARRAY["TITLE"]=$title;
             $TINY_ARRAY["ICO"]=$ico;
             $TINY_ARRAY["EXPL"]=$explain;
             $TINY_ARRAY["URL"]=$url;
-            $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+            $jstiny="Loadjs('$rpgressPage?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
         }
 
@@ -7929,7 +8216,6 @@ if(typeof dialogInstance == 'object'){
             }
             $html[]=$this->search_block($page,"file",null,null,$urlToadd,$js);
         }else {
-            $animatedDiv="$iddiv";
             $html[] = "<div id='$iddiv'></div>";
         }
 
@@ -7949,11 +8235,7 @@ if(typeof dialogInstance == 'object'){
             $html[]=$jstiny;
         }
 
-        $html[]="Loadjs('fw.progress.php?browser-items=".base64_encode(serialize($BrowserItem))."');";
-        
-        $t=time();
-
-
+        $html[]="Loadjs('$HTTP_X_ARTICA_SUBFOLDER/fw.progress.php?browser-items=".base64_encode(serialize($BrowserItem))."');";
         $divs[]="tiny-ico:flip";
 
         $t=time();
@@ -8237,7 +8519,25 @@ if(typeof dialogInstance == 'object'){
         $html[]="</div>";
         return $this->_ENGINE_parse_body($html);
     }
+    function footable($id,$filter=false):string{
+        $filtertex="false";
+        if ($filter){
+            $filtertex="true";
+        }
 
+        $f[]="";
+        $f[]="$(document).ready(function(){";
+        $f[]="  $('#$id').footable({";
+        $f[]="    \"filtering\":{\"enabled\":$filtertex},";
+        $f[]="    \"sorting\":{\"enabled\":true},";
+        $f[]="    \"paging\":{\"size\":50}";
+        $f[]="  });";
+        $f[]="});";
+        $f[]="";
+
+        return @implode("\n",$f);
+
+    }
     public function table_buttons($topbuttons=array(),$security=null):string{
         $html[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
         $colors[]="btn-primary";
@@ -8578,7 +8878,7 @@ if(typeof dialogInstance == 'object'){
             $explain=str_replace('"', "`", $explain);
 
             $zlabel[]="data-toggle=\"popover\"";
-            $zlabel[]="data-placement=\"auto right\"";
+            $zlabel[]="data-placement=\"right\"";
             $zlabel[]="data-content=\"$explain\"";
 
 
@@ -9654,7 +9954,7 @@ if(typeof dialogInstance == 'object'){
             $LICENCE=true;
         }
         $license_ico=null;
-        $title="{Warning}";
+        $title="{success}";
         $button=null;
         if(strpos($text,"||")>0){
             $tb=explode("||",$text);
@@ -10451,7 +10751,7 @@ $('#data_$id .input-group.date').datepicker({
                 $explain = str_replace('"', "`", $explain);
                 $zlabel[] = "<a href=\"javascript:blur();\"";
                 $zlabel[] = "data-toggle=\"popover\"";
-                $zlabel[] = "data-placement=\"auto left\"";
+                $zlabel[] = "data-placement=\"left\"";
                 $zlabel[] = "data-content=\"$explain\"";
                 $zlabel[] = ">$label</a>";
                 $label = @implode(" ", $zlabel);
@@ -10500,7 +10800,7 @@ $('#data_$id .input-group.date').datepicker({
         $zlabel[]="<a href=\"javascript:$js;\"";
         $zlabel[]="style='color:#676a6c;text-decoration:underline;text-decoration-style: dashed;'";
         $zlabel[]="data-toggle=\"popover\"";
-        $zlabel[]="data-placement=\"auto right\"";
+        $zlabel[]="data-placement=\"right\"";
         $zlabel[]="data-content=\"$explain</p>\" id='$zid'>";
         $ahref=@implode(" ",$zlabel);
         return array($label,$ahref,"$(\"#$zid\").popover({ trigger: 'hover',html: true,});");
@@ -11877,7 +12177,14 @@ $('#data_$id .input-group.date').datepicker({
         $PAGE=trim($array["PAGE"]);
         $FILENAME=$PAGE;
         if(preg_match("#^(.+?)\?#",$PAGE,$re)){$FILENAME=$re[1];}
-        if(!is_file("/usr/share/artica-postfix/$FILENAME")){return "<!-- $FILENAME  no such file -->";}
+
+        if(preg_match("#^\/netagents\/webconsole\/proxy\/[0-9]+\/(.+)#",$FILENAME,$re)){
+            $FILENAME=$re[1];
+        }
+
+        if(!is_file("/usr/share/artica-postfix/$FILENAME")){
+            return "<!-- $FILENAME  no such file -->";
+        }
 
 
         $ICON=$array["ICO"];

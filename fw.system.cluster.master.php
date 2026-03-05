@@ -16,6 +16,8 @@ if(isset($_GET["parameters"])){parameters();exit;}
 if(isset($_GET["parameters-start"])){parameters_start();exit;}
 if(isset($_GET["flat-parameters-cluster-master"])){flat_parameters();exit;}
 if(isset($_GET["status"])){status();exit;}
+
+if(isset($_POST["ClusterServiceInterface"])){Save();exit;}
 if(isset($_POST["ClusterReplicateOfficalDatabases"])){Save();exit;}
 if(isset($_GET["parameters-popup"])){parameters_popup();exit;}
 if(isset($_GET["remove-node"])){remove_node();exit;}
@@ -24,25 +26,26 @@ page();
 
 function reload_www():bool{
     $tpl=new template_admin();
-   $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/cluster/server/reload"));
-    if (json_last_error()> JSON_ERROR_NONE) {
-        return $tpl->js_error(json_last_error_msg());
-    }
-    if(!$json->Status){
-        return $tpl->js_error($json->Error);
-    }
+
+    $pr=$tpl->framework_buildjs("/cluster/server/reload",
+        "cluster-server.reload.progress",
+        "cluster-server.reload.progress.log",
+        "progress-cluster-restart");
+
+    header("content-type: application/x-javascript");
+    echo $pr;
     return true;
 
 }
 function stop_www():bool{
     $tpl=new template_admin();
-   $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/cluster/server/stop"));
-    if (json_last_error()> JSON_ERROR_NONE) {
-        return $tpl->js_error(json_last_error_msg());
-    }
-    if(!$json->Status){
-        return $tpl->js_error($json->Error);
-    }
+    $pr=$tpl->framework_buildjs("/cluster/server/stop",
+        "cluster-server.reload.progress",
+        "cluster-server.reload.progress.log",
+        "progress-cluster-restart");
+
+    header("content-type: application/x-javascript");
+    echo $pr;
     return true;
 
 }
@@ -290,7 +293,9 @@ function status():bool{
    $size=FormatBytes($PowerDNSEnableClusterMasterSize/1024);
     $ACLUSTER_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ACLUSTER_VERSION");
     $time="<span style='font-size:20px'>$time</span>";
-   $html=$tpl->widget_h("green","fas fa-database","$ACLUSTER_VERSION<br><small style='color:white'>$time ($size)</small>","{cluster_package}<br>$title_time");
+   $html=$tpl->widget_h("green","fas fa-database",
+       "$ACLUSTER_VERSION<br><small style='color:white'>$time ($size)</small>",
+       "{cluster_package}<br>$title_time");
     echo $tpl->_ENGINE_parse_body($html);
 
 
@@ -353,7 +358,8 @@ function local_service_status():string{
 
     $json=json_decode($curl->data);
     if (json_last_error() > JSON_ERROR_NONE) {
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg", ico_bug, json_last_error_msg(), "{local_service} {error}"));
+        return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg",
+            ico_bug, json_last_error_msg(), "{local_service} {error}"));
     }
     if (!property_exists($json,"Status")){
         return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg", ico_bug, "No Status property", "{local_service} {error}"));
@@ -363,6 +369,9 @@ function local_service_status():string{
 
     if(!$json->Status){
         $btn = array();
+
+        $reload=
+
         $btn[0]["margin"] = 0;
         $btn[0]["name"] = "{reload}";
         $btn[0]["icon"] = ico_retweet;

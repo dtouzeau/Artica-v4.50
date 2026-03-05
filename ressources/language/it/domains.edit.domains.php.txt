@@ -24,14 +24,12 @@ All emails for a "relay domain" will be forwarded to an other dedicated server.[
 <no_remote_domain_here>Currently, no relayed domain set</no_remote_domain_here>
 <relay_domain_map>others relayed domains used by your organization</relay_domain_map>
 <roundrobin>Round Robin</roundrobin>
-<roundrobin_text>Round robin DNS is a technique of load distribution, load balancing, or fault-tolerance provisioning multiple,
- redundant Mail Protocol service hosts, e.g., by managing the Domain Name System's (DNS) 
- responses to address requests from Mail server according to an appropriate statistical model.[br]
-In its simplest implementation Round-robin DNS works by responding to DNS requests not only with a single IP address,[br]
- but a list of IP addresses of several servers that host identical services.[br]
-The order in which IP addresses from the list are returned is the basis for the term round robin.[br]
- With each DNS response, the IP address sequence in the list is permuted. Usually, basic IP clients attempt connections with the first 
-address returned from a DNS query so that on different connection attempts clients would receive service from different providers, thus distributing the overall load among servers.
-</roundrobin_text>
+<roundrobin_text>Il DNS Round Robin è una tecnica di distribuzione del carico, bilanciamento o tolleranza ai guasti che fornisce più host di servizi di posta ridondanti,[br]
+gestendo le risposte del sistema DNS alle richieste di indirizzo dei server di posta secondo un modello statistico appropriato.[br]
+Nella sua implementazione più semplice, il DNS Round Robin risponde alle richieste DNS non con un singolo indirizzo IP,[br]
+ma con un elenco di indirizzi IP di più server che ospitano servizi identici.[br]
+Lâ%80%99ordine in cui gli indirizzi IP vengono restituiti costituisce il principio del round robin.[br]
+Ad ogni risposta DNS, la sequenza degli indirizzi IP viene ruotata.[br]
+In genere, i client IP tentano la connessione al primo indirizzo restituito dalla query DNS, consentendo cos%C3%AC la distribuzione del carico tra server diversi.</roundrobin_text>
 <target_computer_name>Target server name or IP</target_computer_name>
 <target_computer_port>Port</target_computer_port>

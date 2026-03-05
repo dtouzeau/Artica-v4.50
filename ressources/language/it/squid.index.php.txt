@@ -132,7 +132,7 @@ The same user can log to a maximum of 2 times from two different machines and wh
 </acl_max_user_ip_text>
 <acl_max_user_ip_title>This will be matched when the same user attempts to log in for more than the specified number of times from different ip addresses</acl_max_user_ip_title>
 <acl_method>Request Method</acl_method>
-<acl_method_text>Matching done based on the HTTP request method:
+<acl_method_text>La corrispondenza viene effettuata in base al metodo della richiesta HTTP:
 [UL]
 [li]GET[/li]
 [li]PUT[/li]
@@ -140,9 +140,7 @@ The same user can log to a maximum of 2 times from two different machines and wh
 [li]CONNECT[/li]
 [li]DELETE[/li]
 [li]PURGE[/li]
-[/UL]
-
-</acl_method_text>
+[/UL]</acl_method_text>
 <acl_method_title>Questo tipo di ACL corrisponde al metodo HTTP negli header della richiesta. Questo include i metodi GET, PUT, ecc.</acl_method_title>
 <acl_myip>Proxy IP Address</acl_myip>
 <acl_myip_text>Using this acl type, we can specify the local IP address on which the clients connections exists.[br]
@@ -311,23 +309,21 @@ All objects which are to be cached are stored in the disk space defined by this 
 This defines the path to cache directory, cache directory name, type and size of the cache area.
 </cache_dir_text>
 <cache_mem>ideal amount of memory</cache_mem>
-<cache_mem_text>It's defines the ideal amount of memory to be used for In-Transit objects, Hot Objects, Negative-Cached objects.[br]
-Data for these objects are stored in 4 KB blocks.[br]
-This parameter specifies the ideal upper limit on the total size of 4 KB blocks allocated.[br]
-In-transit objects have priority over the others.[br]
-When additional space is needed for incoming data, Negative-cached and Hot objects will be released.[br]
-In other words, the negative-cached and hot objects will fill up any unused space not needed for In-transit objects.[br]
-If circumstances require, this limit will be exceeded.[br]
-Specifically, if your incoming request rate requires more than cache_mem of memory to hold In-transit objects,
-Squid will exceed this limit to satisfy the new requests.[br]
-When the load decreases, blocks will be freed until the high-water mark is reached.[br]
-Thereafter, blocks will be used to store hot objects.[br]
+<cache_mem_text>Questa impostazione definisce la quantità ideale di memoria utilizzata per gli oggetti in transito, gli oggetti attivi (hot) e gli oggetti con cache negativa.[br]
+I dati di questi oggetti sono memorizzati in blocchi da 4 KB.[br]
+Questo parametro specifica il limite superiore ideale per la dimensione totale dei blocchi da 4 KB allocati.[br]
+Gli oggetti in transito hanno priorità sugli altri.[br]
+Quando è necessario spazio aggiuntivo per i dati in ingresso, gli oggetti con cache negativa e quelli attivi vengono rilasciati.[br]
+In altre parole, gli oggetti con cache negativa e hot occupano lo spazio inutilizzato non richiesto dagli oggetti in transito.[br]
+Se necessario, questo limite pu%C3² essere superato.[br]
+In particolare, se il tasso di richieste in ingresso richiede più memoria di cache_mem per contenere gli oggetti in transito, il servizio Proxy supererà temporaneamente questo limite per soddisfare le nuove richieste.[br]
+Quando il carico diminuisce, i blocchi di memoria vengono liberati fino al raggiungimento della soglia massima.[br]
+Successivamente, i blocchi disponibili vengono utilizzati per memorizzare gli oggetti hot.[br]
 [blk]
-Note: This tag does not specify the maximum process size.[br]
-It places a limit on one aspect of squid's memory usage.
-[br]Squid uses memory for other things as well.[br]
-Process will probably become twice or three times bigger than the value put here.[/blk]
-</cache_mem_text>
+Nota: Questa direttiva non definisce la dimensione massima del processo.[br]
+Limita solo un aspetto dellâ%80%99utilizzo della memoria del servizio Proxy.[br]
+Il servizio Proxy utilizza memoria anche per altre funzioni.[br]
+Di conseguenza, la dimensione del processo pu%C3² diventare due o tre volte superiore al valore configurato qui.[/blk]</cache_mem_text>
 <cache_replacement_policy>Cache Replacement Policy</cache_replacement_policy>
 <cache_replacement_policy_text>[b]
 The cache replacement policy parameter determines which objects are to be replaced when disk space is needed[/b][br]

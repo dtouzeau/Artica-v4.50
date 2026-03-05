@@ -71,6 +71,15 @@ class sockets{
         $this->EnableIntelCeleron=intval($this->GET_INFO("EnableIntelCeleron"));
 
     }
+    function SPVersion():int{
+        $main=json_decode($this->REST_API("/artica_version"),true);
+        if(!isset($main["service_pack"])){
+            return 0;
+
+        }
+        return intval($main["service_pack"]);
+    }
+
     public function CLUSTER_NGINX($service_id){
         $PowerDNSEnableClusterMaster=intval($this->GET_INFO("PowerDNSEnableClusterMaster"));
         if($PowerDNSEnableClusterMaster==0){
@@ -790,6 +799,73 @@ class sockets{
         }
         return $resp;
     }
+
+    function REST_API_NGINX_POST_JSON($endpoint, $data):string{
+        $unixSocketPath = "/run/reverse-proxy.sock";
+
+        if(!function_exists("curl_init")){
+            return json_encode(array("error" => "curl_init not available"));
+        }
+
+        $cURLConnection = curl_init();
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $uri = "http://localhost/$endpoint";
+
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 30);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, $uri);
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cURLConnection, CURLOPT_POST, true);
+        curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+
+        if(strlen($curl_error) > 0){
+            return json_encode(array("error" => $curl_error));
+        }
+
+        return $resp;
+    }
+
+    function REST_API_NGINX_DELETE($endpoint):string{
+        $unixSocketPath = "/run/reverse-proxy.sock";
+
+        if(!function_exists("curl_init")){
+            return json_encode(array("error" => "curl_init not available"));
+        }
+
+        $cURLConnection = curl_init();
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $uri = "http://localhost/$endpoint";
+
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 30);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, $uri);
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cURLConnection, CURLOPT_CUSTOMREQUEST, "DELETE");
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+
+        if(strlen($curl_error) > 0){
+            return json_encode(array("error" => $curl_error));
+        }
+
+        return $resp;
+    }
+
     public function REST_API_FIRECR($endpoint):string{
         if(!function_exists("curl_init")){
             $array["Status"] = false;
@@ -1060,7 +1136,7 @@ class sockets{
         if(!isset($ArticaUpdateServicesPacks[$Myversion])){return 0;}
         if(!isset($ArticaUpdateServicesPacks[$Myversion]["VERSION"])){return 0;}
         $RemoteServicePack=$ArticaUpdateServicesPacks[$Myversion]["VERSION"];
-        $CurrentServicePack=$this->getFrameWork("artica.php?SPVersion=yes");
+        $CurrentServicePack=$this->SPVersion();
         if($RemoteServicePack>$CurrentServicePack){
             $GLOBALS["isNextSP"]=$RemoteServicePack;
             return intval($GLOBALS["isNextSP"]);
@@ -1247,45 +1323,20 @@ class sockets{
     }
     public function ksrn_sockets($sitename=null):array{
         if($sitename==null){return array("STATUS"=>false, "ERROR"=> "No website returned", "URI-LENGTH"=>0, "URI"=>'');}
-        $KSRNRemote=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KSRNRemote"));
-        VERBOSE("KSRNRemote = $KSRNRemote",__LINE__);
 
-        if(!function_exists("curl_setopt")){
-            return array("STATUS"=>false,"ERROR"=> "Module curl not istalled");
+        $sitenameEnc=urlencode($sitename);
+        $json=json_decode($this->REST_API("/category/get/$sitenameEnc"),true);
+        if(!isset($json["Status"])){
+            return array("STATUS"=>false, "ERROR"=> "Protocol error", "URI-LENGTH"=>0, "URI"=>'');
         }
-        $KSRNRemoteAddr=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_Addr"));
-        $KSRNRemotePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_Port"));
-
-        if($KSRNRemoteAddr==null){$KSRNRemoteAddr="127.0.0.1";}
-        if($KSRNRemotePort==0){$KSRNRemotePort=3333;}
-
-        $ch = curl_init();
-        $MAIN_URI ="http://$KSRNRemoteAddr:$KSRNRemotePort/get-categories/$sitename";
-
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_URL, $MAIN_URI);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_NOPROXY, '*');
-
-        $response = trim(curl_exec($ch));
-        VERBOSE("curl_exec: $MAIN_URI ",__LINE__);
-        VERBOSE("RETURN [$response]",__LINE__);
-        $errno = curl_errno($ch);
-        if ($errno > 0) {
-            $error="Error $errno " . curl_error($ch) . " $response";
-            curl_close($ch);
-            return array("STATUS"=>false,"ERROR"=> $error,"URI-LENGTH"=>strlen($MAIN_URI));
-
+        if(!$json["Status"]){
+            return array("STATUS"=>false, "ERROR"=> $json["Error"], "URI-LENGTH"=>0, "URI"=>'');
         }
-        $CURLINFO_HTTP_CODE = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        if ($CURLINFO_HTTP_CODE <> 200) {
-            return array("STATUS"=>false,
-                "ERROR"=> "HTTP error code $CURLINFO_HTTP_CODE",
-                "URI-LENGTH"=>strlen($MAIN_URI),
-                "URI"=>$MAIN_URI
-            );
-        }
-        return array("STATUS"=> true,"DESTINATION"=>"$KSRNRemoteAddr:$KSRNRemotePort", "RESPONSE"=>$response);
+
+        $response=array("RESPONSE"=>$json["Engine"],"DESTINATION"=>$json["Engine"],"ACTION"=>"PASS","category"=>$json["category_id"]);
+
+        return $response;
+
     }
     public function EnableUfdbGuard($aslog=false){
         if(!$aslog){
@@ -1825,6 +1876,11 @@ class sockets{
         $payload = $keys;
         $json=json_decode($this->REST_API_PUT_JSON("/setinfo",$payload));
         if(!$json){return false;}
+        if(!$json->Status){
+            if(function_exists("writelogs")) {
+                writelogs($json->Error, __FUNCTION__, __FILE__, __LINE__);
+            }
+        }
         return  boolval($json->Status);
 
     }
@@ -2109,16 +2165,6 @@ class sockets{
             $GLOBALS["artica_version"]=@file_get_contents("/usr/share/artica-postfix/VERSION");
             return $GLOBALS["artica_version"];
         }
-
-        if($uri=="artica.php?SPVersion=yes"){
-            $VERSION=trim(@file_get_contents("/usr/share/artica-postfix/VERSION"));
-            $SP=intval(@file_get_contents("/usr/share/artica-postfix/SP/$VERSION"));
-            return $SP;
-        }
-
-
-
-
         if($uri=="cmd.php?system-unique-id=yes"){
             $GetUniqueID=$this->GetUniqueID();
             if($GetUniqueID<>null){return base64_encode($GetUniqueID);}
@@ -2156,7 +2202,6 @@ class sockets{
         $NOCOMMANDS["cmd.php?squid-GetOrginalSquidConf"]=true;
         $NOCOMMANDS["cmd.php?LdapdbSize=yes"]=true;
         $NOCOMMANDS["squid.php?build-schedules=yes"]=true;
-        $NOCOMMANDS["artica.php?SPVersion=yes"]=true;
         $NOCOMMANDS["postgres.php?PostGresSQLDatabaseDirectory=yes"]=true;
         $NOCOMMANDS["services.php?nsswitch=yes"]=true;
         $NOCOMMANDS["cmd.php?postfix-hash-aliases=yes"]=true;

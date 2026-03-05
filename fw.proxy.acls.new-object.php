@@ -40,9 +40,11 @@ function popup(){
     $LockActiveDirectoryToKerberos=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LockActiveDirectoryToKerberos"));
     $EnableActiveDirectoryFeature=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableActiveDirectoryFeature"));
     $HaClusterClient= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
+    $EnableArticaAuthenticationAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaAuthenticationAgent"));
     if($HaClusterClient==1){$LockActiveDirectoryToKerberos=1;}
     if($WindowsActiveDirectoryKerberos==1){$EnableKerbAuth=1;}
     if($LockActiveDirectoryToKerberos==1){$EnableKerbAuth=1;}
+    if($EnableArticaAuthenticationAgent==1){$EnableKerbAuth=1;}
 
     $acl_allowdeny=false;
     if($_GET["TableLink"]=="webfilters_sqacllinks"){$acl_allowdeny=true;}

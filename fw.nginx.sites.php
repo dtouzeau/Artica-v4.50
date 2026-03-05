@@ -1,4 +1,5 @@
 <?php
+$GLOBALS["PEITYCONF"]="{ width:280,height:25,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
 $GLOBALS["DYNAMIC_RATE_FEATURE"]=false;
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
@@ -32,7 +33,6 @@ if(isset($_GET["backend-analyze2-js"])){backend2_js();exit;}
 if(isset($_GET["create-self-signed"])){create_self_signed();exit;}
 if(isset($_GET["ProxySslServerName-js"])){proxy_ssl_server_name_js();exit;}
 if(isset($_GET["ProxySslServerName-popup"])){proxy_ssl_server_name_popup();exit;}
-if(isset($_POST["vitrification"])){www_parameters_vitrification_save();exit;}
 if(isset($_POST["ProxySslServerName"])){proxy_ssl_server_name_save();exit;}
 
 if(isset($_GET["check-reverse"])){check_reverse_js();exit;}
@@ -62,18 +62,13 @@ if(isset($_GET["www-tabs"])){www_tabs();exit;}
 if(isset($_GET["www-parameters"])){www_parameters();exit;}
 if(isset($_GET["www-parameters2"])){www_parameters2();exit;}
 if(isset($_GET["www-parameters-general-js"])){www_parameters_section_js("general");exit;}
-if(isset($_GET["www-parameters-vitrification-js"])){www_parameters_vitrification_js();exit;}
-if(isset($_GET["www-parameters-vitrification-switch"])){www_parameters_vitrification_switch();exit;}
+
 
 if(isset($_GET["www-parameters-security-js"])){www_parameters_section_js("security");exit;}
 if(isset($_GET["www-parameters-ssl-js"])){www_parameters_section_js("ssl");exit;}
 if(isset($_GET["www-parameters-general-popup"])){www_parameters_general_popup();exit;}
 if(isset($_GET["www-parameters-security-popup"])){www_parameters_security_popup();exit;}
 if(isset($_GET["www-parameters-ssl-popup"])){www_parameters_ssl_popup();exit;}
-if(isset($_GET["www-parameters-vitrification-popup"])){www_parameters_vitrification_popup();exit;}
-if(isset($_GET["www-parameters-vitrification-status"])){
-    www_parameters_vitrification_status();exit;
-}
 
 if(isset($_GET["restart-needed"])){restart_needed_js();exit;}
 if(isset($_POST["restart-needed"])){restart_needed_perform();exit;}
@@ -171,10 +166,25 @@ function rows_ping(){
     $tb=explode(",",$_GET["rows-ping"]);
     $f=array();
     $page=CurrentPageName();
+
+    if(!isset($GLOBALS["MAIN_RT_USERS"])){
+        $ThisInf=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/metrics/realtime/clients/counts"),true);
+        if(isset($ThisInf["services"])){
+            foreach ($ThisInf["services"] as $num=>$ligneUsers){
+                VERBOSE("MAIN_RT_USERS: {$ligneUsers["service_id"]} = {$ligneUsers["clients_count"]}",__LINE__);
+                $MAIN_RT_USERS[$ligneUsers["service_id"]]=$ligneUsers["clients_count"];
+            }
+            $GLOBALS["MAIN_RT_USERS"]=$MAIN_RT_USERS;
+        }else{
+            VERBOSE("MAIN_RT_USERS: NO!!",__LINE__);
+        }
+    }
+
+
     foreach ($tb as $sID){
         $ID=intval($sID);
         if($ID==0){continue;}
-        $ServerStats=base64_encode(td_row_serverstats($ID));
+        $ServerStats=base64_encode(td_row_serverstats($ID,$GLOBALS["MAIN_RT_USERS"]));
         $f[]="if( document.getElementById('rcolorStats-$ID') ){";
         $f[]="\ttempdata=base64_decode('$ServerStats');";
         $f[]="\tdocument.getElementById('rcolorStats-$ID').innerHTML=tempdata;";
@@ -1089,20 +1099,8 @@ function www_parameters_section_js($section):bool{
     }
     return $tpl->js_dialog2("#$ID - $servicename$addon", "$page?www-parameters-$section-popup=$ID&CertCenter=$CertCenter");
 }
-function www_parameters_vitrification_js():bool{
-    $page=CurrentPageName();
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=intval($_GET["www-parameters-vitrification-js"]);
-    $servicename=get_servicename($ID);
-    return $tpl->js_dialog2("#$ID - $servicename", "$page?www-parameters-vitrification-popup=$ID");
-}
-function www_parameters_JsBC_js():bool{
-    $page=CurrentPageName();
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=intval($_GET["JsBC-js"]);
-    $servicename=get_servicename($ID);
-    return $tpl->js_dialog2("#$ID - $servicename", "$page?JsBC-popup=$ID");
-}
+
+
 
 function www_tabs():bool{
     $page=CurrentPageName();
@@ -1341,151 +1339,13 @@ function www_parameters_reload($serviceid):string{
     $js[]="dialogInstance2.close()";
     return @implode(";",$js);
 }
-function www_parameters_JsBC_popup():bool{
-    $page = CurrentPageName();
-    $tpl = new template_admin();
-    $tpl->CLUSTER_CLI = true;
-    $ID                         = intval($_GET["JsBC-popup"]);
-    $sockngix                   = new socksngix($ID);
-    $JsBC=intval($sockngix->GET_INFO("JsBC"));
-
-    $form[]=$tpl->field_hidden("ID", $ID);
-    $form[]=$tpl->field_checkbox("JsBC","{enable_feature}",$JsBC);
-    $html[]= $tpl->form_outside("", $form,"{signed_js_browser_challenge}|{signed_js_browser_challenge_explain}|fab fa-js","{apply}",www_parameters_reload($ID),"AsSystemWebMaster");
-    echo $tpl->_ENGINE_parse_body($html);
-    return true;
-}
-function www_parameters_JsBC_save():bool{
-    $ID=$_POST["ID"];
-    $JsBC=$_POST["JsBC"];
-    $sockngix                   = new socksngix($ID);
-    $sockngix->SET_INFO("JsBC",$JsBC);
-    $servicename=get_servicename($ID);
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
-    return admin_tracks("Set Signed JavaScript Browser Challenge feature to $JsBC for $servicename");
-}
-
-function www_parameters_vitrification_popup():bool{
-    $page                       = CurrentPageName();
-    $tpl                        = new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID                         = intval($_GET["www-parameters-vitrification-popup"]);
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT vitrification FROM nginx_services WHERE ID=$ID");
-    $form[]=$tpl->field_hidden("ID", $ID);
-    $form[]=$tpl->field_checkbox("vitrification","{enable_feature}",$ligne["vitrification"]);
-
-    $html[]="<table style='width:100%;'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:240px;vertical-align: top'>";
-    $html[]="<div id='vitrification-status-$ID'></div>";
-    $html[]="</td>";
-    $html[]="<td style='width:100%;vertical-align: top'>";
-    $html[]= $tpl->form_outside("", $form,"{vitrification}|{vitrification_explain}|fas fa-wine-glass","{apply}",www_parameters_reload($ID),"AsSystemWebMaster");
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    $html[]="<script>";
-    $html[]="LoadAjax('vitrification-status-$ID','$page?www-parameters-vitrification-status=$ID');";
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
-    return true;
-}
-function www_parameters_vitrification_switch():bool{
-    $ID                         = intval($_GET["www-parameters-vitrification-switch"]);
-    $sockngix                   = new socksngix($ID);
-    $page=CurrentPageName();
-    $vitrification=intval($sockngix->GET_INFO("EnableVitrification"));
-    VERBOSE("$ID: EnableVitrification=$vitrification",__LINE__);
-
-    if($vitrification==0){
-        $vitrification_text="On";
-        $vitrification=1;
-    }else{
-        $vitrification_text="Off";
-        $vitrification=0;
-    }
-    VERBOSE("$ID: EnableVitrification=$vitrification",__LINE__);
-    $sname=get_servicename($ID);
-    $sockngix->SET_INFO("EnableVitrification",$vitrification);
-    header("content-type: application/x-javascript");
-    echo "LoadAjax('vitrification-status-$ID','$page?www-parameters-vitrification-status=$ID');";
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
-    return admin_tracks("Turn vitrification to $vitrification_text for service $ID $sname");
-
-}
-function www_parameters_vitrification_status():bool{
-    $page                       = CurrentPageName();
-    $ID=intval($_GET["www-parameters-vitrification-status"]);
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT vitrification FROM nginx_services WHERE ID=$ID");
-    if($ligne["vitrification"]==0) {
-        echo $tpl->widget_grey("{vitrification}", "{disabled}", null, "fas fas fa-times-circle");
-        return true;
-    }
-
-
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/vitrification/status/$ID"));
-    if(!$json->Status){
-        echo $tpl->widget_rouge("{vitrification}",$json->Error,null,"fas fa-hourglass-start",true);
-        return true;
-    }
-
-
-    $hosts=array();
-    foreach ($json->Info->Hosts as $domain=>$class){
-        $size=FormatBytes($class->packageSize);
-        $hosts[] = "$domain ($size)";
-
-    }
-    if(count($hosts)==0){
-        echo $tpl->widget_grey("{vitrification}","{wait_package_cloud}",null,"fas fa-hourglass-start");
-        return true;
-    }
-    $nginx=new socksngix($ID);
-    if(intval($nginx->GET_INFO("EnableVitrification")==0)){
-        $btn[]=array("name"=>"{activate}","js"=>"Loadjs('$page?www-parameters-vitrification-switch=$ID')","icon"=>"fad fa-badge-check","color"=>null);
-
-        $js=$tpl->framework_buildjs("nginx:/vitrification/run/$ID",
-            "vitrification.$ID.run",
-            "vitrification.$ID.run.log",
-            "vitrification-$ID-run"
-        );
-
-        $btn[]=array("name"=>"{run_vitrification}","js"=>$js,"icon"=>ico_run,"color"=>null);
-
-        echo $tpl->widget_grey("{vitrification}","{disabled}",$btn,
-            "fas far fa-wine-glass");
-        echo "<div id='vitrification-$ID-run' style='margin-top:10px'></div>";
-        return true;
-    }
-// <i class="fas fa-times-circle"></i>
-//<i class="fas fa-wine-glass"></i>
 
 
 
 
-    $btn[]=array("name"=>"{disable}","js"=>"Loadjs('$page?www-parameters-vitrification-switch=$ID')","icon"=>"fas fa-times-circle","color"=>null);
 
 
 
-    echo $tpl->widget_vert("{vitrification}","{active2}",$btn,"fas fa-wine-glass");
-    return true;
-
-}
-function www_parameters_vitrification_save():bool{
-    $page                       = CurrentPageName();
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ID=$_POST["ID"];
-    $vitrification=$_POST["vitrification"];
-    $q->QUERY_SQL("UPDATE nginx_services SET vitrification=$vitrification WHERE ID=$ID");
-    $servicename=get_servicename($ID);
-    $sock=new sockets();
-    $sock->REST_API_NGINX("/push/cloud");
-    return admin_tracks("Set vitrification feature to $vitrification for $servicename");
-
-}
 function www_parameters_ssl_popup():bool{
     $page                       = CurrentPageName();
     $tpl                        = new template_admin();$tpl->CLUSTER_CLI=true;
@@ -1607,11 +1467,28 @@ function www_parameters2_auditFrontend_save():bool{
     }
     return admin_tracks("Set reverse-proxy Cloud monitoring to $monitored for $servicename");
 }
+function www_parameters2_vitrification($tpl,$ID){
+
+    $Vitrification=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Vitrification"));
+    if($Vitrification==0) {
+        return $tpl;
+    }
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
+    $tpl->table_form_field_js("Loadjs('fw.nginx.sites.vitrification.php?js=$ID')");
+    if($ligne["vitrification_enabled"]==0) {
+        $tpl->table_form_field_bool("{vitrification}",0,"fas fa-wine-glass");
+        return $tpl;
+    }
+    $tpl->table_form_field_bool("{vitrification}",1,"fas fa-wine-glass");
+    return $tpl;
+
+}
 function www_parameters2_SignedJSBC($tpl,$ID){
     $sockngix=new socksngix($ID);
     $page=CurrentPageName();
     $JsBC=intval($sockngix->GET_INFO("JsBC"));
-    $js="Loadjs('$page?JsBC-js=$ID');";
+    $js="Loadjs('fw.nginx.sites.JsBC.php?serviceid=$ID');";
     $tpl->table_form_field_js($js,"AsWebMaster");
     $tpl->table_form_field_bool("{signed_js_browser_challenge}",$JsBC, "fab fa-js");
     return $tpl;
@@ -1707,46 +1584,7 @@ function create_self_signed():bool{
     echo "LoadAjax('www-parameters-$serviceid','$page?www-parameters2=$serviceid');";
     return true;
 }
-function www_parameters2_vitrification($tpl,$ID){
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT vitrification FROM nginx_services WHERE ID=$ID");
-    $page=CurrentPageName();
-    $tpl->table_form_field_js("Loadjs('$page?www-parameters-vitrification-js=$ID')");
-    if(intval($ligne["vitrification"])==0){
-        $tpl->table_form_field_bool("{vitrification}",0,"fas fa-wine-glass");
-        return $tpl;
-    }
 
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/vitrification/status/$ID"));
-    if(!$json->Status){
-        $tpl->table_form_field_text("{vitrification}",$json->Error,"fas fa-hourglass-start",true);
-        return $tpl;
-    }
-
-
-    $hosts=array();
-    foreach ($json->Info->Hosts as $domain=>$class){
-        $size=FormatBytes($class->packageSize);
-        $hosts[]="$domain ($size)";
-    }
-
-
-
-    if(count($hosts)==0){
-        $tpl->table_form_field_text("{vitrification}","{wait_package_cloud}","fas fa-hourglass-start");
-        return $tpl;
-    }
-    $sockngix = new socksngix($ID);
-    $EnableVitrification=intval($sockngix->GET_INFO("EnableVitrification"));
-    if($EnableVitrification==0){
-        $hosts[]="<span class='label label-default'>{inactive2}</span>";
-    }else{
-        $hosts[]="<span class='label label-primary'>{active2}</span>";
-    }
-
-    $tpl->table_form_field_text("{vitrification}","<small style='text-transform: none'>".@implode(", ",$hosts)." </small>","fas fa-wine-glass");
-    return $tpl;
-}
 
 function www_parameters2_waf($tpl,$ID){
 
@@ -2899,6 +2737,44 @@ function td_btnPagespeed($enabled,$ID):array{
 
 
 }
+
+function td_row_vitrification($id,$sockngix):string{
+    $Vitrification=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Vitrification"));
+    if($Vitrification==0) {
+        return "";
+    }
+    $js="Loadjs('fw.nginx.sites.vitrification.php?js=$id')";
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+    $ligne=$sockngix->GetCache();
+    if($ligne["vitrification_enabled"]==0){
+        return "";
+    }
+    $ay=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/vitrification/fetch/status/$id"),true);
+
+    if(!isset($ay["Status"]) OR !isset($ay["Data"])){
+        return $tpl->icon_vitrification($js,false,true);
+    }
+    $array=$ay["Data"];
+    if($array["Running"]) {
+        return $tpl->icon_refresh_animate($js);
+    }
+    $ay=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/vitrification/storage/status/$id"),true);
+    $array=$ay["Data"];
+
+    $TotalSizeBytes=$array["TotalSizeBytes"];
+
+    if($TotalSizeBytes>0) {
+        if (!$array["IsVitrified"]) {
+            return $tpl->icon_vitrification($js);
+
+        }
+        return $tpl->icon_vitrification($js,true);
+
+    }
+
+    return __LINE__."-".$TotalSizeBytes.$tpl->icon_vitrification($js);
+
+}
 function td_row_waf($ID):string{
     $ID=intval($ID);
     if($ID==0){return "";}
@@ -2968,7 +2844,7 @@ function td_destinations():bool{
     $ID=$_GET["td-destinations"];
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
-
+    $latency="<div id='peity-start-$ID'></div>";
 
     $sockngix                   = new socksngix($ID);
     $ligne=$sockngix->GetCache();
@@ -3019,7 +2895,7 @@ function td_destinations():bool{
     }
     if($ligne["type"]==5){
         $destination=@implode("<br>",$ligne["backendsOf"]);
-        $destination=base64_encode($tpl->_ENGINE_parse_body($destination));
+        $destination=base64_encode($tpl->_ENGINE_parse_body($destination).$latency);
         $f[]="if( document.getElementById('$idDiv') ){";
         $f[]="\ttempdata=base64_decode('$destination');";
         $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
@@ -3070,7 +2946,7 @@ function td_destinations():bool{
             $destination="<small>$tootips$backends</small>$latencyscore_text";
         }
 
-        $destination=base64_encode($tpl->_ENGINE_parse_body($destination));
+        $destination=base64_encode($tpl->_ENGINE_parse_body($destination.$latency));
         $f[]="if( document.getElementById('$idDiv') ){";
         $f[]="\ttempdata=base64_decode('$destination');";
         $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
@@ -3085,8 +2961,45 @@ function td_destinations():bool{
     $f[]="\ttempdata=base64_decode('$destination');";
     $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
     $f[]="}";
+
+
+    $f[]="function LatenciesPeity(){";
+    $f[]="  $(\"[id^='peity-latencies-']\").each(function () {";
+    $f[]="      let fullId = this.id;";
+    $f[]="      let match = fullId.match(/^peity-latencies-(\d+)$/);";
+    $f[]="      if (match && match[1]) {";
+    $f[]="          let id = match[1];";
+    $f[]="          ";
+    $f[]="      }";
+    $f[]="  });";
+    $f[]="";
+    $f[]="LatenciesPeity();";
     echo @implode("\n",$f);
     return true;
+}
+function td_row_latencies($ID):array{
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/backends-scanner/metrics/$ID"),true);
+    if(!isset($json["Data"])){
+        return array("","");
+    }
+
+    $max_ms=array();
+    foreach ($json["Data"] as $atence){
+        $max_ms[]=$atence["max_ms"];
+
+    }
+    if(count($max_ms)==0){
+        return array("","");
+    }
+
+    $peity_div = "<div style='margin-top:5px' 
+		onMouseOver=\"this.style.cursor='pointer'\" 
+		OnMouseOut=\"this.style.cursor='default'\"
+		onclick=\"Loadjs('fw.nginx.metrics.latencies.php?js=$ID')\">
+		<span id=\"nginx-sites-latencies-$ID\"></div>";
+
+    return array($peity_div,@implode(",",$max_ms));
 }
 function MillisToText($mill):string{
     if($mill<1000){
@@ -3194,7 +3107,30 @@ function td_row_clean($id):string{
     $f[]="}";
     return @implode("\n",$f);
 }
-function td_row_serverstats($QueryID):string{
+function td_row_serverstats($QueryID,$MAIN_RT_USERS):string{
+
+    $UserLabel="";
+    if(isset($MAIN_RT_USERS[$QueryID])){
+        $tpl=new template_admin();
+        $UserNum=intval($MAIN_RT_USERS[$QueryID]);
+        if($UserNum>0){
+            $icoUsr=ico_member;
+            $class="text-muted";
+            if($UserNum>1){
+                $class="text-primary";
+            }
+            if($UserNum>5000){
+                $class="text-warning";
+            }
+            if($UserNum>50000){
+                $class="text-danger";
+            }
+            $UserNumText="<span class='$class'>".$tpl->FormatNumber($UserNum)."</span>";
+            $UserNumText=$tpl->td_href($UserNumText,"","Loadjs('fw.nginx.active_requests.php?serviceid=$QueryID');");
+            $UserLabel="&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<i class='$icoUsr'></i>&nbsp;$UserNumText";
+        }
+    }
+
 
     if(isset($GLOBALS["TD_ROWS_STATS"])){
         $STATS=$GLOBALS["TD_ROWS_STATS"];
@@ -3258,6 +3194,12 @@ function td_row_serverstats($QueryID):string{
     if($averageSeconds>0){
         $z[]="&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<i class='$icocl'></i>&nbsp;".number_format($averageSeconds, 2)."/s";
     }
+    if(strlen($UserLabel)>1){
+        $z[]=$UserLabel;
+    }
+
+
+
     $z[]="</small></div>";
     return @implode("",$z);
 
@@ -3275,14 +3217,28 @@ function td_row_status($id=0):bool{
 
 
     $MAIN_REVERSED = MAIN_REVERSED();
+    if(!isset($GLOBALS["MAIN_RT_USERS"])){
+        $ThisInf=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/metrics/realtime/clients/counts"),true);
+        if(isset($ThisInf["services"])){
+            foreach ($ThisInf["services"] as $num=>$ligneUsers){
+                VERBOSE("MAIN_RT_USERS: {$ligneUsers["service_id"]} = {$ligneUsers["clients_count"]}",__LINE__);
+                $MAIN_RT_USERS[$ligneUsers["service_id"]]=$ligneUsers["clients_count"];
+            }
+            $GLOBALS["MAIN_RT_USERS"]=$MAIN_RT_USERS;
+        }else{
+            VERBOSE("MAIN_RT_USERS: NO!!",__LINE__);
+        }
+    }
+
+
     $WAF=base64_encode(td_row_waf($id));
     $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne,$sockngix,$MAIN_REVERSED)));
     $td_saved=base64_encode($tpl->_ENGINE_parse_body(td_saved($ligne,$sockngix)));
     $BtnAction=base64_encode($tpl->_ENGINE_parse_body(td_btnAction($id)));
     $servicename=base64_encode(td_row_servicename($id,$MAIN_REVERSED));
     $servernames=base64_encode(td_row_serversnames($id));
-    $ServerStats=base64_encode(td_row_serverstats($id));
-
+    $ServerStats=base64_encode(td_row_serverstats($id,$GLOBALS["MAIN_RT_USERS"]));
+    $Vitrification=base64_encode(td_row_vitrification($id,$sockngix));
 
 
 
@@ -3295,6 +3251,12 @@ function td_row_status($id=0):bool{
     $f[]="if( document.getElementById('rcolor1-$id') ){";
     $f[]="\ttempdata=base64_decode('$td_saved');";
     $f[]="\tdocument.getElementById('rcolor1-$id').innerHTML=tempdata;";
+    $f[]="}";
+
+    // rcolor3 --> Vitrification
+    $f[]="if( document.getElementById('rcolor3-$id') ){";
+    $f[]="\ttempdata=base64_decode('$Vitrification');";
+    $f[]="\tdocument.getElementById('rcolor3-$id').innerHTML=tempdata;";
     $f[]="}";
 
     $f[]="if( document.getElementById('rcolor2-$id') ){";
@@ -3344,6 +3306,23 @@ function td_row_status($id=0):bool{
     if(!isset($_GET["no-destinations"])){
         $f[]="Loadjs('$page?td-destinations=$id&function=');";
     }
+    $peity_conf="{ width:150,height:25,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
+    //return array($peity_div,@implode(",",$max_ms));
+    list($div,$data)=td_row_latencies($id);
+    if(strlen($data)>1) {
+        $divEnc=base64_encode($div);
+        $f[] = "if(document.getElementById('peity-start-$id')){";
+        $f[]="\ttempdata=base64_decode('$divEnc');";
+        $f[]="\tdocument.getElementById('peity-start-$id').innerHTML=tempdata;";
+        $f[] = "\t$(\"#nginx-sites-latencies-$id\").peity(\"line\",$peity_conf);";
+        $f[] = "}";
+        $f[] = "";
+    }
+
+
+
+
+
 
     echo @implode("\n",$f);
     return true;
@@ -3511,9 +3490,13 @@ function table():bool{
         echo $tpl->_ENGINE_parse_body($html);
         return false;
     }
+    if(!isset($json["sites"])){
+        $json["sites"]=array();
+    }
+
     $results=$json["sites"];
 
-    $GLOBALS["PEITYCONF"]="{ width:200,height:25,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
+
 
     $peity_js=array();
     $c=0;
@@ -3533,7 +3516,6 @@ function table():bool{
         $StartItems=($NginxTableCurpage-1)*$SessionTableOffset;
         $StopItems = $NginxTableCurpage*$SessionTableOffset;
     }
-
     VERBOSE("[START] SessionTableOffset=$SessionTableOffset ( Number of items per page) NginxTableCurpage=$NginxTableCurpage (page requested) Start at $StartItems Stop at $StopItems",__LINE__);
 
     if(strlen($search)>1) {
@@ -3645,8 +3627,8 @@ function table():bool{
         $html[]="<td $ssTyle1><span id='rcolor0-$ID'><span></td>";
         $html[]="<td $ssTyle1 nowrap><span style='$color' id='rcolor1-$ID'></span></td>";
         $html[]="<td nowrap>$RCOlor2<span id='rcolorStats-$ID'></span></td>";
-        $html[]="<td><span style='$color' id='rcolor3-$ID'></span></td>";
-        $html[]="<td><span style='$color' id='rcolor4-$ID'></span></td>";
+        $html[]="<td><span style='$color' id='rcolor3-$ID'></span></td>"; // Vitrification
+        $html[]="<td><span style='$color' id='rcolor4-$ID'></span></td>"; // WAF
         $html[]="<td><span style='$color' id='rcolor7-$ID'></span></td>";
         $html[]="<td><span style='$color;width:35%' id='rcolor5-$ID'></span></td>";
         $html[]="<td $ssTyle1 class='center' nowrap>$is_default_icon</td>";
@@ -4042,10 +4024,16 @@ function MAIN_REVERSED():array{
     }
     return $GLOBALS["MAIN_REVERSED"];
 }
+
+
+
 function td_status($ligne,$sockngix,$MAIN_REVERSED=array()):string{
     VERBOSE("-------------------------- START STATUS --------------------------", __LINE__);
     $page = CurrentPageName();
-    $ssl_certificate =$ligne["ssl_certificate"];
+    $ssl_certificate="";
+    if(isset($ligne["ssl_certificate"])) {
+        $ssl_certificate = $ligne["ssl_certificate"];
+    }
     $tpl = new template_admin();
     $ID = $ligne["ID"];
 
@@ -4064,6 +4052,8 @@ function td_status($ligne,$sockngix,$MAIN_REVERSED=array()):string{
     if(count($MAIN_REVERSED)==0) {
         $MAIN_REVERSED = MAIN_REVERSED();
     }
+
+
 
 
     if($MaintenanceSite==1){

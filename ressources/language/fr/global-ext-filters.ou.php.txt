@@ -20,11 +20,11 @@ Cela est d&ucirc; &agrave; une lacune dans cette version du filtre. Lorsque le f
 Pour que rechercher zip  ait un effet, vous devez:
 Utiliser le mode pi&egrave;ce jointe interdite et pr&eacute;ciser dans Interdire le pi&egrave;ces jointes les actions supprimer ou tuer pour s&eacute;lectionner les extensions.</search_zip_text>
 <subj_deleted>Ajouter du texte au sujet (supprim&eacute;s)</subj_deleted>
-<subj_deleted_text>Ajouter du texte dans Objet si une pi&egrave;ce jointe est supprim&eacute; pour une raison quelconque.
-Non d&eacute;fini par d&eacute;faut, donc &quot;renattach&quot; &eacute;choue jusqu'&agrave; la prochaine directive valable pour, &eacute;ventuellement, ajouter un objet</subj_deleted_text>
+<subj_deleted_text>Ajouter du texte à lâ%80%99objet (Subject) si une pièce jointe est supprimée pour quelque raison que ce soit.[br]
+Par défaut, cette option est non définie ; le processus passe alors à la directive dâ%80%99objet valide suivante, puis, en dernier recours, à add subject.</subj_deleted_text>
 <subj_renamed>Ajouter du texte au sujet (renomm&eacute;s)</subj_renamed>
-<subj_renamed_text>Ajouter du texte &agrave; Objet si une pi&egrave;ce est renomm&eacute; pour une raison quelconque. [br]
-Non d&eacute;fini par d&eacute;faut, donc &quot;renattach&quot; &eacute;choue &agrave; ajouter un objet.</subj_renamed_text>
+<subj_renamed_text>Ajouter du texte à lâ%80%99objet (Subject) si une pièce jointe est renommée pour quelque raison que ce soit.[br]
+Par défaut, cette option est non définie ; le processus passe alors directement à add subject.</subj_renamed_text>
 <users_groups_list>Liste des groupe d'utilisateurs</users_groups_list>
 <warning_html>Message de notification en Html</warning_html>
 <warning_html_text>Ins&egrave;re un message d'avertissement dans les portions HTML de l'e-mail lorsqu'un filtrage se produit. Le code HTML est ins&eacute;r&eacute; dans un endroit d&eacute;termin&eacute;e par

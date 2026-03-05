@@ -560,7 +560,7 @@ function dns_settings_perfs_js():bool{
 
 }
 
-function dns_settings_form(){
+function dns_settings_form():bool{
     $tpl=new template_admin();
     $tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
@@ -581,7 +581,8 @@ function dns_settings_form(){
 
     $html[]="</div>";
     $form[]=$tpl->field_hidden("DNSSave", "yes");
-    $form[]=$tpl->field_checkbox("ProxyUseOwnDNS","{proxy_use_its_own_dns}",$ProxyUseOwnDNS,"SquidNameServer1,SquidNameServer2,SquidNameServer3");
+    $form[]=$tpl->field_checkbox("ProxyUseOwnDNS","{proxy_use_its_own_dns}",$ProxyUseOwnDNS,
+        "SquidNameServer1,SquidNameServer2,SquidNameServer3");
     $form[]=$tpl->field_text("SquidNameServer1","{primary_dns}",$SquidNameServer1);
     $form[]=$tpl->field_text("SquidNameServer2","{secondary_dns}",$SquidNameServer2);
     $form[]=$tpl->field_text("SquidNameServer3","{nameserver} 3",$SquidNameServer3);
@@ -593,7 +594,7 @@ function dns_settings_form(){
 
 
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-
+    return true;
 
 
 }

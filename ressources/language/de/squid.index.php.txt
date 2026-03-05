@@ -126,7 +126,7 @@ http_access deny maxuser[br][/blk][br]
 Ein und derselbe Benutzer kann sich maximal zwei Mal von zwei verschiedenen Rechnern aus anmelden, und wenn er versucht, sich ein drittes Mal von einem dritten System aus anzumelden, wird ihm der Zugriff verweigert</acl_max_user_ip_text>
 <acl_max_user_ip_title>Dies wird abgeglichen, wenn derselbe Benutzer mehr als die angegebene Anzahl von verschiedenen IP-Adressen aus versucht, sich anzumelden</acl_max_user_ip_title>
 <acl_method>Request Method</acl_method>
-<acl_method_text>Matching done based on the HTTP request method:
+<acl_method_text>Die Zuordnung erfolgt basierend auf der HTTP-Anfragemethode:
 [UL]
 [li]GET[/li]
 [li]PUT[/li]
@@ -134,9 +134,7 @@ Ein und derselbe Benutzer kann sich maximal zwei Mal von zwei verschiedenen Rech
 [li]CONNECT[/li]
 [li]DELETE[/li]
 [li]PURGE[/li]
-[/UL]
-
-</acl_method_text>
+[/UL]</acl_method_text>
 <acl_method_title>Dieser ACL-Typ entspricht der HTTP-Methode in den Headern der Anfrage. Dazu geh%C3%B6ren die Methoden GET, PUT, etc.</acl_method_title>
 <acl_myip>Proxy IP Address</acl_myip>
 <acl_myip_text>Using this acl type, we can specify the local IP address on which the clients connections exists.[br]
@@ -300,22 +298,21 @@ All objects which are to be cached are stored in the disk space defined by this 
 This defines the path to cache directory, cache directory name, type and size of the cache area.
 </cache_dir_text>
 <cache_mem>ideal amount of memory</cache_mem>
-<cache_mem_text>Sie definiert den idealen Speicherplatz f%C3%BCr In-Transit-Objekte, Hot Objects und Negative-Cached-Objekte[br].
-Die Daten f%C3%BCr diese Objekte werden in 4-KB-Bl%C3%B6cken gespeichert [br].
-Dieser Parameter gibt die ideale Obergrenze f%C3%BCr die Gesamtgr%C3%B6%C3%9Fe der zugewiesenen 4-KB-Bl%C3%B6cke an [br].
-In-Transit-Objekte haben Vorrang vor den anderen.[br]
-Wenn zus%C3%A4tzlicher Speicherplatz f%C3%BCr eingehende Daten ben%C3%B6tigt wird, werden Negative-cached und Hot-Objekte freigegeben[br].
-Mit anderen Worten, die Negative-Cached- und Hot-Objekte f%C3%BCllen den ungenutzten Platz auf, der nicht f%C3%BCr In-Transit-Objekte ben%C3%B6tigt wird.
-Wenn die Umst%C3%A4nde es erfordern, wird diese Grenze %C3%BCberschritten.
-Insbesondere dann, wenn Ihre eingehende Anforderungsrate mehr als cache_mem an Speicherplatz f%C3%BCr In-Transit-Objekte ben%C3%B6tigt,
-Squid wird diese Grenze %C3%BCberschreiten, um die neuen Anforderungen zu erf%C3%BCllen[br].
-Wenn die Last abnimmt, werden Bl%C3%B6cke freigegeben, bis der H%C3%B6chststand erreicht ist.
-Danach werden die Bl%C3%B6cke zum Speichern von hei%C3%9Fen Objekten verwendet.
+<cache_mem_text>Diese Einstellung definiert die ideale Menge an Speicher, die f%C3%BCr In-Transit-Objekte, Hot-Objekte und negativ zwischengespeicherte Objekte verwendet wird.[br]
+Die Daten dieser Objekte werden in 4-KB-Bl%C3%B6cken gespeichert.[br]
+Dieser Parameter legt die empfohlene Obergrenze f%C3%BCr die Gesamtgr%C3%B6%C3%9Fe der zugewiesenen 4-KB-Bl%C3%B6cke fest.[br]
+In-Transit-Objekte haben Vorrang vor allen anderen.[br]
+Wenn zus%C3%A4tzlicher Speicher f%C3%BCr eingehende Daten ben%C3%B6tigt wird, werden negativ zwischengespeicherte und Hot-Objekte freigegeben.[br]
+Mit anderen Worten: Negativ zwischengespeicherte und Hot-Objekte belegen den ungenutzten Speicher, der nicht von In-Transit-Objekten ben%C3%B6tigt wird.[br]
+Bei Bedarf kann dieses Limit %C3%BCberschritten werden.[br]
+Insbesondere dann, wenn die eingehende Anfragerate mehr Speicher als cache_mem f%C3%BCr In-Transit-Objekte erfordert, %C3%BCberschreitet der Proxy-Dienst dieses Limit vor%C3%BCbergehend, um neue Anfragen zu verarbeiten.[br]
+Sinkt die Last, werden Speicherbl%C3%B6cke freigegeben, bis die obere Schwelle erreicht ist.[br]
+Anschlie%C3%9Fend werden verf%C3%BCgbare Bl%C3%B6cke zur Speicherung von Hot-Objekten genutzt.[br]
 [blk]
-Hinweis: Dieses Tag gibt nicht die maximale Prozessgr%C3%B6%C3%9Fe an.[br]
-Es legt eine Grenze f%C3%BCr einen Aspekt der Speichernutzung von Squid fest.
-[Squid verwendet den Speicher auch f%C3%BCr andere Dinge.
-Der Prozess wird wahrscheinlich doppelt oder dreimal so gro%C3%9F wie der hier angegebene Wert.[/blk]</cache_mem_text>
+Hinweis: Diese Direktive definiert nicht die maximale Prozessgr%C3%B6%C3%9Fe.[br]
+Sie begrenzt nur einen Aspekt der Speichernutzung des Proxy-Dienstes.[br]
+Der Proxy-Dienst verwendet Speicher auch f%C3%BCr andere Zwecke.[br]
+Daher kann die Prozessgr%C3%B6%C3%9Fe zwei- bis dreimal so gro%C3%9F werden wie der hier konfigurierte Wert.[/blk]</cache_mem_text>
 <cache_replacement_policy>Cache-Ersatzpolitik</cache_replacement_policy>
 <cache_replacement_policy_text>[b]Der Parameter &quot;Cache-Ersatzpolitik&quot; bestimmt, welche Objekte ersetzt werden sollen, wenn Speicherplatz ben%C3%B6tigt wird[/b][br]
 Immer dann, wenn auf der Festplatte kein Platz f%C3%BCr neue Objekte gefunden wurde,[br] bestimmt die &quot;Cache-Ersatzpolitik&quot;, welche Objekte im Cache

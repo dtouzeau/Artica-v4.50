@@ -315,7 +315,6 @@ function apply_networks(){
     }
 
     $php=$unix->LOCATE_PHP5_BIN();
-    system("$php /usr/share/artica-postfix/exec.virtuals-ip.php --build");
     system("/usr/sbin/artica-phpfpm-service -restart-network");
 
     if(is_file("/etc/init.d/ssh")){

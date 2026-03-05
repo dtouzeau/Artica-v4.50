@@ -286,7 +286,7 @@ O valor numérico para este parâmetro deve ser inferior ao n%C3%BAmero para o e
 <ad_samba_member>Active Directory Member</ad_samba_member>
 <ad_samba_member_text>Make this server has a member of a Microsoft Active Directory domain</ad_samba_member_text>
 <affect_to_group>Affect to the group</affect_to_group>
-<AgenVersion>Agent version</AgenVersion>
+<AgenVersion>Vers%C3£o do agente</AgenVersion>
 <age_of_message>Age of message</age_of_message>
 <aggressive>Sites of obvious aggressive content. This coveres hate speech and all kinds of rassism</aggressive>
 <alias>Pseud%C3%B3nimo</alias>
@@ -801,7 +801,7 @@ If users are connected to the Domain, the authentication is sended silently to t
 <auto_account>Auto-create Accounts</auto_account>
 <auto_account_text>Auto-create Accounts is a feature that allow your users to create accounts themself</auto_account_text>
 <auto_apt>Automatically upgrade the system</auto_apt>
-<available>available</available>
+<available>Dispon%C3%ADvel</available>
 <aveserver_licence_add>Carregar o ficheiro *.key sobre Kaspersky for Unix Mail server a fim de actualizar a licença</aveserver_licence_add>
 <aveserver_main_settings>Kaspersky Anti-Virus for Postfix settings</aveserver_main_settings>
 <aveserver_status>Kaspersky Mail server status</aveserver_status>
@@ -2449,7 +2449,7 @@ Com o limite de processo padr%C3£o de 100 SMTP server, &quot;in flow delay as 1
 <lastname>Last Name</lastname>
 <last_100_mails>last 100 emails</last_100_mails>
 <last_24_h>%C3%9Altimas 24 horas</last_24_h>
-<last_48_h>last 48 hours</last_48_h>
+<last_48_h>%C3%9Altimas 48 horas</last_48_h>
 <last_days>%C3%9Altimos dias</last_days>
 <last_error>Last error</last_error>
 <last_logoff>%C3%9Altimo fim de sess%C3£o</last_logoff>
@@ -2612,7 +2612,7 @@ You can also use your ISP SMTP servers of your ISP by set the appropriate authen
 <main_interfaces>Principais Interfaces</main_interfaces>
 <main_parameters>Parâmetros principais</main_parameters>
 <main_settings>Configuraç%C3µes principais</main_settings>
-<main_settings_samba>Global configuration</main_settings_samba>
+<main_settings_samba>Configuraç%C3£o global</main_settings_samba>
 <main_settings_text>Define global parameters of the software, personalize daemons processes and tune performances</main_settings_text>
 <make_samba_ad>Be an Active Directory member</make_samba_ad>
 <make_samba_ad_text>If enabled, this server will be a member of your Active Directory server.[br]In this case Active Directory members will have access to this server services eg Proxy, File sharing...</make_samba_ad_text>
@@ -4503,42 +4503,27 @@ O parâmetro [strong]&quot;smtpd recipient limit&quot;[/strong] (por defeito: 10
 O limite por defeito é mais do que qualquer cliente SMTP razo%C3¡vel enviaria [br].
 O limite existe para proteger o sistema de correio local contra um cliente em fuga.</title_postfix_tuning_5_text>
 <title_postfix_tuning_6>Tuning the frequency of deferred mail delivery attempts</title_postfix_tuning_6>
-<title_postfix_tuning_6_text>Quando um agente de entrega Postfix (smtp(8), local(8), etc.) n%C3£o consegue entregar uma mensagem, pode culpar a pr%C3%B3pria mensagem, ou pode culpar a parte receptora [br].
+<title_postfix_tuning_6_text>Quando um agente de entrega do Postfix (smtp(8), local(8), etc.) n%C3£o consegue entregar uma mensagem, pode atribuir a falha à pr%C3%B3pria mensagem ou ao destinat%C3¡rio.[br]
 [ul]
-[li]Quando o agente de entrega culpa a mensagem, o gestor da fila d%C3¡ ao ficheiro da fila um carimbo de tempo para o futuro,
-por isso n%C3£o ser%C3¡ analisada durante algum tempo [br].
-Por defeito, a quantidade de tempo para arrefecer é a quantidade de tempo que passou desde que a mensagem chegou [br].
-Isto resulta no chamado comportamento de backoff exponencial[/li].
-[li]Quando o agente de entrega culpa a parte receptora (por exemplo, um utilizador local destinat%C3¡rio, ou um anfitri%C3£o remoto),
-o gestor da fila n%C3£o s%C3%B3 avança o carimbo de tempo do ficheiro da fila, mas também coloca o destinat%C3¡rio numa lista de &quot;mortos&quot;, de modo a ser ignorado durante algum tempo[/li].
+[li]Quando a falha é atribu%C3%ADda à mensagem, o gestor da fila define um carimbo de tempo futuro, impedindo novas tentativas por um determinado per%C3%ADodo.[br]
+Por defeito, o tempo de espera corresponde ao tempo decorrido desde a receç%C3£o da mensagem.[br]
+Este comportamento resulta num mecanismo de retrocesso exponencial.[/li]
+[li]Quando a falha é atribu%C3%ADda ao destinat%C3¡rio (por exemplo, um utilizador local ou um host remoto), o gestor da fila avança o carimbo de tempo e adiciona o destino a uma lista â%80%9Cdeadâ%80%9D, evitando novas tentativas durante algum tempo.[/li]
 [/ul]
-Este processo é governado por um punhado de pequenos parâmetros.
+Este processo é controlado por v%C3¡rios parâmetros de configuraç%C3£o.
 [ul]
-li][li][strong]queue run delay[/strong](default: 300 segundos; antes do Postfix 2.4: 1000s)[br]Quantas vezes o gestor da fila faz a varredura da fila para correio diferido. [/li]
-[li][li][forte]tempo m%C3%ADnimo de retrocesso[/forte] (por defeito: 300 segundos; antes Postfix 2.4: 1000s)[br]
-A quantidade m%C3%ADnima de tempo que uma mensagem n%C3£o ser%C3¡ analisada, e a quantidade m%C3%ADnima de tempo para ficar longe de um destino &quot;morto&quot;[/li].
-[li][li][strong]maximum backoff time[/strong] (padr%C3£o: 4000 segundos)[br]O tempo m%C3¡ximo que uma mensagem n%C3£o ser%C3¡ analisada ap%C3%B3s uma falha na entrega. [/li]
-[li][li][strong]maximal queue lifetime[/strong] (padr%C3£o: 5 dias)[br]Quanto tempo uma mensagem permanece na fila antes de ser enviada de volta como n%C3£o entreg%C3¡vel[br].
-Especificar 0 para o correio que deve ser devolvido imediatamente ap%C3%B3s a primeira tentativa de entrega mal sucedida[/li].
-[li]bounce_queue_lifetime (por defeito: 5 dias, dispon%C3%ADvel com Postfix vers%C3£o 2.1 e posterior) Quanto tempo uma mensagem MAILER-DAEMON permanece na fila antes de ser considerada n%C3£o entreg%C3¡vel.
-[br] Especificar 0 para correio que deve ser tentado apenas uma vez. [/li]
-[li][strong]qmgr limite de recepç%C3£o de mensagens (predefinido: 20000)[/li][/strong][/strong
-O tamanho de muitas estruturas de dados do gestor de filas de espera in-memory [br]
-Entre outros, este parâmetro limita o tamanho da lista de destinos &quot;mortos&quot; de curto prazo, em mem%C3%B3ria.[br]
-Os destinos que n%C3£o se enquadram na lista n%C3£o s%C3£o adicionados[/li].
-[/ul]
-[i]IMPORTANTE: Se aumentar a frequência das tentativas de entrega de correio diferido, ou se a fila de correio diferido for puxada com frequência,
-ent%C3£o poder%C3¡ descobrir que o desempenho da entrega de correio Postfix se torna realmente pior.[/i][br]
-[forte] Os sintomas s%C3£o os seguintes: [/ forte]
-[ul]
-[li]A fila activa fica saturada com correio que tem problemas de entrega. O novo correio entra na fila activa apenas quando uma mensagem antiga é adiada.
-[br] Este é um processo lento que normalmente requer uma ou mais ligaç%C3µes SMTP.[/li]
-[li]Todos os agentes de entrega Postfix dispon%C3%ADveis ficam ocupados a tentar ligar-se a s%C3%ADtios inacess%C3%ADveis, etc. [br]
-O novo correio tem de esperar até que um agente de entregas fique dispon%C3%ADvel [br].
-Este é um processo lento que normalmente requer uma ou mais ligaç%C3µes SMTP.[/li]
-Quando o correio é adiado frequentemente, a resoluç%C3£o do problema é sempre melhor do que aumentar a frequência das tentativas de entrega.
-[br] No entanto, se conseguir controlar apenas a frequência das tentativas de entrega, considere a utilizaç%C3£o de uma m%C3¡quina dedicada de &quot;cemitério&quot; de &quot;fallback_relay&quot; para maus destinos,
-para que estes destinos n%C3£o arruinem o desempenho das entregas normais de correio.
+[li][strong]queue run delay[/strong] (predefinido: 300 segundos)[br]
+Define a frequência com que a fila de mensagens diferidas é analisada.[/li]
+[li][strong]minimal backoff time[/strong] (predefinido: 300 segundos)[br]
+Tempo m%C3%ADnimo antes de uma nova tentativa e tempo m%C3%ADnimo de exclus%C3£o de destinos â%80%9Cdeadâ%80%9D.[/li]
+[li][strong]maximal backoff time[/strong] (predefinido: 4000 segundos)[br]
+Tempo m%C3¡ximo de espera ap%C3%B3s uma falha de entrega.[/li]
+[li][strong]maximal queue lifetime[/strong] (predefinido: 5 dias)[br]
+Tempo m%C3¡ximo que uma mensagem permanece na fila antes de ser devolvida.[/li]
+[li][strong]bounce_queue_lifetime[/strong] (predefinido: 5 dias)[br]
+Tempo de retenç%C3£o das mensagens MAILER-DAEMON.[/li]
+[li][strong]qmgr message recipient limit[/strong] (predefinido: 20000)[br]
+Define o tamanho das estruturas internas do gestor da fila.[/li]
 [/ul]</title_postfix_tuning_6_text>
 <title_postfix_tuning_7>Tuning the number of Postfix processes</title_postfix_tuning_7>
 <title_postfix_tuning_7_text>The "default process limit" configuration parameter gives direct control over how many daemon processes Postfix will run.[br]
@@ -4596,14 +4581,13 @@ O TLS [TLS], mais comumente conhecido como SSL, é um mecanismo popular para mel
 O [br]TLS est%C3¡ em amplo uso com o protocolo HTTP, e também est%C3¡ sendo usado para adicionar segurança a muitos outros protocolos comuns que rodam sobre o TCP</TLS_EXPLAIN>
 <tls_level>N%C3%ADvel TLS</tls_level>
 <tls_logging> Server-side TLS activity logging</tls_logging>
-<tls_logging_intro>To get additional information about Postfix SMTP server TLS activity you can increase the log level.[br]
-Each logging level also includes the information that is logged at a lower logging level.[br]
-[ul][li]Use log level &quot;{tls_log_field_3}&quot; [br]only in case of problems.[/li]
-[li]Use of log level &quot;{tls_log_field_4}&quot; [br]is strongly discouraged[/li][/ul]
-</tls_logging_intro>
+<tls_logging_intro>Para obter informaç%C3µes adicionais sobre a atividade TLS do servidor SMTP Postfix, pode aumentar o n%C3%ADvel de log.[br]
+Cada n%C3%ADvel de log inclui também todas as informaç%C3µes registadas nos n%C3%ADveis inferiores.[br]
+[ul][li]Utilize o n%C3%ADvel de log &quot;{tls_log_field_3}&quot;[br]apenas em caso de problemas.[/li]
+[li]A utilizaç%C3£o do n%C3%ADvel de log &quot;{tls_log_field_4}&quot;[br]é fortemente desaconselhada.[/li][/ul]</tls_logging_intro>
 <tls_log_field_0>Disable logging of TLS activity</tls_log_field_0>
 <tls_log_field_1>Log TLS handshake and certificate information</tls_log_field_1>
-<tls_log_field_2>Log levels during TLS negotiation</tls_log_field_2>
+<tls_log_field_2>N%C3%ADveis de log durante a negociaç%C3£o TLS</tls_log_field_2>
 <tls_log_field_3>Log hexadecimal and ASCII dump of TLS negotiation process</tls_log_field_3>
 <tls_log_field_4>Log hexadecimal and ASCII dump of complete transmission after STARTTLS</tls_log_field_4>
 <tls_smtp_server>TLS SMTP Server</tls_smtp_server>
@@ -4847,7 +4831,7 @@ Depois de o ter feito, pode ent%C3£o proceder à configuraç%C3£o do WCCP no s
 <webproxy_service_text>proxy service allows you to accelerate web pages access by using a cache system.[br]
  This service also offers antivirus and web pages filtering features</webproxy_service_text>
 <webradio>S%C3%ADtios que oferecem a audiç%C3£o de m%C3%BAsica e transmiss%C3µes de r%C3¡dio.</webradio>
-<webserver_errors>Web server errors</webserver_errors>
+<webserver_errors>Erros do servidor Web</webserver_errors>
 <webserver_events>Web server events</webserver_events>
 <webserver_parameters>Web server engine</webserver_parameters>
 <webserver_parameters_text>Enable/Disable personalize the dedicated web server engine</webserver_parameters_text>

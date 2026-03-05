@@ -423,6 +423,9 @@ function apparmor_progress(){
 function page(){
     $page=CurrentPageName();
     $tpl=new template_admin();
+
+
+
     $title="{system_information}: {your_server}";
     $DEBIAN_VERSION=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DEBIAN_VERSION"));
     $DEBIAN_VERSION_NAME=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DEBIAN_VERSION_NAME");
@@ -637,7 +640,7 @@ function table(){
 <td style='padding:10px;vertical-align:top'>";
     $html[]="<table class=table>";
     $Myversion          = trim(@file_get_contents("/usr/share/artica-postfix/VERSION"));
-    $CurrentServicePack = $GLOBALS["CLASS_SOCKETS"]->getFrameWork("artica.php?SPVersion=yes");
+    $CurrentServicePack =  $GLOBALS["CLASS_SOCKETS"]->SPVersion();
     $hostname           = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
     $reboot             = null;
 

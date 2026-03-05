@@ -859,7 +859,6 @@ class mysql_catz{
             return false;
         }
         $response=$array["RESPONSE"];
-        //$main=unserialize($response);
         $main=$response;
         $this->THESHIELD_MAIN=$main;
 
@@ -2898,7 +2897,8 @@ class mysql_catz{
 		$this->events=array();
 		$this->prevents=$morespeed;
         $this->WLOGS(__LINE__."]: $sitename");
-		$category=intval($this->ufdbcat($sitename));
+
+        $category=intval($this->ufdbcat($sitename));
 		if($this->EnableSyslog){$this->Tosyslog("$sitename: $category");}
 			
 		if(!$this->Disabled){

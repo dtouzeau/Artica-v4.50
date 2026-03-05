@@ -935,7 +935,7 @@ function backend_move(){
         if($GLOBALS["VERBOSE"]){echo "UPDATE dnsdist_rules SET zOrder=$c WHERE `ID`={$ligne["ID"]}\n";}
         $c++;
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
 
 }
 

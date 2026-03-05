@@ -21,6 +21,13 @@ function xgen(){
 
     $f[] = $tpl->LeftMenu(
         array(
+            "PAGE" => "fw.nginx.statistics.sites.php",
+            "ICO" => ico_earth,
+            "TEXT" => "{websites}")
+    );
+
+    $f[] = $tpl->LeftMenu(
+        array(
             "PAGE" => "fw.nginx.statistics.fingerprints.php",
             "ICO" => "fas fa-fingerprint",
             "TEXT" => "{fingerprints}")

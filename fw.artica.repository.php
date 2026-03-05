@@ -24,6 +24,9 @@ if(isset($_POST["hotfix_main"])){hotfix_add_step2_save();exit;}
 if(isset($_GET["upload-hotfix"])){hotfix_uploaded_js();exit;}
 if(isset($_GET["delete-hotfix-js"])){hotfix_delete_js();exit;}
 if(isset($_POST["delete-hotfix"])){hotfix_delete_perform();exit;}
+if(isset($_GET["behavior-js"])){behavior_js();exit;}
+if(isset($_GET["behavior-popup"])){behavior_popup();exit;}
+if(isset($_POST["ArticaReposSoftwareLatestOnly"])){behavior_save();exit;}
 
 if(isset($_GET["sp-list-start"])){service_packs_start();exit;}
 if(isset($_GET["sp-list"])){service_packs_list();exit;}
@@ -45,6 +48,11 @@ if(isset($_GET["files-tab"])){files_tabs();exit;}
 if (isset($_GET["agent-info-js"])) { agent_info_js(); exit; }
 if (isset($_GET["agent-info-popup"])) { agent_info_popup(); exit; }
 if (isset($_GET["push-update-js"])) { push_update_js(); exit; }
+if (isset($_GET["push-update-tabs"])) { push_update_tabs(); exit; }
+
+if(isset($_GET["push-update-groups"])){push_update_groups();exit;}
+if(isset($_POST["push-update-groups-post"])){push_update_groups_post();exit;}
+
 if (isset($_GET["push-update-popup"])) { push_update_popup(); exit; }
 if(isset($_GET["push-results"])){push_update_table();exit;}
 
@@ -79,6 +87,28 @@ function RepoPath_js():bool{
     $page=CurrentPageName();
     return $tpl->js_dialog3("{main_storage_directory}", "$page?RepoPath-popup=yes",600);
 }
+function behavior_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog3("{behavior}", "$page?behavior-popup=yes",600);
+}
+function behavior_popup():bool{
+    $tpl=new template_admin();
+    $ArticaReposSoftwareLatestOnly=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaReposSoftwareLatestOnly"));
+
+    $html[]=$tpl->BigCircleCheckbox("ArticaReposSoftwareLatestOnly",
+        "{download_only_latest_versions}","{download_only_latest_versions_explain}",
+        $ArticaReposSoftwareLatestOnly,"dialogInstance3.close();");
+
+    echo $tpl->_ENGINE_parse_body(implode("", $html));
+    return true;
+}
+function behavior_save():bool{
+    $ArticaReposSoftwareLatestOnly=intval($_POST["ArticaReposSoftwareLatestOnly"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/articarepos/config/latest-only",array("enabled"=>$ArticaReposSoftwareLatestOnly));
+    return admin_tracks("Set download behavior to download latest only as $ArticaReposSoftwareLatestOnly for Artica meta");
+}
+
 function RepoPath_status():bool{
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/articarepos/move/status"));
     if(!property_exists($json,"in_progress")){
@@ -407,11 +437,20 @@ function repository_status():bool {
     $tpl->table_form_field_text("Debian {versions}",$ArticaReposDebianVersions,ico_linux);
 
     $ArticaReposSoftwareLatestOnly=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaReposSoftwareLatestOnly"));
+    $tpl->table_form_field_js("Loadjs('$page?behavior-js=yes')");
+    if($ArticaReposSoftwareLatestOnly==0){
+        $tpl->table_form_field_text("{behavior}","{download_all_versions}",ico_download);
+    }else{
+        $tpl->table_form_field_text("{behavior}","{download_only_latest_versions}",ico_download);
+    }
 
     $f[]=$tpl->table_form_compile();
 
 
     $topbuttons[] = array("Loadjs('$page?start-sync=yes')", ico_refresh, "{launch_updates}");
+    $topbuttons[] = array("Loadjs('fw.artica.repository.hotfixes.php?js=yes')", ico_upload, "InstantHotfix");
+    $topbuttons[] = array("Loadjs('fw.artica.repository.ServicePacks.php?js=yes')", ico_upload, "InstantServicePack");
+
     $TINY_ARRAY["TITLE"]="{artica_repositories}";
     $TINY_ARRAY["ICO"]=ico_database;
     $TINY_ARRAY["EXPL"]="{artica_repositories_explain}";
@@ -857,8 +896,137 @@ function push_update_js():bool {
     $filename = isset($_GET["push-update-js"]) ? urlencode($_GET["push-update-js"]) : "";
     $type = isset($_GET["type"]) ? $_GET["type"] : "";
     $agentId = isset($_GET["agent_id"]) ? intval($_GET["agent_id"]) : 0;
-    return $tpl->js_dialog2("{push_update} $filename", "$page?push-update-popup=yes&filename=$filename&type=$type&agent_id=$agentId", 700);
+    return $tpl->js_dialog2("{push_update} $filename", "$page?push-update-tabs=yes&filename=$filename&type=$type&agent_id=$agentId", 700);
 }
+function push_update_tabs():bool{
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $filename = isset($_GET["filename"]) ? urlencode($_GET["filename"]) : "";
+    $type = isset($_GET["type"]) ? $_GET["type"] : "";
+    $preselectedAgent = isset($_GET["agent_id"]) ? intval($_GET["agent_id"]) : 0;
+    $array["{nodes}"]="$page?push-update-popup=yes&filename=$filename&type=$type&agent_id=$preselectedAgent";
+    $array["{groups}"]="$page?push-update-groups=yes&filename=$filename&type=$type&agent_id=$preselectedAgent";
+    echo $tpl->tabs_default($array);
+    return true;
+}
+
+function push_update_groups():bool{
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $sock = new sockets();
+
+    $filename = isset($_GET["filename"]) ? urldecode($_GET["filename"]) : "";
+    $type = isset($_GET["type"]) ? $_GET["type"] : "";
+    $groupsJson = json_decode($sock->REST_API("/netagents/groups"));
+    $groups = is_array($groupsJson) ? $groupsJson : [];
+
+    $f = [];
+    $f[] = "<div class='form-group' style='margin-top:10px'>";
+    $f[] = "<label>{select_groups} &raquo;&raquo; " . htmlspecialchars($filename) . "</label>";
+    $f[] = "<div style='margin-bottom:6px'>";
+    $f[] = "<button type='button' class='btn btn-xs btn-default' onclick=\"$('.group-checkbox').prop('checked',true);\">";
+    $f[] = "<i class='fas fa-check-square'></i> {select_all}";
+    $f[] = "</button>";
+    $f[] = " <button type='button' class='btn btn-xs btn-default' onclick=\"$('.group-checkbox').prop('checked',false);\">";
+    $f[] = "<i class='fas fa-square'></i> {unselect_all}";
+    $f[] = "</button>";
+    $f[] = "</div>";
+    $f[] = "<div style='max-height:200px;overflow-y:auto;border:1px solid #ddd;padding:10px;'>";
+
+    if (!empty($groups)) {
+        foreach ($groups as $grp) {
+            $gid   = intval($grp->id ?? 0);
+            $gname = htmlspecialchars($grp->name ?? "Group #$gid");
+            $cnt   = intval($grp->agent_count ?? 0);
+            $badge = "<span class='badge' style='background:#1c84c6;color:#fff;margin-left:6px'>$cnt</span>";
+            $f[] = "<div class='checkbox'>";
+            $f[] = "<label>";
+            $f[] = "<input type='checkbox' class='group-checkbox' value='$gid'>";
+            $f[] = " $gname$badge";
+            $f[] = "</label>";
+            $f[] = "</div>";
+        }
+    } else {
+        $f[] = "<p class='text-muted'>{no_data}</p>";
+    }
+
+    $f[] = "</div>";
+    $f[] = "</div>";
+    $f[] = "<div style='width:100%;padding-right:10px;text-align:right;'>";
+    $f[] = "<button class='btn btn-primary btn-lg' onclick=\"DoPushUpdateGroups();\">";
+    $f[] = "<i class='fas fa-upload'></i> {push_update}";
+    $f[] = "</button>";
+    $f[] = "</div>";
+    $f[] = "<div id='push-result-groups' style='margin-top:40px;border-top:1px solid #cccccc;padding-top:5px'></div>";
+
+    $filenameVal = addslashes($filename);
+    $typeVal     = addslashes($type);
+
+    $f[] = "<script>";
+    $f[] = "function DoPushUpdateGroups(){";
+    $f[] = "  var gids=[];";
+    $f[] = "  \$('.group-checkbox:checked').each(function(){ gids.push(\$(this).val()); });";
+    $f[] = "  if(gids.length==0){ alert('{select_at_least_one}'); return; }";
+    $f[] = "  \$('#push-result-groups').html('<div class=\"alert alert-info\"><i class=\"fas fa-spinner fa-spin\"></i> {push_update}...</div>');";
+    $f[] = "  \$.post('$page',{";
+    $f[] = "    'push-update-groups-post':1,";
+    $f[] = "    'filename':'$filenameVal',";
+    $f[] = "    'type':'$typeVal',";
+    $f[] = "    'group_ids':gids.join(',')";
+    $f[] = "  },function(data){ \$('#push-result-groups').html(data); });";
+    $f[] = "}";
+    $f[] = "</script>";
+
+    echo $tpl->_ENGINE_parse_body(implode("\n", $f));
+    return true;
+}
+
+function push_update_groups_post():void{
+    $tpl      = new template_admin();
+    $sock     = new sockets();
+    $filename = trim($_POST["filename"] ?? "");
+    $type     = trim($_POST["type"] ?? "");
+    $groupIds = trim($_POST["group_ids"] ?? "");
+
+    if (empty($filename) || empty($groupIds)) {
+        echo $tpl->div_warning("{missing_parameters}");
+        return;
+    }
+
+    // Expand each group to its agent IDs
+    $agentIds = [];
+    foreach (explode(",", $groupIds) as $rawGid) {
+        $gid = intval(trim($rawGid));
+        if ($gid <= 0) continue;
+        $grp = json_decode($sock->REST_API("/netagents/groups/$gid"));
+        if (!is_object($grp) || (isset($grp->Status) && !$grp->Status)) continue;
+        foreach (($grp->agents ?? []) as $agent) {
+            $aid = intval($agent->id ?? 0);
+            if ($aid > 0) $agentIds[$aid] = true;
+        }
+    }
+
+    if (empty($agentIds)) {
+        echo $tpl->div_warning("{no_agents_in_selected_groups}");
+        return;
+    }
+
+    $json = json_decode($sock->REST_API_POST("/articarepos/push", [
+        "filename"  => $filename,
+        "type"      => $type,
+        "agent_ids" => implode(",", array_keys($agentIds)),
+    ]));
+
+    if (isset($json->Status) && !$json->Status) {
+        echo $tpl->div_error($json->Error ?? "{error}");
+        return;
+    }
+
+    $count = count($agentIds);
+    echo $tpl->div_success("<i class='fas fa-check-circle'></i> {push_update}: $count {agents}");
+    admin_tracks("Push update $filename to " . count($agentIds) . " agents via groups $groupIds");
+}
+
 function push_update_popup():bool {
     $page = CurrentPageName();
     $tpl = new template_admin();
@@ -870,8 +1038,16 @@ function push_update_popup():bool {
 
     $agentsJson = json_decode($sock->REST_API("/netagents/alist?status=online&enabled=1"));
     $f = array();
-    $f[] = "<div class='form-group'>";
+    $f[] = "<div class='form-group' style='margin-top:10px'>";
     $f[] = "<label>{select_agents} &raquo;&raquo; $filename</label>";
+    $f[] = "<div style='margin-bottom:6px'>";
+    $f[] = "<button type='button' class='btn btn-xs btn-default' onclick=\"$('.agent-checkbox').prop('checked',true);\">";
+    $f[] = "<i class='fas fa-check-square'></i> {select_all}";
+    $f[] = "</button>";
+    $f[] = " <button type='button' class='btn btn-xs btn-default' onclick=\"$('.agent-checkbox').prop('checked',false);\">";
+    $f[] = "<i class='fas fa-square'></i> {unselect_all}";
+    $f[] = "</button>";
+    $f[] = "</div>";
     $f[] = "<div style='max-height:200px;overflow-y:auto;border:1px solid #ddd;padding:10px;'>";
 
     if (isset($agentsJson->agents) && is_array($agentsJson->agents)) {
@@ -932,8 +1108,15 @@ function start_sync():bool {
         "debian_versions" => $ArticaReposDebianVersions
     )));
 
-    echo json_encode($json);
-    return true;
+    echo json_encode($json,true);
+
+    if(isset($json["status"])){
+        $tpl=new template_admin();
+        $tpl->js_ok($json["status"]);
+        return admin_tracks("Start manually Meta repository sync...");
+    }
+    return false;
+
 }
 
 function push_update():bool{

@@ -102,13 +102,10 @@ if(isset($_GET["SYSTEMS_ALL_PARTITIONS"])){SYSTEMS_ALL_PARTITIONS();exit;}
 if(isset($_GET["apply-patch"])){APPLY_PATCH();exit;}
 if(isset($_GET["apply-soft"])){APPLY_SOFT();exit;}
 if(isset($_GET["syslogarchive-logs"])){syslogarchive_logs();exit;}
-if(isset($_GET["vlans-delete"])){vlans_delete();exit;}
-if(isset($_GET["routes-apply-perform"])){routes_apply_perform();exit;}
 if(isset($_GET["routes-show"])){routes_show();exit;}
 if(isset($_GET["virtip-delete"])){virtip_delete();exit;}
 if(isset($_GET["ifconfig-show"])){ifconfig_show();exit;}
 if(isset($_GET["ifconfig-initd"])){ifconfig_initd();exit;}
-if(isset($_GET["bridge-delete"])){bridge_delete();exit;}
 if(isset($_GET["ifconfig-initdcontent"])){ifconfig_initdcontent();exit;}
 if(isset($_GET["network-initdcontent"])){ifconfig_save_initdcontent();exit;}
 if(isset($_GET["artica-ifup"])){artica_ifup();exit;}
@@ -136,17 +133,9 @@ if(isset($_GET["ucarp-isactive"])){ucarp_isactive();exit;}
 
 if(isset($_GET["empty-swap"])){empty_swap();exit;}
 if(isset($_GET["force-databases"])){force_databases();exit;}
-
-
 if(isset($_GET["install-cluster-master"])){install_cluster_master();exit;}
 if(isset($_GET["uninstall-cluster-master"])){uninstall_cluster_master();exit;}
-
-
 if(isset($_GET["overcommit-mem"])){overcommit_mem();exit;}
-
-
-
-if(isset($_GET["installv2"])){installv2();exit;}
 if(isset($_GET["roolback-sp"])){roolback_sp();exit;}
 if(isset($_GET["kernel-events"])){searchlogs_kernel();exit;}
 if(isset($_GET["delete-all-sps"])){delete_all_sp_js();exit;}
@@ -935,39 +924,6 @@ function syslogarchive_logs(){
 	exec("$cmdline 2>&1",$results);
 	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
 }
-
-
-
-
-function vlans_delete(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$php5 /usr/share/artica-postfix/exec.virtuals-ip.php --vlans-delete {$_GET["vlans-delete"]} >/dev/null 2>&1";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
-function virtip_delete(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$php5 /usr/share/artica-postfix/exec.virtuals-ip.php --virtip-delete {$_GET["virtip-delete"]} >/dev/null 2>&1";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
-
-
-function routes_apply_perform(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-if(!is_dir('/usr/share/artica-postfix/ressources/logs/web')){@mkdir('/usr/share/artica-postfix/ressources/logs/web',0755,true);}
-	$cmd="$php5 /usr/share/artica-postfix/exec.virtuals-ip.php --main-routes >/usr/share/artica-postfix/ressources/logs/web/routes-apply.log 2>&1";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-	@chmod(PROGRESS_DIR."/routes-apply.log", 0777);
-}
-
 function ifconfig_show(){
 	$unix=new unix();
 	$ifconfig=$unix->find_program("ifconfig");
@@ -1013,15 +969,7 @@ function ifconfig_save_initdcontent(){
 	@chmod("/etc/init.d/artica-ifup-content.sh",0755);
 }
 
-function bridge_delete(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$php5 /usr/share/artica-postfix/exec.virtuals-ip.php --bridge-delete {$_GET["bridge-delete"]} >/dev/null 2>&1";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-	
-}
+
 function artica_ifup(){
 	$unix=new unix();
 	$nohup=$unix->find_program("nohup");
@@ -1436,35 +1384,7 @@ function roolback_sp(){
 
 }
 
-function installv2(){
-    $fileuploaded=null;
-	$GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/system.installsoft.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/system.installsoft.progress.txt";
-	@unlink($GLOBALS["CACHEFILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["CACHEFILE"], 0755);
-	@chmod($GLOBALS["LOGSFILES"], 0755);
 
-
-	if(isset($_GET["file-uploaded"])) {
-        $fileuploaded = " \"/usr/share/artica-postfix/ressources/conf/upload/{$_GET["file-uploaded"]}\" ";
-    }
-	
-	
-	$product=$_GET["product"];
-	$key=$_GET["key"];
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();
-	
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.installv2.php --install \"$product\" \"$key\"{$fileuploaded} >>{$GLOBALS["LOGSFILES"]} 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-	
-	
-}
 
 function CREATE_NEW_UUID(){
     if(is_file("/etc/artica-postfix/settings/Daemons/SYSTEMID_CREATED")){@unlink("/etc/artica-postfix/settings/Daemons/SYSTEMID_CREATED");}

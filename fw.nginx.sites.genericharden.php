@@ -14,7 +14,6 @@ js();
 
 
 function js():bool{
-    $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
     $ID=intval($_GET["serviceid"]);
@@ -36,26 +35,17 @@ function Save():bool{
     $sock               = new socksngix($serviceid);
     $sock->SET_INFO("GenericHarden",$_POST["GenericHarden"]);
     return admin_tracks_post("Save Generic Harden for service ID #$serviceid");
-
 }
-
-
-
-
 function table():bool{
-	$page=CurrentPageName();
 	$tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $serviceid=intval($_GET["table"]);
     $sock               = new socksngix($serviceid);
     $form[]=$tpl->field_hidden("serviceid",$serviceid);
     $GenericHarden              = intval($sock->GET_INFO("GenericHarden"));
-
-
-
-    $form[]=$tpl->field_checkbox("GenericHarden","{enable_feature}",$GenericHarden);
-
-
-    echo $tpl->form_outside(null,$form,null,"{apply}",
-        "LoadAjax('www-parameters-$serviceid','fw.nginx.sites.php?www-parameters2=$serviceid');Loadjs('fw.nginx.sites.php?td-row=$serviceid')","AsWebAdministrator");
+    $form[]=$tpl->BigCircleCheckbox("serviceid:$serviceid|GenericHarden","{builtin-web-application-firewall}",
+        "{GenericHarden_explain}",$GenericHarden,
+        "LoadAjax('www-parameters-$serviceid','fw.nginx.sites.php?www-parameters2=$serviceid');Loadjs('fw.nginx.sites.php?td-row=$serviceid');dialogInstance5.close();",
+    "AsWebAdministrator");
+    echo $tpl->_ENGINE_parse_body($form);
     return true;
 }

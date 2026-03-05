@@ -218,6 +218,11 @@ class squidbee{
         $this->enable_adzapper=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableAdZapper");
         $this->enable_squidclamav=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidClamav");
         $this->EnableKerbAuth=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth");
+        $EnableArticaAuthenticationAgent = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaAuthenticationAgent"));
+
+        if($EnableArticaAuthenticationAgent==1){
+            $this->EnableKerbAuth=1;
+        }
         $this->LockActiveDirectoryToKerberos=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LockActiveDirectoryToKerberos"));
         $HaClusterClient= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
         if($HaClusterClient==1){$this->LockActiveDirectoryToKerberos=1;}

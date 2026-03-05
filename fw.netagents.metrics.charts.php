@@ -25,6 +25,7 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){
 }
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["popup"])){StartPoint();exit;}
+if(isset($_GET["memory"])){memory_pie();exit;}
 js();
 
 /**
@@ -48,10 +49,170 @@ function tabs():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=$_GET["agent_id"];
+    $array["{memory}"]="$page?memory=yes&agent_id=$ID";
     $array["{hourly}"]="$page?popup=yes&agent_id=$ID&range=hour";
     $array["{daily}"]="$page?popup=yes&agent_id=$ID&range=day";
     $array["3 {days}"]="$page?popup=yes&agent_id=$ID&range=3days";
     echo $tpl->tabs_default($array);
+    return true;
+}
+function memory_pie():bool{
+    $agent_id=intval($_GET["agent_id"]);
+    $tpl=new template_admin();
+    $t=time();
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/status/$agent_id"));
+
+    if(!is_object($json)){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{failed_to_contact_agent}"));
+        return false;
+    }
+    if(isset($json->Status) && !$json->Status){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars($json->Error??"{unknown_error}")));
+        return false;
+    }
+    if(!isset($json->psmem) || !is_object($json->psmem) || empty($json->psmem->programs)){
+        echo $tpl->_ENGINE_parse_body($tpl->div_info("{no_data}"));
+        echo "<script>NoSpinner();</script>";
+        return true;
+    }
+
+    $psmem      = $json->psmem;
+    $programs   = $psmem->programs;          // []PsMemUsage — values in KiB
+    $totalRAM   = floatval($psmem->total_ram  ?? 0);
+    $totalSwap  = floatval($psmem->total_swap ?? 0);
+    $hasPSS     = (bool)($psmem->has_pss      ?? false);
+    $hasSwapPSS = (bool)($psmem->has_swap_pss ?? false);
+
+    // Sort descending by total (agent already sorts, but ensure it)
+    usort($programs, fn($a,$b) => $b->total <=> $a->total);
+
+    // Pie: top 10 + "other" bucket
+    $pieLabels=[];
+    $pieData=[];
+    $otherKib=0.0;
+    foreach($programs as $i=>$prog){
+        if($i < 10){
+            $pieLabels[]=htmlspecialchars($prog->program);
+            $pieData[]=round($prog->total, 1);
+        }else{
+            $otherKib+=$prog->total;
+        }
+    }
+    if($otherKib > 0){
+        $pieLabels[]="other";
+        $pieData[]=round($otherKib, 1);
+    }
+
+    $pieLabelsJson=json_encode($pieLabels);
+    $pieDataJson=json_encode($pieData);
+
+    // Info bar values
+    $usedKib=array_sum(array_map(fn($p)=>$p->total, $programs));
+    $usedFmt=FormatBytes($usedKib);
+    $ramFmt=FormatBytes($totalRAM);
+    $swapFmt=FormatBytes($totalSwap);
+    $pssNote=$hasPSS
+        ? "<span class='label label-primary' style='color:#fff'>PSS</span>"
+        : "<span class='label label-default' style='color:#fff'>{no_pss}</span>";
+
+    // Table rows
+    $showSwap=$hasSwapPSS || array_sum(array_map(fn($p)=>$p->swap, $programs)) > 0;
+    $rows="";
+    $TRCLASS=null;
+    foreach($programs as $prog){
+        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $name=htmlspecialchars($prog->program);
+        $cnt=intval($prog->count);
+        $priv=FormatBytes($prog->private);
+        $shr=FormatBytes($prog->shared);
+        $tot=FormatBytes($prog->total);
+        $swap="-";
+        $swapInt=$prog->swap??0;
+        if($swapInt>0) {
+            $swap = $showSwap ? FormatBytes($swapInt) : "";
+        }
+        $strongOn="<span class='text-muted'>";
+        $strongOff="</span>";
+        if($prog->total>(500*1024)){
+            $strongOn="<strong>";
+            $strongOff="</strong>";
+        }
+        if($prog->total>(1024*1024)){
+            $strongOn="<strong class='text-warning'>";
+            $strongOff="</strong>";
+        }
+        if($prog->total>(2048*1024)){
+            $strongOn="<strong class='text-danger'>";
+            $strongOff="</strong>";
+        }
+        $swapTd=$showSwap?"<td style='text-align:left'>$strongOn$swap$strongOff</td>":"";
+        $rows.="<tr class='$TRCLASS'>";
+        $rows.="<td><i class='fas fa-microchip'></i>&nbsp;$strongOn$name$strongOff</td>";
+        $rows.="<td style='text-align:left'>$strongOn$cnt$strongOff</td>";
+        $rows.="<td style='text-align:left'>$strongOn$priv$strongOff</td>";
+        $rows.="<td style='text-align:left'>$strongOn$shr$strongOff</td>";
+        $rows.="<td style='text-align:left'>$strongOn$tot$strongOff</td>";
+        $rows.=$swapTd;
+        $rows.="</tr>";
+    }
+    $swapTh=$showSwap?"<th data-sortable=true data-type='numeric'>{swap}</th>":"";
+
+    $html=[];
+    // Info bar
+    $html[]="<div style='padding:6px 10px;margin-top:10px;margin-bottom:10px;background:#f5f5f5;border-left:3px solid #1c84c6;font-size:12px'>";
+    $html[]="$pssNote &nbsp;";
+    $html[]="{used}: <strong>$usedFmt</strong> &nbsp;|&nbsp; RAM: <strong>$ramFmt</strong>";
+    if($totalSwap>0){$html[].=" &nbsp;|&nbsp; Swap: <strong>$swapFmt</strong>";}
+    $html[]="</div>";
+
+    // Chart full-width with legend on the right, table below
+    $html[]="<div style='position:relative;height:480px;margin-bottom:20px'><canvas id='psmem-pie-$t'></canvas></div>";
+
+    $html[]="<table id='psmem-table-$t' class='footable table table-stripped' data-page-size='25'>";
+    $html[]="<thead><tr>";
+    $html[]="<th data-sortable=true data-type='text'>{program}</th>";
+    $html[]="<th data-sortable=true data-type='numeric'>{processes}</th>";
+    $html[]="<th data-sortable=true data-type='numeric'>{private}</th>";
+    $html[]="<th data-sortable=true data-type='numeric'>{shared}</th>";
+    $html[]="<th data-sortable=true data-type='numeric'>{total}</th>";
+    $html[]=$swapTh;
+    $html[]="</tr></thead>";
+    $html[]="<tbody>$rows</tbody>";
+    $html[]="<tfoot><tr><td colspan='6'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
+    $html[]="</table>";
+
+    $html[]="<script>
+var chartColors=['#36A2EB','#FF6384','#4BC0C0','#FF9F40','#9966FF','#FFCD56','#C9CBCF','#7BC225','#E74C3C','#3498DB','#95A5A6'];
+var psmemCtx=document.getElementById('psmem-pie-$t').getContext('2d');
+new Chart(psmemCtx,{
+    type:'doughnut',
+    data:{
+        labels:$pieLabelsJson,
+        datasets:[{data:$pieDataJson,backgroundColor:chartColors}]
+    },
+    options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+            legend:{position:'right',labels:{boxWidth:12,font:{size:11},padding:6}},
+            tooltip:{callbacks:{label:function(c){
+                var kb=c.raw;
+                if(kb>1048576) return c.label+': '+(kb/1048576).toFixed(1)+' GB';
+                if(kb>1024)    return c.label+': '+(kb/1024).toFixed(1)+' MB';
+                return c.label+': '+kb.toFixed(0)+' KB';
+            }}}
+        }
+    }
+});
+NoSpinner();
+\$('#psmem-table-$t').footable({
+    'filtering':{'enabled':true},
+    'sorting':{'enabled':true},
+    'paging':{'size':25}
+});
+</script>";
+
+    echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
 

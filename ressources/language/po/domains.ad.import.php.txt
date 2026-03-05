@@ -3,7 +3,7 @@
 <admin_dn_text>Dê a conta e senha do Administrador do Active Directory.[br]Normalmente, o Administrador tem o nome &quot;Administrador&quot; armazenado em cn=&quot;Administrator,cn=Users,...&quot;
 br]Pode dar aqui o nome do Administrador ou o caminho &quot;DN&quot; completo
 O sufixo é o primeiro ramo do seu Active Directory Branch [br]Normalmente se o seu servidor for nomeado tem server.domain.tld,o sufixo ser%C3¡ &quot;dc=server,dc=domain,dc=tld&quot;.</admin_dn_text>
-<ad_server>Active Directory server address</ad_server>
+<ad_server>Endereço do servidor Active Directory</ad_server>
 <ad_server_text>Give here the IP address or server name of your Active Directory/MS Exchange server</ad_server_text>
 <bdu>Mau nome de utilizador ou palavra-passe</bdu>
 <cls>N%C3£o pôde ligar-se ao servidor do Active Directory</cls>

@@ -121,7 +121,7 @@ http_access deny maxuser[br][/blk][br]
 El mismo usuario puede entrar un m%C3¡ximo de 2 veces desde dos m%C3¡quinas diferentes y cuando intente entrar por tercera vez desde un tercer sistema, no se le permitir%C3¡ navegar</acl_max_user_ip_text>
 <acl_max_user_ip_title>Se comprobar%C3¡ cuando el mismo usuario intente conectarse m%C3¡s veces de las especificadas desde diferentes direcciones IP</acl_max_user_ip_title>
 <acl_method>Request Method</acl_method>
-<acl_method_text>Matching done based on the HTTP request method:
+<acl_method_text>La coincidencia se realiza en funci%C3%B3n del método de la solicitud HTTP:
 [UL]
 [li]GET[/li]
 [li]PUT[/li]
@@ -129,9 +129,7 @@ El mismo usuario puede entrar un m%C3¡ximo de 2 veces desde dos m%C3¡quinas di
 [li]CONNECT[/li]
 [li]DELETE[/li]
 [li]PURGE[/li]
-[/UL]
-
-</acl_method_text>
+[/UL]</acl_method_text>
 <acl_method_title>Este tipo de ACL coincide con el método HTTP en las cabeceras de la solicitud. Esto incluye los métodos GET, PUT, etc.</acl_method_title>
 <acl_myip>Direcci%C3%B3n IP del proxy</acl_myip>
 <acl_myip_text>Using this acl type, we can specify the local IP address on which the clients connections exists.[br]
@@ -286,22 +284,21 @@ All objects which are to be cached are stored in the disk space defined by this 
 This defines the path to cache directory, cache directory name, type and size of the cache area.
 </cache_dir_text>
 <cache_mem>Cantidad ideal de memoria</cache_mem>
-<cache_mem_text>Define la cantidad ideal de memoria que debe utilizarse para los objetos en tr%C3¡nsito, los objetos calientes y los objetos con caché negativo[br].
+<cache_mem_text>Esta configuraci%C3%B3n define la cantidad ideal de memoria utilizada para objetos en tr%C3¡nsito, objetos activos (hot) y objetos con caché negativa.[br]
 Los datos de estos objetos se almacenan en bloques de 4 KB.[br]
 Este par%C3¡metro especifica el l%C3%ADmite superior ideal del tama%C3%B1o total de los bloques de 4 KB asignados.[br]
 Los objetos en tr%C3¡nsito tienen prioridad sobre los dem%C3¡s.[br]
-Cuando se necesite espacio adicional para los datos entrantes, se liberar%C3¡n los objetos con caché negativo y los objetos en tr%C3¡nsito[br].
-En otras palabras, los objetos con caché negativo y caliente llenar%C3¡n el espacio no utilizado que no se necesite para los objetos en tr%C3¡nsito.[br]
-Si las circunstancias lo requieren, este l%C3%ADmite se superar%C3¡[br].
-Espec%C3%ADficamente, si la tasa de solicitudes entrantes requiere m%C3¡s que cache_mem de memoria para mantener los objetos En-transito,
-el proxy superar%C3¡ este l%C3%ADmite para satisfacer las nuevas peticiones.[br]
-Cuando la carga disminuya, se liberar%C3¡n bloques hasta que se alcance el l%C3%ADmite m%C3¡ximo[br].
-A partir de entonces, los bloques se utilizar%C3¡n para almacenar objetos calientes.[br]
+Cuando se necesita espacio adicional para los datos entrantes, los objetos con caché negativa y los objetos activos se liberan.[br]
+En otras palabras, los objetos con caché negativa y hot ocupan el espacio no utilizado que no requieren los objetos en tr%C3¡nsito.[br]
+Si es necesario, este l%C3%ADmite puede superarse.[br]
+En particular, si la tasa de solicitudes entrantes requiere m%C3¡s memoria que cache_mem para almacenar los objetos en tr%C3¡nsito, el servicio Proxy superar%C3¡ temporalmente este l%C3%ADmite para atender nuevas solicitudes.[br]
+Cuando la carga disminuye, los bloques de memoria se liberan hasta alcanzar el umbral superior.[br]
+Posteriormente, los bloques disponibles se utilizan para almacenar objetos activos.[br]
 [blk]
-Nota: Esta etiqueta no especifica el tama%C3%B1o m%C3¡ximo del proceso.[br]
-Pone un l%C3%ADmite a un aspecto del uso de la memoria de Proxy.
-[br]El proxy utiliza la memoria para otras cosas también.[br]
-El proceso probablemente ser%C3¡ dos o tres veces m%C3¡s grande que el valor puesto aqu%C3%AD.[/blk]</cache_mem_text>
+Nota: Esta directiva no define el tama%C3%B1o m%C3¡ximo del proceso.[br]
+Limita solo un aspecto del uso de memoria del servicio Proxy.[br]
+El servicio Proxy también utiliza memoria para otras funciones.[br]
+Como resultado, el tama%C3%B1o del proceso puede llegar a ser dos o tres veces mayor que el valor configurado aqu%C3%AD.[/blk]</cache_mem_text>
 <cache_replacement_policy>Pol%C3%ADtica de sustituci%C3%B3n de caché</cache_replacement_policy>
 <cache_replacement_policy_text>[b]
 El par%C3¡metro de la pol%C3%ADtica de sustituci%C3%B3n de la caché determina qué objetos deben sustituirse cuando se necesita espacio en el disco[/b][br].

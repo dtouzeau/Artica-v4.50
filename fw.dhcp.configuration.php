@@ -513,6 +513,9 @@ function table_config(){
         $tpl->field_hidden("DHCPAddNewComputers",$DHCPAddNewComputers);
         $tpl->field_hidden("DHCPDAutomaticFixIPAddresses",$DHCPDAutomaticFixIPAddresses);
         $tpl->field_hidden("EnableDHCPUseHostnameOnFixed",$EnableDHCPUseHostnameOnFixed);
+
+
+
         $form[]=$tpl->field_checkbox("service_enabled","{service_enable}",$dhcp->service_enabled,true);
    }
 
@@ -535,6 +538,12 @@ function table_config(){
         $dhcp->deny_unkown_clients, false, "{deny_unkown_clients_explain}");
 
     if($EnableKEA==0){
+        $AllwaysBrodcast=1;
+        if($dhcp->DisableAllwaysBrodcast==1){
+            $AllwaysBrodcast=0;
+        }
+        $form[] = $tpl->field_checkbox("AllwaysBrodcast", "{AllwaysBrodcast}", $AllwaysBrodcast, false, "{AllwaysBrodcast_explain}");
+
         $form[] = $tpl->field_checkbox("DHCPPing_check", "{DHCPPing_check}", $dhcp->ping_check, false, "{DHCPPing_check_explain}");
         $form[]=$tpl->field_checkbox("get_lease_hostnames","{get_lease_hostnames}",$dhcp->get_lease_hostnames,false,"{get_lease_hostnames_text}");
     }
@@ -678,6 +687,14 @@ function dhcp_save(){
 
     if(isset($_POST["service_enabled"])){
         $dhcp->service_enabled=$_POST["service_enabled"];
+    }
+
+    if(isset($_POST["AllwaysBrodcast"])){
+        if(intval($_POST["AllwaysBrodcast"])==1){
+            $dhcp->DisableAllwaysBrodcast=0;
+        }else{
+            $dhcp->DisableAllwaysBrodcast=1;
+        }
     }
 
 	$dhcp->listen_nic=$_POST["listen_nic"];

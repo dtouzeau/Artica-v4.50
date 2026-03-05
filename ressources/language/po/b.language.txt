@@ -324,7 +324,7 @@ This means you have defined your proxy feature to not use categories or the real
 <act_as_gateway>Funciona como uma porta de entrada</act_as_gateway>
 <act_as_lan>Act as LAN</act_as_lan>
 <act_as_wan>Act as WAN</act_as_wan>
-<act_has_categories>Act has categories appliance</act_has_categories>
+<act_has_categories>Atua como appliance de categorizaç%C3£o</act_has_categories>
 <act_has_categories_explain>Este servidor actuar%C3¡ com Categories Appliance [br].
 Isto significa que n%C3£o ser%C3¡ um serviço de proxy, mas um serviço capaz de recuperar categorias de s%C3%ADtios web a partir de pedidos enviados por servidores Artica Proxy/statistics [br].
 Se concordar com esta configuraç%C3£o, clique no bot%C3£o Next [br].
@@ -1641,7 +1641,7 @@ por favor preencha o formul%C3¡rio abaixo para que a p%C3¡gina web seja revist
 <bad_headers>Bad headers</bad_headers>
 <balance>balance</balance>
 <balance_ip_explain_weight>Balancing is implemented using weights, so that each provider is getting a percentage of the connections.[br] The links do not need to be of the same speed.</balance_ip_explain_weight>
-<balance_on_multiple_ip>Round robin DNS</balance_on_multiple_ip>
+<balance_on_multiple_ip>Round Robin DNS</balance_on_multiple_ip>
 <balance_on_multiple_ip_text>The proxy IP resolvers lookup results by preferred access.[br]
 By default Proxy DNS in order and only rotates to the next listed when 
 the most preffered fails.[br]
@@ -1698,7 +1698,7 @@ Cada endereço IP adicionado nesta secç%C3£o n%C3£o ser%C3¡ exibido na Inter
 Faz parte dos esforços cont%C3%ADnuos da Google para acelerar a Internet através do protocolo TCP â%80%94 a espinha dorsal da comunicaç%C3£o online.[br]
 O principal objetivo do BBR é melhorar a utilizaç%C3£o da rede e reduzir os atrasos causados pelo buffer (que podem abrandar a rede).</BBR_EXPLAIN>
 <BCC>Blind carbon copy</BCC>
-<bcc_to>Blind carbon copy to</bcc_to>
+<bcc_to>C%C3%B3pia oculta para</bcc_to>
 <behavior>behavior</behavior>
 <behavior_listen_ports>Behavior and Listen ports</behavior_listen_ports>
 <between_100_to_500>Between 100 to 50</between_100_to_500>
@@ -2231,7 +2231,7 @@ Deseja realizar esta operaç%C3£o?</check_caches_warning2>
 <check_failed>A verificaç%C3£o falhou</check_failed>
 <check_folders_permissions>Check folders permissions</check_folders_permissions>
 <check_FSSS>Check Files And Security</check_FSSS>
-<check_headers_access>Check SMTP headers</check_headers_access>
+<check_headers_access>Verificar os cabeçalhos SMTP</check_headers_access>
 <check_headers_access_text>Search a specified pattern (regular expression) in the SMTP headers and execute the corresponding action</check_headers_access_text>
 <check_interval>Per%C3%ADodo de verificaç%C3£o</check_interval>
 <check_ip_before_sender_email>Sender IP is checked before sender eMail</check_ip_before_sender_email>
@@ -2351,7 +2351,7 @@ Definir aqui o tempo m%C3¡ximo para viver de uma sess%C3£o PHP neste direct%C3
 Um valor inferior a 5Mn desactiva esta tarefa de limpeza.</CleanPHPSessionTime_text>
 <clean_all_caches>Clean all caches</clean_all_caches>
 <clean_apache_logs>Max Apache logs size</clean_apache_logs>
-<clean_cache>Clean cache</clean_cache>
+<clean_cache>Limpar cache</clean_cache>
 <clean_cloud_datacenters>Clean cloud datacenters</clean_cloud_datacenters>
 <clean_cloud_datacenters_explain>This task can be used only on ISP mode.[br]It designed to parse not categorized websites and members categorized websites on the cloud in order to verfiy/clean datas and clean </clean_cloud_datacenters_explain>
 <clean_databases>Clean databases</clean_databases>
@@ -2660,9 +2660,9 @@ This means that SSL certificates will be faked by the proxy.
 </coova_proxy_sslport>
 <coova_ssl_splash_explain>If enabled, the HostPost system will also can redirect to the logon splash page trough SSL</coova_ssl_splash_explain>
 <copy>C%C3%B3pia</copy>
-<CopyTo>Copy to</CopyTo>
+<CopyTo>Copiar para</CopyTo>
 <copy_directory_content>Copy directory content</copy_directory_content>
-<copy_failed>Copy failed</copy_failed>
+<copy_failed>Falha na c%C3%B3pia</copy_failed>
 <copy_from>Copy from</copy_from>
 <corporate_licence_will_expire>A sua licença de Coporate expirar%C3¡ em breve</corporate_licence_will_expire>
 <corporate_licence_will_expire_explain>A sua licença de coporate expirar%C3¡ em %d dia(s).[br]
@@ -3073,9 +3073,7 @@ You can temporary allow users, skin the web page error...
 <DHCPDInPowerDNS_explain>Se activado, o serviço DHCP actualizar%C3¡ a base de dados DNS de acordo com as informaç%C3µes fornecidas sobre os arrendamentos</DHCPDInPowerDNS_explain>
 <DHCPDLogsEvents>If enabled, Artica will store in database detected hostname, mac addresses and request time for statistics purpose</DHCPDLogsEvents>
 <dhcp_dns_service>DHCP and DNS service</dhcp_dns_service>
-<dhcp_fixed_addr_explain>
-If this option is enabled, the DHCP service will always provide the defined IP address from this section.
-</dhcp_fixed_addr_explain>
+<dhcp_fixed_addr_explain>Se esta opç%C3£o estiver ativa, o serviço DHCP atribuir%C3¡ sempre o endereço IP definido nesta secç%C3£o.</dhcp_fixed_addr_explain>
 <dhcp_host_explain_options>Esta secç%C3£o permite-lhe forçar opç%C3µes espec%C3%ADficas para este anfitri%C3£o [br].
 Pode definir m%C3%BAltiplos valores separando-os com o caracter &quot;;&quot;.</dhcp_host_explain_options>
 <dhcp_network_attribution_explain>Para uma rede simples pode definir a subrede 192.168.1.0 e a m%C3¡scara de rede 255.255.255.0 ou uma rede de longo alcance[br].
@@ -4276,11 +4274,11 @@ Os registos s%C3£o comprimidos todos os dias ap%C3%B3s a meia-noite e guardados
 Criar a regra ?</example_create_ask>
 <example_rules>Exemplos de regras</example_rules>
 <exclude>Excluir</exclude>
-<excludetransparentin_explain>Definir aqui as redes de origem que ser%C3£o exclu%C3%ADdas do redireccionamento do serviço [br].
-b]N%C3£o é poss%C3%ADvel incluir e excluir regras sobre a mesma declaraç%C3£o[/b][br].
-Os valores poss%C3%ADveis s%C3£o:[br]
-Um endereço ip: 192.168.1.1[br]
-Uma notaç%C3£o CDIR: 192.168.1.0/24[br]</excludetransparentin_explain>
+<excludetransparentin_explain>Defina aqui as redes de origem que ser%C3£o exclu%C3%ADdas do redirecionamento do serviço.[br]
+[b]N%C3£o é poss%C3%ADvel definir regras de inclus%C3£o e exclus%C3£o na mesma declaraç%C3£o.[/b][br]
+Valores poss%C3%ADveis:[br]
+Um endereço IP: 192.168.1.1[br]
+Notaç%C3£o CIDR: 192.168.1.0/24[br]</excludetransparentin_explain>
 <excludetransparentout_explain>Definir aqui redes-alvo que ser%C3£o exclu%C3%ADdas do redireccionamento do serviço [br].
 b]N%C3£o é poss%C3%ADvel incluir e excluir regras sobre a mesma declaraç%C3£o[/b][br].
 Os valores poss%C3%ADveis s%C3£o:[br]
@@ -5702,7 +5700,7 @@ In most cases where the computer is not running as a router of some kind, we cou
 <keyword>Keyword</keyword>
 <key_file>Ficheiro-chave</key_file>
 <KEY_OK>Sucesso chave</KEY_OK>
-<KLNAGNT>KL Network Agent</KLNAGNT>
+<KLNAGNT>Agente de rede Kaspersky</KLNAGNT>
 <KLNAGT_1>Do not configure connection gateway</KLNAGT_1>
 <KLNAGT_2>Do not use connection gateway</KLNAGT_2>
 <KLNAGT_3>Connect to server using connection gateway</KLNAGT_3>
@@ -6804,10 +6802,10 @@ até atingirmos novamente uma utilizaç%C3£o de mem%C3%B3ria inferior[br] Este 
 TCP socket, even under high pressure on the system</NetIpv4TcpRmemMin_explain>
 <NetIpv4TcpWmemDef>Default buffer space</NetIpv4TcpWmemDef>
 <NetIpv4TcpWmemDef_explain>The default buffer space allowed for a single TCP socket to use</NetIpv4TcpWmemDef_explain>
-<NetIpv4TcpWmemMax>Maximum TCP send buffer</NetIpv4TcpWmemMax>
+<NetIpv4TcpWmemMax>Indica ao kernel o espaço m%C3¡ximo do buffer de envio TCP.</NetIpv4TcpWmemMax>
 <NetIpv4TcpWmemMax_explain>Diz ao Kernel o espaço m%C3¡ximo do buffer de envio TCP</NetIpv4TcpWmemMax_explain>
-<NetIpv4TcpWmemMin>Minimum TCP Send buffer</NetIpv4TcpWmemMin>
-<NetIpv4TcpWmemMin_explain>Tells the minimum TCP send buffer space available for a single TCP socket.</NetIpv4TcpWmemMin_explain>
+<NetIpv4TcpWmemMin>Buffer m%C3%ADnimo de envio TCP</NetIpv4TcpWmemMin>
+<NetIpv4TcpWmemMin_explain>Indica o espaço m%C3%ADnimo do buffer de envio TCP dispon%C3%ADvel para um %C3%BAnico socket TCP.</NetIpv4TcpWmemMin_explain>
 <network2>Rede</network2>
 <NetworkAdvancedRouting_explain>Se estiver desligado, o seu servidor funciona em modo de encaminhamento %C3%BAnico.[br] Isto significa que toda a informaç%C3£o de encaminhamento é armazenada na tabela central do kernel principal.[br]
 O modo de encaminhamento avançado permite-lhe configurar uma tabela de encaminhamento para cada interface de rede [br].
@@ -6949,7 +6947,7 @@ If you want to access to it trough HTTP (WebDav), enable the option HTTP sharing
 <new_port>Novo porto</new_port>
 <new_privilege>New privilege</new_privilege>
 <new_profile>Novo perfil</new_profile>
-<new_provider>New provider</new_provider>
+<new_provider>Novo fornecedor</new_provider>
 <new_proxy>New proxy</new_proxy>
 <new_proxy_alias>New Proxy alias</new_proxy_alias>
 <new_proxy_object>Novo objecto Proxy</new_proxy_object>
@@ -7498,7 +7496,7 @@ Set a value between 0 to 65535
 to browse the backup directory in order to let you download backuped files[br]
 [b]Note: Only available if Artica Web console run under Apache Web server[/b]</open_www_to_backup_dir_explain>
 <operations>Operations</operations>
-<operation_failed>Operation failed</operation_failed>
+<operation_failed>Falha na operaç%C3£o</operation_failed>
 <operation_in_background>Operation has been executed in background mode...</operation_in_background>
 <operation_in_background_restart_service>A operaç%C3£o ser%C3¡ executada em modo de fundo.
 O serviço principal ser%C3¡ reiniciado.</operation_in_background_restart_service>
@@ -9640,7 +9638,7 @@ Ela n%C3£o permite que uma fonte gerencie diretamente o desempenho da rede for�
 <source_message_explain>Paste an email message including the full headers and content.</source_message_explain>
 <source_name>Source name</source_name>
 <source_network>Source network</source_network>
-<source_package_not_found>Source package not found</source_package_not_found>
+<source_package_not_found>Pacote de origem n%C3£o encontrado</source_package_not_found>
 <source_package_path>Source package path</source_package_path>
 <source_server>Source server</source_server>
 <spacer>Spacer</spacer>
@@ -10154,7 +10152,7 @@ Enable this feature will turn the proxy to this behavior:[br]
 [br]
 </squid_urgency_explain>
 <squid_use_local_service_dns>O serviço de proxy utiliza o serviço DNS local</squid_use_local_service_dns>
-<squid_use_local_system_dns>The proxy service use the system DNS parameters</squid_use_local_system_dns>
+<squid_use_local_system_dns>O serviço Proxy utiliza as configuraç%C3µes de DNS do sistema.</squid_use_local_system_dns>
 <squid_virtual_caches_explain>Virtual cache feature as the same behavior of standard caches but it use only the memory.[br]
 Caches are directly mounted in memory in order to speed up delivery objects.[br]
 </squid_virtual_caches_explain>
@@ -10718,7 +10716,7 @@ This task will parse this queue in order to build thumbnails for stattistics pur
 <tls_security_level>N%C3%ADvel de segurança TLS</tls_security_level>
 <tls_support>Suporte TLS</tls_support>
 <tls_table>TLS table</tls_table>
-<token>token</token>
+<token>Token</token>
 <took>Levou</took>
 <tool>Tool</tool>
 <top_10>TOP 10</top_10>
@@ -12203,7 +12201,7 @@ If your server is www.domain.tld, put the www in the first field and the domain.
 If your server is just domain.tld without any sub domain, put the domain.tld in the first field.
 </wordpress_form_explain_add>
 <wordpress_websites>S%C3%ADtios Web Wordpress</wordpress_websites>
-<workers>Workers</workers>
+<workers>Processos</workers>
 <workingdir_in_memory>Direcory in memory</workingdir_in_memory>
 <workingdir_in_memory_text>If set up to 5, the working directory will be set in memory instead hard disk.[br]
 This will speed-up processing but will handle your physical memory</workingdir_in_memory_text>

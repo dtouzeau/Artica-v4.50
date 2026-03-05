@@ -4254,7 +4254,7 @@ Below, you can view that last system events.</services_status_text_explain>
 <kernel_mismatch_text>It seems that your kernel did not match your process architecture, try to install the correct kernel version</kernel_mismatch_text>
 <perform_installation_of>Perform installation of the package</perform_installation_of>
 <server_will_be_rebooted>Your server will be rebooted after the execution task</server_will_be_rebooted>
-<upgrade>upgrade</upgrade>
+<upgrade>Upgrade</upgrade>
 <nb_cpus>CPUs number</nb_cpus>
 <cpu_family>CPU Family</cpu_family>
 <architecture>architecture</architecture>

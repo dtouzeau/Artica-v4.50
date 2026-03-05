@@ -19,6 +19,7 @@ if(isset($_GET["config-file-js"])){config_file_js();exit;}
 if(isset($_GET["config-file-popup"])){config_file_popup();exit;}
 if(isset($_GET["debianagent-status"])){debianagent_status();exit;}
 if(isset($_GET["debian-agent-params-js"])){debian_agent_params_js();exit;}
+if(isset($_GET["debian-agent-params-tabs"])){debian_agent_params_tabs();exit;}
 if(isset($_GET["debian-agent-params-popup"])){debian_agent_params_popup();exit;}
 if(isset($_POST["ListenInterface"])){debian_agent_params_save();exit;}
 
@@ -69,7 +70,7 @@ function revoke_tokens():bool{
 function debianagent_status():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $users=new usersMenus();
+
     $EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
     $APP_DEBIAN_NETWORK_AGENT_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DEBIAN_NETWORK_AGENT_VERSION");
     if($EnableDebianAgent==0){
@@ -84,7 +85,12 @@ function debianagent_status():bool{
         $btn[0]["icon"] = ico_cd;
         $btn[0]["js"] = $jsInstall;
 
-        $widget_tests = $tpl->widget_style1("gray-bg", ico_stop,  "{APP_DEBIAN_NETWORK_AGENT} v$APP_DEBIAN_NETWORK_AGENT_VERSION","{inactive2}", $btn);
+        $version_text="";
+        if(strlen($APP_DEBIAN_NETWORK_AGENT_VERSION)>3){
+            $version_text="v$APP_DEBIAN_NETWORK_AGENT_VERSION";
+        }
+
+        $widget_tests = $tpl->widget_style1("gray-bg", ico_stop,  "{APP_DEBIAN_NETWORK_AGENT} $version_text","{inactive2}", $btn);
         echo $tpl->_ENGINE_parse_body($widget_tests);
         return true;
     }
@@ -121,6 +127,13 @@ function debianagent_status():bool{
         "debian-agent.progress.log",
         "progress-webapi-restart");
 
+    $jsStart= $tpl->framework_buildjs("/debianagent/start",
+        "debian-agent.start",
+        "debian-agent.start.log",
+        "progress-webapi-restart");
+
+
+
     $btn = array();
     $btn[0]["margin"] = 0;
     $btn[0]["name"] = "{uninstall}";
@@ -142,8 +155,20 @@ function debianagent_status():bool{
     // [service_disabled] => 1 [running] => 1 [master_pid] => 3521711
     // [master_time] => 343 [processes_number] => 1 [master_memory] => 13176 [uptime] => 5 minutes [maxfd] => 65536 [curfd] => 10 )
     if(intval($bsini->_params[$Key]["running"])==0){
+        $btn = array();
+        $btn[0]["margin"] = 0;
+        $btn[0]["name"] = "{start}";
+        $btn[0]["icon"] = ico_run;
+        $btn[0]["js"] = $jsStart;
+
+        $btn[1]["margin"] = 0;
+        $btn[1]["name"] = "{uninstall}";
+        $btn[1]["icon"] = ico_trash;
+        $btn[1]["js"] = $jsUninstall;
+
+
         echo $tpl->_ENGINE_parse_body($tpl->widget_style1("bg-red",ico_bug,
-            "{APP_DEBIAN_NETWORK_AGENT} v$APP_DEBIAN_NETWORK_AGENT_VERSION","{stopped}",$btn));
+            "{APP_DEBIAN_NETWORK_AGENT}","{stopped}",$btn));
         return true;
     }
 
@@ -162,8 +187,13 @@ function debianagent_status():bool{
     $btn[2]["icon"] = ico_params;
     $btn[2]["js"] = "Loadjs('$page?debian-agent-params-js=yes');";
 
+    $version_text="";
+    if(strlen($APP_DEBIAN_NETWORK_AGENT_VERSION)>3){
+        $version_text="v$APP_DEBIAN_NETWORK_AGENT_VERSION";
+    }
+
     $MainStatus=$tpl->_ENGINE_parse_body($tpl->widget_style1("green-bg",ico_run,
-        "{APP_DEBIAN_NETWORK_AGENT} v$APP_DEBIAN_NETWORK_AGENT_VERSION","{running}<br><small style='font-size:14px;color:white'>{memory}:$mem</small>",$btn));
+        "{APP_DEBIAN_NETWORK_AGENT} $version_text","{running}<br><small style='font-size:14px;color:white'>{memory}:$mem</small>",$btn));
 
     $html[]="<table style='width:100%'>";
     $html[]="<tr>";
@@ -228,7 +258,7 @@ function section_memcache_js():bool{
 function debian_agent_params_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    return $tpl->js_dialog2("{parameters}","$page?debian-agent-params-popup=yes",650);
+    return $tpl->js_dialog2("{parameters}","$page?debian-agent-params-tabs=yes",650);
 }
 function section_memcache_popup():bool{
     $page=CurrentPageName();
@@ -311,11 +341,6 @@ function debian_agent_params_popup():bool{
     $Conf=$params["Params"];
     $form[]=$tpl->field_interfaces("ListenInterface","{listen_interface}",$Conf["listen_interface"]);
     $form[]=$tpl->field_numeric("ListenPort","{listen_port}",$Conf["listen_port"]);
-    $zips="";
-    if(isset($Conf["security"]["ip_whitelist"]) && count($Conf["security"]["ip_whitelist"])>0) {
-        $zips=@implode(",",$Conf["security"]["ip_whitelist"]);
-    }
-    $form[]=$tpl->field_text("ip_whitelist","{trusted_networks}",$zips);
     $security="AsSystemAdministrator";
     $js="dialogInstance2.close();LoadAjaxSilent('progress-webapi-start','$page?table1=yes');";
     $html[]=$tpl->form_outside(null, @implode("\n", $form),null,"{apply}", $js,$security);
@@ -328,10 +353,7 @@ function debian_agent_params_save():bool{
     $tpl->CLEAN_POST();
     $ListenInterface=$_POST["ListenInterface"];
     $ListenPort=intval($_POST["ListenPort"]);
-    $ip_whitelist=urlencode($_POST["ip_whitelist"]);
     $uri="/debianagent/iface/$ListenInterface/$ListenPort";
-    $GLOBALS["CLASS_SOCKETS"]->REST_API($uri);
-    $uri="/debianagent/whitelists/$ip_whitelist";
     $GLOBALS["CLASS_SOCKETS"]->REST_API($uri);
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/debianagent/restart");
     return admin_tracks("Save Debian Agent listen to $ListenInterface:$ListenPort whitelist:{$_POST["ip_whitelist"]}");
@@ -394,6 +416,14 @@ function tabs():bool{
     $array["{status}"]="$page?table=yes";
     $array["{networks_restrictions}"]="fw.activedirectory.rest.restrictions.php";
     $array["{events}"]="fw.activedirectory.rest.events.php";
+    echo $tpl->tabs_default($array);
+    return true;
+}
+function debian_agent_params_tabs():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $array["{parameters}"]="$page?debian-agent-params-popup=yes";
+    $array["{networks_restrictions}"]="fw.debian-agent.restrictions.php";
     echo $tpl->tabs_default($array);
     return true;
 }

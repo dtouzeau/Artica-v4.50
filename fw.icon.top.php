@@ -61,7 +61,7 @@ function start():bool{
    $page=CurrentPageName();
    $tpl=new template_admin();
    header("content-type: application/x-javascript");
-   echo $tpl->RefreshInterval_Loadjs("artica-notifs-barr",$page,"fw.icon.top.php?notifs=yes",10);
+   //echo $tpl->RefreshInterval_js("artica-notifs-barr",$page,"fw.icon.top.php?notifs=yes",10);
    return true;
 }
 function SetToken(){
@@ -84,6 +84,12 @@ function SetTokenConfirm(){
         $val=$zToken[1];
     }
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO($Token,$val);
+
+    $NewVal=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
+    if($NewVal!=$val){
+        echo "Issue while saving information (".__LINE__.")";
+    }
+
 }
 
 
@@ -193,7 +199,7 @@ function notifs(){
         }
     }
 
-    $CHECK_FRAMEWORK=CHECK_FRAMEWORK();
+
     $hostname=php_uname('n');
     VERBOSE("RESOLV -> $hostname",__LINE__);
     $hostname_addr=$GLOBALS["CLASS_SOCKETS"]->gethostbyname($hostname);
@@ -201,9 +207,6 @@ function notifs(){
     if($hostname_addr==$hostname){
         $ERR[]="{unable_to_resolve} &laquo;$hostname&raquo;||{PLEASE_ADD_IN_ETCHOSTS}||||js:window.location.href ='/hostfile'";
 
-    }
-    if(!$CHECK_FRAMEWORK){
-        $ERR[] = "{FRAMEWORK_COM_ERROR}||{FRAMEWORK_COM_ERROR_EXPLAIN}||DANGER||js:Loadjs('fw.framework.error.php');";
     }
     VERBOSE("--> APP_ARP_SCANNER()",__LINE__);
     $APP_ARP_SCANNER=APP_ARP_SCANNER();
@@ -2255,36 +2258,7 @@ function CVE_2022_29155():array{
     return $ERR;
 
 }
-function CHECK_FRAMEWORK():bool{
-    $phpver=explode(".",phpversion());
-    $MAJOR=$phpver[0];
-    $MINOR=$phpver[1];
-    if($MAJOR>6){
-        if($MINOR>1){
-            $hollodotme=true;
-        }
-    }
 
-    if(!$hollodotme) {
-        if(!is_file("/usr/bin/php-cgi")){
-           return false;
-        }
-        return true;
-    }
-
-    include_once (dirname(__FILE__)."/ressources/class.framework.inc");
-    $frame=new fcgi_framework("index.php");
-    $results=$frame->Get();
-    $OK=true;
-    if(!$frame->ok){
-        VERBOSE("CHECK_FRAMEWORK ->index.php ERROR $frame->IOERROR",__LINE__);
-        $OK=false;
-    }
-    if(!preg_match("#<OK>#",$results)){
-        $OK=false;
-    }
-    return $OK;
-}
 
 function NOTIF_MAIN_APT_GET_JSON():string{
     $DisableOsSystemUpdate = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableOsSystemUpdate"));

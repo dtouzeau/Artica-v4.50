@@ -337,7 +337,7 @@ Esto significa que ha definido su funci%C3%B3n de proxy para que no utilice cate
 <act_as_gateway>Actuar como pasarela</act_as_gateway>
 <act_as_lan>Act as LAN</act_as_lan>
 <act_as_wan>Act as WAN</act_as_wan>
-<act_has_categories>Act has categories appliance</act_has_categories>
+<act_has_categories>Act%C3%BAa como appliance de categorizaci%C3%B3n</act_has_categories>
 <act_has_categories_explain>Este servidor actuar%C3¡ como un Appliance de Categor%C3%ADas[br].
 Esto significa que no ser%C3¡ un servicio proxy sino un servicio que podr%C3¡ recuperar las categor%C3%ADas de los sitios web a partir de las solicitudes enviadas por los servidores proxy/estad%C3%ADsticos de Artica.
 Si est%C3¡ de acuerdo con esta configuraci%C3%B3n, haga clic en el bot%C3%B3n Siguiente[br].
@@ -534,8 +534,8 @@ Por defecto, Artica bloquea estas cabeceras.[br]
 Activar esta funci%C3%B3n permite el uso de la cabecera Alternate-Protocol</AllowSquidOtherProtocols_explain>
 <AllowSquidSkype>Allow Skype in all cases</AllowSquidSkype>
 <AllowSquidSkype_explain>If turned to green, Skypes websites will be whitelisted in all cases ( including authentication too)</AllowSquidSkype_explain>
-<AllowSquidTeamViewer>Allow TeamViewer in all cases</AllowSquidTeamViewer>
-<AllowSquidTeamViewer_explain>In turned on, TeamViewer remote-control application and Internet sites will be allowed in all cases (WebFiltering/Antivirus/ACLs - including authentication too - )</AllowSquidTeamViewer_explain>
+<AllowSquidTeamViewer>Permitir TeamViewer en todos los casos</AllowSquidTeamViewer>
+<AllowSquidTeamViewer_explain>Si est%C3¡ habilitada, la aplicaci%C3%B3n de control remoto TeamViewer y sus sitios web estar%C3¡n permitidos en todos los casos (WebFiltering / Antivirus / ACL â%80%94 incluida la autenticaci%C3%B3n).</AllowSquidTeamViewer_explain>
 <AllowSquidWhatsApp>All WhatsApp in all cases</AllowSquidWhatsApp>
 <AllowSquidWhatsApp_explain>In turned on, WhatsApp application will be allowed in all cases (WebFiltering/Antivirus/ACLs ( including authentication too)</AllowSquidWhatsApp_explain>
 <AllowSquidWhitelistsSSL>Do not decrypt whitelisted websites</AllowSquidWhitelistsSSL>
@@ -1637,7 +1637,7 @@ please fill out the form below to have the web page reviewed</bad_category_expla
 <bad_headers>Bad headers</bad_headers>
 <balance>balance</balance>
 <balance_ip_explain_weight>Balancing is implemented using weights, so that each provider is getting a percentage of the connections.[br] The links do not need to be of the same speed.</balance_ip_explain_weight>
-<balance_on_multiple_ip>Round robin DNS</balance_on_multiple_ip>
+<balance_on_multiple_ip>Round Robin DNS</balance_on_multiple_ip>
 <balance_on_multiple_ip_text>Los resultados de b%C3%BAsqueda de los resolutores de IP proxy por acceso preferente[br].
 Por defecto el Proxy DNS en orden y solo rota al siguiente listado cuando
 falla el m%C3¡s preferido.[br]
@@ -1650,7 +1650,7 @@ Activando esta directiva se fuerza al proxy a rotar los DNS por cada petici%C3%B
 <bandwidth_alert_explain>La alerta de ancho de banda permite a Artica a%C3%B1adir eventos ( cr%C3%ADticos ) cuando
 el ancho de banda excede un tama%C3%B1o espec%C3%ADfico durante el intervalo especificado[br].
 Artica generar%C3¡ un informe para que los administradores comprendan el consumo de ancho de banda.</bandwidth_alert_explain>
-<bandwidth_last24h>Your bandwidth ( last 24 hours )</bandwidth_last24h>
+<bandwidth_last24h>Tu ancho de banda ( %C3%BAltimas 24 horas )</bandwidth_last24h>
 <bandwidth_lastweek>Your bandwidth this week</bandwidth_lastweek>
 <bandwidth_objects>Bandwidth objects</bandwidth_objects>
 <bandwidth_quota_objects>Quota size object</bandwidth_quota_objects>
@@ -2220,7 +2220,7 @@ Do you want to perform this operation ?</check_caches_warning>
 <check_failed>Check failed</check_failed>
 <check_folders_permissions>Check folders permissions</check_folders_permissions>
 <check_FSSS>Comprobar los archivos y la seguridad</check_FSSS>
-<check_headers_access>Check SMTP headers</check_headers_access>
+<check_headers_access>Comprobar los encabezados SMTP</check_headers_access>
 <check_headers_access_text>Search a specified pattern (regular expression) in the SMTP headers and execute the corresponding action</check_headers_access_text>
 <check_interval>Per%C3%ADodo de verificaci%C3%B3n</check_interval>
 <check_ip_before_sender_email>Sender IP is checked before sender eMail</check_ip_before_sender_email>
@@ -2246,7 +2246,7 @@ Message will be sended trough the local MTA in order to be forwarded to the reci
 The process will build a message as a MS Outlook Client.
 </check_sendmsg_explain>
 <check_SSL_protocol>Verificar el protocolo SSL</check_SSL_protocol>
-<check_status>Check status</check_status>
+<check_status>Verificar estado</check_status>
 <check_success>Check success</check_success>
 <check_system_updates>Verificar las actualizaciones del sistema</check_system_updates>
 <check_system_updates_explain>Ejecutar las actualizaciones est%C3¡ndar del sistema operativo y verificar si hay nuevas actualizaciones proporcionadas por el proveedor del sistema operativo</check_system_updates_explain>
@@ -2503,7 +2503,8 @@ You should take care about enabling this task because there is no tests made bef
 <compile_tlse_database>Compile Toulouse Unversity databases</compile_tlse_database>
 <compile_tlse_database_explain>This task transform text files from the Toulouse university to database production mode</compile_tlse_database_explain>
 <compile_ufdb_repos>Compile UFBD databases for repository</compile_ufdb_repos>
-<compile_ufdb_repos_explain>This task is intended if your use this server has an ASP service.[br]It designed to compile categories into .ufdb databases and upload them to a repository</compile_ufdb_repos_explain>
+<compile_ufdb_repos_explain>Esta tarea est%C3¡ destinada a usarse cuando este servidor proporciona un servicio ASP.[br]
+Est%C3¡ dise%C3%B1ada para compilar las categor%C3%ADas en bases de datos .ufdb y cargarlas en un repositorio.</compile_ufdb_repos_explain>
 <compile_ufdb_restart>Esta operaci%C3%B3n reconfigurar%C3¡ y reiniciar%C3¡ el motor de filtrado web.
 %C2%BFDesea realizar esta operaci%C3%B3n?</compile_ufdb_restart>
 <compiling_acls>Compiling ACL(s)</compiling_acls>
@@ -2648,9 +2649,9 @@ This means that SSL certificates will be faked by the proxy.
 </coova_proxy_sslport>
 <coova_ssl_splash_explain>If enabled, the HostPost system will also can redirect to the logon splash page trough SSL</coova_ssl_splash_explain>
 <copy>Copiar</copy>
-<CopyTo>Copy to</CopyTo>
+<CopyTo>Copiar a</CopyTo>
 <copy_directory_content>Copy directory content</copy_directory_content>
-<copy_failed>Copy failed</copy_failed>
+<copy_failed>Error al copiar</copy_failed>
 <copy_from>Copia de</copy_from>
 <corporate_licence_will_expire>Su licencia Coporate expirar%C3¡ pronto</corporate_licence_will_expire>
 <corporate_licence_will_expire_explain>Your coporate licence will expire in %d day(s).[br]
@@ -2667,7 +2668,7 @@ Algunas funciones est%C3¡n deshabilitadas en la edici%C3%B3n comunitaria. Haga 
 <cpures_label>CPU reservation</cpures_label>
 <CpuUsage>Uso de la CPU</CpuUsage>
 <cpu_affinity>CPU Affinity</cpu_affinity>
-<cpu_average_last24h>%CPU average for the last 24 hours</cpu_average_last24h>
+<cpu_average_last24h>Promedio de %CPU durante las %C3%BAltimas 24 horas</cpu_average_last24h>
 <cpu_average_last7days>Promedio de %CPU de los %C3%BAltimos 7 d%C3%ADas</cpu_average_last7days>
 <cpu_performance>Rendimiento del  CPU</cpu_performance>
 <cpu_use>CPU usado</cpu_use>
@@ -3058,9 +3059,7 @@ You can temporary allow users, skin the web page error...
 <DHCPDInPowerDNS_explain>If enabled, the DHCP service will update the DNS database according the provided leases information</DHCPDInPowerDNS_explain>
 <DHCPDLogsEvents>Si se activa, Artica almacenar%C3¡ en la base de datos el nombre de host detectado, las direcciones mac y la hora de la solicitud con fines estad%C3%ADsticos</DHCPDLogsEvents>
 <dhcp_dns_service>DHCP and DNS service</dhcp_dns_service>
-<dhcp_fixed_addr_explain>
-If this option is enabled, the DHCP service will always provide the defined IP address from this section.
-</dhcp_fixed_addr_explain>
+<dhcp_fixed_addr_explain>Si esta opci%C3%B3n est%C3¡ habilitada, el servicio DHCP siempre asignar%C3¡ la direcci%C3%B3n IP definida en esta secci%C3%B3n.</dhcp_fixed_addr_explain>
 <dhcp_host_explain_options>Esta secci%C3%B3n le permite forzar opciones espec%C3%ADficas para este host.[br]
 Puede establecer varios valores separ%C3¡ndolos con el car%C3¡cter &quot;;&quot;.</dhcp_host_explain_options>
 <dhcp_network_attribution_explain>Para una red sencilla se puede establecer la subred 192.168.1.0 y la m%C3¡scara de red 255.255.255.0 o un rango largo.[br]
@@ -3315,12 +3314,10 @@ If you want to use only one provider, enable this feature and seclect the desire
 When blacklisting a destination domain, the engine matches for with every domain part of the
 requested name. So, if www.domain.com is requested, the extension checks whether www.domain.com, domain.com or .com is listed.
 </dnsfilterd_black_explain>
-<DNSFILTERD_SOURCES_EXPLAIN>
-You can set here IP addresses that make DNS requests:[br]
-A single IPv4 address: 10.4.2.240[br]
-A CDIR notation: 10.0.0.0/16[br]
-A Range of IPv4 addresses: 10.4.2.0 - 10.5.9.25
-</DNSFILTERD_SOURCES_EXPLAIN>
+<DNSFILTERD_SOURCES_EXPLAIN>Aqu%C3%AD puede definir las direcciones IP autorizadas para realizar solicitudes DNS:[br]
+Una %C3%BAnica direcci%C3%B3n IPv4: 10.4.2.240[br]
+Una notaci%C3%B3n CIDR: 10.0.0.0/16[br]
+Un rango de direcciones IPv4: 10.4.2.0 - 10.5.9.25</DNSFILTERD_SOURCES_EXPLAIN>
 <dnsfilterd_white_explain>You can exclude from the DNS filtering {client_source_ip_address} using CDIR, or IP Adresse such as 192.168.1.0/24,192.168.1.1 or destination domain.[br]
 When whitelisting a destination domain, the engine matches for with every domain part of the
 requested name. So, if www.domain.com is requested, the extension checks whether www.domain.com, domain.com or .com is listed.
@@ -4255,11 +4252,11 @@ Los registros se comprimen cada d%C3%ADa después de la medianoche y se almacena
 %C2%BFCrear la regla?</example_create_ask>
 <example_rules>Ejemplos de reglas</example_rules>
 <exclude>exclude</exclude>
-<excludetransparentin_explain>Defina aqu%C3%AD las redes de origen que ser%C3¡n excluidas de la redirecci%C3%B3n del servicio.[br]
-[b]No puede tener reglas de inclusi%C3%B3n y exclusi%C3%B3n en la misma declaraci%C3%B3n.[/b][br]
-Los valores posibles son:[br]
-Una direcci%C3%B3n ip: 192.168.1.1[br]
-Una notaci%C3%B3n CDIR: 192.168.1.0/24[br]</excludetransparentin_explain>
+<excludetransparentin_explain>Defina aqu%C3%AD las redes de origen que se excluir%C3¡n de la redirecci%C3%B3n del servicio.[br]
+[b]No es posible definir reglas de inclusi%C3%B3n y exclusi%C3%B3n en la misma declaraci%C3%B3n.[/b][br]
+Valores posibles:[br]
+Una direcci%C3%B3n IP: 192.168.1.1[br]
+Notaci%C3%B3n CIDR: 192.168.1.0/24[br]</excludetransparentin_explain>
 <excludetransparentout_explain>Defina aqu%C3%AD las redes de destino que ser%C3¡n excluidas de la redirecci%C3%B3n del servicio.[br]
 [b]No puede tener reglas de inclusi%C3%B3n y exclusi%C3%B3n en la misma declaraci%C3%B3n.[/b][br]
 Los valores posibles son:[br]
@@ -5118,7 +5115,7 @@ Est%C3¡ dise%C3%B1ado para ahorrar ancho de banda y comprimir el contenido del 
 En la mayor%C3%ADa de los casos, la operaci%C3%B3n de compresi%C3%B3n GZIP se ejecuta en los servidores web, pero muchos servidores web no tienen activada la funci%C3%B3n de compresi%C3%B3n HTTP[br].
 Esta caracter%C3%ADstica es interesante si su proxy se encuentra en la oficina principal y sirve a los navegadores o proxies remotos que se encuentran fuera de su infraestructura local[br].
 Utilizar la compresi%C3%B3n HTTP dentro de una LAN no ten%C3%ADa sentido...</http_compression_explain>
-<HTTP_ENGINE>HTTP Engine</HTTP_ENGINE>
+<HTTP_ENGINE>Motor HTTP</HTTP_ENGINE>
 <http_error_redirect>Default HTTP error redirection</http_error_redirect>
 <http_header>HTTP Header</http_header>
 <http_headers>HTTP headers</http_headers>
@@ -5904,7 +5901,7 @@ Note that this feature did not make sense on a virtual machine.
 <loader_threshold_mini>Loader threshold</loader_threshold_mini>
 <load_alerts>Load alerts</load_alerts>
 <load_average_last24h>Carga media de las %C3%BAltimas 24 horas</load_average_last24h>
-<load_average_last7days>Server load average for the last 7 days</load_average_last7days>
+<load_average_last7days>Carga media del servidor durante los %C3%BAltimos 7 d%C3%ADas</load_average_last7days>
 <load_balacing_appliance>Load-balancing appliance</load_balacing_appliance>
 <LOAD_BALACING_SERVICE>Servicio de equilibrio de carga</LOAD_BALACING_SERVICE>
 <LOAD_BALACING_SERVICE_EXPLAIN>Turn this server to a Load-balancing/Fail-Over service that is able to balance connections to proxies/Web servers/SMTP services</LOAD_BALACING_SERVICE_EXPLAIN>
@@ -6300,7 +6297,7 @@ Por defecto y cuando se pone a cero, desactiva la aplicaci%C3%B3n del l%C3%ADmit
 <member_www_stats_text>Display statistics by members</member_www_stats_text>
 <memlimit_label>L%C3%ADmite de memoria</memlimit_label>
 <memory_alert>Alerta de memoria</memory_alert>
-<memory_average_last24h>Memory average for the last 24 hours</memory_average_last24h>
+<memory_average_last24h>Promedio de memoria durante las %C3%BAltimas 24 horas</memory_average_last24h>
 <memory_average_last7days>Memory average for the last 7 days</memory_average_last7days>
 <memory_booster>Refuerzo de la memoria</memory_booster>
 <memory_cache>Caché de memoria</memory_cache>
@@ -6765,10 +6762,10 @@ until we reach a lower memory usage again.[br] This value includes all TCP socke
 TCP socket, even under high pressure on the system</NetIpv4TcpRmemMin_explain>
 <NetIpv4TcpWmemDef>Default buffer space</NetIpv4TcpWmemDef>
 <NetIpv4TcpWmemDef_explain>The default buffer space allowed for a single TCP socket to use</NetIpv4TcpWmemDef_explain>
-<NetIpv4TcpWmemMax>Maximum TCP send buffer</NetIpv4TcpWmemMax>
-<NetIpv4TcpWmemMax_explain>Tells the kernel the maximum TCP send buffer space</NetIpv4TcpWmemMax_explain>
-<NetIpv4TcpWmemMin>Minimum TCP Send buffer</NetIpv4TcpWmemMin>
-<NetIpv4TcpWmemMin_explain>Tells the minimum TCP send buffer space available for a single TCP socket.</NetIpv4TcpWmemMin_explain>
+<NetIpv4TcpWmemMax>B%C3%BAfer m%C3¡ximo de env%C3%ADo TCP</NetIpv4TcpWmemMax>
+<NetIpv4TcpWmemMax_explain>Indica al kernel el espacio m%C3¡ximo del b%C3%BAfer de env%C3%ADo TCP.</NetIpv4TcpWmemMax_explain>
+<NetIpv4TcpWmemMin>B%C3%BAfer m%C3%ADnimo de env%C3%ADo TCP</NetIpv4TcpWmemMin>
+<NetIpv4TcpWmemMin_explain>Indica el espacio m%C3%ADnimo del b%C3%BAfer de env%C3%ADo TCP disponible para un solo socket TCP.</NetIpv4TcpWmemMin_explain>
 <network2>Red</network2>
 <NetworkAdvancedRouting_explain>Si se pone en OFF, el servidor funciona en modo de enrutamiento %C3%BAnico.[br]Esto significa que toda la informaci%C3%B3n de enrutamiento se almacena en la tabla central del n%C3%BAcleo principal.[br]
 El modo de enrutamiento avanzado le permite configurar una tabla de enrutamiento para cada interfaz de red.[br]
@@ -6910,7 +6907,7 @@ If you want to access to it trough HTTP (WebDav), enable the option HTTP sharing
 <new_port>Nuevo puerto</new_port>
 <new_privilege>New privilege</new_privilege>
 <new_profile>Nuevo perfil</new_profile>
-<new_provider>New provider</new_provider>
+<new_provider>Nuevo proveedor</new_provider>
 <new_proxy>Nuevo proxy</new_proxy>
 <new_proxy_alias>New Proxy alias</new_proxy_alias>
 <new_proxy_object>Nuevo objeto proxy</new_proxy_object>
@@ -7450,7 +7447,7 @@ Establezca un valor entre 0 y 65535</open_files_limit_explain>
 to browse the backup directory in order to let you download backuped files[br]
 [b]Note: Only available if Artica Web console run under Apache Web server[/b]</open_www_to_backup_dir_explain>
 <operations>Operations</operations>
-<operation_failed>Operation failed</operation_failed>
+<operation_failed>La operaci%C3%B3n fall%C3%B3</operation_failed>
 <operation_in_background>Operation has been executed in background mode...</operation_in_background>
 <operation_in_background_restart_service>Operation will be executed in background mode.
 The main service will be restarted...</operation_in_background_restart_service>
@@ -7656,7 +7653,7 @@ The object will not be deleted but all datas will be erased</perform_empty_ask>
 <permanent_authorizations>Permanent authorizations</permanent_authorizations>
 <PerMembersYoutubeDetails>Display Youtube details per member</PerMembersYoutubeDetails>
 <permissive>Permissive</permissive>
-<persistent_connections>Persistent connections</persistent_connections>
+<persistent_connections>Conexiones persistentes</persistent_connections>
 <persistent_connections_explain>La conexi%C3%B3n persistente HTTP, también llamada HTTP keep-alive, o reutilizaci%C3%B3n de la conexi%C3%B3n HTTP,
 es la idea de utilizar una %C3%BAnica conexi%C3%B3n TCP para enviar y recibir m%C3%BAltiples peticiones/respuestas HTTP,
 en lugar de abrir una nueva conexi%C3%B3n para cada par de peticiones/respuestas[br].
@@ -9291,7 +9288,7 @@ A CDIR notation: 192.168.1.0/24[br]
 <severe>Severe</severe>
 <severity>Severity</severity>
 <shared_buffer>Shared Buffer</shared_buffer>
-<shared_category>Shared category</shared_category>
+<shared_category>Categor%C3%ADa compartida</shared_category>
 <shared_category_explain>If on, then you will be able to allow users to manage this category</shared_category_explain>
 <shared_directory>Shared directory</shared_directory>
 <shared_folder2>Shared folder</shared_folder2>
@@ -9577,7 +9574,7 @@ No permite que una fuente gestione directamente el rendimiento de la red forzand
 <source_message_explain>Paste an email message including the full headers and content.</source_message_explain>
 <source_name>Source name</source_name>
 <source_network>Source network</source_network>
-<source_package_not_found>Source package not found</source_package_not_found>
+<source_package_not_found>Paquete fuente no encontrado</source_package_not_found>
 <source_package_path>Source package path</source_package_path>
 <source_server>Source server</source_server>
 <spacer>Spacer</spacer>
@@ -10078,7 +10075,7 @@ Le sugerimos que reconfigure su servicio de proxy para que s%C3%B3lo utilice el 
 [li]Sin servicio externo: El proxy no utiliz%C3%B3 ning%C3%BAn plugin o addons[/li]
 [br]</squid_urgency_explain>
 <squid_use_local_service_dns>El servicio proxy utiliza el servicio DNS local</squid_use_local_service_dns>
-<squid_use_local_system_dns>El servicio proxy utiliza los par%C3¡metros DNS del sistema</squid_use_local_system_dns>
+<squid_use_local_system_dns>El servicio Proxy utiliza los par%C3¡metros DNS del sistema.</squid_use_local_system_dns>
 <squid_virtual_caches_explain>Virtual cache feature as the same behavior of standard caches but it use only the memory.[br]
 Caches are directly mounted in memory in order to speed up delivery objects.[br]
 </squid_virtual_caches_explain>
@@ -12114,7 +12111,7 @@ If your server is www.domain.tld, put the www in the first field and the domain.
 If your server is just domain.tld without any sub domain, put the domain.tld in the first field.
 </wordpress_form_explain_add>
 <wordpress_websites>Sitios web de Wordpress</wordpress_websites>
-<workers>Workers</workers>
+<workers>Procesos</workers>
 <workingdir_in_memory>Direcory in memory</workingdir_in_memory>
 <workingdir_in_memory_text>Si se establece en 5, el directorio de trabajo se establecer%C3¡ en la memoria en lugar del disco duro[br].
 Esto acelerar%C3¡ el procesamiento pero manejar%C3¡ su memoria f%C3%ADsica</workingdir_in_memory_text>

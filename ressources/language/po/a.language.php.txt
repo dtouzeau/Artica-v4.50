@@ -11,7 +11,7 @@ O seu sistema ser%C3¡ capaz de servir muitos clientes Macintosh simultaneamente
 Note que s%C3%B3 est%C3¡ dispon%C3%ADvel se tiver activado a Autenticaç%C3£o por Proxy</acl_proxy_auth_explain>
 <ActAsSMTPGatewayStatistics>Act as SMTP Gateway logs/statistics</ActAsSMTPGatewayStatistics>
 <ActAsSMTPGatewayStatistics_text>If enabled this server will server SMTP events statistics and will be in charge of manage/backup/restore SMTP system logs</ActAsSMTPGatewayStatistics_text>
-<ActHasMaster>A lei tem Mestre</ActHasMaster>
+<ActHasMaster>Atua como n%C3%B3 mestre</ActHasMaster>
 <ActHasSlave>A lei tem escravos</ActHasSlave>
 <activate_openvpn_connection>Activate the VPN connection and connect to the VPN server</activate_openvpn_connection>
 <activate_sync_port>Activate the synchronize port</activate_sync_port>
@@ -518,7 +518,7 @@ example: "Mary had a little lamb" or "76b42abc1cd0fdcaf6e943dcbc93b826"
 <bypass_minitext>Bypassing the webfilter in order to answer to the question: [b]How can I have some users bypass the webfilter wall?[/b]</bypass_minitext>
 <cache-size_text>Set the size of dnsmasq's cache. The default is 1500 items. Setting the cache size to zero disables caching.</cache-size_text>
 <CacheDefaultExpire>Tempo de expiraç%C3£o</CacheDefaultExpire>
-<CacheDefaultExpire_explain>sets an expiration time for resources that don't specify an expiry date or a last-modified date</CacheDefaultExpire_explain>
+<CacheDefaultExpire_explain>Define um tempo de expiraç%C3£o para recursos que n%C3£o especificam uma data de expiraç%C3£o nem uma data de %C3%BAltima modificaç%C3£o.</CacheDefaultExpire_explain>
 <CacheDisable_explain>This section disable caching by specified urls , set the urls like /index.php /images</CacheDisable_explain>
 <CacheMaxFileSize>Maximum file size to cache</CacheMaxFileSize>
 <cachemgr>Squid Cache Manager</cachemgr>
@@ -527,7 +527,7 @@ about the squid process as it runs.[br]
 The cache manager is a convenient way to manage the cache and view statistics 
 without logging into the server</cachemgr_text>
 <CacheMinExpire>Minimum expiration time</CacheMinExpire>
-<CacheMinExpire_explain>specifies the minimum expiration time for resources, even if the resource itself specifies a shorter expiry date.</CacheMinExpire_explain>
+<CacheMinExpire_explain>Especifica o tempo m%C3%ADnimo de expiraç%C3£o dos recursos, mesmo que o pr%C3%B3prio recurso defina uma data de expiraç%C3£o mais curta.</CacheMinExpire_explain>
 <CacheMinFileSize>Minimum file size to cache</CacheMinFileSize>
 <CacheMinFileSize_explain>If a file is too small, there's no performance benefit to caching it. If it's too large, you'll consume your cache space too quickly</CacheMinFileSize_explain>
 <caches>Caches</caches>
@@ -2183,7 +2183,7 @@ The path is formatted as a character string consisting of characters from the NV
 <quota_disk>Quotas</quota_disk>
 <quota_hard>Quota Hard</quota_hard>
 <quota_soft>Quota Soft</quota_soft>
-<random>Random</random>
+<random>Aleat%C3%B3rio</random>
 <ratio>Ratio</ratio>
 <Raw_Read_Error_Rate>Raw Read Error Rate</Raw_Read_Error_Rate>
 <Raw_Read_Error_Rate_text>Frequency of errors appearance while reading RAW data from a disk</Raw_Read_Error_Rate_text>
@@ -2787,7 +2787,7 @@ e valores superiores a 100 permitem ao n%C3%BAcleo trocar as p%C3¡ginas que faz
 <sync_packages_explain>Check if there is new supported softwares and install them</sync_packages_explain>
 <syslog_server>System Log (server mode)</syslog_server>
 <system_grace_period_explain>The grace period,which determines the lenght if time that a user is allowed to exceed the soft limit</system_grace_period_explain>
-<system_is_uptodate>System is up-to-date</system_is_uptodate>
+<system_is_uptodate>O sistema est%C3¡ atualizado</system_is_uptodate>
 <system_log>System logging</system_log>
 <system_log_text>Define parameters in order to send system events to a central server or to transform Artica has en central log server</system_log_text>
 <system_packages_can_be_upgraded>Pacotes de sistema que devem ser actualizados/actualizados</system_packages_can_be_upgraded>
@@ -2878,7 +2878,7 @@ O modo transparente suporta apenas o protocolo HTTP, n%C3£o gopher, SSL, ou FTP
 [li]H%C3¡ algumas limitaç%C3µes de uploads quando se usa o Dansguardian tem o plugin principal do filtro Web[/li].
 [/ul]</transparent_mode_limitations>
 <treshold>Treshold</treshold>
-<TrustMyNetwork>Trust networks</TrustMyNetwork>
+<TrustMyNetwork>Redes de confiança</TrustMyNetwork>
 <TrustMyNetwork_text>If green, the server will allow any IP address (inside the trusted networks) sending messages to Internet.[br]
 Enable this feature is dangerous if you using your server in public mode or if you using a load balancer system
 that using an IP adress in the defined trusted network.[br]

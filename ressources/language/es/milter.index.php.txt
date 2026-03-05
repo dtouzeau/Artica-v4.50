@@ -21,7 +21,7 @@ The following values are available:[ul]
 [/ul]
 </AnswerMode_text>
 <BasesErrorAction>Action performed over objects in cases, when the application fails to load the anti-virus databases.</BasesErrorAction>
-<by_a_license>Obtain a new license</by_a_license>
+<by_a_license>Obtener una nueva licencia</by_a_license>
 <by_a_license_text>Buy OnLine now and give the product ready to filter yours mails</by_a_license_text>
 <ClientIP>De los IPs</ClientIP>
 <ClientIP_text>Establece la direcci%C3%B3n IP de origen del cliente que ha solicitado un objeto a través de

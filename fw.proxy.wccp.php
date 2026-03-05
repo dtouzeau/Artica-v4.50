@@ -5,13 +5,13 @@ include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
-if(isset($_GET["tabs"])){tabs();exit;}
+
 if(isset($_GET["parameters"])){parameters();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["parameters-table"])){parameters_table();exit;}
 if(isset($_GET["parameters-flat"])){parameters_flat();exit;}
 if(isset($_POST["WCCP_HTTP_PORT"])){saveall();exit;}
-if(isset($_POST["WCCP_ASA_ADDR"])){saveall();exit;}
+if(isset($_POST["WCCP_ASA_ADDR"])){saveRestart();exit;}
 
 if(isset($_GET["section-traffic-js"])){section_traffic_js();exit;}
 if(isset($_GET["section-traffic-popup"])){section_traffic_popup();exit;}
@@ -19,7 +19,7 @@ if(isset($_GET["section-traffic-popup"])){section_traffic_popup();exit;}
 if(isset($_GET["section-proto-js"])){section_proto_js();exit;}
 if(isset($_GET["section-proto-popup"])){section_proto_popup();exit;}
 
-page();
+parameters();
 
 function saveall(){
     $tpl    =new template_admin();
@@ -62,13 +62,21 @@ function section_proto_popup():bool{
     if($WCCP_ASA_USE==0){$WCCP_ASA_ROUTER=null;}
 
     $form[]=$tpl->field_ipaddr("WCCP_ASA_ADDR","{router_address}",$WCCP_ASA_ADDR);
-    $form[]=$tpl->field_array_hash($zwccp_version,"WCCP_VERSION","{version}: WCCP",$WCCP_VERSION);
-    $form[]=$tpl->field_checkbox("WCCP_ASA_USE","CISCO ASA",$WCCP_ASA_USE,"WCCP_ASA_ROUTER");
-    $form[]=$tpl->field_ipaddr("WCCP_ASA_ROUTER","{cisco_asa_address}",$WCCP_ASA_ROUTER);
-    $form[]=$tpl->field_password2("WCCP_PASSWORD","{WCCP_PASSWORD}",$WCCP_PASSWORD,false,"{WCCP_PASSWORD_EXPLAIN}");
+    //$form[]=$tpl->field_array_hash($zwccp_version,"WCCP_VERSION","{version}: WCCP",$WCCP_VERSION);
+    //$form[]=$tpl->field_checkbox("WCCP_ASA_USE","CISCO ASA",$WCCP_ASA_USE,"WCCP_ASA_ROUTER");
+    //$form[]=$tpl->field_ipaddr("WCCP_ASA_ROUTER","{cisco_asa_address}",$WCCP_ASA_ROUTER);
+    $form[]=$tpl->field_password("WCCP_PASSWORD","{WCCP_PASSWORD}",$WCCP_PASSWORD,false,"{WCCP_PASSWORD_EXPLAIN}");
     $html[]=$tpl->form_outside(null, @implode("\n", $form),null,"{apply}",jsApply(),$security);
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     return true;
+}
+function saveRestart():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $tpl->SAVE_POSTs();
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/wccp/restart");
+    return admin_tracks_post("Saving WCCP parameters.");
+
 }
 
 function section_traffic_popup():bool{
@@ -82,14 +90,16 @@ function section_traffic_popup():bool{
     $WCCP_CERTIFICATE=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_CERTIFICATE"));
     $WCCP_HTTPS_SERVICE_ID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_HTTPS_SERVICE_ID"));
 
-    if($WCCP_HTTP_PORT==0){$WCCP_HTTP_PORT=3126;}
-    if($WCCP_HTTPS_PORT==0){$WCCP_HTTPS_PORT=3125;}
+    if($WCCP_HTTP_PORT==0){$WCCP_HTTP_PORT=35026;}
+    if($WCCP_HTTPS_PORT==0){$WCCP_HTTPS_PORT=35025;}
     if($WCCP_HTTPS_SERVICE_ID==0){$WCCP_HTTPS_SERVICE_ID=70;}
 
     $form[]=$tpl->field_interfaces("WCCP_LOCAL_INTERFACE","nooloopNoDef:{listen_interface}",$WCCP_LOCAL_INTERFACE);
+    $form[]=$tpl->field_section("HTTP");
     $form[]=$tpl->field_numeric("WCCP_HTTP_PORT","{listen_port} HTTP",$WCCP_HTTP_PORT);
-    $form[]=$tpl->field_numeric("WCCP_HTTPS_SERVICE_ID","{service_id}",$WCCP_HTTPS_SERVICE_ID);
+    $form[]=$tpl->field_section("HTTPS");
     $form[]=$tpl->field_numeric("WCCP_HTTPS_PORT","{listen_port} HTTPs",$WCCP_HTTPS_PORT);
+    $form[]=$tpl->field_numeric("WCCP_HTTPS_SERVICE_ID","{service_id}",$WCCP_HTTPS_SERVICE_ID);
     $form[]=$tpl->field_certificate("WCCP_CERTIFICATE","{use_certificate_from_certificate_center}",$WCCP_CERTIFICATE);
 
     $html[]=$tpl->form_outside(null, @implode("\n", $form),null,"{apply}",jsApply(),$security);
@@ -100,70 +110,40 @@ function section_traffic_popup():bool{
 function status(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $WCCP_LOCAL_INTERFACE=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_LOCAL_INTERFACE"));
 
-    echo "<script>LoadAjaxSilent('wccp-params','$page?parameters-flat=yes');</script>";
-
-    if(strlen($WCCP_LOCAL_INTERFACE)<3){
-        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("{wccp_error_interface}","{listen_interface}"));
-        return true;
-    }
-    $WCCP_CERTIFICATE=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_CERTIFICATE"));
-    if(strlen($WCCP_CERTIFICATE)<2){
-        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("{certificate}","{unknown}"));
+    $SquidWCCPEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidWCCPEnabled"));
+    if($SquidWCCPEnabled==0){
+        echo $tpl->_ENGINE_parse_body($tpl->widget_grey("{WCCP_NAME}","{feature_disabled}"));
         return true;
     }
     $WCCP_ASA_ADDR=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_ASA_ADDR"));
-    if(strlen($WCCP_ASA_ADDR)<3){
-        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("{router_address}","{unknown}"));
-        return true;
 
+    if(strlen($WCCP_ASA_ADDR)<2){
+        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("{no_lan_router_addr}","{missing_parameter}"));
+        return true;
     }
 
+    echo "<script>LoadAjaxSilent('wccp-params','$page?parameters-flat=yes');</script>";
+
+
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/wccp/status"));
+
     if(!$json->Status){
         echo $tpl->_ENGINE_parse_body($tpl->widget_rouge($json->Error,"{error}"));
         return true;
     }
 
     $jsrestart=$tpl->framework_buildjs("/proxy/wccp/apply",
-        "squid.wccp.progress","squid.wccp.log","progress-wccp-restart","LoadAjaxSilent('wccp-params','$page?parameters-flat=yes');");
+        "squid.wccp.progress",
+            "squid.wccp.log",
+        "progress-squid-ports-restart","LoadAjaxSilent('wccp-params','$page?parameters-flat=yes');");
 
-    $wbutton[0]["name"] = "{reconfigure}";
-    $wbutton[0]["icon"] = ico_retweet;
-    $wbutton[0]["js"] = $jsrestart;
+    $ini=new Bs_IniHandler();
+    $ini->loadString($json->Info);
+    $html[]=$tpl->SERVICE_STATUS($ini, "WCCP_NAME",$jsrestart);
 
-    $SOURCE_INTERFACE=$json->SourceInterface;
-    $SOURCE_REMOTE=$json->SourceRemote;
-    $SOURCE_LOCAL=$json->SourceLocal;
-    if(strlen($SOURCE_INTERFACE)<2){
-        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("TUNNEL","{error}",$wbutton));
-        return true;
-    }
-    if(strlen($SOURCE_LOCAL)<2){
-        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("TUNNEL","{error}",$wbutton));
-        return true;
-    }
-    echo $tpl->widget_vert("{from} $SOURCE_INTERFACE/$SOURCE_LOCAL {to} $SOURCE_REMOTE","GRE OK",$wbutton);
-
-
-    $WCCP_HTTP_PORT=$json->IptablesHTTPPort;
-    $WCCP_HTTPS_PORT=$json->IptablesHTTPsPort;
-
-    if ($WCCP_HTTP_PORT==0 OR $WCCP_HTTPS_PORT==0){
-        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("{error}","{label_redirect} {ports}",$wbutton));
-        return true;
-    }
-
-
-    if($WCCP_HTTP_PORT>0){
-        if($WCCP_HTTPS_PORT>0){
-            echo $tpl->widget_vert("HTTP:$WCCP_HTTP_PORT / SSL:$WCCP_HTTPS_PORT","{label_redirect} {ports} OK",$wbutton);
-
-        }
-
-    }
-
+    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    return true;
 
 }
 
@@ -174,7 +154,7 @@ function parameters(){
     $html[]="<table style='width:100%;margin-top:10px'>";
     $html[]="<tr>";
     $html[]="<td style='width:240px;vertical-align: top'><div id='wccp-status'></div></td>";
-    $html[]="<td style='width:99%;vertical-align: top'><div id='wccp-params'></div></td>";
+    $html[]="<td style='width:99%;vertical-align: top;padding-left:10px'><div id='wccp-params'></div></td>";
     $html[]="</tr>";
     $html[]="<script>";
     $js=$tpl->RefreshInterval_js("wccp-status",$page,"status=yes");
@@ -190,6 +170,52 @@ function parameters_flat():bool{
     $tpl=new template_admin();
     $security="AsSquidAdministrator";
 
+    $topbuttons=array();
+    $TINY_ARRAY["TITLE"]="{WCCP_NAME}";
+    $TINY_ARRAY["ICO"]=ico_sensor;
+    $TINY_ARRAY["EXPL"]="{WCCP_NAME_EXPLAIN}";
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
+    $SquidWCCPEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidWCCPEnabled"));
+
+
+    if($SquidWCCPEnabled==0){
+        $after=$tpl->framework_buildjs("/proxy/wccp/install",
+        "squid.wccp.progress",
+        "squid.wccp.log",
+        "progress-squid-ports-restart",
+        "LoadAjaxSilent('wccp-params','$page?parameters-flat=yes');"
+        );
+
+        $html[]=$tpl->BigCircleCheckbox("SquidWCCPEnabled","{WCCP_NAME}","{WCCP_NAME_EXPLAIN}",0,$after);
+        echo $tpl->_ENGINE_parse_body($html);
+        echo "<script>$jstiny</script>";
+        return true;
+    }
+
+    $after=$tpl->framework_buildjs("/proxy/wccp/install",
+        "squid.wccp.progress",
+        "squid.wccp.log",
+        "progress-squid-ports-restart","LoadAjaxSilent('wccp-params','$page?parameters-flat=yes');");
+
+    $WCCP_ASA_ROUTER=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_ASA_ROUTER"));
+    $WCCP_ASA_ADDR=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_ASA_ADDR"));
+    $WCCP_PASSWORD=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_PASSWORD"));
+    $WCCP_ASA_USE=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_ASA_USE"));
+    $WCCP_VERSION=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_VERSION"));
+
+    $html[]=$tpl->BigCircleCheckbox("SquidWCCPEnabled","{WCCP_NAME}","{feature_enabled}",1,$after);
+
+    $tpl->table_form_section("{router}");
+    $tpl->table_form_field_js("Loadjs('$page?section-proto-js=yes')",$security);
+    if(strlen($WCCP_ASA_ADDR)<4){
+        $tpl->table_form_field_text("{router_address}","{unknown}",ico_sensor,true);
+    }else{
+        $tpl->table_form_field_text("{router_address}",$WCCP_ASA_ADDR." WCCPv2",ico_sensor);
+    }
+
+
     $tpl->table_form_section("{http_traffic}");
     $tpl->table_form_field_js("Loadjs('$page?section-traffic-js=yes')",$security);
 
@@ -198,49 +224,31 @@ function parameters_flat():bool{
     $WCCP_HTTPS_SERVICE_ID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_HTTPS_SERVICE_ID"));
     $WCCP_HTTPS_PORT=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_HTTPS_PORT"));
     $WCCP_CERTIFICATE=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_CERTIFICATE"));
-    if($WCCP_HTTP_PORT==0){$WCCP_HTTP_PORT=3126;}
-    if($WCCP_HTTPS_PORT==0){$WCCP_HTTPS_PORT=3125;}
+    if($WCCP_HTTP_PORT==0){$WCCP_HTTP_PORT=35026;}
+    if($WCCP_HTTPS_PORT==0){$WCCP_HTTPS_PORT=35025;}
 
     if($WCCP_HTTPS_SERVICE_ID==0){$WCCP_HTTPS_SERVICE_ID=70;}
-    if(strlen($WCCP_LOCAL_INTERFACE)<2){
-        $tpl->table_form_field_text("{listen}","{unknown}:$WCCP_HTTP_PORT",ico_nic,true);
-    }else{
-        $tpl->table_form_field_text("{listen}","$WCCP_LOCAL_INTERFACE:$WCCP_HTTP_PORT",ico_nic);
-    }
+    $tpl->table_form_field_text("{listen}","127.0.0.1:$WCCP_HTTP_PORT",ico_nic);
+
 
 
 
     $tpl->table_form_section("{https_traffic}");
     $tpl->table_form_field_text("{service_id}",$WCCP_HTTPS_SERVICE_ID,ico_nic);
-    if(strlen($WCCP_LOCAL_INTERFACE)<2) {
-        $tpl->table_form_field_text("{listen}", "{unknown}:$WCCP_HTTPS_PORT", ico_nic,true);
-    }else{
-        $tpl->table_form_field_text("{listen}", "$WCCP_LOCAL_INTERFACE:$WCCP_HTTPS_PORT", ico_nic);
-    }
+    $tpl->table_form_field_text("{listen}", "127.0.0.1:$WCCP_HTTPS_PORT", ico_nic);
+
     if(strlen($WCCP_CERTIFICATE)<3){
         $tpl->table_form_field_text("{certificate}","{unknown}",ico_certificate,true);
     }else{
         $tpl->table_form_field_text("{certificate}",$WCCP_CERTIFICATE,ico_certificate);
     }
-    $WCCP_ASA_ROUTER=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_ASA_ROUTER"));
-    $WCCP_ASA_ADDR=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_ASA_ADDR"));
-    $WCCP_PASSWORD=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_PASSWORD"));
-    $WCCP_ASA_USE=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_ASA_USE"));
-    $WCCP_VERSION=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_VERSION"));
-    $zwccp_version[0]="{default}";
-    $zwccp_version[3]="{version} 3";
-    $zwccp_version[4]="{version} 4";
+
 
     if($WCCP_ASA_USE==0){$WCCP_ASA_ROUTER=null;}
 
-    $tpl->table_form_section("{router}");
-    $tpl->table_form_field_js("Loadjs('$page?section-proto-js=yes')",$security);
-    if(strlen($WCCP_ASA_ADDR)<4){
-        $tpl->table_form_field_text("{router_address}","{unknown}",ico_sensor,true);
-    }else{
-        $tpl->table_form_field_text("{router_address}",$WCCP_ASA_ADDR,ico_sensor);
-    }
-    $tpl->table_form_field_text("{version}",$zwccp_version[$WCCP_VERSION],ico_proto);
+
+
+
     $tpl->table_form_field_bool("CISCO ASA",$WCCP_ASA_USE,ico_proto);
     if($WCCP_ASA_USE==1){
         if(strlen($WCCP_ASA_ROUTER)<3) {
@@ -252,19 +260,21 @@ function parameters_flat():bool{
     if(strlen($WCCP_PASSWORD)>1){
         $tpl->table_form_field_text("{WCCP_PASSWORD}","****",ico_lock);
     }
-    echo $tpl->table_form_compile();
+
+
+
+
+    $html[]= $tpl->table_form_compile();
+    $html[]= "<script>$jstiny</script>";
+    echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
 
 function jsApply():string{
     $page=CurrentPageName();
     $tpl=new template_admin();
-
-    $jsrestart=$tpl->framework_buildjs("/proxy/wccp/apply",
-        "squid.wccp.progress","squid.wccp.log","progress-wccp-restart","LoadAjaxSilent('wccp-params','$page?parameters-flat=yes');");
     $js[]="LoadAjaxSilent('wccp-params','$page?parameters-flat=yes');";
     $js[]="dialogInstance2.close();";
-    $js[]=$jsrestart;
     return @implode(";",$js);
 
 }
@@ -639,12 +649,7 @@ function page(){
 	echo $tpl->_ENGINE_parse_body($html);
 
 }
-function tabs(){
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$array["{parameters}"]="$page?parameters=yes";
-	echo $tpl->tabs_default($array);
-}
+
 function connected_port_section(){
 	$page=CurrentPageName();
 	echo "<div id='table-connected-proxy-ports'></div><script>LoadAjax('table-connected-proxy-ports','$page?connected-ports-list=yes');</script>";

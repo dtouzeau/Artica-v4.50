@@ -56,6 +56,9 @@ function xgen(){
     if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
         $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
     }
+    if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_META_PREFIX"]."/";
+    }
 
     if(isset($_SESSION["ACTIVE_DIRECTORY_INFO"])){
         $name=GetAdDisplayName();
@@ -130,11 +133,14 @@ function xgen(){
     $f[]="<!-- SquidInRouterMode ===  $SquidInRouterMode -->";
     $IPFeed=false;
     $EnableWazhuCLient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWazhuCLient"));
+
+
+
     if($users->AsAnAdministratorGeneric OR $users->AsFirewallManager){
         $f[]="                <li id='left-menu'>";
         $f[]="                    <a href='#' ><i class=\"fa fa-server\"></i> <span class=\"nav-label\">{your_system}</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
-
+        $f[]="<!-- your_system ===  ".__LINE__." -->";
         $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.information.php","ICO"=>"fas fa-server","TEXT"=>"{system_information}"));
         if($users->AsSystemAdministrator) {
             if(!$users->AsDockerWeb) {
@@ -554,6 +560,7 @@ function xgen(){
     $f[]=$leftmenus->Rsync();
     $f[]="<!-- [".__LINE__."]: ACTIVE DIRECTORY START -->";
     $f[]=$leftmenus->ActiveDirectory();
+    $f[]=$leftmenus->ArticaAuthAgent();
     $f[]=$leftmenus->FileBeat();
     $f[]=$leftmenus->Samba();
     $f[]=$leftmenus->Syncthing();
