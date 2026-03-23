@@ -103,6 +103,7 @@ if(isset($_GET["section-logs-js"])){section_logs_js();exit;}
 if(isset($_GET["section-logs-popup"])){section_logs_popup();exit;}
 
 if(isset($_GET["graphs"])){status_graphs();exit;}
+if(isset($_GET["graphs-render"])){status_graphs_render();exit;}
 page();
 
 
@@ -135,7 +136,6 @@ function maxconns_js():bool{
 }
 function maxconns_popup():bool{
     $tpl=new template_admin();
-    $page=CurrentPageName();
     $HaClusterMaxConn=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterMaxConn");
     $form[]=$tpl->field_numeric("HaClusterMaxConn","{maxconn}",$HaClusterMaxConn,"{haproxy_maxconn}");
     $jsafter[]="dialogInstance2.close();";
@@ -161,10 +161,9 @@ function section_deploy_js():bool{
 function restart_debug_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    return $tpl->js_dialog8("{restart} {debug}","$page?restart-debug-popup=yes",650);
+    return $tpl->js_dialog8("{restart} {debug}","$page?restart-debug-popup=yes");
 }
 function restart_debug_popup():bool{
-    $tpl=new template_admin();
     $page=CurrentPageName();
     echo "<div id='restart-debug-popup'></div>";
     echo "<div id='restart-debug-results'></div>";
@@ -178,7 +177,6 @@ function restart_debug_save():bool{
     return admin_tracks("Restart the Hacluster in debug mode");
 }
 function restart_debug_step2():bool{
-    $tpl=new template_admin();
     $data=@file_get_contents("ressources/logs/hacluster-debug.log");
     echo "<textarea style='width:99%;height:550px'>$data</textarea>";
     return true;
@@ -386,39 +384,215 @@ function status_center():bool{
 }
 function status_graphs():bool{
     $tpl=new template_admin();
-    $pp=$_GET["graphs"];
     $page=CurrentPageName();
-    $time=time();
-    $html[]="<div id='RefreshThisGraph$pp$time'></div>";
-    $html[]="<p><img id='haclusterConnections$pp' src='img/squid/hacluster-connections-$pp.flat.png' alt='1'></p>";
-    $html[]="<p><img id='haclusterLatency$pp' src='img/squid/hacluster-latency-$pp.flat.png' alt='1'></p>";
-    $html[]="<p><img id='haclusterQueries$pp' src='img/squid/hacluster-queries-$pp.flat.png' alt='1'></p>";
-    $html[]="<p><img id='haclusterBandwidth$pp' src='img/squid/hacluster-bandwidth-$pp.flat.png' alt='1'></p>";
-    $html[]="<script>";
-    $html[]=$tpl->RefreshInterval_Loadjs("RefreshThisGraph$pp$time",$page,"refreshimage=$pp");
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $pp=$_GET["graphs"];
+    $h=array();
+
+    // Time range buttons
+    $ranges=array("hourly"=>"{hourly}","day"=>"{day}","yesterday"=>"{yesterday}","week"=>"{week}","month"=>"{month}","year"=>"{year}");
+    $h[]="<div style='margin:10px 0 15px'>";
+    $h[]="  <div class='btn-group' id='hc-range-btns'>";
+    foreach($ranges as $key=>$label){
+        $active=($key===$pp)?' active':'';
+        $h[]="    <button class='btn btn-sm btn-default$active' onclick=\"HcRange('$key',this)\">$label</button>";
+    }
+    $h[]="  </div>";
+    $h[]="  <button class='btn btn-sm btn-primary' style='margin-left:10px' onclick=\"HcRefresh();\">";
+    $h[]="    <i class='fas fa-sync-alt'></i> {refresh}</button>";
+    $h[]="</div>";
+
+    // Current latency widget
+    $currentJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/latency/current"));
+    $currentMetJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/metrics/current"));
+    $latMs='—'; $latColor='#676a6c'; $curConns='—'; $curQueries='—'; $curBw='—';
+    if(is_object($currentJson) && !empty($currentJson->success) && is_object($currentJson->data)){
+        $ms=floatval($currentJson->data->latency_ms);
+        $latMs=sprintf('%.0f',$ms);
+        if($ms<100) $latColor='#1ab394';
+        elseif($ms<500) $latColor='#f8ac59';
+        else $latColor='#ed5565';
+    }
+    if(is_object($currentMetJson) && !empty($currentMetJson->success) && is_object($currentMetJson->data)){
+        $curConns=intval($currentMetJson->data->connections);
+        $curQueries=intval($currentMetJson->data->queries);
+        $curBw=intval($currentMetJson->data->bandwidth_mb);
+    }
+
+    $h[]="<div class='row' style='margin-bottom:15px'>";
+    $h[]="<div class='col-md-3 col-sm-6'><div style='background:$latColor;color:#fff;padding:12px 15px;border-radius:4px;text-align:center'>";
+    $h[]="<div style='font-size:24px;font-weight:700'>$latMs ms</div>";
+    $h[]="<div style='font-size:11px'><i class='fas fa-tachometer-alt'></i> {latency}</div></div></div>";
+    $h[]=_hcsw('#1c84c6','fas fa-plug','{connections}',$curConns);
+    $h[]=_hcsw('#34495e','fas fa-exchange-alt','{queries}',$curQueries);
+    $h[]=_hcsw('#f8ac59','fas fa-download','{bandwidth} (MB)',$curBw);
+    $h[]="</div>";
+
+    // Chart containers
+    $h[]="<div id='hc-charts-area'></div>";
+
+    // JS
+    $h[]="<script>";
+    $h[]="var _hcPeriod='$pp';";
+    $h[]="function HcRange(p,btn){";
+    $h[]="  _hcPeriod=p;";
+    $h[]="  \$('#hc-range-btns .btn').removeClass('active');";
+    $h[]="  \$(btn).addClass('active');";
+    $h[]="  HcRefresh();";
+    $h[]="};";
+    $h[]="function HcRefresh(){";
+    $h[]="  LoadAjax('hc-charts-area','$page?graphs-render=yes&period='+_hcPeriod);";
+    $h[]="};";
+    $h[]="HcRefresh();";
+    $h[]="</script>";
+
+    echo $tpl->_ENGINE_parse_body(implode("\n",$h));
     return true;
 }
-function refresh_image(){
-    $pp=$_GET["refreshimage"];
-    $tpl=new template_admin();
-    header("content-type: application/x-javascript");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/refresh/graphs");
-    $f[]="haclusterLatency$pp";
-    $f[]="haclusterQueries$pp";
-    $f[]="haclusterBandwidth$pp";
-    foreach ($f as $item) {
-        $html[]="if ( document.getElementById('$item') ){";
-        $html[]="const img = document.getElementById('$item');";
-        $html[]="const baseUrl = img.src.split('?')[0]; // Remove existing query parameters";
-        $html[]="img.src = `$"."{baseUrl}?t=$"."{new Date().getTime()}`; // Append timestamp";
-        $html[]="}";
-    }
-    echo @implode("\n", $html);
+
+function _hcsw($bg,$ico,$label,$val){
+    $val=htmlspecialchars((string)$val);
+    return "<div class='col-md-3 col-sm-6'><div style='background:$bg;color:#fff;padding:12px 15px;border-radius:4px;text-align:center'>"
+        ."<div style='font-size:24px;font-weight:700'>$val</div>"
+        ."<div style='font-size:11px'><i class='$ico'></i> $label</div></div></div>";
+}
+function _period_to_hours($period):int{
+    $map=array("hourly"=>1,"day"=>24,"yesterday"=>48,"week"=>168,"month"=>720,"year"=>2160);
+    return isset($map[$period]) ? $map[$period] : 24;
 }
 
-function tabs(){
+function _ts_format($hours){
+    if($hours>168) return 'M d';
+    if($hours>48) return 'M d H:i';
+    return 'H:i';
+}
+function status_graphs_render():bool{
+    $tpl=new template_admin();
+    $period=trim($_GET["period"] ?? 'day');
+    $hours=_period_to_hours($period);
+    $fmt=_ts_format($hours);
+
+    $h=array();
+    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+
+    // ── Latency chart ──
+    $latJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/latency?hours=$hours"));
+    if(is_object($latJson) && !empty($latJson->success) && is_object($latJson->data)){
+        $pts=(array)($latJson->data->points ?? array());
+        $res=$latJson->data->resolution ?? 'raw';
+        $hasMinMax=($res!=='raw');
+        if(!empty($pts)){
+            $labels=array(); $avgV=array(); $minV=array(); $maxV=array();
+            foreach($pts as $p){
+                $labels[]=date($fmt,$p->ts);
+                $avgV[]=sprintf('%.2f',$p->latency_ms);
+                if($hasMinMax){
+                    $minV[]=sprintf('%.2f',$p->min_ms ?? 0);
+                    $maxV[]=sprintf('%.2f',$p->max_ms ?? 0);
+                }
+            }
+            $labelsJS="['".implode("','",$labels)."']";
+            $avgJS='['.implode(',',$avgV).']';
+
+            $ds=array();
+            if($hasMinMax){
+                $maxJS='['.implode(',',$maxV).']';
+                $minJS='['.implode(',',$minV).']';
+                $ds[]="{label:'Max',data:$maxJS,borderColor:'rgba(231,76,60,0.4)',borderDash:[5,3],pointRadius:0,tension:0.3,fill:false,borderWidth:1.5}";
+                $ds[]="{label:'Min',data:$minJS,borderColor:'rgba(39,174,96,0.4)',borderDash:[5,3],pointRadius:0,tension:0.3,fill:false,borderWidth:1.5}";
+            }
+            $pr=($res==='raw')?'1':'2';
+            $ds[]="{label:'{latency} (ms)',data:$avgJS,borderColor:'rgb(54,162,235)',backgroundColor:'rgba(54,162,235,0.08)',pointRadius:$pr,tension:0.3,fill:true,borderWidth:2}";
+            $dsJS='['.implode(',',$ds).']';
+            $uid='lat-'.uniqid();
+            $h[]=_hc_panel('fas fa-tachometer-alt','{latency}',$res,$uid,$labelsJS,$dsJS,'ms');
+        }
+    }
+
+    // ── Metrics charts (connections, queries, bandwidth) ──
+    $metJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/metrics?hours=$hours"));
+    if(is_object($metJson) && !empty($metJson->success) && is_object($metJson->data)){
+        $pts=(array)($metJson->data->points ?? array());
+        $res=$metJson->data->resolution ?? 'raw';
+        $hasMax=($res!=='raw');
+        if(!empty($pts)){
+            $labels=array(); $connV=array(); $connMax=array();
+            $qryV=array(); $qryMax=array();
+            $bwV=array(); $bwMax=array();
+            foreach($pts as $p){
+                $labels[]=date($fmt,$p->ts);
+                $connV[]=sprintf('%.1f',$p->connections ?? 0);
+                $qryV[]=sprintf('%.1f',$p->queries ?? 0);
+                $bwV[]=sprintf('%.1f',$p->bandwidth_mb ?? 0);
+                if($hasMax){
+                    $connMax[]=sprintf('%.0f',$p->max_connections ?? 0);
+                    $qryMax[]=sprintf('%.0f',$p->max_queries ?? 0);
+                    $bwMax[]=sprintf('%.0f',$p->max_bandwidth_mb ?? 0);
+                }
+            }
+            $labelsJS="['".implode("','",$labels)."']";
+            $pr=($res==='raw')?'1':'2';
+
+            // Connections
+            $h[]=_hc_metric_chart('fas fa-plug','{connections}',$res,$labelsJS,
+                $connV,$connMax,$hasMax,'rgb(75,192,192)','rgba(75,192,192,0.08)','{connections}',$pr,'conn');
+
+            // Queries
+            $h[]=_hc_metric_chart('fas fa-exchange-alt','{queries}',$res,$labelsJS,
+                $qryV,$qryMax,$hasMax,'rgb(54,162,235)','rgba(54,162,235,0.08)','{queries}',$pr,'qry');
+
+            // Bandwidth
+            $h[]=_hc_metric_chart('fas fa-download','{bandwidth} (MB)',$res,$labelsJS,
+                $bwV,$bwMax,$hasMax,'rgb(255,159,64)','rgba(255,159,64,0.08)','MB',$pr,'bw');
+        }
+    }
+
+    if(count($h)<=1){
+        $h[]=$tpl->div_info("{no_data}");
+    }
+    $h[]="<script>NoSpinner();</script>";
+    echo $tpl->_ENGINE_parse_body(implode("\n",$h));
+    return true;
+}
+
+function _hc_metric_chart($icon,$title,$res,$labelsJS,$avgArr,$maxArr,$hasMax,$color,$bgColor,$yLabel,$pr,$prefix){
+    $avgJS='['.implode(',',$avgArr).']';
+    $ds=array();
+    if($hasMax && !empty($maxArr)){
+        $maxJS='['.implode(',',$maxArr).']';
+        $maxColor=str_replace('rgb(','rgba(',$color);
+        $maxColor=str_replace(')',',0.35)',$maxColor);
+        $ds[]="{label:'$title (peak)',data:$maxJS,borderColor:'$maxColor',borderDash:[5,3],pointRadius:0,tension:0.3,fill:false,borderWidth:1.5}";
+    }
+    $ds[]="{label:'$title',data:$avgJS,borderColor:'$color',backgroundColor:'$bgColor',pointRadius:$pr,tension:0.3,fill:true,borderWidth:2}";
+    $dsJS='['.implode(',',$ds).']';
+    $uid=$prefix.'-'.uniqid();
+    return _hc_panel($icon,$title,$res,$uid,$labelsJS,$dsJS,$yLabel);
+}
+
+function _hc_panel($icon,$title,$res,$uid,$labelsJS,$dsJS,$yLabel){
+    $h=array();
+    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='$icon'></i>&nbsp; $title</h5>";
+    $h[]="<div class='ibox-tools'><span class='badge' style='background:#676a6c;color:#fff'>$res</span></div></div>";
+    $h[]="<div class='ibox-content'>";
+    $h[]="<div style='position:relative;height:280px'><canvas id='$uid'></canvas></div>";
+    $h[]="</div></div>";
+    $h[]="<script>";
+    $h[]="new Chart(document.getElementById('$uid'),{type:'line',";
+    $h[]="data:{labels:$labelsJS,datasets:$dsJS},";
+    $h[]="options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},";
+    $h[]="plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:15}}},";
+    $h[]="scales:{x:{ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:24}},";
+    $h[]="y:{beginAtZero:true,title:{display:true,text:'$yLabel'}}}}});";
+    $h[]="</script>";
+    return implode("\n",$h);
+}
+function refresh_image(){
+    // Legacy — no longer used with Chart.js, kept as no-op for compatibility
+    header("content-type: application/x-javascript");
+    echo "// charts now rendered by Chart.js";
+}
+
+function tabs():bool{
     $page=CurrentPageName();
     $EnableZabbixAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableZabbixAgent"));
     $tpl=new template_admin();
@@ -432,12 +606,13 @@ function tabs(){
     }
 
     echo $tpl->tabs_default($array);
+    return true;
 }
 
-function table_start(){
+function table_start():bool{
     $page=CurrentPageName();
     echo "<div id='hacluster-table-loader'></div><script>LoadAjax('hacluster-table-loader','$page?table=yes');</script>";
-
+    return true;
 }
 function table(){
     $tpl=new template_admin();
@@ -882,11 +1057,21 @@ function parameters_haclusterTimeouts($tpl){
     $restart_if_needed="";
     $HaClusterCheckRestart=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterCheckRestart"));
 
+    $HaClusterEnableWatchDog=1;
+    $HaClusterDisableWatchDog=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDisableWatchDog"));
+    if($HaClusterDisableWatchDog==1){
+        $HaClusterEnableWatchDog=0;
+    }
+    $HaClusterEnableWatchDogT="";
     if($HaClusterCheckRestart==1){
         $restart_if_needed=" {restart_if_needed}, ";
     }
+    if($HaClusterEnableWatchDog==1){
+        $HaClusterEnableWatchDogT="{verify_the_full_chain}, ";
+    }
+
     $tpl->table_form_field_js("Loadjs('$page?section-health-js=yes')","AsSquidAdministrator");
-    $tpl->table_form_field_text("{health_checks_small}","$reload_t$restart_if_needed{check_interval} $HaClusterCheckInt {seconds}, {fall} $HaClusterCheckFall {attempts}, {rise} $HaClusterCheckRise {attempts}",ico_watchdog);
+    $tpl->table_form_field_text("{health_checks_small}","$HaClusterEnableWatchDogT$reload_t$restart_if_needed{check_interval} $HaClusterCheckInt {seconds}, {fall} $HaClusterCheckFall {attempts}, {rise} $HaClusterCheckRise {attempts}",ico_watchdog);
 
 
     $tpl->table_form_field_js("Loadjs('$page?section-timeout-js=yes')","AsSquidAdministrator");
@@ -1616,19 +1801,25 @@ function section_health_popup():bool{
 
     }
     $reload[999]="{never}";
+    $HaClusterEnableWatchDog=1;
+    $HaClusterDisableWatchDog=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDisableWatchDog"));
+    if($HaClusterDisableWatchDog==1){
+        $HaClusterEnableWatchDog=0;
+    }
 
-    $form[]=$tpl->field_section("{APP_PARENTLB}");
+    $form[]=$tpl->field_section("{APP_PARENTLB}","{APP_PARENT_LB_EXPLAIN1}");
 
     $form[]=$tpl->field_array_hash($reload,"HaClusterReloadEach","nonull:{reload_service}",$HaClusterReloadEach);
-    $form[]=$tpl->field_text("HaClusterCheckURI","{check_url}",$HaClusterCheckURI);
-    $form[]=$tpl->field_checkbox("HaClusterCheckRestart","{restart_if_needed}",$HaClusterCheckRestart);
 
-    $form[]=$tpl->field_section("{backends}");
+    $form[]=$tpl->field_checkbox("HaClusterEnableWatchDog","{EnableWatchdog}",$HaClusterEnableWatchDog);
+    $form[]=$tpl->field_text("HaClusterCheckURI","{check_url}",$HaClusterCheckURI);
+
+
+
+    $form[]=$tpl->field_section("{backends}","{APP_PARENT_LB_EXPLAIN2}");
     $form[]=$tpl->field_numeric("HaClusterCheckInt","{check_interval} ({seconds})",$HaClusterCheckInt);
     $form[]=$tpl->field_numeric("HaClusterCheckFall","{fall} ({attempts})",$HaClusterCheckFall,"{fall_explain}");
     $form[]=$tpl->field_numeric("HaClusterCheckRise","{rise} ({attempts})",$HaClusterCheckRise,"{rise_explain}");
-
-
     echo $tpl->form_outside(null,$form,null,"{apply}",form_js(),"AsSquidAdministrator",true);
     return true;
 
@@ -1797,6 +1988,15 @@ function SaveParams():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST_XSS();
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
+
+    if(isset($_POST["HaClusterEnableWatchDog"])){
+        if(intval($_POST["HaClusterEnableWatchDog"])==1){
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterDisableWatchDog",0);
+        }else{
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterDisableWatchDog",1);
+        }
+        unset($_POST["HaClusterEnableWatchDog"]);
+    }
 
     if(isset($_POST["HaClusterEnableProxyProtocol"])) {
         if ($_POST["HaClusterEnableProxyProtocol"] == 1) {

@@ -25,7 +25,10 @@ if (isset($_GET["scope-add-js"]))   { scope_add_js();    exit; }
 if (isset($_GET["scope-edit-js"]))  { scope_edit_js();   exit; }
 if (isset($_GET["relay-add-js"]))   { relay_add_js();    exit; }
 if (isset($_POST["save-scope"]))    { scope_save();      exit; }
+if(isset($_GET["scope-delete-js"])){scope_delete_js();exit;}
 if (isset($_POST["delete-scope"]))  { scope_delete();    exit; }
+if(isset($_GET["scope-delete-all-js"])){scope_delete_all_js();exit;}
+if(isset($_POST["delete-all-scopes"])){scope_delete_perform();exit;}
 if (isset($_POST["save-relay"]))    { relay_save();      exit; }
 if (isset($_POST["delete-relay"]))  { relay_delete();    exit; }
 if (isset($_GET["scope-form"])) { scope_form(); exit; }
@@ -91,6 +94,11 @@ function scopes_list(): void {
     $h[] = "<div id='scopes-boutons-$id' style='margin-top:10px;margin-bottom: 2px'></div>";
     $h[] = "<div id='scopes-result-$id' style='margin-bottom:10px'></div>";
 
+    $h[] = "<div class='alert alert-info' style='margin-bottom:15px'>";
+    $h[] = "  <i class='fas fa-network-wired'></i> <strong>{dhcp_scopes}</strong>";
+    $h[] = "  <br><small class='text-muted'>{scope_explain}</small>";
+    $h[] = "</div>";
+
     // ── Relays section ──────────────────────────────────────────────────────
     $h[] = "<div class='ibox'>";
     $h[] = "  <div class='ibox-title'>";
@@ -102,7 +110,7 @@ function scopes_list(): void {
         $h[] = "    <p style='padding:15px;color:#999'><i>{no_relays_defined}</i></p>";
     } else {
         $h[] = "    <table class='table table-striped table-condensed' style='margin:0'>";
-        $h[] = "      <thead><tr><th>ID</th><th>{class_name}</th><th>{circuit_id}</th><th>{remote_id}</th><th style='width:1%'></th></tr></thead><tbody>";
+        $h[] = "      <thead><th>{class_name}</th><th>{circuit_id}</th><th>{remote_id}</th><th style='width:1%'></th></tr></thead><tbody>";
         foreach ($relays as $rel) {
             if (!is_object($rel)) continue;
             $rid       = htmlspecialchars($rel->id ?? '');
@@ -114,7 +122,6 @@ function scopes_list(): void {
             $delJs = "if(confirm('{confirm_delete}')){";
             $delJs .= "\$.post('$page',{id:$id,'delete-relay':'$rid'},function(r){\$('#scopes-result-$id').html(r);LoadAjaxSilent('dhcp-scopes-div-$id','$page?id=$id');});}";
             $h[] = "      <tr>";
-            $h[] = "        <td><span class='label label-default'>$rid</span></td>";
             $h[] = "        <td><code>$className</code>$label</td>";
             $h[] = "        <td><small>$circuitId</small></td>";
             $h[] = "        <td><small>$remoteId</small></td>";
@@ -131,8 +138,6 @@ function scopes_list(): void {
     $h[] = "    <h5><i class='fas fa-network-wired'></i>&nbsp; {dhcp_scopes}</h5>";
     $h[] = "  </div>";
     $h[] = "  <div id='dhcp-scopes-div-$id' class='ibox-content' style='padding:0'>";
-
-
     $h[] = "  </div></div>";
     $h[]="<script>";
     $h[]="  LoadAjaxSilent('scopes-boutons-$id','$page?scopes-boutons=$id');";
@@ -141,6 +146,65 @@ function scopes_list(): void {
 
     echo $tpl->_ENGINE_parse_body(implode("\n", $h));
 }
+function scope_delete_js():bool{
+    $agent_id=intval($_GET["scope-delete-js"]);
+    $scope_id=$_GET["scope_id"];
+    $subnet=$_GET["subnet"];
+    $md=$_GET["md"];
+    $tpl=new template_admin();
+    return $tpl->js_confirm_delete($subnet, "delete-scope","$agent_id|$scope_id","$('$md').remove()");
+
+}
+
+function scope_delete_all_js():void{
+    $id=intval($_GET["scope-delete-all-js"]);
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    header("content-type: application/x-javascript");
+    $confirm_delete_all_scopes=$tpl->javascript_parse_text("{confirm}");
+    $all_scopes_will_be_removed=$tpl->javascript_parse_text("{delete_all}: {scopes}");
+    $delete_all=$tpl->_ENGINE_parse_body("{delete_all_scopes}");
+    $cancel=$tpl->_ENGINE_parse_body("{cancel}");
+    $js=[];
+    $js[]="swal({";
+    $js[]="  title:'$confirm_delete_all_scopes',";
+    $js[]="  text:'$all_scopes_will_be_removed',";
+    $js[]="  type:'warning',";
+    $js[]="  showCancelButton:true,";
+    $js[]="  confirmButtonColor:'#ed5565',";
+    $js[]="  confirmButtonText:'$delete_all',";
+    $js[]="  cancelButtonText:'$cancel'";
+    $js[]="}, function(isConfirm){";
+    $js[]="  if(!isConfirm) return;";
+    $js[]="  \$.post('$page',{'delete-all-scopes':'$id'},function(r){";
+    $js[]="    \$('#scopes-result-$id').html(r);";
+    $js[]="    LoadAjaxSilent('dhcp-scopes-div-$id','$page?scopes-table=$id');";
+    $js[]="  });";
+    $js[]="});";
+    echo implode("\n",$js);
+}
+
+function scope_delete_perform():bool{
+    $tpl=new template_admin();
+    $id=intval($_POST["delete-all-scopes"] ?? 0);
+    if($id < 1){
+        echo $tpl->_ENGINE_parse_body("{invalid_agent_id}");
+        return false;
+    }
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_DELETE("/netagents/dhcp/$id/scopes"));
+    if(!is_object($json)){
+        echo $tpl->_ENGINE_parse_body("{protocol_error}");
+        return false;
+    }
+    $deleted=intval($json->deleted ?? 0);
+    $errors=(array)($json->errors ?? []);
+    if(!empty($errors)){
+        echo $tpl->_ENGINE_parse_body("{deleted}: $deleted — {errors}: " . htmlspecialchars(implode(', ',$errors)));
+        return false;
+    }
+    return admin_tracks("Netagent #$id: all DHCP scopes deleted ($deleted removed)");
+}
+
 
 function scopes_table():bool{
     $tpl  = new template_admin();
@@ -161,8 +225,8 @@ function scopes_table():bool{
     } else {
         $h[] = "    <table class='table table-striped table-condensed' style='margin:0'>";
         $h[] = "      <thead><tr>";
-        $h[] = "        <th>ID</th><th>{type}</th><th>{subnet}</th>";
-        $h[] = "        <th>{interface}</th><th>{pools}</th><th style='width:1%'></th>";
+        $h[] = "        <th>{type}</th><th>{subnet}</th>";
+        $h[] = "        <th></th><th>{pools}</th><th style='width:1%'></th>";
         $h[] = "      </tr></thead><tbody>";
         foreach ($scopes as $sc) {
             if (!is_object($sc)) continue;
@@ -170,23 +234,29 @@ function scopes_table():bool{
             $stype    = htmlspecialchars($sc->type ?? 'direct');
             $subnet   = htmlspecialchars(($sc->subnet ?? '') . '/' . ($sc->netmask ?? ''));
             $iface    = htmlspecialchars($sc->interface ?? '');
+            $vlanId   = intval($sc->vlan_id ?? 0);
             $poolCnt  = count((array)($sc->pools ?? []));
             $typeBadge = $stype === 'relay'
                 ? "<span class='badge' style='background:#f8ac59;color:#fff'>relay</span>"
                 : "<span class='badge' style='background:#1ab394;color:#fff'>direct</span>";
             $editJs   = "Loadjs('$page?scope-edit-js=$id&scope_id=" . urlencode($sid) . "');";
-            $delJs    = "if(confirm('{confirm_delete}')){";
-            $delJs   .= "\$.post('$page',{id:$id,'delete-scope':'" . addslashes($sid) . "'},";
-            $delJs   .= "function(r){\$('#scopes-result-$id').html(r);$('#$sid').remove();});}";
-            $h[] = "      <tr id='$sid'>";
-            $h[] = "        <td><span style='font-family:monospace;font-size:12px'>$sid</span></td>";
-            $h[] = "        <td>$typeBadge</td>";
-            $h[] = "        <td>$subnet</td>";
-            $h[] = "        <td>$iface</td>";
-            $h[] = "        <td><span class='badge' style='background:#1c84c6;color:#fff'>$poolCnt</span></td>";
-            $h[] = "        <td style='white-space:nowrap'>";
+            $subnetenc=urlencode($subnet);
+            $delJs=$tpl->icon_delete("Loadjs('$page?scope-delete-js=$id&scope_id=" . urlencode($sid) . "&md=scope-$sid&subnet=$subnetenc');");
+            $ifaceCell = $iface;
+            $ifacido=ico_nic;
+            $iface="";
+            if(strlen($ifaceCell)>2){
+                $iface="<i class='$ifacido'></i>&nbsp;";
+            }
+            if ($vlanId > 0) $ifaceCell .= " <span class='badge' style='background:#9b59b6;color:#fff'>VLAN $vlanId</span>";
+            $h[] = "      <tr id='scope-$sid'>";
+            $h[] = "        <td style='width:1%' nowrap>$typeBadge</td>";
+            $h[] = "        <td style='width:99%'>$subnet</td>";
+            $h[] = "        <td style='width:1%' nowrap>$iface$ifaceCell</td>";
+            $h[] = "        <td style='width:1%' nowrap><span class='badge' style='background:#1c84c6;color:#fff'>$poolCnt</span></td>";
+            $h[] = "        <td style='width:1%;white-space:nowrap'>";
             $h[] = "          " . $tpl->icon_edit_field($editJs, "AsSystemAdministrator");
-            $h[] = "          " . $tpl->icon_delete($delJs,  "AsSystemAdministrator");
+            $h[] = "          " . $delJs;
             $h[] = "        </td>";
             $h[] = "      </tr>";
         }
@@ -202,6 +272,7 @@ function scope_buttons():bool{
     $id=intval($_GET["scopes-boutons"]);
     $topbuttons[] = array("Loadjs('$page?scope-add-js=$id');", ico_plus, "{add_scope}");
     $topbuttons[] = array("Loadjs('$page?relay-add-js=$id');", ico_plus, "{add_relay}");
+    $topbuttons[] = array("Loadjs('$page?scope-delete-all-js=$id');", ico_trash, "{delete_all_scopes}");
     echo $tpl->_ENGINE_parse_body($tpl->th_buttons($topbuttons));
     return true;
 }
@@ -241,12 +312,12 @@ function scope_form(): void {
     $page     = CurrentPageName();
     $scope_id = trim($_GET["scope_id"] ?? '');
 
-    // Fetch network interfaces from agent status
-    $ifaces      = [];
-    $statusJSON  = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/status/$id"));
-    if (is_object($statusJSON) && is_array($statusJSON->network ?? null)) {
-        foreach ($statusJSON->network as $net) {
-            if (is_object($net) && !empty($net->interface)) $ifaces[] = $net->interface;
+    // Fetch network interfaces including VLAN sub-interfaces from the DHCP interfaces endpoint
+    $ifaces     = [];  // array of stdClass {name, up, is_vlan, vlan_id, parent}
+    $ifacesJSON = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/dhcp/$id/interfaces"));
+    if (is_array($ifacesJSON)) {
+        foreach ($ifacesJSON as $iobj) {
+            if (is_object($iobj) && !empty($iobj->name)) $ifaces[] = $iobj;
         }
     }
 
@@ -261,6 +332,7 @@ function scope_form(): void {
     $sid     = '';
     $stype   = 'direct';
     $iface   = '';
+    $vlan_id = 0;
     $subnet  = '';
     $netmask = '';
     $auth    = true;
@@ -274,10 +346,11 @@ function scope_form(): void {
     $filename    = '';
     $rfc3442     = '';
     $broadcast   = '';
+    $server_identifier  = '';
     $allow_unknown      = '';   // 'allow', 'deny', or '' (inherit)
     $always_broadcast   = false;
     $get_lease_hostnames= false;
-    $ping_check         = 0;
+    $ping_check         = false;
     $ddns_domain        = '';
     $relayId = 0;
     $pools   = [];
@@ -298,12 +371,14 @@ function scope_form(): void {
             $sid     = htmlspecialchars($sc->id ?? '');
             $stype   = htmlspecialchars($sc->type ?? 'direct');
             $iface   = htmlspecialchars($sc->interface ?? '');
+            $vlan_id = intval($sc->vlan_id ?? 0);
             $subnet  = htmlspecialchars($sc->subnet  ?? '');
             $netmask = htmlspecialchars($sc->netmask  ?? '');
-            $auth    = !isset($sc->authoritative) || $sc->authoritative;
+            $auth    = !isset($sc->authoritative) || $sc->authoritative=false;
             $ldef    = intval($sc->lease->default ?? 3600);
             $lmax    = intval($sc->lease->max     ?? 7200);
             $relayId = intval($sc->relay->relay_id ?? 0);
+            $server_identifier = htmlspecialchars($sc->server_identifier ?? '');
             $optArr      = scope_options_to_form($sc->options ?? []);
             $routers     = htmlspecialchars($optArr['routers']);
             $dns         = htmlspecialchars($optArr['dns']);
@@ -317,7 +392,7 @@ function scope_form(): void {
             if (isset($sflags["allow-unknown-clients"])) $allow_unknown = $sflags["allow-unknown-clients"] ? "allow" : "deny";
             $always_broadcast    = !empty($sflags["always-broadcast"]);
             $get_lease_hostnames = !empty($sflags["get-lease-hostnames"]);
-            $ping_check          = isset($sflags["ping-check"]) ? intval($sflags["ping-check"]) : 0;
+            $ping_check          = !empty($sflags["ping-check"]);
             $ddns_domain         = htmlspecialchars($sflags["ddns-domainname"] ?? '');
             $pools   = (array)($sc->pools ?? []);
         }
@@ -325,18 +400,21 @@ function scope_form(): void {
 
     $isEdit = ($scope_id !== '');
 
+
+
     $h   = [];
     $h[] = "<div id='scope-form-result-$id'></div>";
     $h[] = "<input type='hidden' id='scope-existing-id-$id' value='" . htmlspecialchars($scope_id) . "'>";
 
     // ── Identity & Type ──
+
+    if($scope_id==""){
+        $scope_id=md5(uniqid(rand(), true));
+    }
+    $h[] = "<input type='hidden' id='scope-id-$id' value='$scope_id'>";
     $h[] = "<div class='ibox'>";
     $h[] = "  <div class='ibox-title'><h5><i class='fas fa-id-card'></i>&nbsp; {scope_identity}</h5></div>";
     $h[] = "  <div class='ibox-content'><div class='row'>";
-    $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>ID <small class='text-muted'>{auto_generated_if_empty}</small></label>";
-    $h[] = "      <input type='text' id='scope-id-$id' class='form-control'" . ($isEdit ? " readonly" : "") . " value='$sid' placeholder='eth0-192.168.1.0/24'>";
-    $h[] = "    </div>";
     $h[] = "    <div class='col-md-3'>";
     $h[] = "      <label>{type}</label>";
     $h[] = "      <select id='scope-type-$id' class='form-control' onchange='ScopeTypeChange_$id()'>";
@@ -346,17 +424,24 @@ function scope_form(): void {
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-3'>";
     $h[] = "      <label>{interface} <span class='text-danger'>*</span></label>";
-    $h[] = "      <select id='scope-iface-$id' class='form-control'>";
+    $h[] = "      <select id='scope-iface-$id' class='form-control' onchange='ScopeIfaceChange_$id(this)'>";
     $h[] = "        <option value=''>{select_interface}</option>";
-    foreach ($ifaces as $ifname) {
-        $sel  = ($ifname === $iface) ? " selected" : "";
-        $h[] = "        <option value='$ifname'$sel>$ifname</option>";
+    $ifaceNames = [];
+    foreach ($ifaces as $ifaceObj) {
+        $ifname  = htmlspecialchars($ifaceObj->name);
+        $vid     = intval($ifaceObj->vlan_id ?? 0);
+        $isVlan  = !empty($ifaceObj->is_vlan);
+        $label   = $ifname . ($isVlan ? " [VLAN $vid]" : '') . (empty($ifaceObj->up) ? ' (down)' : '');
+        $sel     = ($ifname === $iface) ? " selected" : "";
+        $h[] = "        <option value='$ifname' data-vlan='$vid'$sel>$label</option>";
+        $ifaceNames[] = $ifname;
     }
-    if ($iface !== '' && !in_array($iface, $ifaces)) {
+    if ($iface !== '' && !in_array($iface, $ifaceNames)) {
         // Preserve existing value even if not in current list
-        $h[] = "        <option value='$iface' selected>$iface</option>";
+        $h[] = "        <option value='$iface' data-vlan='$vlan_id' selected>$iface" . ($vlan_id > 0 ? " [VLAN $vlan_id]" : '') . "</option>";
     }
     $h[] = "      </select>";
+    $h[] = "      <input type='hidden' id='scope-vlan-id-$id' value='$vlan_id'>";
     $h[] = "    </div>";
     $h[] = "  </div></div></div>";
 
@@ -382,11 +467,11 @@ function scope_form(): void {
     $h[] = "<div class='ibox'>";
     $h[] = "  <div class='ibox-title'><h5><i class='fas fa-network-wired'></i>&nbsp; {network}</h5></div>";
     $h[] = "  <div class='ibox-content'><div class='row'>";
-    $h[] = "    <div class='col-md-5'>";
+    $h[] = "    <div class='col-md-4'>";
     $h[] = "      <label>{subnet}</label>";
     $h[] = "      <input type='text' id='scope-subnet-$id' class='form-control' value='$subnet' placeholder='192.168.1.0'>";
     $h[] = "    </div>";
-    $h[] = "    <div class='col-md-5'>";
+    $h[] = "    <div class='col-md-4'>";
     $h[] = "      <label>{netmask}</label>";
     $h[] = "      <input type='text' id='scope-netmask-$id' class='form-control' value='$netmask' placeholder='255.255.255.0'>";
     $h[] = "    </div>";
@@ -394,6 +479,13 @@ function scope_form(): void {
     $h[] = "      <label>&nbsp;</label><br>";
     $authChk = $auth ? "checked" : "";
     $h[] = "      <div class='checkbox'><label><input type='checkbox' id='scope-auth-$id' $authChk> authoritative</label></div>";
+    $h[] = "    </div>";
+    $h[] = "  </div>";
+    list($tooltip,$none)=$tpl->Tooltips("scope-serverid-expl-$id","{server_identifier_explain}");
+    $h[] = "  <div class='row' style='margin-top:10px'>";
+    $h[] = "    <div class='col-md-4'>";
+    $h[] = "      <label id='scope-serverid-expl-$id' $tooltip>{server_identifier} <small class='text-muted'>option 54</small></label>";
+    $h[] = "      <input type='text' id='scope-serverid-$id' class='form-control' value='$server_identifier' placeholder='{auto_detect}'>";
     $h[] = "    </div>";
     $h[] = "  </div></div></div>";
 
@@ -427,27 +519,27 @@ function scope_form(): void {
     $h[] = "  </div>";
     $h[] = "  <div class='row' style='margin-bottom:10px'>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>option ntp-servers <small class='text-muted'>{comma_separated}</small></label>";
+    $h[] = "      <label>{ntp-servers} <small class='text-muted'>{comma_separated}</small></label>";
     $h[] = "      <input type='text' id='scope-ntp-$id' class='form-control' value='$ntp' placeholder='192.168.1.1'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>option time-servers <small class='text-muted'>{comma_separated}</small></label>";
+    $h[] = "      <label>{time-servers} <small class='text-muted'>{comma_separated}</small></label>";
     $h[] = "      <input type='text' id='scope-time-$id' class='form-control' value='$time' placeholder='192.168.1.1'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  <div class='row' style='margin-bottom:10px'>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>next-server <small class='text-muted'>PXE/TFTP</small></label>";
+    $h[] = "      <label>{next-server} <small class='text-muted'>PXE/TFTP</small></label>";
     $h[] = "      <input type='text' id='scope-nextserver-$id' class='form-control' value='$next_server' placeholder='192.168.1.10'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>filename <small class='text-muted'>PXE boot file</small></label>";
+    $h[] = "      <label>filename <small class='text-muted'>{pxe_file}</small></label>";
     $h[] = "      <input type='text' id='scope-filename-$id' class='form-control' value='$filename' placeholder='pxelinux.0'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  <div class='row'>";
     $h[] = "    <div class='col-md-12'>";
-    $h[] = "      <label>option rfc3442-classless-static-routes <small class='text-muted'>CIDR gateway pairs, comma-separated</small></label>";
+    $h[] = "      <label>{rfc3442-classless-static-routes} <small class='text-muted'>CIDR gateway pairs, comma-separated</small></label>";
     $h[] = "      <input type='text' id='scope-rfc3442-$id' class='form-control' value='$rfc3442' placeholder='192.168.10.0/24 10.0.0.1, 0.0.0.0/0 192.168.1.254'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
@@ -464,35 +556,42 @@ function scope_form(): void {
     $h[] = "  <div class='ibox-content'>";
     $h[] = "  <div class='row' style='margin-bottom:10px'>";
     $h[] = "    <div class='col-md-4'>";
-    $h[] = "      <label>allow unknown-clients</label>";
+    $h[] = "      <label>{deny_unkown_clients}</label>";
     $h[] = "      <select id='scope-allow-unknown-$id' class='form-control'>";
-    $h[] = "        <option value=''$auSelInherit>{inherit_default}</option>";
+    $h[] = "        <option value=''$auSelInherit>{default}</option>";
     $h[] = "        <option value='allow'$auSelAllow>allow</option>";
     $h[] = "        <option value='deny'$auSelDeny>deny</option>";
     $h[] = "      </select>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-4'>";
-    $h[] = "      <label>ddns-domainname</label>";
+    list($tooltip,$none)=$tpl->Tooltips("gscope-ddns-domain-expl-$id","{ddns-domainname-explain}");
+    $h[] = "      <label id='gscope-ddns-domain-expl-$id' $tooltip>{ddns-domainname}</label>";
     $h[] = "      <input type='text' id='scope-ddns-domain-$id' class='form-control' value='$ddns_domain' placeholder='example.com'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-4'>";
-    $h[] = "      <label>option broadcast-address</label>";
+    $h[] = "      <label>{broadcast}</label>";
     $h[] = "      <input type='text' id='scope-broadcast-$id' class='form-control' value='$broadcast' placeholder='192.168.1.255'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  <div class='row'>";
     $h[] = "    <div class='col-md-3'>";
-    $h[] = "      <label>ping-check <small class='text-muted'>(0 = {disabled})</small></label>";
-    $h[] = "      <input type='number' id='scope-ping-check-$id' class='form-control' value='$ping_check' min='0'>";
+    $pcChk = $ping_check ? 'checked' : '';
+    list($tooltip,$nine)=$tpl->Tooltips("gscope-ping-check-$id-expl","{DHCPPing_check_explain}");
+
+    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='scope-ping-check-$id' $pcChk> <span id='gscope-ping-check-$id-expl' $tooltip>{DHCPPing_check}</span></label></div>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-3' style='padding-top:25px'>";
-    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='scope-always-broadcast-$id' $abChk> always-broadcast</label></div>";
+
+    list($tooltip,$none)=$tpl->Tooltips("scope-always-broadcastexpl-$id","{AllwaysBrodcast_explain}");
+    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='scope-always-broadcast-$id' $abChk> <span id='scope-always-broadcastexpl-$id' $tooltip>{AllwaysBrodcast}</span></label></div>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-3' style='padding-top:25px'>";
-    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='scope-get-lease-hostnames-$id' $glhChk> get-lease-hostnames</label></div>";
+    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='scope-get-lease-hostnames-$id' $glhChk> {get_lease_hostnames}</label></div>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  </div></div>";
+
+
 
     // ── Pools ──
     $h[] = "<div class='ibox'>";
@@ -623,8 +722,7 @@ function scope_save(): void {
     elseif ($allow_unknown_mode === 'deny')  $flags["allow-unknown-clients"]  = false;
     if (!empty($_POST["always_broadcast"]))      $flags["always-broadcast"]     = true;
     if (!empty($_POST["get_lease_hostnames"]))   $flags["get-lease-hostnames"]  = true;
-    $ping_check = intval($_POST["ping_check"] ?? 0);
-    if ($ping_check > 0) $flags["ping-check"] = $ping_check;
+    if (!empty($_POST["ping_check"]))              $flags["ping-check"]          = true;
     $ddns_domain = trim($_POST["ddns_domainname"] ?? '');
     if ($ddns_domain !== '') $flags["ddns-domainname"] = $ddns_domain;
 
@@ -632,19 +730,23 @@ function scope_save(): void {
     $pools_raw = trim($_POST["pools_json"] ?? '[]');
     $pools     = json_decode($pools_raw, true) ?: [];
 
+    $server_identifier = trim($_POST["server_identifier"] ?? '');
+
     $scope = [
         "id"            => trim($_POST["scope_id"] ?? ''),
         "type"          => trim($_POST["scope_type"] ?? 'direct'),
         "interface"     => trim($_POST["iface"]     ?? ''),
+        "vlan_id"       => intval($_POST["vlan_id"] ?? 0),
         "subnet"        => trim($_POST["subnet"]    ?? ''),
         "netmask"       => trim($_POST["netmask"]   ?? ''),
         "authoritative" => !empty($_POST["authoritative"]),
+        "server_identifier" => $server_identifier,
         "lease"         => [
             "default" => max(60, intval($_POST["lease_default"] ?? 3600)),
             "max"     => max(60, intval($_POST["lease_max"]     ?? 7200)),
         ],
         "options"       => $options,
-        "flags"         => $flags,
+        "flags"         => empty($flags) ? new stdClass() : (object)$flags,
         "pools"         => $pools,
     ];
 
@@ -705,8 +807,11 @@ function scope_save(): void {
 
 function scope_delete(): void {
     $tpl      = new template_admin();
-    $id       = aid();
-    $scope_id = trim($_POST["delete-scope"] ?? '');
+    $tpl->CLEAN_POST();
+    $scope_posted = trim($_POST["delete-scope"] ?? '');
+    $tb=explode("|", $scope_posted);
+    $id=intval($tb[0]);
+    $scope_id = $tb[1];
 
     $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_DELETE(
         "/netagents/dhcp/$id/scopes/" . urlencode($scope_id)
@@ -799,6 +904,12 @@ function scope_form_js_block(int $id, string $page, string $existingId): string 
     $l[] = "  \$('#scope-pools-$id').append(row);";
     $l[] = "}";
 
+    // Auto-fill hidden vlan_id when interface is selected
+    $l[] = "function ScopeIfaceChange_$id(sel){";
+    $l[] = "  var vid=parseInt(\$(sel).find(':selected').data('vlan')||0,10);";
+    $l[] = "  \$('#scope-vlan-id-$id').val(isNaN(vid)?0:vid);";
+    $l[] = "}";
+
     // Show/hide relay row on type change
     $l[] = "function ScopeTypeChange_$id(){";
     $l[] = "  if(\$('#scope-type-$id').val()==='relay'){";
@@ -829,6 +940,7 @@ function scope_form_js_block(int $id, string $page, string $existingId): string 
     $l[] = "    scope_id:\$.trim(\$('#scope-id-$id').val()),";
     $l[] = "    scope_type:\$('#scope-type-$id').val(),";
     $l[] = "    iface:\$.trim(\$('#scope-iface-$id').val()),";
+    $l[] = "    vlan_id:parseInt(\$('#scope-vlan-id-$id').val(),10)||0,";
     $l[] = "    subnet:subnet,";
     $l[] = "    netmask:netmask,";
     $l[] = "    authoritative:\$('#scope-auth-$id').is(':checked')?1:0,";
@@ -845,9 +957,10 @@ function scope_form_js_block(int $id, string $page, string $existingId): string 
     $l[] = "    allow_unknown_clients:\$('#scope-allow-unknown-$id').val(),";
     $l[] = "    always_broadcast:\$('#scope-always-broadcast-$id').is(':checked')?1:0,";
     $l[] = "    get_lease_hostnames:\$('#scope-get-lease-hostnames-$id').is(':checked')?1:0,";
-    $l[] = "    ping_check:\$.trim(\$('#scope-ping-check-$id').val()),";
+    $l[] = "    ping_check:\$('#scope-ping-check-$id').is(':checked')?1:0,";
     $l[] = "    ddns_domainname:\$.trim(\$('#scope-ddns-domain-$id').val()),";
     $l[] = "    relay_id:\$('#scope-relay-id-$id').val(),";
+    $l[] = "    server_identifier:\$.trim(\$('#scope-serverid-$id').val()),";
     $l[] = "    pools_json:JSON.stringify(pools)";
     $l[] = "  },function(r){";
     $l[] = "    \$('#scope-form-result-$id').html(r);";

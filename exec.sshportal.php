@@ -151,10 +151,6 @@ function reload_externals(){
         build_progress(25,"{reconfiguring} {APP_SHELLINABOX}");
         system("/etc/init.d/shellinabox restart");
     }
-    if(is_file("/etc/init.d/fail2ban")){
-        build_progress(30,"{reloading} {APP_FAIL2BAN}");
-        shell_exec("$php /usr/share/artica-postfix/exec.fail2ban.php --reload");
-    }
 }
 
 function install(){

@@ -104,18 +104,35 @@ class ArticaNetAgents{
         if($EnableNginx==1){
             return "<span class='label $statusClass'>Reverse-Proxy</span>";
         }
+
+        $Btns=array();
+        $EnableDHCPServer=$this->GET_INFO("EnableDHCPServer");
+        if($EnableDHCPServer==1){
+            $Btns[]=$tpl->td_href("<span class='label $statusClass'>{APP_DHCP}</span>","{manage}",
+                "Loadjs('fw.netagents.dhcp.php?dhcp-js=$agentJson->id')");
+        }
         $UnboundEnabled     =   intval($this->GET_INFO("UnboundEnabled"));
         if($UnboundEnabled==1){
-            $EnableDHCPServer=$this->GET_INFO("EnableDHCPServer");
-            if($EnableDHCPServer==1){
-                return "<span class='label $statusClass'>DHCP/DNS</span>";
-            }
-            return $tpl->_ENGINE_parse_body("<span class='label $statusClass'>{APP_UNBOUND}</span>");
+            $Btns[]=$tpl->td_href("<span class='label $statusClass'>{APP_UNBOUND}</span>",
+                "{manage}","Loadjs('fw.netagents.unbound.php?unbound-js=$agentJson->id')");
         }
 
         $EnableDNSDist=intval($this->GET_INFO("EnableDNSDist"));
         if($EnableDNSDist==1){
-            return "<span class='label $statusClass'>DNS Firewall</span>";
+            $Btns[]=$tpl->td_href("<span class='label $statusClass'>{APP_DNSDIST}</span>","","blur()");
+        }
+
+        $EnablePostfix=intval($this->GET_INFO("EnablePostfix"));
+        if($EnablePostfix==1){
+            $Btns[]=$tpl->td_href("<span class='label $statusClass'>{APP_POSTFIX}</span>","","blur()");
+
+        }
+        if(count($Btns)>0){
+            $tt=array();
+            foreach ($Btns as $btn) {
+                $tt[]="<div style='margin-top:5px'>$btn</div>";
+            }
+            return @implode("", $tt);
         }
 
 
@@ -143,9 +160,10 @@ class ArticaNetAgents{
 
     public function LabelType():string{
 
+        $statusClass="label-success";
 
-            $AgentArtica=$this->AgentArtica();
-            if(!$AgentArtica){return $this->ArticaNodeType();}
+        $AgentArtica=$this->AgentArtica();
+        if(!$AgentArtica){return $this->ArticaNodeType();}
 
             $tpl=new template_admin();
 
@@ -161,25 +179,35 @@ class ArticaNetAgents{
                 }
                 return $tpl->_ENGINE_parse_body("<span class='label label-success'>{APP_SQUID}</span>");
             }
-
-            $EnableNginx=intval($this->GET_INFO("EnableNginx"));
-            if($EnableNginx==1){
-                return "<span class='label label-success'>Reverse-Proxy</span>";
-            }
-            $UnboundEnabled     =   intval($this->GET_INFO("UnboundEnabled"));
-            if($UnboundEnabled==1){
-                $EnableDHCPServer=$this->GET_INFO("EnableDHCPServer");
-                if($EnableDHCPServer==1){
-                    return "<span class='label label-success'>DHCP/DNS</span>";
-                }
-                return $tpl->_ENGINE_parse_body("<span class='label label-success'>{APP_UNBOUND}</span>");
-            }
+        $Btns=array();
+        $EnableDHCPServer=$this->GET_INFO("EnableDHCPServer");
+        if($EnableDHCPServer==1){
+            $Btns[]=$tpl->td_href("<span class='label $statusClass'>{APP_DHCP}</span>","{manage}",
+                "Loadjs('fw.netagents.dhcp.php?dhcp-js=$this->id')");
+        }
+        $UnboundEnabled     =   intval($this->GET_INFO("UnboundEnabled"));
+        if($UnboundEnabled==1){
+            $Btns[]=$tpl->td_href("<span class='label $statusClass'>{APP_UNBOUND}</span>","{manage}",
+                "Loadjs('fw.netagents.unbound.php?unbound-js=$this->id')");
+        }
 
         $EnableDNSDist=intval($this->GET_INFO("EnableDNSDist"));
         if($EnableDNSDist==1){
-            return "<span class='label label-success'>DNS Firewall</span>";
+            $Btns[]=$tpl->td_href("<span class='label $statusClass'>{APP_DNSDIST}</span>","","blur()");
         }
 
+        $EnablePostfix=intval($this->GET_INFO("EnablePostfix"));
+        if($EnablePostfix==1){
+            $Btns[]=$tpl->td_href("<span class='label $statusClass'>{APP_POSTFIX}</span>","","blur()");
+
+        }
+        if(count($Btns)>0){
+            $tt=array();
+            foreach ($Btns as $btn) {
+                $tt[]="<div style='margin-top:5px'>$btn</div>";
+            }
+            return @implode("", $tt);
+        }
 
 
             return "";
@@ -216,6 +244,7 @@ class ArticaNetAgents{
         if(!isset($json["hostname"])){
             return array();
         }
+        $json["agent_id"]=$this->id;
         $GLOBALS[__CLASS__.__FUNCTION__.$this->id]=$json;
         return $json;
 

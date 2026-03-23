@@ -283,6 +283,8 @@ class mysql_squid_builder{
         $this->acl_GroupTypeIcon["dmarc"]="fa-solid fa-envelope-circle-check";
         $this->acl_GroupTypeIcon["spamc"]="fa-solid fa-ban-bug";
         $this->acl_GroupTypeIcon["accessrule"]=ico_list;
+        $this->acl_GroupTypeIcon["dnsdynamic"]=ico_clouds;
+
 
 
         $SquidStandardLDAPAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidStandardLDAPAuth"));
@@ -490,6 +492,7 @@ class mysql_squid_builder{
         $this->acl_GroupType_iptables["port"]="{destination_port}";
         $this->acl_GroupType_iptables["fwgeo"]="{countries}";
         $this->acl_GroupType_iptables["localnet"]="{local_network}";
+        $this->acl_GroupType_iptables["dnsdynamic"]="{dnsdynamic}";
 
 
         if($EnablenDPI==1){
@@ -642,6 +645,7 @@ class mysql_squid_builder{
         $this->acl_GroupType_explain["opendns"]="{opendns_about}";
         $this->acl_GroupType_explain["opendnsf"]="{opendns_about}";
         $this->acl_GroupType_explain["accessrule"]="{accessrule_simple_about}";
+        $this->acl_GroupType_explain["dnsdynamic"]="{dnsdynamic_explain}";
 
         $this->acl_GroupType_explain["senderad"]="{activedirectory_checking} {sender}";
         $this->acl_GroupType_explain["envto"]="{acl_envto_explain}";
@@ -815,6 +819,7 @@ class mysql_squid_builder{
         $GroupType["dstproxy"]="{dstproxy}";
         $GroupType["itype"]="{itype}";
         $GroupType["AclsGroup"]="{group_of_objects}";
+        $GroupType["dnsdynamic"]="{dnsdynamic}";
         return $GroupType[$GroupTypeName];
     }
 

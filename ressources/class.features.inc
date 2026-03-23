@@ -2314,7 +2314,22 @@ class features{
         $config["LOG_FILE"]=PROGRESS_DIR."/autoconfiguration.apply.log";
         return $this->build_paragraph($config);
     }
-
+    public function NAMESPACES():string{
+        if($this->ASReverseProxyAppliance){
+            return "";
+        }
+        $config["SECURITY"]="AsSystemAdministrator";
+        $config["LICENSE"]=true;
+        $config["TITLE"]="{namespaces}";
+        $config["EXPLAIN"]="{network_namespaces_explain}";
+        $config["TOKEN"]="EnableNamespaces";
+        $config["CMD_ON"]="/network/namespaces/install";
+        $config["CMD_OFF"]="/network/namespaces/uninstall";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/namespaces.progress";
+        $config["LOG_FILE"]=PROGRESS_DIR."/namespaces.progress";
+        $config["WIKI"]="https://wiki.articatech.com/en/network/namespaces";
+        return $this->build_paragraph($config);
+    }
     public function ACTIVEDIRECTORY():string{
         if($this->ASReverseProxyAppliance){
             return "";

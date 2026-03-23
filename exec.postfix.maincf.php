@@ -1144,18 +1144,11 @@ function OthersValues(){
 	if(!is_numeric($mime_nesting_limit)){
 		$mime_nesting_limit=$sock->GET_INFO("mime_nesting_limit");
 	}
-	
 	if(!is_numeric($mime_nesting_limit)){$mime_nesting_limit=100;}
-	
 	$main->main_array["default_destination_recipient_limit"]=$sock->GET_INFO("default_destination_recipient_limit");
 	$main->main_array["smtpd_recipient_limit"]=$sock->GET_INFO("smtpd_recipient_limit");
-	
 	$main->main_array["header_address_token_limit"]=$sock->GET_INFO("header_address_token_limit");
-
-	
-
-
-	if($main->main_array["default_destination_recipient_limit"]==null){$main->main_array["default_destination_recipient_limit"]=50;}
+    if($main->main_array["default_destination_recipient_limit"]==null){$main->main_array["default_destination_recipient_limit"]=50;}
 	if($main->main_array["smtpd_recipient_limit"]==null){$main->main_array["smtpd_recipient_limit"]=1000;}
 	if($main->main_array["header_address_token_limit"]==null){$main->main_array["header_address_token_limit"]=10240;}
 	

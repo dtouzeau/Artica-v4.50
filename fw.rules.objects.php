@@ -177,7 +177,7 @@ function delete_remove(){
 	
 	
 }
-function enabled_js(){
+function enabled_js():bool{
 	$gpid   = $_GET["enabled-js"];
     $ID     = $_GET["ruleid"];
 	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
@@ -187,6 +187,7 @@ function enabled_js(){
 	$q->QUERY_SQL("UPDATE webfilters_sqgroups SET enabled=$enabled WHERE ID=$gpid");
 	if(!$q->ok){echo $q->mysql_error;}
 	echo "Loadjs('fw.rules.php?fill=$ID');";
+    return true;
 }
 
 

@@ -1176,17 +1176,17 @@ function remote_categories_service_popup():bool{
     $RemoteCategoriesServicePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicePort"));
     $RemoteCategoriesServiceAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceAddr");
     $RemoteCategoriesServiceMetaDebug=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceMetaDebug"));
-
-
-    $form[]=$tpl->field_checkbox("UseRemoteCategoriesService","{enabled}",$UseRemoteCategoriesService);
-    $form[]=$tpl->field_text("RemoteCategoriesServiceAddr", "{remote_server_address}", $RemoteCategoriesServiceAddr);
-
+    $RemoteCategoriesServiceIface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceIface"));
     if($RemoteCategoriesServicePort==0){
         $RemoteCategoriesServicePort=9905;
     }
+
+    $form[] = $tpl->field_checkbox("UseRemoteCategoriesService","{enabled}",$UseRemoteCategoriesService);
+    $form[] = $tpl->field_interfaces("RemoteCategoriesServiceIface","{outgoing_interface}",$RemoteCategoriesServiceIface);
+    $form[] = $tpl->field_text("RemoteCategoriesServiceAddr", "{remote_server_address}", $RemoteCategoriesServiceAddr);
     $form[] = $tpl->field_numeric("RemoteCategoriesServicePort","{remote_server_port} (HTTP)",$RemoteCategoriesServicePort);
     $form[] = $tpl->field_checkbox("RemoteCategoriesServiceSSL","{use_ssl}",$RemoteCategoriesServiceSSL);
-    $form[]=$tpl->field_checkbox("RemoteCategoriesServiceMetaDebug","{debug}",$RemoteCategoriesServiceMetaDebug);
+    $form[] = $tpl->field_checkbox("RemoteCategoriesServiceMetaDebug","{debug}",$RemoteCategoriesServiceMetaDebug);
     echo $tpl->form_outside("", $form,"{CategoryDatabaseReplication_explain}","{apply}","$function","AsDansGuardianAdministrator");
     return true;
 }

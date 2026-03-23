@@ -230,20 +230,11 @@ function table(){
     foreach ($results as $index=>$ligne){
         $pnic_bridges[$ligne["nic_to"]]=true;
     }
+    $TRCLASS=null;
 
-
-
-
-
-
-	$TRCLASS=null;
-
-	foreach ($nicZ as $ifname){
+	foreach ($nicZ as $ifname=>$ipaddress){
 	    $znic=new system_nic($ifname);
         $md=md5(serialize($znic).time().$ifname);
-        $Norule     = false;
-        $class      =null;
-        $rules_text =null;
         if($znic->Bridged==1){continue;}
         if($znic->enabled==0){continue;}
         $ligne=$q->mysqli_fetch_array("SELECT * FROM firehol_masquerade WHERE nic='$ifname'");
@@ -252,31 +243,18 @@ function table(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $enable=$tpl->icon_check($enabled,"Loadjs('$page?ifname-enable=$ifname&id=$ifname_id')","AsFirewallManager");
 
-
        if($znic->firewall_masquerade==1){
-           if($enabled==0) {
-               $enable = "<i class='fas fa-check'></i>";
-           }
-           $Norule=true;
-
+            $enable = "<i class='fas fa-check'></i>";
        }
 
        if(isset($pnic_bridges[$ifname])){
            $enable="<i class='fas fa-check'></i>";
        }
-
-        if($znic->isFW==0){
-            if($znic->firewall_masquerade==0) {
-                $enable = $tpl->icon_nothing();
-                $Norule = true;
-            }
-        }
-
-        $rules_text=rule_text($ifname_id,$ifname);
+       $rules_text=rule_text($ifname_id,$ifname);
 
 		$html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td class=\"center\" width='1%' nowrap>$enable</td>";
-		$html[]="<td class=\"left\" width='1%' nowrap><i class='fas fa-ethernet'></i>&nbsp;$ifname $znic->NICNAME</td>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap>$enable</td>";
+		$html[]="<td class=\"left\" style='width:1%' nowrap><i class='fas fa-ethernet'></i>&nbsp;$ifname $znic->NICNAME</td>";
         $html[]="<td class=\"left\"><span id='rules-text-$ifname_id'>$rules_text</span></td>";
 
 		$html[]="</tr>";
@@ -303,6 +281,10 @@ $(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"ena
 
 }
 
+function isEnabled($nic,$pnic_bridges){
+
+}
+
 function rule_text($ID,$interface=null){
     $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
     $tpl=new template_admin();
@@ -320,6 +302,7 @@ function rule_text($ID,$interface=null){
     $ifname=$ligne["nic"];
 
     if($ifname==null){$ifname=$interface;}
+
     $znic=new system_nic($ifname);
     $enabled=intval($ligne["enabled"]);
 

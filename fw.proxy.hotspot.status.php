@@ -75,11 +75,56 @@ function table(){
     $html[]="</td>";
     $html[]="<td style='width:100%;padding-left: 10px;vertical-align: top'>";
 
-    $html[]="<table style='width:100%;margin-top:10px'>";
+    $html[]="<table style='width:100%;margin-top:-10px'>";
+
     $html[]="<tr>";
+    $html[]="<td style='width:100%;vertical-align: top'>";
+    $EnableDHCPServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDHCPServer"));
+    $UnboundEnabled     =   intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
+    if($EnableDHCPServer==0){
+        $html[] = $tpl->_ENGINE_parse_body($tpl->widget_h("grey",
+            ico_networks,  "{inactive2}","{APP_DHCP}"));
+    }else{
+        $html[] = $tpl->_ENGINE_parse_body($tpl->widget_h("green",
+            ico_networks,  "{active2}","{APP_DHCP}"));
+    }
+    $html[]="</td>";
+    $html[]="</tr>";
+    $html[]="<tr>";
+    $html[]="<td style='width:100%;vertical-align: top'>";
+    if($UnboundEnabled==0){
+        $html[] = $tpl->_ENGINE_parse_body($tpl->widget_h("grey",
+            ico_server,  "{inactive2}","{APP_UNBOUND}"));
+    }else{
+        $html[] = $tpl->_ENGINE_parse_body($tpl->widget_h("green",
+            ico_server,  "{active2}","{APP_UNBOUND}"));
+    }
 
 
+    $html[]="</td>";
+    $html[]="</tr>";
+    $html[]="<tr>";
+    $html[]="<td style='width:100%;vertical-align: top'>";
+    list($HTTPT,$HTTPST)=TransparentStatus();
+    if ($HTTPT==1 && $HTTPST==1){
+        $html[] = $tpl->_ENGINE_parse_body($tpl->widget_h("green",
+            ico_server,  "{active2}","{transparent}"));
 
+    }else{
+        $f=array();
+        if($HTTPST==0){
+            $f[]="{missing} SSL";
+        }
+        if($HTTPT==0){
+            $f[]="{missing} HTTP";
+        }
+        $html[] = $tpl->_ENGINE_parse_body($tpl->widget_h("yellow",
+            ico_firewall,  "{not_configured}","{transparent}: ".@implode(",",$f)));
+    }
+    $html[]="</td>";
+    $html[]="</tr>";
+    $html[]="<tr>";
+    $html[]="<td style='width:100%;vertical-align: top'>";
     if($Go_Shield_Server_Enable==0){
         $Go_Shield_Connector_Addr=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_Addr"));
         if(empty($Go_Shield_Connector_Addr)){$Go_Shield_Connector_Addr="127.0.0.1";}
@@ -87,6 +132,7 @@ function table(){
             $html[] = $tpl->_ENGINE_parse_body($tpl->widget_h("red",
                 "far fa-times-circle", "{KSRN_SERVER2}", "{disabled}"));
         }
+        $html[]="</td>";
         $html[]="</tr>";
         $html[]="</table>";
         echo $tpl->_ENGINE_parse_body($html);
@@ -284,4 +330,29 @@ function wizard_save2():bool{
     $tmp=json_encode($json);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HOTSPOT_WIZARD",$tmp);
     return admin_tracks("Saving HotSpot wizard Guest =$json->guest_network/$json->guest_netmask");
+}
+
+function TransparentStatus():array{
+    $EnableSquidTransparent=0;
+    $EnableSquidTransparentSSL=0;
+    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
+    $sql="SELECT * FROM transparent_ports WHERE enabled=1";
+    $results = $q->QUERY_SQL($sql);
+
+    $port=array();
+    foreach($results as $index=>$ligne){
+        $sslcertificate=$ligne["sslcertificate"];
+
+        if(strlen($sslcertificate)>1){
+            $sport[]=$ligne["port"];
+            continue;
+        }
+        $port[]=$ligne["port"];
+    }
+    if(count($port)>0){$EnableSquidTransparent=1;}
+    if(count($sport)>0){$EnableSquidTransparentSSL=1;}
+
+    return array($EnableSquidTransparent,$EnableSquidTransparentSSL);
+
+
 }

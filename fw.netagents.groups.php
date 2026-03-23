@@ -36,6 +36,7 @@ if(isset($_GET["blacklisted"])){blacklisted_save();exit;}
 // ── GET handlers ──
 if(isset($_GET["auto"])){load_auto_start();exit;}
 if(isset($_GET["load-td-dpkg"])){load_td_dpkg();exit;}
+if(isset($_GET["load-td-dhcp"])){load_td_dhcp();exit;}
 if(isset($_GET["load-td-agents"])){load_td_agents();exit;}
 
 
@@ -94,7 +95,10 @@ function group_start():bool{
 }
 function groups_table():bool{
     $tpl=new template_admin();
-    $function=$_GET["function"];
+    $function="";
+    if(isset($_GET["function"])) {
+        $function = $_GET["function"];
+    }
     $page=CurrentPageName();
     $raw=$GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/groups");
     $groups=json_decode($raw);
@@ -136,6 +140,7 @@ function groups_table():bool{
     $f[]="<table id='table-$t' class='table table-striped' data-page-size='50'>";
     $f[]="<thead><tr>";
     $f[]="  <th data-sortable='true' data-type='text'>{name}</th>";
+    $f[]="  <th data-sortable='true' data-type='text'>DHCP</th>";
     $f[]="  <th data-sortable='true' data-type='text'>NET</th>";
     $f[]="  <th data-sortable='true' data-type='text'>&nbsp;</th>";
     $f[]="  <th data-sortable='true' data-type='text'>{agents}</th>";
@@ -150,7 +155,7 @@ function groups_table():bool{
     $TRCLASS=null;
     $fontSize="26px";
     foreach($groups as $g){
-        if(strlen($search)>1){
+        if(!is_null($search) && strlen($search)>1){
             if(!preg_match("#$search#i",serialize($g))){
                 continue;
             }
@@ -162,6 +167,7 @@ function groups_table():bool{
         $name=htmlspecialchars($g->name);
         $desc=htmlspecialchars($g->description??"");
 
+        $dhcpico_link="";
         $created="";
         if(!empty($g->created_at)&&$g->created_at!=="0001-01-01T00:00:00Z"){
             $dt=new DateTime($g->created_at);
@@ -177,11 +183,16 @@ function groups_table():bool{
         $apt_icon="<span id='td-apt-$id'></span>";
         $countBadge="<div id='td-agt-$id' style='min-width: 85px'></div>";
         $AutoID[]=$id;
-
+        $as_dhcp=$g->as_dhcp;
+        if($as_dhcp){
+            $dhcpico="<span class='label label-success'>DHCP</span>";
+            $dhcpico_link=$tpl->td_href($dhcpico,"","Loadjs('fw.netagents.group.dhcp.php?dhcp-js=$id')");
+        }
 
 
         $f[]="<tr id='$tr_id' class='$TRCLASS'>";
         $f[]="  <td style='width:99%;'>$name_link$desc</td>";
+        $f[]="  <td style='width:1%' nowrap><span id='td-dhcp-$id'>$dhcpico_link</span></td>";
         $f[]="  <td style='width:1%' nowrap>".$tpl->icon_parameters("Loadjs('fw.netagents.groups.network.php?id=$id')",
                 "AsArticaMetaAdmin","{network_settings}")."</td>";
         $f[]="  <td style='width:1%;text-align:center'>".$tpl->icon_check($blacklisted,
@@ -427,6 +438,7 @@ function group_add_popup():bool{
     $form=array();
     $form[]=$tpl->field_text("group_name","{name}","",true);
     $form[]=$tpl->field_text("group_description","{description}","");
+    $form[]=$tpl->field_checkbox("group_cluster_mode","{dhcp_cluster_mode}",0,false,"{dhcp_cluster_mode_explain}");
     $form[]=$tpl->field_hidden("group_save","1");
     echo $tpl->form_outside("",
         $form,"","{add}",
@@ -444,7 +456,7 @@ function group_save():bool{
         echo $tpl->post_error("{name}: {required}");
         return false;
     }
-    $data=array("name"=>$name,"description"=>$desc);
+    $data=array("name"=>$name,"description"=>$desc,"cluster_mode"=>intval($_POST["group_cluster_mode"]??0));
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/netagents/groups",$data));
     if(is_object($json)&&property_exists($json,"Status")&&!$json->Status){
         echo $tpl->post_error(__LINE__.") ".$json->Error??"Error");
@@ -482,6 +494,8 @@ function group_edit_popup():bool{
     $form=array();
     $form[]=$tpl->field_text("group-name","{name}",$json->name,true);
     $form[]=$tpl->field_text("group-description","{description}",$json->description??"");
+    $clusterMode=intval($json->cluster_mode??0);
+    $form[]=$tpl->field_checkbox("group-cluster-mode","{dhcp_cluster_mode}",$clusterMode,false,"{dhcp_cluster_mode_explain}");
     $form[]=$tpl->field_hidden("group-edit-save","$id");
     echo $tpl->form_outside("",
         $form,"","{apply}",
@@ -500,7 +514,7 @@ function group_edit_save():bool{
         echo $tpl->post_error("Err.".__LINE__." {name}: {required}");
         return false;
     }
-    $data=array("name"=>$name,"description"=>$desc);
+    $data=array("name"=>$name,"description"=>$desc,"cluster_mode"=>intval($_POST["group-cluster-mode"]??0));
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/netagents/groups/$id",$data));
     if(is_object($json)&&property_exists($json,"Status")&&!$json->Status){
         echo $tpl->post_error("#$id Err.".__LINE__." ".$json->Error??"Error");
@@ -937,6 +951,7 @@ function load_auto_start():bool{
     $f[]="$(\"tr[id^='tr-group-']\").each(function () {";
     $f[]="var fullId = $(this).attr(\"id\");";
     $f[]="var id = fullId.replace(\"tr-group-\", \"\"); ";
+        $f[]="LoadAjaxSilent('td-dhcp-'+id,'$page?load-td-dhcp='+id);";
         $f[]="LoadAjaxSilent('td-apt-'+id,'$page?load-td-dpkg='+id);";
         $f[]="LoadAjaxSilent('td-agt-'+id,'$page?load-td-agents='+id);";
     $f[]="});";
@@ -946,11 +961,38 @@ function load_auto_start():bool{
     echo implode("\n",$f);
     return true;
 }
+
+function load_td_dhcp():bool{
+    $tpl=new template_admin();
+    $id=intval($_GET["load-td-dhcp"]);
+    if(!isset($GLOBALS["/netagents/groups/$id"])) {
+        $GLOBALS["/netagents/groups/$id"] = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/groups/$id"), true);
+    }
+    $ligne=$GLOBALS["/netagents/groups/$id"];
+
+
+    $as_dhcp=$ligne["as_dhcp"];
+    if(!$as_dhcp) {
+        return false;
+    }
+    $title="{APP_DHCP}";
+    if($ligne["cluster_mode"]==1){
+        $title="{APP_DHCP} ({cluster_mode})";
+    }
+
+
+    $dhcpico="<span class='label label-success'>$title</span>";
+    $dhcpico_link=$tpl->td_href($dhcpico,"{dhcp_parameters}","Loadjs('fw.netagents.group.dhcp.php?dhcp-js=$id')");
+    echo $tpl->_ENGINE_parse_body($dhcpico_link);
+    return true;
+}
 function load_td_dpkg():bool{
 
     $id=intval($_GET["load-td-dpkg"]);
-
-    $ligne=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/groups/$id"),true);
+    if(!isset($GLOBALS["/netagents/groups/$id"])) {
+        $GLOBALS["/netagents/groups/$id"] = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/groups/$id"), true);
+    }
+    $ligne=$GLOBALS["/netagents/groups/$id"];
     $blacklisted=$ligne["blacklisted"];
     if($blacklisted){
         return false;

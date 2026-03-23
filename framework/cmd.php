@@ -1952,37 +1952,6 @@ return;
 	echo "<articadatascgi>$datas</articadatascgi>";	
 	
 }
-function dropbox_status(){
-	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.status.php --dropbox --nowachdog",$results);
-	$datas=implode("\n",$results);
-	echo "<articadatascgi>$datas</articadatascgi>";	
-	}
-	
-function dropbox_service_status(){
-	exec("/usr/share/artica-postfix/bin/install/dropbox/dropbox.py status",$results);
-	$datas=trim(implode(" ",$results));
-	echo "<articadatascgi>$datas</articadatascgi>";	
-	}	
-function dropbox_service_uri(){
-	$unix=new unix();
-	$php=$unix->LOCATE_PHP5_BIN();
-	$cmd="$php /usr/share/artica-postfix/exec.dropbox.php --uri";
-	exec("$cmd",$results);
-	$datas=trim(implode(" ",$results));
-	writelogs_framework("$cmd -> $datas",__FUNCTION__,__FILE__,__LINE__);
-	echo "<articadatascgi>$datas</articadatascgi>";	
-	}		
-	
-function dropbox_files_status(){
-	exec("/usr/share/artica-postfix/bin/install/dropbox/DropBoxValues.py",$results);
-	foreach ($results as $line){
-		if(preg_match("#(.+?)\s+=\s+(.+)#",$line,$re)){
-			$array[$re[1]]=$re[2];
-		}
-	}
-	
-	echo "<articadatascgi>". base64_encode(serialize($array))."</articadatascgi>";	
-}	
 
 
 function samba_shares_list(){
@@ -3971,23 +3940,10 @@ $file="/usr/share/artica-postfix/ressources/logs/web/ad-$ou.log";
 NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.ad-import-ou.php $ou");
 }
 
-function backup_sql_tests(){
-	writelogs_framework("Testing backup id {$_GET["backup-sql-test"]}",__FUNCTION__,__FILE__,__LINE__);
-	exec(LOCATE_PHP5_BIN2() ." /usr/share/artica-postfix/exec.backup.php {$_GET["backup-sql-test"]} --only-test --verbose",$results);
-	
-	writelogs_framework(count($results)." line",__FUNCTION__,__FILE__,__LINE__);
-	
-	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
-}
-
-function backup_task_run(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.backup.php {$_GET["backup-task-run"]}");
-}
 
 
-function backup_build_cron(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.backup.php --cron");
-}
+
+
 function GlobalApplicationsStatus(){
 	$unix=new unix();
 	$mainfile="/usr/share/artica-postfix/ressources/logs/global.versions.conf";
@@ -4172,39 +4128,9 @@ function imapsync_show(){
 }
 
 
-function cyrus_restore_mount_dir(){
-	$taskid=$_GET["cyr-restore"];
-	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.backup.php --mount $taskid",$results);
-	writelogs_framework(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.backup.php --mount $taskid",__FUNCTION__,__FILE__);
-	$datas=trim(implode("",$results));
-	writelogs_framework(strlen($datas)." bytes",__FUNCTION__,__FILE__);
-	echo "<articadatascgi>". base64_encode($datas)."</articadatascgi>";	
-	
-}
 
-function cyr_restore_computer(){
-	$taskid=$_GET["cyr-restore-computer"];
-	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.backup.php --mount --id=$taskid --dir={$_GET["dir"]}",$results);
-	$datas=trim(implode("",$results));
-	writelogs_framework($datas,__FUNCTION__,__FILE__);
-	echo "<articadatascgi>". base64_encode($datas)."</articadatascgi>";		
-	// cyr-restore-computer
-	
-}
-//cyr-restore-container
-function cyr_restore_container(){
-	$taskid=$_GET["cyr-restore-container"];
-	$_GET["dir"]=base64_decode($_GET["dir"]);
-	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.backup.php --mount --id=$taskid --dir={$_GET["dir"]} --list",$results);
-	$datas=trim(implode("",$results));
-	writelogs_framework($datas,__FUNCTION__,__FILE__);
-	echo "<articadatascgi>". base64_encode($datas)."</articadatascgi>";			
-}
-function cyr_restore_mailbox(){
-	$datas=$_GET["cyr-restore-mailbox"];
-	writelogs_framework($datas,__FUNCTION__,__FILE__);
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.backup.php --restore-mbx $datas");
-}
+
+
 function disk_format_big_partition(){
 	
 	$GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/system.partition.progress";
@@ -4301,7 +4227,6 @@ function postfix_hash_transport_maps(){
 		NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.postfix.hashtables.php --transport --reload");
 		NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.postfix.maincf.php --smtp-sender-restrictions");
 		NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.opendkim.php --keyTable");
-		NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.cluebringer.php --internal-domains");
 		return;
 	}
 
@@ -6753,14 +6678,6 @@ function cluebringer_restart(){
 	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);	
 	
-}
-
-function cluebringer_status(){
-	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.status.php --cluebringer --nowachdog",$results);
-	echo "<articadatascgi>". base64_encode(@implode("\n",$results))."</articadatascgi>";
-}
-function cluebringer_passwords(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.cluebringer.php --passwords");
 }
 
 function qos_iptables(){

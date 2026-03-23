@@ -541,13 +541,6 @@ function reload_squid_cache(){
         system("/usr/sbin/artica-phpfpm-service -reload-proxy");
     }
 
-    if(is_file("/etc/init.d/fail2ban")){
-        $cmd="$nohup $php /usr/share/artica-postfix/exec.fail2ban.php --build >/dev/null 2>&1 &";
-        writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-        shell_exec($cmd);
-    }
-
-
 }
 
 function categories_hot(){

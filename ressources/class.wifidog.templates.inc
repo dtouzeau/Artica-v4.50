@@ -62,6 +62,7 @@ class wifidog_templates
     public $ERROR_STYLE = null;
 
     public $authentication_failed = null;
+    public $HotSpotTabsOrder="";
     public $LabelEmail = null;
     public $SubmitButton = null;
     public $MobileLabel = null;
@@ -183,6 +184,7 @@ class wifidog_templates
         $this->DivRigthButtonTextColor = $SockTemplate->GET_INFO("DivRigthButtonTextColor");
         $this->DivRigthButtonHoverColor = $SockTemplate->GET_INFO("DivRigthButtonHoverColor");
         $this->DivBackgroundImage = $SockTemplate->GET_INFO("DivBackgroundImage");
+        $this->HotSpotTabsOrder= $SockTemplate->GET_INFO("HotSpotTabsOrder");
 
         $this->FontFamily = intval($SockTemplate->GET_INFO("FontFamily"));
         $this->FontSize = intval($SockTemplate->GET_INFO("FontSize"));

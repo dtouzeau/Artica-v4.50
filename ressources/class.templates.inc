@@ -1579,7 +1579,6 @@ function noback(){
     $noback["proxy-certificate-infos.php"]=true;
     $noback["squid.users.logon.php"]=true;
     $noback["squid-helper.php"]=true;
-    $noback["exec.articaget.php"]=true;
     $noback["mysqldefrag.php"]=true;
     $noback["wizard.install.php"]=true;
     $noback["wizard.hotspot.install.php"]=true;

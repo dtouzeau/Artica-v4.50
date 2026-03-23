@@ -10934,7 +10934,7 @@ Enable this option will ask the proxy to stop any requests and to not try to be 
 These traces stores all requests into single files. These traces can be provided to the police or any justice entity.[br]You have to keep it according your country's law</legal_logs_explain>
 <SquidLogsExceptions>Do not log requests from IP</SquidLogsExceptions>
 <SquidLogsExceptions_explain>Set here, separated by a comma, the list off all ip address that will be not logged to the proxy ( including statistics )</SquidLogsExceptions_explain>
-<activate_the_feature>Activate this feature</activate_the_feature>
+<activate_the_feature>Enable this feature</activate_the_feature>
 <openvpn_mssfix_explain>Announce to TCP sessions running over the tunnel that they should limit their send packet sizes such that after VPN server
 has encapsulated them, the resulting UDP packet size that VPN server sends to its peer will not exceed max bytes.[br]
 The max parameter is interpreted in the same way as the Maximum Transmission Units parameter, i.e. the UDP packet size after encapsulation 

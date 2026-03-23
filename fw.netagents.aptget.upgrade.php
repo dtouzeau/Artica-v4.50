@@ -14,50 +14,13 @@ if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["upgrade-single-js"])){upgrade_single_js();exit;}
 if(isset($_POST["upgrade-single"])){upgrade_single();exit;}
 if(isset($_GET["upgrade-all-js"])){upgrade_all_js();exit;}
-if(isset($_GET["upgrade-all-nodes-js"])){upgrade_all_nodes_js();exit;}
-if(isset($_POST["upgrade-all-nodes"])){upgrade_all_nodes_confirm();exit;}
 if(isset($_POST["upgrade-all"])){upgrade_all();exit;}
+if(isset($_GET["dist-upgrade-js"])){dist_upgrade_js();exit;}
+if(isset($_POST["dist-upgrade"])){dist_upgrade();exit;}
 if(isset($_GET["refresh-js"])){refresh_js();exit;}
 if(isset($_POST["refresh-fetch"])){refresh_fetch();exit;}
 if(isset($_GET["top-buttons"])){top_buttons();exit;}
 js();
-
-
-// fw.netagents.aptget.upgrade.php?upgrade-all-nodes-js=yes
-
-function upgrade_all_nodes_js():bool{
-    $page = CurrentPageName();
-    $tpl = new template_admin();
-    $users = new usersMenus();
-    if (!$users->AsArticaMetaAdmin) {
-        return $tpl->js_error("{no_privileges}");
-    }
-    return $tpl->js_confirm_execute("{upgrade_all}", "upgrade-all-nodes", "yes");
-}
-function upgrade_all_nodes_confirm():bool{
-    $page = CurrentPageName();
-    $tpl = new template_admin();
-    $users=new usersMenus();
-    if(!$users->AsArticaMetaAdmin){
-        return $tpl->js_error("{no_privileges}");
-    }
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/dashboard/list/updates"));
-    if(!is_object($json)){
-        return $tpl->js_error("Failed to fetch dashboard list");
-    }
-    if(isset($json->Status) && !$json->Status){
-        return $tpl->js_error(htmlspecialchars($json->Error ?? "Unknown error"));
-    }
-    $items=isset($json->AptSoftwares)?$json->AptSoftwares:[];
-
-    foreach($items as $item) {
-        $agent_id = intval($item->agent_id ?? 0);
-        $GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/netagents/packages/upgrade/all/$agent_id");
-    }
-
-    return true;
-
-}
 
 function js():bool{
     $page = CurrentPageName();
@@ -109,6 +72,7 @@ function table_start():bool{
     echo $tpl->_ENGINE_parse_body(implode("\n",$html));
     return true;
 }
+
 function top_buttons():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -120,14 +84,30 @@ function top_buttons():bool{
     }
 
     $upgradableCount=intval($json->upgradable_count ?? 0);
-    if($upgradableCount>0) {
-        $topbuttons[] = array("Loadjs('$page?upgrade-all-js=yes&id=$id&function=$function');", "fas fa-arrow-circle-up", "{upgrade_all}");
-        $topbuttons[] = array("Loadjs('$page?refresh-js=yes&id=$id&function=$function');", ico_refresh, "{refresh}");
+    $distUpgradeRequired=(bool)($json->dist_upgrade_required ?? false);
+    $aptRunning=(bool)($json->apt_running ?? false);
+
+    $topbuttons=[];
+    if( !$aptRunning){
+        $topbuttons[]=["Loadjs('$page?dist-upgrade-js=yes&id=$id&function=$function');",
+            "fas fa-level-up-alt","{dist_upgrade}"];
+    }
+    if($upgradableCount>0){
+        if( !$aptRunning) {
+            $topbuttons[] = ["Loadjs('$page?upgrade-all-js=yes&id=$id&function=$function');", "fas fa-arrow-circle-up", "{upgrade_all}"];
+        }
+    }
+
+    $topbuttons[]=["Loadjs('fw.netagents.aptget.reports.php?id=$id')",ico_list,"{reports}"];
+
+    if(!empty($topbuttons)){
+        $topbuttons[]=["Loadjs('$page?refresh-js=yes&id=$id&function=$function');",ico_refresh,"{refresh}"];
         echo $tpl->_ENGINE_parse_body($tpl->table_buttons($topbuttons));
     }
 
     return true;
 }
+
 function table():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -140,7 +120,7 @@ function table():bool{
     // Error from API
     if(isset($json->Status) && !$json->Status){
         $err=$json->Error ?? "{error}";
-        echo $tpl->_ENGINE_parse_body($tpl->div_warning($err));
+        echo $tpl->_ENGINE_parse_body($tpl->div_warning("ERR.".__LINE__."||".$err));
         return false;
     }
 
@@ -166,15 +146,20 @@ function table():bool{
 
     // Summary bar
     $html=array();
-    if($fetchError!=""){
-        $html[]=$tpl->div_warning("<i class='fas fa-exclamation-triangle'></i> {last_error}: " . htmlspecialchars($fetchError));
-    }
-
     $lastFetchDate="";
     if($lastFetch!=""){
         $ts=strtotime($lastFetch);
         if($ts>0){$lastFetchDate=$tpl->time_to_date($ts,true);}
     }
+    if($fetchError!=""){
+        if(!preg_match("#connection refused#i",$fetchError)){
+        $html[]=$tpl->div_warning("{last_error} ($lastFetchDate)||<i class='fas fa-exclamation-triangle'></i>" .
+            htmlspecialchars($fetchError));
+        }
+    }
+
+
+
 
 
 
@@ -182,7 +167,7 @@ function table():bool{
     $html[]="<div id='pkg-result-$id'></div>";
 
     if(!is_array($packages) || count($packages)==0){
-        $html[]=$tpl->div_success("<i class='fas fa-check-circle'></i> {system_is_uptodate}");
+        $html[]=$tpl->div_success("<i class='fas fa-check-circle'></i> {system_is_uptodate} ($upgradableCount)");
         $html[]="<script>NoSpinner();</script>";
         echo $tpl->_ENGINE_parse_body(implode("\n",$html));
         return true;
@@ -261,6 +246,52 @@ function table():bool{
     return true;
 }
 
+// ==================== Dist-Upgrade (held-back packages) ====================
+
+function dist_upgrade_js():void{
+    header("content-type: application/x-javascript");
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $id=intval($_GET["id"]);
+
+    $title=$tpl->javascript_parse_text("{dist_upgrade}");
+    $confirm=$tpl->javascript_parse_text("{confirm_dist_upgrade}");
+    $js=[];
+    $js[]="swal({";
+    $js[]="    title:'$title',";
+    $js[]="    text:'$confirm',";
+    $js[]="    type:'warning',";
+    $js[]="    showCancelButton:true,";
+    $js[]="    confirmButtonColor:'#ed5565',";
+    $js[]="    confirmButtonText:'$title'";
+    $js[]="},function(isConfirm){";
+    $js[]="    if(!isConfirm)return;";
+    $js[]="    \$('#pkg-result-$id').html('<div class=\"alert alert-info\"><i class=\"fas fa-spinner fa-spin\"></i> {dist_upgrade}...</div>');";
+    $js[]="    \$.post('$page',{";
+    $js[]="        'dist-upgrade':'yes',";
+    $js[]="        'id':'$id'";
+    $js[]="    },function(data){eval(data);});";
+    $js[]="});";
+    echo $tpl->_ENGINE_parse_body(implode("\n",$js));
+}
+
+function dist_upgrade():void{
+    header("content-type: application/x-javascript");
+    $tpl=new template_admin();
+    $id=intval($_POST["id"]);
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/netagents/packages/dist-upgrade/$id",[]));
+
+    if(isset($json->Status)&&!$json->Status){
+        $err=addslashes($json->Error??"{error}");
+        echo "document.getElementById('pkg-result-$id').innerHTML='<div class=\"alert alert-danger\"><i class=\"fas fa-times-circle\"></i> $err</div>';";
+        return;
+    }
+    $msg=isset($json->message)?addslashes($json->message):"{success}";
+    echo "document.getElementById('pkg-result-$id').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $msg</div>';";
+    admin_tracks("Meta: dist-upgrade triggered on agent $id");
+}
+
 // ==================== Upgrade Single Package ====================
 
 function upgrade_single_js(){
@@ -315,7 +346,7 @@ function upgrade_single(){
 
 // ==================== Upgrade All Packages ====================
 
-function upgrade_all_js(){
+function upgrade_all_js():bool{
     header("content-type: application/x-javascript");
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -340,29 +371,28 @@ function upgrade_all_js(){
     $js[]="    },function(data){eval(data);});";
     $js[]="});";
     echo $tpl->_ENGINE_parse_body(implode("\n",$js));
+    return true;
 }
 
-function upgrade_all(){
+function upgrade_all():bool{
     header("content-type: application/x-javascript");
     $tpl=new template_admin();
     $id=intval($_POST["id"]);
-
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/netagents/packages/upgrade/all/$id",array()));
 
     if(isset($json->Status) && !$json->Status){
         $err=addslashes($json->Error ?? "{error}");
         echo "document.getElementById('pkg-result-$id').innerHTML='<div class=\"alert alert-danger\"><i class=\"fas fa-times-circle\"></i> $err</div>';";
-        return;
+        return true;
     }
-
     $msg=isset($json->message) ? addslashes($json->message) : "{success}";
     echo "document.getElementById('pkg-result-$id').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $msg</div>';";
-    admin_tracks("Meta: upgrade all packages on agent $id");
+    return admin_tracks("Meta: upgrade all packages on agent $id");
 }
 
 // ==================== Refresh Packages Data ====================
 
-function refresh_js(){
+function refresh_js():bool{
     header("content-type: application/x-javascript");
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -378,9 +408,11 @@ function refresh_js(){
     $js[]="    },3000);";
     $js[]="});";
     echo $tpl->_ENGINE_parse_body(implode("\n",$js));
+    return true;
 }
 
-function refresh_fetch(){
+function refresh_fetch():bool{
     $id=intval($_POST["id"]);
     $GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/netagents/packages/fetch/$id",array());
+    return true;
 }

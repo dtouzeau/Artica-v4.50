@@ -1701,7 +1701,7 @@ All you have to do is to make it listen on a network interface.[br]
 If you do this, and if a DNS service is already installed on this machine, it will be automatically removed in favor of this local DNS cache service.[br]Be aware that other DNS services are available in Artica's features.[br]
  You will have more performance and security features.
  </LOCAL_CACHE_DNS_INTERFACE>
- <app_safesearch_explains>SafeSearch is a feature offered by search engines like Google, Bing.. that helps filter out  inappropriate content from search results.[br]SafeSearch uses algorithms and image recognition technology to restrict the display of sexually explicit material, violent content, and hate speech in search results.</app_safesearch_explains>
+ <app_safesearch_explains>SafeSearch is a feature offered by search engines like Google, Bing.. that helps filter out inappropriate content from search results.[br]SafeSearch uses algorithms and image recognition technology to restrict the display of sexually explicit material, violent content, and hate speech in search results.</app_safesearch_explains>
  <APP_SSHPROXY>SSH Proxy</APP_SSHPROXY>
  <APP_SSHPROXY_EXPLAIN>The SSH Proxy service allows different ssh destination servers to be selected based on the ssh username.[br]
 This allows users of multiple SSH servers to access the ssh service via a single access point.[br]
@@ -3860,7 +3860,7 @@ This allows you to assign specific IP address ranges or customized lease options
 <aaa_logging_section>Logging verbosity (e.g., debug, info, warn, error).</aaa_logging_section>
 <aaa_cache_section>Controls caching of authentication and group lookup results</aaa_cache_section>
 <aaa_emergency_section>Ensures network access continues when all authentication agents are unavailable. Without it, users lose internet access entirely during agent outages</aaa_emergency_section>
-<aaa_timeout>Max time in secondss to wait for an agent RPC response.</aaa_timeout>
+<aaa_timeout>Max time in seconds to wait for an agent RPC response.</aaa_timeout>
 <aaa_distribution>Distribution</aaa_distribution>
 <aaa_distribution_desc>How to distribute requests across multiple agents.[BR][B]Single[/B] Auto-set when only one agent is configured[BR][B]Failover[/B] Use highest-priority agent. This is the default method for 2+ agents.[BR][B]Load-balance[/B] Distribute requests across all healthy agents by weight.</aaa_distribution_desc>
 <aaa_agent>Agent</aaa_agent>
@@ -3869,3 +3869,237 @@ This allows you to assign specific IP address ranges or customized lease options
 <ARTICA_AAA_AUTH_AGENT>Authentication Helper</ARTICA_AAA_AUTH_AGENT>
 <ARTICA_AAA_GROUPS_AGENT>Groups Helper</ARTICA_AAA_GROUPS_AGENT>
 <deploy_artica_software>Deploy Artica software.</deploy_artica_software>
+<behavior_flags>Behavior flags</behavior_flags>
+<gateways>Gateways</gateways>
+<rfc3442-classless-static-routes>Classless statics routes</rfc3442-classless-static-routes>
+<ddns-domainname>DDNS Domain Name</ddns-domainname>
+<ddns-domainname-explain>DNS zone used for automatic hostname registration (DDNS). Example: lan.example.com</ddns-domainname-explain>
+<edit_scope>Edit scope</edit_scope>
+<config_up_to_date>The configuration is up to date</config_up_to_date>
+<dist_upgrade>Full upgrade</dist_upgrade>
+<confirm_dist_upgrade>Run a full upgrade on this agent?[br]New dependency packages will be installed.[br]This cannot be interrupted once started</confirm_dist_upgrade>
+<detail>Detail</detail>
+<all_types>All types</all_types>
+<dhcp_events>DHCP events</dhcp_events>
+<computer_name_db_explain>The machine name used in the local database.</computer_name_db_explain>
+<physical_hostname_text>The physical machine name used by the system.</physical_hostname_text>
+<confirm_import_dhcpd_conf>confirm import DHCP configuration</confirm_import_dhcpd_conf>
+<interface_required>Interface required</interface_required>
+<abandoned>Abandoned</abandoned>
+<dhcp_status_per_agent>DHCP service status by node</dhcp_status_per_agent>
+<scopes>Scopes</scopes>
+<group_scope_push_explain>Push this scope configuration to all agents within the selected group.[br]Each agent will automatically create or update the corresponding scope in its candidate configuration to ensure consistent deployment across the infrastructure.</group_scope_push_explain>
+<push_scope_to_group>Push scope to group</push_scope_to_group>
+<push_relay_to_group>Push relay to group</push_relay_to_group>
+<relay_id_must_exist_on_each_agent>Relay ID must exist on each agent</relay_id_must_exist_on_each_agent>
+<push_to_all_agents>Push to all agents</push_to_all_agents>
+<remote_id>Remote ID</remote_id>
+<circuit_id>Circuit ID</circuit_id>
+<relay_class_id>Relay Class</relay_class>
+<group_reservation_push_explain>Push this reservation to all agents in the group.[br][b]Each agent will automatically create or update the corresponding reservation entry in its candidate configuration to ensure configuration consistency across all nodes.[/b]</group_reservation_push_explain>
+<search_by_ip>Search by IP</search_by_ip>
+<search_by_hostname>Search by hostname</search_by_hostname>
+<agent>Agent</agent>
+<filesystem_usage>Filesystem usage</filesystem_usage>
+<packages2>Packages</packages2>
+<apt_output>Update task results</apt_output>
+<report_details>Report details</report_details>
+<no_reports_available>No reports available</no_reports_available>
+<push_reservation_to_group>Push reservation to group</push_reservation_to_group>
+<no_reservations>No reservations</no_reservations>
+<group_apply_warning>This will apply the candidate configuration on all agents in the group.</group_apply_warning>
+<group_apply_explain>Each agent will validate, backup, and apply its own candidate configuration. The DHCP service will be reloaded on success.</group_apply_explain>
+<group_apply_explain_validate>The candidate configuration is validated before applying.</group_apply_explain_validate>
+<group_apply_explain_backup>A backup of the running configuration is created automatically.</group_apply_explain_backup>
+<group_apply_explain_reload>The DHCP service is reloaded after a successful apply.</group_apply_explain_reload>
+<group_apply_explain_409>If the candidate configuration is identical to the running configuration, the agent will skip the apply.</group_apply_explain_409>
+<group_apply_config>Apply configuration to group</group_apply_config>
+<group_apply_individual_note>Each agent applies its own candidate configuration independently. Check individual agent status for details.</group_apply_individual_note>
+<apply_config_on_all_agents>Apply configuration on all agents</apply_config_on_all_agents>
+<dhcp_cluster_mode>DHCP cluster mode</dhcp_cluster_mode>
+<dhcp_cluster_mode_explain>When enabled, DHCP scopes, relays and reservations are managed centrally on this server and pushed to all agents in the group at once.
+[br]When disabled, each agent is configured individually.</dhcp_cluster_mode_explain>
+<push_mode>Push mode</push_mode>
+<no_scopes_configured>No scopes configured</no_scopes_configured>
+<central_config_summary>Central configuration summary</central_config_summary>
+<central_apply_warning>This will replace all DHCP configuration on every agent in the group with the central configuration.</central_apply_warning>
+<central_config_dhcp_empty>No scopes, relays or reservations have been configured yet.</central_config_dhcp_empty>
+<central_apply_step1>Delete all existing DHCP scopes, relays and reservations on each agent</central_apply_step1>
+<central_apply_step2>Re-create them from the central configuration</central_apply_step2>
+<central_apply_step3>Validate and reload the DHCP service on each agent</central_apply_step3>
+<apply_central_to_all_agents>Apply to all agents</apply_central_to_all_agents>
+<apply_central_config>Apply the central configuration</apply_central_config>
+<last_updated>Last updated</last_updated>
+<central_apply_confirm_text>All existing configuration on every agent will be replaced. This action cannot be undone</central_apply_confirm_text>
+<no_leases>No leases</no_leases>
+<artica_snapshots>Artica snapshots</artica_snapshots>
+<snapshot_build_started>Snapshot build started</snapshot_build_started>
+<no_snapshots_available>No snapshots available</no_snapshots_available>
+<restore>Restore</restore>
+<confirm_restore>Confirm the restore task</confirm_restore>
+<snapshot_restore_note>Restoring a snapshot will replace the current configuration and restart the service.[br]This action cannot be undone.[br]Any changes made after the snapshot was taken will be lost</snapshot_restore_note>
+<snapshot_move_title>Copy snapshot to another agent</snapshot_move_title>
+<snapshot_restore_warning>This operation will transfer the snapshot file to the destination agent.[br]Ensure the destination agent is online and reachable.</snapshot_restore_warning>
+<select_destination_agent>Select the destination agent</select_destination_agent>
+<snapshot_filename>Snapshot filename</snapshot_filename>
+<move_to_agent>Move to agent</move_to_agent>
+<dist_upgrade2>Perform a full system upgrade (software packages, kernel, and major version)</dist_upgrade2>
+<dns_records>DNS records</dns_records>
+<no_records_defined>No records defined</no_records_defined>
+<add_record>New record</add_record>
+<no_domains_defined>No domains defined</no_domains_defined>
+<no_forward_zones_defined>No forward zones defined</no_forward_zones_defined>
+<network_metrics>Network metrics</network_metrics>
+<drops>Drops</drops>
+<confirm_delete_snapshot>Confirm delete this snapshot</confirm_delete_snapshot>
+<select_a_file>Please select a file first.</select_a_file>
+<only_tgz>Only .tar.gz, .tgz, or .gz files are accepted.</only_tgz>
+<softwares_updates>Softwares updates</softwares_updates>
+<not_monitored>Not monitored</not_monitored>
+<scope_explain>DHCP scope represents a range of IP addresses that the DHCP server is allowed to allocate to clients on a specific network.[br]
+[br]A scope defines the network and subnet mask for a DHCP segment.
+[br]It contains the IP address pool (range) that can be dynamically assigned to clients.
+[br]It includes network parameters such as gateway, DNS servers, domain name, and lease time.
+[br]The scope applies only to clients within that subnet.
+</scope_explain>
+<edns_networks>eDNS Networks</edns_networks>
+<edns_client_subnet>EDNS Client Subnet (ECS)</edns_client_subnet>
+<edns_client_subnet_expl>Allows DNS server to include part of the client’s IP address in DNS queries</edns_client_subnet_expl>
+<remove_proxy>Remove Proxy</remove_proxy>
+<use_custom_logo>Use custom logo</use_custom_logo>
+<artica_auth_agent>Artica Authentication Agent</artica_auth_agent>
+<feature_artica_auth_agent_explain>The Artica Authentication Agent enables seamless Active Directory authentication for Artica Proxy users.[br]
+ It supports Basic, NTLM, and Negotiate (Kerberos) authentication through a dedicated Windows agent that securely communicates with proxy helpers using gRPC over mTLS.</feature_artica_auth_agent_explain>
+<existing_kerberos_ntlm_connections>Existing a Kerberos/NTLM connection</existing_kerberos_ntlm_connections>
+<i_am_not_interested>I am not interested</i_am_not_interested>
+<more_information>More information</more_information>
+<aaa_step1>Here are the steps required to configure the connection with your Active Directory.</aaa_step1>
+<aaa_step11>During installation, pay attention to the user account used. Make sure to use an appropriate user account.</aaa_step11>
+<download_the_windows_client>Download the Windows client</download_the_windows_client>
+<install_the_windows_client>Install the Windows client</install_the_windows_client>
+<aaa_step3>Export the certificate as a ZIP file by right-clicking the icon next to the clock.</aaa_step3>
+<see_doc>View the documentation</see_doc>
+<aaa_step4>Import the certificate obtained from the Windows client into the Artica certificate center.</aaa_step4>
+<aaa_step5>Enable this feature in your Artica Proxy.</aaa_step5>
+<aaa_step6>Connect your Artica Proxy to the Artica Authentication Agent previously installed on the Windows computer.</aaa_step6>
+<healthcheck>Health check</healthcheck>
+<aaa_step_install>You are about to install the Artica Authentication Agent feature.[br]Have you completed all the previous steps?</aaa_step_install>
+<network_namespaces>Network Namespaces</network_namespaces>
+<network_namespaces_explain>Manage isolated network environments.[br]Each namespace provides a separate network stack with its own interfaces, IP addresses, routing tables, and firewall rules</network_namespaces_explain>
+<dnsdynamic>DNS dynamic</dnsdynamic>
+<dnsdynamic_explain>Fetch IP addresses directly from DNS.[br]Use DNS zone transfers (AXFR) as the source of truth, allowing DNS to function as a distributed and cacheable IP database.</dnsdynamic_explain>
+<one_per_line>One entry per line</one_per_line>
+<zone_name>Zone name</zone_name>
+<zones>Zones</zones>
+<namespace_name_explain>A friendly label to identify this namespace in the console</namespace_name_explain>
+<namespace_nat_explain>This option allows traffic originating from the isolated namespace to reach the Internet (or other networks) through the host’s outbound interface.[br]
+Without it, the namespace can communicate only with the host through the interface pair and cannot access any external networks.
+</namespace_nat_explain>
+<ns-edit-host>The IP address assigned to the host end of the veth pair (vethxx). In CIDR notation (e.g. 192.168.210.1/30)</ns-edit-host>
+<host_address>Host address</host_address>
+<reconcile>Reconcile</reconcile>
+<degraded>Degraded</degraded>
+<healthy>Healthy</healthy>
+<target_port>Target port</target_port>
+<test_connectivity>Test connectivity</test_connectivity>
+<namespaces>Network namespaces</namespaces>
+<info_end_of_support>End-of-support information</info_end_of_support>
+<info_end_of_support_months>Your operating system will reach end of support in a few months.</info_end_of_support_months>
+<info_end_of_support_debian10>Debian Linux version 10 reached end of support on June 30, 2024.[br]
+Since that date, the operating system components are no longer maintained or updated.
+[br]However, Artica Tech continues to support the core software and will provide support until [b]January 1st, 2027[/b].[br]
+We recommend preparing a migration to a newer system.[br]
+You will be able to deploy a new Artica appliance based on Debian 12 or Debian 13.
+</info_end_of_support_debian10>
+<no_network_prod>No network is currently in production</no_network_prod>
+<delete_all_scopes>Remove all scopes</delete_all_scopes>
+<relay_added>Relay added</relay_added>
+<apply_now>Apply now</apply_now>
+<ipv6_ula_wizard_explain>Build a Unique Local Address (ULA) for private networking.[br]
+ULA addresses use the fd00::/8 prefix and are not routable on the internet — similar to 10.x.x.x or 192.168.x.x in IPv4.[br]
+The Global ID should be unique per site.
+</ipv6_ula_wizard_explain>
+<ipv6_linklocal_wizard_explain>Link-Local addresses are automatically derived from the interface MAC address using the EUI-64 algorithm.[br]
+They are scoped to a single network segment and cannot be routed.[br]
+Every IPv6-enabled interface has one.</ipv6_linklocal_wizard_explain>
+<ipv6_linklocal_no_mac>Unable to derive a link-local address: the MAC address for this interface could not be read.</ipv6_linklocal_no_mac>
+<ipv6_gua_wizard_explain>Build a Global Unicast Address (GUA) for public internet connectivity.[b]Enter the prefix assigned by your ISP or RIR (typically a /48 or /56), then choose a subnet and host identifier.</ipv6_gua_wizard_explain>
+<ipv6_gua_prefix_help>Enter the prefix provided by your ISP, e.g. 2001:db8:abcd. Do not include the trailing ::</ipv6_gua_prefix_help>
+<use_this_address>Use this address</use_this_address>                                                                                                                                                   │
+<randomize>Randomize</randomize>
+<not_valid_ipv6_address>Not a valid IPv6 address</not_valid_ipv6_address>
+<isp_prefix>ISP Prefix</isp_prefix>
+<allow_ddns_update>Allow Dynamic DNS update</allow_ddns_update>
+<tsig_key_name>TSIG Key name</tsig_key_name>
+<tsig_algorithm>TSIG algorithm</tsig_algorithm>
+<tsig_secret>TSIG Secret</tsig_secret>
+<domain_saved>Domain saved</domain_saved>
+<webshell_explain>The Shell console allows you to access your appliance system directly through the web interface.[br]
+It provides a remote display of the system console output.[br]This console operates independently of shell access services such as SSH.</webshell_explain>
+<webshell_console>Web Shell console</webshell_console>
+<unbound_restarting>Restarting DNS cache service</unbound_restarting>
+<record_saved>Record saved</record_saved>
+<redis_cache>Redis cache</redis_cache>
+<redis_ttl>Max time in cache (in second)</redis_ttl>
+<acl_disabled_note>When access control is disabled, the service accepts queries from any source.[br]Enable it to restrict which networks can query this resolver</acl_disabled_note>
+<acl_order_note>Rules are evaluated from top to bottom.[br]
+The first matching rule wins.[br] More specific CIDR prefixes take priority over broader ones.
+</acl_order_note>
+<add_acl_rule>New ACL rule</add_acl_rule>
+<add_forward_zone>New forward zone</add_forward_zone>
+<forward_zone_servers>Upstream DNS servers</forward_zone_servers>
+<forward_zone_tls>Use DNS-over-TLS</forward_zone_tls>
+<full_forwarder_note>A forward zone of "." forwards all DNS queries to the upstream servers instead of resolving recursively</full_forwarder_note>
+<params_saved>Parameters saved</params_saved>
+<acl_cidr>Network CIDR</acl_cidr>
+<acl_action>Action</acl_action>
+<acl_rule_deleted>Delete this ACL rule</acl_rule_deleted>
+<grouped>Grouped</grouped>
+<flat_view>Flat view</flat_view>
+<unknown_process>Unknown process</unknown_process>
+<exposed_service>Exposed service</exposed_service>
+<accessible_all_networks>Accessible for all networks</accessible_all_networks>
+<use_root_hints>Use root hints</use_root_hints>
+<use_root_hints_explain>Download and use the IANA root hints file for recursive resolution.[br]
+When disabled, the uses its built-in root server list</use_root_hints_explain>
+<doh_settings>DOH Settings</doh_settings>
+<http_max_streams>HTTP/2 max concurrent streams</http_max_streams>
+<listening_interfaces>Listening interfaces</listening_interfaces>
+<enable_access_control>Enable access control</enable_access_control>
+<disable_access_control>Disable access control</disable_access_control>
+<forward_zone_name>Forward zone name</forward_zone_name>
+<edit_forward_zone>Edit forward zone</edit_forward_zone>
+<suricata_rules_db_warn>No IDS rules have been downloaded or imported yet.[br]This section will become available after IDS rules are updated and successfully imported.</suricata_rules_db_warn>
+<APP_DNS_CACHE_NOT_INSTALLED>DNS cache service is not installed</APP_DNS_CACHE_NOT_INSTALLED>
+<APP_DNS_CACHE_HOTSPOT>To allow browsers to prompt users for authentication on the Hotspot system, you must install the DNS cache service.[br]This service intercepts DNS responses to signal the presence of an authentication portal to client browsers.[br]You must also configure the DHCP service to advertise the Hotspot proxy as the DNS server.</APP_DNS_CACHE_HOTSPOT>
+<benchmarks>Benchmarks</benchmarks>
+<samples>Samples</samples>
+<collector>Collector</collector>
+<collect_now>Collect now</collect_now>
+<peak>Peak</peak>
+<last_day>Last day</last_day>
+<last_quarter>Last quarter</las_quarter>
+<db_size>DB size</db_size>
+<tabs>Tabs</tabs>
+<drag_to_reorder>Drag to reorder</drag_to_reorder>
+<APP_PARENT_LB_EXPLAIN1>This section allows you to verify the full request path by connecting directly to the load balancer port.</APP_PARENT_LB_EXPLAIN1>
+<APP_PARENT_LB_EXPLAIN2>This section covers the health check settings used by the load balancer to monitor backend client nodes.</APP_PARENT_LB_EXPLAIN2>
+<verify_the_full_chain>Verify the full chain</verify_the_full_chain>
+<hacluster_deploy_explain>This section allows you to send a command through the Artica console to a remote node, instructing it to connect to this load balancer service.[br]To do so, ensure that the remote node’s Artica Web console is reachable from this HaCluster server.</hacluster_deploy_explain>
+<hacluster_deploy_explain2>This section allows a remote node to authenticate with this server and register automatically.[br]
+Using the web wizard or the Unix console, provide this authentication token to authorize the server registration.[br]
+This token is rotated every 24 hours.</hacluster_deploy_explain2>
+<connections>Connections</connections>
+<fortigate_use>Do you use FortiGate?</fortigate_use>
+<fortigate_use_tproxy>Use Artica Proxy alongside your FortiGate in transparent proxy mode to seamlessly intercept and control web traffic directly from your firewall.</fortigate_use_tproxy>
+<fortigate_use_tproxy2>This wizard will guide you through preparing your Artica server to receive web traffic from your firewall and forward it after processing.[br]
+It will also provide the required firewall rules to properly interconnect both components.</fortigate_use_tproxy2>
+<fortigate_use_tproxy3>Select the network interface that will receive web traffic from your firewall.[br]If your system has only one network interface, simply select the available one.</fortigate_use_tproxy3>
+<fortigate_use_tproxy4>Select the network interface that will be used to forward web traffic to the Internet (typically the one using your firewall as the outbound gateway).[br]If your system has only one network interface, simply select the available one.</fortigate_use_tproxy4>
+<fortigate_rules>Fortigate rules</fortigate_rules>
+<fortigate_subtitle1>Address definition: this example is intended for testing the redirection rule on a limited set of hosts. In production, use full network ranges such as 192.168.1.0 255.255.255.0.</fortigate_subtitle1>
+<fortigate_subtitle2>Create a group that aggregates the list of addresses to which the redirection rule will be applied.</fortigate_subtitle2>
+<fortigate_subtitle3>Use this group in your policy route and forward packets to the proxy by setting it as the gateway.</fortigate_subtitle3>
+<fortigate_subtitle4>Allow proxy loopback through firewall</fortigate_subtitle4>
+<fortigate_subtitle0>Allows asymmetric traffic flows and Prevents drops in proxy / policy-routing setups</fortigate_subtitle0>
+<fortigate_subtitle5>If Artica Proxy is deployed within the same network as client machines, this rule prevents routing loops by forcing traffic to use the actual gateway. Replace 10.10.1.254 with your Internet gateway.</fortigate_subtitle5>

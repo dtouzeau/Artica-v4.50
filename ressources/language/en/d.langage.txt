@@ -630,7 +630,7 @@ It is designed to fast categorization and other resources</APP_GO_SHIELD_CONNECT
 <use_binary_explain>Use binary_remote_addr for better performance vs string remote_addr[BR]If disable, it will use proxied X-Forwarded-For</use_binary_explain>
 <caution_parameters>[BR]Use this option with caution![BR]Default values covers must of the situations/environments.[BR]Use only for very high concurrency (>10k RPS) environments</caution_parameters>
 <arr_outlier_threshold>Outlier Threshold</arr_outlier_threshold>
-<arr_outlier_threshold_explain>Outlier Threshold controls how tolerant the load balancer is to slow servers.[BR]Is a "safety valve" that prevents one slow backend from poisoning your load-balancing decisions.[BR]Lower values→ more ruthless.[BR]Higher values → more forgiving</arr_outlier_threshold_explain>
+<arr_outlier_threshold_explain>Outlier Threshold controls how tolerant the load balancer is to slow servers.[BR]Is a [b]safety valve[/b] that prevents one slow backend from poisoning your load-balancing decisions.[BR]Lower values --> more ruthless.[BR]Higher values --> more forgiving</arr_outlier_threshold_explain>
 <ewma_alpha>EWMA Alpha</ewma_alpha>
 <ewma_alpha_explain>How fast the balancer reacts to changes[BR]Controls how quickly the balancer updates a server’s response time when new requests are seen.[BR]- Low values (0.1) = slow but stable[BR]- High values (0.5) = fast but more jumpy[BR]- Default (0.3) = balanced[BR]This prevents overreacting to small spikes while still responding to real slowdowns.</ewma_alpha_explain>
 <default_rt_ms>Default RT (ms)</default_rt_ms>
@@ -654,3 +654,9 @@ It is designed to fast categorization and other resources</APP_GO_SHIELD_CONNECT
 <load-balancer>Load-Balancer</load-balancer>
 <APP_HEALTH_CHECK_MONITOR>Health Check Monitor</APP_HEALTH_CHECK_MONITOR>
 <adaptivePerformanceTrackingTXT>[BR][B]Adaptive Performance Tracking is Enabled. Enable Consistent in order to get auto weight adjustments[B]</adaptivePerformanceTrackingTXT>
+<max_size_mb>Max Size (MB)</max_size_mb>
+<max_size_mb_desc>Maximum size in megabytes before log rotation.</max_size_mb_desc>
+<max_backups>Max Backups to Keep</max_backups>
+<max_backups_desc>Number of rotated log files to keep.</max_backups_desc>
+<max_age_days>Max Days to Keep</max_age_days>
+<max_age_days_desc>Days to retain rotated log files.</max_age_days_desc>

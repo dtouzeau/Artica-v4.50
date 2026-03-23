@@ -2449,14 +2449,19 @@ function EXPLAIN_LIST_OBJECTS($ID,$dir,$color){
             continue;
         }
 
-
-		$ligne2=$q->mysqli_fetch_array("SELECT COUNT(ID) as tcount FROM webfilters_sqitems WHERE gpid='$ID'");
+        $main=$tpl->table_object($ID);
+        if(isset($main["ITEMS"])){
+            $items=FormatNumber($main["ITEMS"]);
+            $GPS[]="<strong style='color:$color'>$text_is&nbsp;$js_group_final ( $items {elements} )</strong>";
+            continue;
+        }
+        $ligne2=$q->mysqli_fetch_array("SELECT COUNT(ID) as tcount FROM webfilters_sqitems WHERE gpid='$ID'");
 		$items=FormatNumber($ligne2["tcount"]);
-		$GPS[]="<strong style='color:$color'>{$text_is}&nbsp;$js_group_final ( $items {elements} )</strong>";
+		$GPS[]="<strong style='color:$color'>$text_is&nbsp;$js_group_final ( $items {elements} )</strong>";
 
 	}
 	if(count($GPS)==0){return null;}
-	return @implode("<br> {or} ", $GPS);"<br>";
+	return @implode("<br> {or} ", $GPS);
 }
 
 function LoadTrustedNetworks():array{

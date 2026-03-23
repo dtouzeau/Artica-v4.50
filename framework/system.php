@@ -575,16 +575,7 @@ function meminfo(){
 	echo "<articadatascgi>". base64_encode(serialize($array))."</articadatascgi>";
 }
 
-function HugePages(){
-	
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php=$unix->LOCATE_PHP5_BIN();
-	$cmd=trim("$nohup $php /usr/share/artica-postfix/exec.HugePages.php >/dev/null 2>&1 &");
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	
-}
+
 function zone_info_set(){
     $unix       = new unix();
     $nohup      = $unix->find_program("nohup");

@@ -390,17 +390,10 @@ public function relayhost(){
 	}
 		
 	private function smtpd_end_of_data_restrictions(){
-		$users=new usersMenus();
 		$sock=new sockets();
-		$EnableArticaPolicyFilter=$sock->GET_INFO("EnableArticaPolicyFilter");
 		$EnableArticaPolicyFilter=0;
-		$EnableCluebringer=$sock->GET_INFO("EnableCluebringer");
 		$smtpd_end_of_data_restrictions=array();
-		
-		$array_filters=unserialize(base64_decode($this->GET_BIGDATA("PluginsEnabled")));
 
-		
-		
 		if($EnableArticaPolicyFilter==1){
 			$smtpd_end_of_data_restrictions[]="check_policy_service inet:127.0.0.1:54423";
 		}

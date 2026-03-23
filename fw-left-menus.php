@@ -426,6 +426,13 @@ function xgen(){
                 array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.openvswitch.php", "ICO" => "fas fa-bezier-curve", "TEXT" => "{virtual_switch}"));
         }
 
+        $EnableNamespaces=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNamespaces"));
+            if($EnableNamespaces==1){
+                $f[]=$tpl->LeftMenu(
+                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.namespaces.php",
+                        "ICO"=>"fas fa-layer-group","TEXT"=>"{network_namespaces}"));
+            }
+
 
         if($isFireWall==0) {
             if($users->AsFirewallManager) {

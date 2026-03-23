@@ -22,6 +22,8 @@ if(isset($_GET["upgrade-single-js"])){upgrade_single_js();exit;}
 if(isset($_POST["upgrade-single"])){upgrade_single();exit;}
 if(isset($_GET["upgrade-all-js"])){upgrade_all_js();exit;}
 if(isset($_POST["upgrade-all"])){upgrade_all();exit;}
+if(isset($_GET["dist-upgrade-js"])){dist_upgrade_js();exit;}
+if(isset($_POST["dist-upgrade"])){dist_upgrade();exit;}
 if(isset($_GET["refresh-js"])){refresh_js();exit;}
 if(isset($_POST["refresh-fetch"])){refresh_fetch();exit;}
 if(isset($_GET["apt-update-js"])){apt_update_js();exit;}
@@ -81,17 +83,22 @@ function top_buttons():bool{
     if(isset($json->Status)&&!$json->Status){ return false; }
 
     $totalUpgradable=0;
+    $anyDistUpgradeRequired=false;
     foreach(($json->agents??[]) as $agent){
         $totalUpgradable+=intval($agent->upgradable_count??0);
+        if(!empty($agent->dist_upgrade_required)) $anyDistUpgradeRequired=true;
     }
 
     $topbuttons=[];
+    if($anyDistUpgradeRequired){
+        $topbuttons[]=["Loadjs('$page?dist-upgrade-js=yes&gpid=$gpid&function=$function');","fas fa-level-up-alt","{dist_upgrade}"];
+    }
     if($totalUpgradable>0){
         $topbuttons[]=["Loadjs('$page?upgrade-all-js=yes&gpid=$gpid&function=$function');","fas fa-arrow-circle-up","{upgrade_all}"];
     }
     $topbuttons[]=['$(".pkg-checkbox").prop("checked",true);',"fas fa-check-square","{select_all}"];
     $topbuttons[]=['$(".pkg-checkbox").prop("checked",false);',"fas fa-square","{unselect_all}"];
-    $topbuttons[]=["Loadjs('$page?apt-update-js=yes&gpid=$gpid&function=$function');","fas fa-sync-alt","apt-get update"];
+    $topbuttons[]=["Loadjs('$page?apt-update-js=yes&gpid=$gpid&function=$function');","fas fa-sync-alt","{apt-get-update}"];
     $topbuttons[]=["Loadjs('$page?refresh-js=yes&gpid=$gpid&function=$function');",ico_refresh,"{refresh}"];
     echo $tpl->_ENGINE_parse_body($tpl->table_buttons($topbuttons));
     return true;
@@ -233,6 +240,54 @@ function table():bool{
     return true;
 }
 
+// ==================== Dist-Upgrade (group-wide) ====================
+
+function dist_upgrade_js():void{
+    header("content-type: application/x-javascript");
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $gpid=gpid();
+    $function=$_GET["function"]??"";
+    $title=$tpl->javascript_parse_text("{dist_upgrade}");
+    $confirm=$tpl->javascript_parse_text("{confirm_dist_upgrade}");
+
+    $js=[];
+    $js[]="swal({";
+    $js[]="    title:'$title',";
+    $js[]="    text:'$confirm',";
+    $js[]="    type:'warning',";
+    $js[]="    showCancelButton:true,";
+    $js[]="    confirmButtonColor:'#ed5565',";
+    $js[]="    confirmButtonText:'$title'";
+    $js[]="},function(isConfirm){";
+    $js[]="    if(!isConfirm)return;";
+    $js[]="    \$('#pkg-result-$gpid').html('<div class=\"alert alert-info\"><i class=\"fas fa-spinner fa-spin\"></i> {dist_upgrade}...</div>');";
+    $js[]="    \$.post('$page',{";
+    $js[]="        'dist-upgrade':'yes',";
+    $js[]="        'gpid':'$gpid'";
+    $js[]="    },function(data){eval(data);});";
+    $js[]="});";
+    echo $tpl->_ENGINE_parse_body(implode("\n",$js));
+}
+
+function dist_upgrade():void{
+    header("content-type: application/x-javascript");
+    $tpl=new template_admin();
+    $gpid=gpid();
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/netagents/packages/dist-upgrade/group/$gpid",[]));
+
+    if(isset($json->Status)&&!$json->Status){
+        $err=addslashes($json->Error??"{error}");
+        echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-danger\"><i class=\"fas fa-times-circle\"></i> $err</div>';";
+        return;
+    }
+    $triggered=intval($json->triggered??0);
+    $msg=isset($json->message)?addslashes($json->message):"{success}";
+    echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $msg</div>';";
+    admin_tracks("Meta: group $gpid dist-upgrade triggered on $triggered agents");
+}
+
 // ==================== Upgrade Single Package (group-wide) ====================
 
 function upgrade_single_js():void{
@@ -366,7 +421,7 @@ function apt_update_js():void{
     $gpid=gpid();
     $title=addslashes($tpl->javascript_parse_text("apt-get update"));
     $confirm=addslashes($tpl->javascript_parse_text("{confirm}"));
-
+    $aptgetupdate=$tpl->javascript_parse_text("{apt-get-update}");
     $js=[];
     $js[]="swal({";
     $js[]="    title:'$title',";
@@ -377,7 +432,7 @@ function apt_update_js():void{
     $js[]="    confirmButtonText:'$title'";
     $js[]="},function(isConfirm){";
     $js[]="    if(!isConfirm)return;";
-    $js[]="    \$('#pkg-result-$gpid').html('<div class=\"alert alert-info\"><i class=\"fas fa-spinner fa-spin\"></i> apt-get update...</div>');";
+    $js[]="    \$('#pkg-result-$gpid').html('<div class=\"alert alert-info\"><i class=\"fas fa-spinner fa-spin\"></i> $aptgetupdate...</div>');";
     $js[]="    \$.post('$page',{";
     $js[]="        'apt-update':'yes',";
     $js[]="        'gpid':'$gpid'";

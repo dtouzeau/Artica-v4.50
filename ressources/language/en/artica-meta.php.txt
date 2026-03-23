@@ -195,7 +195,7 @@ Indicate here credentials.[br]If you forget them, the only way to get them back 
 <SuperAdmin>Super-Admin</SuperAdmin>
 <password2>Re-type password</password2>
 <open_ports>Open ports</open_ports>
-<artica_meta_openports>List open ports and listening services on your servers inside your network, it can helps you to monitor or to secure your server by referencing all open ports</artica_meta_openports>
+<artica_meta_openports>List open ports and listening services across your servers within the network.[br]This helps you monitor exposure and strengthen security by maintaining a complete inventory of all open ports.</artica_meta_openports>
 <all_servers>all servers</all_servers>
 <affect_to_a_virtual_group>Affect to a virtual group</affect_to_a_virtual_group>
 <affect_to_group_explain>This form helps you to store this computer to an Artica Meta virtual group in order to retreive it easly and to manage this server through a group</affect_to_group_explain>

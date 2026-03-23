@@ -8,6 +8,12 @@ include_once(dirname(__FILE__) . "/ressources/class.logfile_daemon.inc");
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["tabs"])){tabs();exit;}
+if(isset($_GET["tooltip-js"])){tooltip_js();exit;}
+if(isset($_GET["tooltip1-js"])){tooltip1_js();exit;}
+if(isset($_GET["tooltip-popup"])){tooltip_popup();exit;}
+if(isset($_GET["tooltip-popup2"])){tooltip_popup2();exit;}
+if(isset($_GET["tooltip2-js"])){tooltip2_js();exit;}
+if(isset($_POST["tooltip2"])){tooltip2_exec();exit;}
 
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["table1"])){table1();exit;}
@@ -53,6 +59,17 @@ function status(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $sock=new sockets();
+
+    $q=new lib_sqlite("/home/artica/SQLITE/aaa.db");
+    $agents = $q->COUNT_ROWS("aaa_agents");
+
+    if($agents==0){
+        $final=$tpl->widget_grey("{ARTICA_AAA_AUTH_AGENT}","{no_connector}",ico_list);
+        echo $tpl->_ENGINE_parse_body($final);
+        return;
+    }
+
+
     $json=json_decode($sock->REST_API("/aaa/auth/status"));
     $bsini=new Bs_IniHandler();
     $bsini->loadString($json->Info);
@@ -73,12 +90,11 @@ function edit_agent_js()
     $tpl=new template_admin();
     $id=$_GET["edit-agent-js"];
     $name=$_GET["agent-name"];
-    $title=$tpl->_ENGINE_parse_body("{edit} {agent} $name");
+    $title=$tpl->_ENGINE_parse_body("{edit} {aaa_agent} $name");
     $tpl->js_dialog2($title, "$page?edit-agent-section=$id");
 }
 
-function edit_agent_popup()
-{
+function edit_agent_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $security="AsSquidAdministrator";
@@ -91,14 +107,10 @@ function edit_agent_popup()
     $form[]=$tpl->field_text("aaa_agent_ip","{ip} / {hostname}","{$agentData['aaa_agent_ip']}",true);
     $form[]=$tpl->field_numeric("aaa_agent_port","gRPC {port}","{$agentData['aaa_agent_port']}");
     $form[]=$tpl->field_numeric("aaa_agent_api_port","API {port}","{$agentData['aaa_agent_api_port']}");
-
     $form[]=$tpl->field_numeric("aaa_agent_priority","{priority}","{$agentData['aaa_agent_priority']}");
     $form[]=$tpl->field_numeric("aaa_agent_weight","{weight}","{$agentData['aaa_agent_weight']}");
-
     $form[]=$tpl->field_checkbox("aaa_agent_failover","{failover}","{$agentData['aaa_agent_failover']}");
-
-
-
+    $form[]=$tpl->field_interfaces("aaa_bind_interface","{outgoing_interface}","{$agentData['aaa_bind_interface']}");
     $html[]=$tpl->form_outside(null, @implode("\n", $form),null,"{save}",
         "LoadAjaxSilent('artica-agent-agents-section','$page?save-params=yes');dialogInstance2.close();LoadAjax('artica-agent-agents-section','$page?agents-start=yes');",$security);
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
@@ -107,7 +119,7 @@ function edit_agent_popup()
 function new_agent_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $title=$tpl->_ENGINE_parse_body("{new} {agent}");
+    $title=$tpl->_ENGINE_parse_body("{create_a_connection}");
     $tpl->js_dialog2($title, "$page?new-agent-section=true");
 }
 
@@ -125,7 +137,7 @@ function new_agent_section(){
     $form[]=$tpl->field_numeric("aaa_agent_weight","{weight}","1");
 
     $form[]=$tpl->field_checkbox("aaa_agent_failover","{failover}","0");
-
+    $form[]=$tpl->field_interfaces("aaa_bind_interface","{outgoing_interface}","");
 
 
     $html[]=$tpl->form_outside(null, @implode("\n", $form),null,"{save}",
@@ -147,7 +159,7 @@ function save_agent(){
     $tpl->CLEAN_POST();
 
     if (empty($_POST['aaa_agent_name'])) {
-        echo "jserror:Agent name cannot be empty.";
+        echo "jserror:Agent certificate cannot be empty.";
         return;
     }
 
@@ -167,7 +179,7 @@ function save_agent(){
     // Escape text fields (IMPORTANT)
     $name = $q->sqlite_escape_string2($_POST['aaa_agent_name']);
     $ip   = sqlite_escape_string2($_POST['aaa_agent_ip']);
-
+    $bindInterface   = sqlite_escape_string2($_POST['aaa_bind_interface']);
     // =============================
     // DUPLICATE CHECK (optimized)
     // =============================
@@ -197,7 +209,8 @@ function save_agent(){
                     aaa_agent_api_port,
                     aaa_agent_priority,
                     aaa_agent_weight,
-                    aaa_agent_failover
+                    aaa_agent_failover,
+                    aaa_bind_interface
                 ) VALUES (
                     '$name',
                     '$ip',
@@ -205,7 +218,8 @@ function save_agent(){
                     {$_POST['aaa_agent_api_port']},
                     {$_POST['aaa_agent_priority']},
                     {$_POST['aaa_agent_weight']},
-                    {$_POST['aaa_agent_failover']}
+                    {$_POST['aaa_agent_failover']},
+                    '$bindInterface'
                 )";
 
         $q->QUERY_SQL($sql);
@@ -223,7 +237,8 @@ function save_agent(){
                     aaa_agent_api_port={$_POST['aaa_agent_api_port']},
                     aaa_agent_priority={$_POST['aaa_agent_priority']},
                     aaa_agent_weight={$_POST['aaa_agent_weight']},
-                    aaa_agent_failover={$_POST['aaa_agent_failover']}
+                    aaa_agent_failover={$_POST['aaa_agent_failover']},
+                    aaa_bind_interface='$bindInterface'
                 WHERE id=$agentId";
 
         $q->QUERY_SQL($sql);
@@ -240,7 +255,7 @@ function delete_agent_js(){
     $agentID = $_GET["remove-agent-js"];
     $agentName = $_GET["agent-name"];
     $jsrestart = "LoadAjaxSilent('artica-agent-agents-section','$page?agents-start=yes');";
-    $tpl->js_confirm_delete("$agentName", "delete-agent-confirm", $agentID, $jsrestart);
+    $tpl->js_confirm_delete("$agentName", "delete-agent-confirm", $agentID.'|'.$agentName, $jsrestart);
 }
 
 function delete_agent_popup():bool{
@@ -248,7 +263,9 @@ function delete_agent_popup():bool{
     // Clean input
     $tpl->CLEAN_POST();
     // Generate unique ID
-    $id = (int)($_POST["delete-agent-confirm"] ?? 0);
+    $data = explode("|", $_POST["delete-agent-confirm"]);
+    $name = $data[1];
+    $id = (int)($data[0] ?? 0);
     if ($id <= 0) {
         echo "jserror:Invalid ID";
         return false;
@@ -260,7 +277,7 @@ function delete_agent_popup():bool{
         echo $tpl->post_error($q->mysql_error);
         return false;
     }
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/aaa/delete/cert/$id");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/aaa/delete/cert/$name");
     return true;
 
 }
@@ -307,13 +324,15 @@ function td_destinations():bool{
     $page=CurrentPageName();
     $idDiv1="rcolor1-$ID";
     $idDiv4="rcolor4-$ID";
-    $label="<span class='label label-danger'>{failed_to_connect}</span>";
+    $label="<span class='label label-danger' style='font-size:18px'>{failed_to_connect}</span>";
+    $icocl="$('#ico-sensor-$ID').addClass('text-danger')";
     $status="";
     $backends=extract_backends($ID);
 
     if($backends["Status"]){
         if($backends["Info"]["healthy"]){
-            $label="<span class='label label-success'>{running}</span>";
+            $icocl="$('#ico-sensor-$ID').addClass('text-navy')";
+            $label="<span class='label label-success' style='font-size:18px'>{running}</span>";
             $uptime=seconds_to_human($backends["Info"]["uptime_seconds"]);
             $status="<b>{hostname}:</b> {$backends["Info"]["hostname"]}<br><b>{version}:</b> {$backends["Info"]["version"]}<br><b>{aaa_total_auth_requests}:</b> {$backends["Info"]["total_auth_requests"]}<br><b>{aaa_total_group_requests}:</b> {$backends["Info"]["total_group_requests"]}<br><b>{uptime}:</b> $uptime<br>";
         } else {;
@@ -324,7 +343,9 @@ function td_destinations():bool{
     }
     $label=base64_encode($tpl->_ENGINE_parse_body($label));
     $status=base64_encode($tpl->_ENGINE_parse_body($status));
-    //OUT
+    $f[]="$('#ico-sensor-$ID').removeClass('text-danger');";
+    $f[]=$icocl;
+
     $f[]="if( document.getElementById('$idDiv1') ){";
     $f[]="\ttempdata=base64_decode('$label');";
     $f[]="\tdocument.getElementById('$idDiv1').innerHTML=tempdata;";
@@ -387,27 +408,21 @@ function extract_backends($id): array
 
     return is_array($json) ? $json : [];
 }
-function agents_section_js()
-{
+function agents_section_js(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $tpl->CLUSTER_CLI=True;
     $TRCLASS=null;
     $function=$_GET["function"];
-    $btn_refresh=$tpl->button_label_table("{refresh}", "LoadAjaxSilent('artica-agent-agents-section','$page?agents-start=yes');", "fal fa-sync-alt","AllowAddGroup");
 
-    $html[] = "<p></p><div class=\"btn-group\" data-toggle=\"buttons\">";
-    $html[] = "<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?new-agent-js=true');\">";
-    $html[] = "<i class='fa fa-plus'></i> {new} {aaa_agent}</label>$btn_refresh";
 
 
     $html[] = "</div></p>";
-    $html[]="<table id='table-aaa-agents' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<table id='table-aaa-agents' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=false class='text-capitalize' data-type='text' style='width:1%'>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{aaa_agent}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{ip} / {hostname}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' colspan='2'>{aaa_agent}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
     $html[]="<th data-sortable=false class='text-capitalize' data-type='text' style='width:1%' nowrap>{settings}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
@@ -417,6 +432,7 @@ function agents_section_js()
     if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
     $q=new lib_sqlite("/home/artica/SQLITE/aaa.db");
     $agents = $q->QUERY_SQL("SELECT * FROM aaa_agents");
+    $cc=ico_sensor;
     foreach ($agents as $index=>$ligne){
         $id=$ligne['ID'];
         $md="AAA$id";
@@ -431,9 +447,10 @@ function agents_section_js()
         $pleasewait="<i class=\"fas fa-sync fa-spin\" style='width:35%' ></i>&nbsp;{analyze}...</span>";
         $js="Loadjs('$page?edit-agent-js=$id&agent-name=$agent');";
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td $row1prc id='rcolor1-$id'>$pleasewait</td>";
-        $html[]="<td >". $tpl->td_href($agent,"{click_to_edit}",$js)."</td>";
-        $html[]="<td >". $tpl->td_href($address,"{click_to_edit}",$js)."</td>";
+        $html[]="<td style='width:1%;font-size:18px' id='rcolor1-$id' nowrap>$pleasewait</td>";
+        $html[]="<td style='width:1%;font-size:18px;padding-left: 10px' nowrap><i id='ico-sensor-$id' class='$cc fa-2x'></i></td>";
+        $html[]="<td style=''><span style='font-size:20px'>". $tpl->td_href($agent,"{click_to_edit}",$js)."</span>
+            <div style='margin-left:33px'><i style='font-size:16px'>$address</i></td>";
         $html[] = "<td id='rcolor4-$id'>$pleasewait</span>";
 
         $html[] = "<td $row1prc>$setting</span>";
@@ -453,13 +470,37 @@ function agents_section_js()
     $html[]="</table>";
 
 
-    $html[]="<script>";
 
+
+    $jsRestart=$tpl->framework_buildjs("/aaa/build",
+        "ArticaAuthenticationAgent.progress","ArticaAuthenticationAgent.log",
+        "progress-articaauth-restart");
+
+    $users=new usersMenus();
+    $topbuttons=array();
+    $topbuttons[] = array("Loadjs('$page?new-agent-js=true');",ico_plus, "{create_a_connection}");
+
+
+    if($users->AsSystemAdministrator) {
+        $topbuttons[] = array($jsRestart, ico_ok, "{reconfigure}");
+    }
+
+    $topbuttons[] = array("Loadjs('$page?tooltip-js=yes');",ico_support, "{configuration_wizard}");
+    $topbuttons[] = array("LoadAjaxSilent('artica-agent-agents-section','$page?agents-start=yes');","fal fa-sync-alt", "{refresh}");
+
+    $TINY_ARRAY["TITLE"]="{artica_auth_agent}";
+    $TINY_ARRAY["ICO"]="fas fa-cogs";
+    $TINY_ARRAY["EXPL"]="{feature_artica_auth_agent_explain}";
+    $TINY_ARRAY["URL"]="artica-authentication-agent";
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
+    $html[]="<script>";
+    $html[]="NoSpinner();";
+    $html[]= @implode("\n",$tpl->ICON_SCRIPTS);
     $html[]=sprintf("Loadjs('$page?destinations-prepare=%s&function=$function')",base64_encode(serialize($DestinationsPrepare)));
-    $html[]="
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-aaa-agents').footable({ \"filtering\": { \"enabled\": true },\"sorting\": {\"enabled\": true } } ) });
-	</script>";
+    $html[]=$jstiny;
+    $html[]="</script>";
 
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     return true;
@@ -507,8 +548,8 @@ function table(){
     if($users->AsSystemAdministrator) {
         $topbuttons[] = array($jsRestart, ico_ok, "{reconfigure}");
     }
-    $s_PopUp="s_PopUp('https://wiki.articatech.com/en/proxy-service/authentication/artica-authentication-agent','1024','800')";
-    $topbuttons[] = array($s_PopUp,ico_support, "{help}");
+    $s_PopUp="Loadjs('$page?tooltip-js=yes');";
+    $topbuttons[] = array($s_PopUp,ico_support, "{configuration_wizard}");
 
 
 
@@ -535,10 +576,34 @@ function table1():bool{
     $tpl=new template_admin();
     $tpl->CLUSTER_CLI=True;
     $q=new lib_sqlite("/home/artica/SQLITE/aaa.db");
-    $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS aaa_settings ( ID INTEGER PRIMARY KEY AUTOINCREMENT,aaa_auth_mode TEXT NULL DEFAULT 'Negotiate', aaa_health_check_mode TEXT NOT NULL DEFAULT 'single', aaa_health_check_enable INTEGER NOT NULL DEFAULT 0, aaa_health_check_interval INTEGER NOT NULL DEFAULT 1, aaa_health_check_timeout INTEGER NOT NULL DEFAULT 1, aaa_health_check_failure_threshold INTEGER NOT NULL DEFAULT 1, aaa_health_check_success_threshold INTEGER NOT NULL DEFAULT 2, aaa_timeout INTEGER NOT NULL DEFAULT 1, aaa_emergency_mode INTEGER NOT NULL DEFAULT 0, aaa_emergency_timeout INTEGER NOT NULL DEFAULT 1, aaa_cache_enable INTEGER NOT NULL DEFAULT 0, aaa_cache_auth_ttl INTEGER NOT NULL DEFAULT 5, aaa_cache_groups_ttl INTEGER NOT NULL DEFAULT 15, aaa_cache_negative_ttl INTEGER NOT NULL DEFAULT 60, aaa_workers INTEGER NOT NULL DEFAULT 32,aaa_log_level TEXT NULL DEFAULT 'info', aaa_fallback_basic_auth INTEGER NOT NULL DEFAULT 0)");
+    $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS aaa_settings ( ID INTEGER PRIMARY KEY AUTOINCREMENT,aaa_auth_mode TEXT NULL DEFAULT 'Negotiate', aaa_health_check_mode TEXT NOT NULL DEFAULT 'single', aaa_health_check_enable INTEGER NOT NULL DEFAULT 0, aaa_health_check_interval INTEGER NOT NULL DEFAULT 1, aaa_health_check_timeout INTEGER NOT NULL DEFAULT 1, aaa_health_check_failure_threshold INTEGER NOT NULL DEFAULT 1, aaa_health_check_success_threshold INTEGER NOT NULL DEFAULT 2, aaa_timeout INTEGER NOT NULL DEFAULT 1, aaa_emergency_mode INTEGER NOT NULL DEFAULT 0, aaa_emergency_timeout INTEGER NOT NULL DEFAULT 1, aaa_cache_enable INTEGER NOT NULL DEFAULT 0, aaa_cache_auth_ttl INTEGER NOT NULL DEFAULT 5, aaa_cache_groups_ttl INTEGER NOT NULL DEFAULT 15, aaa_cache_negative_ttl INTEGER NOT NULL DEFAULT 60, aaa_workers INTEGER NOT NULL DEFAULT 32,aaa_log_level TEXT NULL DEFAULT 'info', aaa_fallback_basic_auth INTEGER NOT NULL DEFAULT 0,aaa_max_size_mb INTEGER NOT NULL DEFAULT 100, aaa_max_backups INTEGER NOT NULL DEFAULT 3,aaa_max_age_days INTEGER NOT NULL DEFAULT 30)");
 
-    $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS aaa_agents ( ID INTEGER PRIMARY KEY AUTOINCREMENT, aaa_agent_name TEXT NULL, aaa_agent_ip TEXT NOT NULL, aaa_agent_port INTEGER NOT NULL, aaa_agent_api_port INTEGER NOT NULL, aaa_agent_priority INTEGER NOT NULL, aaa_agent_weight INTEGER NOT NULL, aaa_agent_failover INTEGER NOT NULL
-        )");
+    $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS aaa_agents ( ID INTEGER PRIMARY KEY AUTOINCREMENT, aaa_agent_name TEXT NULL, aaa_agent_ip TEXT NOT NULL, aaa_agent_port INTEGER NOT NULL, aaa_agent_api_port INTEGER NOT NULL, aaa_agent_priority INTEGER NOT NULL, aaa_agent_weight INTEGER NOT NULL, aaa_agent_failover INTEGER NOT NULL,aaa_bind_interface TEXT)");
+
+    if(!$q->FIELD_EXISTS("aaa_settings","aaa_max_size_mb")){
+        $q->QUERY_SQL("ALTER TABLE aaa_settings ADD COLUMN aaa_max_size_mb INTEGER NOT NULL DEFAULT 100");
+        if(!$q->ok){
+            echo $q->mysql_error;
+        }
+    }
+    if(!$q->FIELD_EXISTS("aaa_settings","aaa_max_backups")){
+        $q->QUERY_SQL("ALTER TABLE aaa_settings ADD COLUMN aaa_max_backups INTEGER NOT NULL DEFAULT 3");
+        if(!$q->ok){
+            echo $q->mysql_error;
+        }
+    }
+    if(!$q->FIELD_EXISTS("aaa_settings","aaa_max_age_days")){
+        $q->QUERY_SQL("ALTER TABLE aaa_settings ADD COLUMN aaa_max_age_days INTEGER NOT NULL DEFAULT 30");
+        if(!$q->ok){
+            echo $q->mysql_error;
+        }
+    }
+    if(!$q->FIELD_EXISTS("aaa_agents","aaa_bind_interface")){
+        $q->QUERY_SQL("ALTER TABLE aaa_agents ADD COLUMN aaa_bind_interface TEXT");
+        if(!$q->ok){
+            echo $q->mysql_error;
+        }
+    }
     $ligne = $q->mysqli_fetch_array("SELECT * FROM aaa_settings");
 
     $auth_mode=trim($ligne["aaa_auth_mode"]);
@@ -571,14 +636,16 @@ function table1():bool{
     $logLevels["error"]="error";
     $health_check_modes=array();
     $health_check_modes["failover"]="failover";
-    $health_check_modes["failover-start"]="load-balance";
+    $health_check_modes["load-balance"]="load-balance";
     $auth_modes=array();
     $auth_modes["Negotiate"]="Negotiate";
     $auth_modes["NTLM"]="NTLM";
     $auth_modes["Basic"]="Basic";
 
     $aaa_fallback_basic_auth=intval($ligne["aaa_fallback_basic_auth"]);
-
+    $max_size_mb=intval($ligne["max_size_mb"])?: 100;
+    $max_backups=intval($ligne["max_backups"])?: 3;
+    $max_age_days=intval($ligne["max_age_days"])?: 30;
     //Global Settings
     $tpl->table_form_field_js("Loadjs('$page?global-js=yes')");
     $tpl->table_form_section("{settings}");
@@ -614,9 +681,9 @@ function table1():bool{
     $tpl->table_form_field_js("Loadjs('$page?logging-js=yes')");
     $tpl->table_form_section("{logging}");
     $tpl->table_form_field_text("{level}",$log_level,ico_logsink);
-
-
-
+    $tpl->table_form_field_text("{max_size_mb}",$max_size_mb,ico_logsink);
+    $tpl->table_form_field_text("{max_backups}",$max_backups,ico_logsink);
+    $tpl->table_form_field_text("{max_age_days}",$max_age_days,ico_logsink);
 
     $html[]=$tpl->table_form_compile();
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
@@ -629,7 +696,6 @@ function section_global_js():bool{
     $tpl->js_dialog("{settings}","$page?section-global-popup=yes");
     return true;
 }
-
 function section_global_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -653,7 +719,7 @@ function section_global_popup():bool{
     $health_check_modes=array();
     $health_check_modes["single"]="single";
     $health_check_modes["failover"]="failover";
-    $health_check_modes["failover-start"]="load-balance";
+    $health_check_modes["load-balance"]="load-balance";
     $form[]=$tpl->field_section("{settings}");
     $form[]=$tpl->field_array_select($auth_modes,"aaa_auth_mode","{authentication} {mode}",$auth_modes["$auth_mode"]);
     $form[]=$tpl->field_array_hash($health_check_modes,"aaa_health_check_mode","nonull:{distribution} {mode}",$health_check_modes["$health_check_mode"],false,"{aaa_distribution_desc}");
@@ -701,8 +767,6 @@ function section_healthcheck_popup():bool{
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     return true;
 }
-
-
 function section_emergency_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -748,7 +812,6 @@ function section_cache_popup():bool{
     $cache_negative_ttl=intval($ligne["aaa_cache_negative_ttl"])?: 60;
     $form[]=$tpl->field_section("{cache}","{aaa_cache_section}");
     $form[]=$tpl->field_checkbox("aaa_cache_enable","{enable}",$cache_enable,"aaa_cache_auth_ttl,aaa_cache_groups_ttl,aaa_cache_negative_ttl");
-
     $form[]=$tpl->field_numeric("aaa_cache_auth_ttl","{aaa_cache_auth_ttl}",$cache_auth_ttl,"{aaa_cache_auth_ttl_desc}");
     $form[]=$tpl->field_numeric("aaa_cache_groups_ttl","{aaa_cache_groups_ttl}",$cache_groups_ttl,"{aaa_cache_groups_ttl_desc}");
     $form[]=$tpl->field_numeric("aaa_cache_negative_ttl","{aaa_cache_negative_ttl}",$cache_negative_ttl,"{aaa_cache_negative_ttl_desc}");
@@ -757,7 +820,122 @@ function section_cache_popup():bool{
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     return true;
 }
+function tooltip_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $tpl->js_dialog12("{artica_auth_agent}","$page?tooltip-popup=yes",900);
+    return true;
+}
+function tooltip1_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $tpl->js_dialog12("{artica_auth_agent} {activate_the_feature}","$page?tooltip-popup2=yes",900);
+    return true;
+}
+function tooltip_popup():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $f[]="<p style='font-size:18px;margin-bottom: 35px;border:2px solid #C5C5C5;border-radius: 5px;padding:5px;background-color: #fdfcfc'>{feature_artica_auth_agent_explain}</p>";
+    $f[]="<div class='center' style='margin-bottom: 35px'><img src='img/aaa.png'></div>";
+    $f[]="<table style='width:100%'>";
+    $f[]="<tr>";
+    $w=270;
+    $btn1=$tpl->button_autnonome("{i_am_not_interested}","Loadjs('fw.icon.top.php?SetToken=HideAAAuthIco');dialogInstance12.close();LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');",ico_exit,null,$w,"btn-danger",$w);
+    $btn2=$tpl->button_autnonome("WIKI","s_PopUp('https://wiki.articatech.com/en/proxy-service/authentication/artica-authentication-agent','1024','800')",ico_support,null,$w,"btn-warning",$w);
+    $btn3=$tpl->button_autnonome("{activate_the_feature}","Loadjs('$page?tooltip1-js=yes')",ico_check_double,null,$w,"btn-primary",$w);
+    $f[]="<td style='width:33%'>$btn1</td>";
+    $f[]="<td style='width:33%'>$btn2</td>";
+    $f[]="<td style='width:33%'>$btn3</td>";
+    $f[]="</tr>";
+    $f[]="</table>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n", $f));
+    return true;
+}
+function tooltip_popup2(){
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $wikipref="https://wiki.articatech.com/en/proxy-service/authentication";
+    $s="18";
+    $tr="style='height:100px'";
+    $pp=";padding-left:20px";
+    $f[]="<p style='font-size:18px;margin-bottom: 35px;border:2px solid #C5C5C5;border-radius: 5px;padding:5px;background-color: #fdfcfc'>{aaa_step1}</p>";
+    $f[]="<table style='width:100%'>";
+    $f[]="<tr $tr>";
+    $f[]="<td style='width:1%' nowrap><i class='fa-solid fa-1 fa-3x'></i></td>";
+    $f[]="<td style='width:99%$pp'><p style='font-size:{$s}px'>{download_the_windows_client}</p></td>";
+    $btn1=$tpl->button_autnonome("artica-agent-setup.exe","document.location.href='https://artica-ad-agent.b-cdn.net/artica-agent-setup.exe'",ico_download,null,0,"btn-primary",0);
+    $f[]="<td style='width:1%'>$btn1</td>";
+    $f[]="</tr>";
+    $f[]="<tr $tr>";
+    $f[]="<td style='width:1%' nowrap><i class='fa-solid fa-2 fa-3x'></i></td>";
 
+
+    $f[]="<td style='width:99%$pp'><p style='font-size:{$s}px'>{install_the_windows_client}<p style='font-size: 12px;
+    margin-top: -11px;
+    margin-left: 6px;
+    margin-right: 10px;'>(". $tpl->td_href("{aaa_step11}","{see_doc}","s_PopUp('https://wiki.articatech.com/en/proxy-service/authentication/artica-authentication-sa','1024','800')").")</></p></td>";
+    $btn1=$tpl->button_autnonome("{see_doc}","s_PopUp('$wikipref/artica-authentication-agent-windows-install','1024','800')",ico_support,null,0,"btn-primary",0);
+    $f[]="<td style='width:1%'>$btn1</td>";
+    $f[]="</tr>";
+    $f[]="<tr $tr>";
+    $f[]="<td style='width:1%' nowrap><i class='fa-solid fa-3 fa-3x'></i></td>";
+    $f[]="<td style='width:99%$pp'><p style='font-size:{$s}px'>{aaa_step3}</p></td>";
+    $uri="$wikipref/artica-authentication-agent-windows-install";
+    $btn1=$tpl->button_autnonome("{see_doc}","s_PopUp('$uri','1024','800')",ico_support,null,0,"btn-primary",0);
+    $f[]="<td style='width:1%'>$btn1</td>";
+    $f[]="</tr>";
+
+    $f[]="<tr $tr>";
+    $f[]="<td style='width:1%' nowrap><i class='fa-solid fa-4 fa-3x'></i></td>";
+    $f[]="<td style='width:99%$pp'><p style='font-size:{$s}px'>{aaa_step4}</p></td>";
+    $btn1=$tpl->button_autnonome("{see_doc}","s_PopUp('$wikipref/artica-authentication-agent-certificate','1024','800')",ico_support,null,0,"btn-primary",0);
+    $f[]="<td style='width:1%'>$btn1</td>";
+    $f[]="</tr>";
+
+    $jsInstall="Loadjs('$page?tooltip2-js=yes')";
+
+    $f[]="<tr $tr>";
+    $f[]="<td style='width:1%' nowrap><i class='fa-solid fa-5 fa-3x'></i></td>";
+    $f[]="<td style='width:99%$pp'><p style='font-size:{$s}px'>{aaa_step5}</p></td>";
+    $btn1=$tpl->button_autnonome("{launch_install}",$jsInstall,ico_support,null,0,"btn-primary",0);
+    $f[]="<td style='width:1%'>$btn1</td>";
+    $f[]="</tr>";
+
+
+    $f[]="<tr $tr>";
+    $f[]="<td style='width:1%' nowrap><i class='fa-solid fa-6 fa-3x'></i></td>";
+    $f[]="<td style='width:99%$pp'><p style='font-size:{$s}px'>{aaa_step6}</p></td>";
+    $btn1=$tpl->button_autnonome("{see_doc}","s_PopUp('$wikipref/artica-authentication-cnx','1024','800')",ico_support,null,0,"btn-primary",0);
+    $f[]="<td style='width:1%'>$btn1</td>";
+    $f[]="</tr>";
+    $f[]="<tr $tr>";
+
+
+    $btn1=$tpl->button_autnonome("{aaa_step5}",
+        $jsInstall, ico_cd,null,300,"btn-primary",300);
+    $f[]="<td colspan=3 style='text-align:right'>
+    <div id='aaa-progress' style='margin-top:5px;margin-bottom: 5px '></div>
+    $btn1</td>";
+    $f[]="</table>";
+
+    echo $tpl->_ENGINE_parse_body(@implode("\n", $f));
+
+}
+function tooltip2_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+
+    $js=$tpl->framework_buildjs("/aaa/install",
+        "ArticaAuthenticationAgent.progress",
+        "ArticaAuthenticationAgent.log","aaa-progress",
+        "document.location.href='/artica-authentication-agent'");
+
+
+    return $tpl->js_confirm_execute("{aaa_step_install}","tooltip2","yes",$js);
+}
+function tooltip2_exec():bool{
+    return admin_tracks("Launch the installation of Artica Active Directory Authentication");
+}
 
 function section_logging_js():bool{
     $tpl=new template_admin();
@@ -778,9 +956,14 @@ function section_logging_popup():bool{
     $logLevels["debug"]="debug";
     $logLevels["warn"]="warn";
     $logLevels["error"]="error";
-
+    $max_size_mb=intval($ligne["aaa_max_size_mb"])?: 100;
+    $max_backups=intval($ligne["aaa_max_backups"])?: 3;
+    $max_age_days=intval($ligne["aaa_max_age_days"])?: 30;
     $form[]=$tpl->field_section("{logging}","{aaa_logging_section}");
     $form[]=$tpl->field_array_hash($logLevels,"aaa_log_level","{level}",$logLevels["$log_level"]);
+    $form[]=$tpl->field_numeric("aaa_max_size_mb","{max_size_mb}",$max_size_mb,"{max_size_mb_desc}");
+    $form[]=$tpl->field_numeric("aaa_max_backups","{max_backups}",$max_backups,"{max_backups_desc}");
+    $form[]=$tpl->field_numeric("aaa_max_age_days","{max_age_days}",$max_age_days,"{max_age_days_desc}");
     $html[]=$tpl->form_outside(null, @implode("\n", $form),null,"{save}",
         "LoadAjaxSilent('artica-auth-general-table','$page?save-params=yes');BootstrapDialog1.close();LoadAjax('artica-auth-general-table','$page?table1=yes');",$security);
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
@@ -812,7 +995,10 @@ function save(): bool
         "aaa_cache_negative_ttl",
         "aaa_workers",
         "aaa_log_level",
-        "aaa_fallback_basic_auth"
+        "aaa_fallback_basic_auth",
+        "aaa_max_size_mb",
+        "aaa_max_backups",
+        "aaa_max_age_days"
     ];
 
     $fields = [];

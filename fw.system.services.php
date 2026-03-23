@@ -90,6 +90,7 @@ function features():bool{
     $FIREHOL=$features->FIREHOL();
     $SURICATA=$features->SURICATA();
     $APP_STATS_COMMUNICATOR=$features->APP_STATS_COMMUNICATOR();
+    $NAMESPACES=$features->NAMESPACES();
 
     //$APP_CISCO_REPORTER=$features->APP_CISCO_REPORTER();
     $APP_CGROUPS=$features->APP_CGROUPS();
@@ -110,6 +111,7 @@ function features():bool{
     $KSRN               = null;
     $APP_SSHPROXY       = null;
     $APP_IPAUDIT        = null;
+    $APP_OSPFD          = null;
     $OPENSSH=$features->OPENSSH();
 
     if(method_exists($features,"APP_SSHPROXY")) {
@@ -520,6 +522,7 @@ function features():bool{
     $network_services[]=$ARPD;
     $network_services[]=$APP_MULTIPATH_TCP;
     $network_services[]=$APP_QAT;
+    $network_services[]=$NAMESPACES;
     $network_services[]=$APP_OPENVSWITCH;
     $network_services[]=$APP_FIRECRACKER;
     $network_services[]=$APP_CGROUPS;
@@ -527,8 +530,6 @@ function features():bool{
     $network_services[]=$IWLWIFI;
     $network_services[]=$APP_OSPFD;
     $network_services[]=$APP_DOCKER;
-
-
     $network_services[]=$UBOUND;
     $network_services[]=$UBOUND_DNS;
     $network_services[]=$APP_DNS_FIREWALL;

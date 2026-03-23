@@ -469,26 +469,8 @@ function modesecurity_modsec(){
     @chmod("$targetfile",0755);
 }
 
-function mod_security_install(){
-    $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/modsecurity.progress";
-    $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/modsecurity.progress.log";
-    @unlink($config["PROGRESS_FILE"]);
-    @unlink($config["LOG_FILE"]);
-    @touch($config["PROGRESS_FILE"]);
-    @touch($config["LOG_FILE"]);
-    @chmod($config["PROGRESS_FILE"],0777);
-    @chmod($config["LOG_FILE"],0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.ModSecurity.install.php --install >{$config["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
-function mod_security_default_white(){
-    $unix=new unix();
-    $unix->framework_exec("exec.ModSecurity.install.php --default-white");
-}
+
+
 function webcopy_sync(){
     $unix=new unix();
     $serviceid=intval($_GET["webcopy-sync"]);
@@ -549,38 +531,8 @@ function atomi_disable(){
 
 }
 
-function mod_security_reconfigure(){
-    $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/modsecurity.progress";
-    $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/modsecurity.progress.log";
-    @unlink($config["PROGRESS_FILE"]);
-    @unlink($config["LOG_FILE"]);
-    @touch($config["PROGRESS_FILE"]);
-    @touch($config["LOG_FILE"]);
-    @chmod($config["PROGRESS_FILE"],0777);
-    @chmod($config["LOG_FILE"],0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.ModSecurity.install.php --build >{$config["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
-function mod_security_uninstall(){
-    $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/modsecurity.progress";
-    $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/modsecurity.progress.log";
-    @unlink($config["PROGRESS_FILE"]);
-    @unlink($config["LOG_FILE"]);
-    @touch($config["PROGRESS_FILE"]);
-    @touch($config["LOG_FILE"]);
-    @chmod($config["PROGRESS_FILE"],0777);
-    @chmod($config["LOG_FILE"],0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.ModSecurity.install.php --uninstall >{$config["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
+
+
 
 function upload_package(){
     $unix=new unix();
@@ -1125,40 +1077,8 @@ function compile_destination(){
 		
 }
 
-function backup(){
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/nginx-dump.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/nginx-dump.log";
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOGSFILES"], 0755);
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.dump.php --dump --output >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-	
-}
-function restore(){
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/nginx-dump.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/nginx-dump.log";
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOGSFILES"], 0755);
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.dump.php --restore \"{$_GET["filename"]}\" --output >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
 
-}
+
 
 
 

@@ -757,7 +757,7 @@ class system_nic{
 		`AntiDDOS`='$this->AntiDDOS',
 		`mirror`='$this->mirror',
 		`txqueuelen`='$this->txqueuelen',
-		`xtIpv4options`=$this->xtIpv4options,
+		`xtIpv4options`='$this->xtIpv4options',
 		`mirrorgateway`='$this->mirrorgateway'
 		 WHERE `Interface`='$this->eth'";
 		$sumcontrol=md5($sql_upd);

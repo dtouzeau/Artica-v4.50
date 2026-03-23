@@ -2802,7 +2802,7 @@ function UsersInterfaceDatasDelete(){
             $POSTFIX_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_INSTALLED"));
             if($POSTFIX_INSTALLED==1){
 				$sock->getFrameWork("cmd.php?postfix-hash-aliases=yes");
-				$sock->getFrameWork("cmd.php?cluebringer-passwords=yes");
+				
 			}
 			
 		}

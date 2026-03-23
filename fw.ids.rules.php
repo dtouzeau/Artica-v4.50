@@ -27,7 +27,7 @@ if(isset($_GET["disable-all-family"])){disable_all_family();exit;}
 
 page();
 
-function rule_js(){
+function rule_js():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$sid=intval($_GET["rule-js"]);
@@ -424,6 +424,14 @@ function search(){
     }
 	
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
+
+    if(!$q->TABLE_EXISTS("rules")){
+        $tpl=new template_admin();
+        echo $tpl->_ENGINE_parse_body($tpl->div_warning("{suricata_rules_db_warn}"));
+        return;
+    }
+
+
 	$sql="SELECT * FROM rules $searchq ORDER BY sid LIMIT 500";
     if(strlen($category)>1){
         $sql="SELECT * FROM rules $searchq AND classtype='$category' ORDER BY sid LIMIT 500";

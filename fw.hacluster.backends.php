@@ -30,7 +30,7 @@ if(isset($_GET["weight-js"])){weight_js();exit;}
 if(isset($_GET["weight-popup"])){weight_popup();exit;}
 if(isset($_POST["weightid"])){weight_save();exit;}
 
-
+if(isset($_GET["backend-register"])){backend_register();exit;}
 if(isset($_GET["start-activate"])){start_activate();exit;}
 if(isset($_GET["btn-action"])){td_btnActionBack();exit;}
 if(isset($_GET["td-row"])){td_row();exit;}
@@ -626,12 +626,17 @@ function backend_tab():bool{
     if(isset($_GET["function"])) {
         $function = $_GET["function"];
     }
-    if($ID>0) {
-        $array["{status}"] = "$page?backend-status=$ID&function=$function";
+    if($ID==0){
+        $array["{deploy}"]="$page?backend-popup=$ID&function=$function";
+        $array["{register}"]="$page?backend-register=yes&function=$function";
+        echo $tpl->tabs_default($array);
+        return true;
     }
-    $array["{global_settings}"]="$page?backend-popup=$ID&function=$function";
+
 
     if($ID>0) {
+        $array["{status}"] = "$page?backend-status=$ID&function=$function";
+        $array["{global_settings}"]="$page?backend-popup=$ID&function=$function";
         $array["{HACLUSTER_AGENT}"]="$page?backend-agent=$ID&function=$function";
         $array["{scope}"] = "$page?backend-scope=$ID&function=$function";
     }
@@ -1074,6 +1079,46 @@ function backend_reconfiguredns_js():bool{
     $title="{$ligne["backendname"]}";
     return $tpl->js_confirm_execute("{dns_settings} $title" , "backend-reconfiguredns", $ID);
 }
+function backend_register():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $f[]=$tpl->div_success("{token}||{hacluster_deploy_explain2}");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/get-token"),true);
+
+
+    if(!isset($json["Status"])){
+        echo $tpl->div_error("{protocol_error}");
+        return false;
+
+    }
+    if(!$json["Status"]){
+        echo $tpl->div_error($json["Error"]);
+        return false;
+
+    }
+    $ttl=$json["ttl"];
+    $hours   = floor($ttl / 3600);
+    $minutes = floor(($ttl % 3600) / 60);
+    $seconds = $ttl % 60;
+    $display = sprintf("%dh %02dm %02ds", $hours, $minutes, $seconds);
+
+    // Or as a future DateTime:
+    $expires = new DateTime();
+    $expires->modify("+$ttl seconds");
+    $expiresStr = $expires->format("Y-m-d H:i:s");
+
+
+    $f[]="<div style='font-size:22px;margin:30px' class=center><strong>{$json["token"]}<br><small>{expire} $expiresStr ($display)</small></strong>";
+
+
+    echo $tpl->_ENGINE_parse_body($f);
+    return true;
+
+
+
+}
+
+
 function backend_zoom(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -1260,8 +1305,9 @@ function backend_popup():bool{
         $buttonname="{apply}";
 
     }else{
+        $expl="{hacluster_deploy_explain}";
         $ligne["backendname"]="proxy-".time();
-        $title="{new_backend}";
+        $title="{deploy}: {new_backend}";
 		$jsadd="dialogInstance2.close();";
 		$ligne["listen_port"]=8090;
         $ligne["noauth_port"]=8091;
@@ -1272,6 +1318,7 @@ function backend_popup():bool{
         $ligne["isMaster"]=0;
         $ligne["proxyversion"]=null;
         $ligne["ComPort"]=58787;
+
 	}
 
 
@@ -1305,7 +1352,7 @@ function backend_popup():bool{
 
 
 	$form[]=$tpl->field_numeric("bweight","{weight}", $ligne["bweight"]);
-    $html="<div id='nodes-connect'></div>".$tpl->form_outside($title, @implode("\n", $form),null,
+    $html="<div id='nodes-connect'></div>".$tpl->form_outside($title, @implode("\n", $form),$expl,
             $buttonname,$jsrestart,"AsSquidAdministrator",true);
 	echo $tpl->_ENGINE_parse_body($html);
 	return true;

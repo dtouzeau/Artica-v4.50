@@ -376,15 +376,6 @@ function remove(){
 
     if($cron_reboot){UNIX_RESTART_CRON();}
 
-    $tables[]="workers_cnx";
-    $tables[]="workers_stats";
-    $q=new postgres_sql();
-    foreach ($tables as $table){
-        $q->QUERY_SQL("TRUNCATE TABLE $table");
-        build_progress($pourc++, "{reset_table} {$table}");
-    }
-
-
     foreach ($tokens as $filename){
         build_progress($pourc++, "{disable} $filename");
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("$filename", 0);

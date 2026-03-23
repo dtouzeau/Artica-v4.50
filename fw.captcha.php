@@ -21,7 +21,13 @@ if($GLOBALS["VERBOSE"]){
     ini_set('error_prepend_string',null);
     ini_set('error_append_string',null);
 }
-header("Content-Security-Policy","default-src 'self';script-src 'self' 'unsafe-inline';font-src 'self' data: fonts.gstatic.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com");
+
+// ── Security headers ─────────────────────────────────────────────────────────
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; font-src 'self' data: fonts.gstatic.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; img-src 'self' data:");
+header("X-Frame-Options: SAMEORIGIN");
+header("X-Content-Type-Options: nosniff");
+header("X-XSS-Protection: 1; mode=block");
+
 if(isset($_POST["uid"])){validate();exit;}
 
 captcha();
@@ -40,6 +46,12 @@ function new_css():string{
     if($ArticaFontColorTitle==null){$ArticaFontColorTitle="#ffffff";}
     if($ArticaFontColorFields==null){$ArticaFontColorFields="#ffffff";}
 
+    // Sanitize color values — only allow hex colors
+    $ArticaBackGroundColor = preg_match('/^#[0-9a-fA-F]{3,6}$/', $ArticaBackGroundColor) ? $ArticaBackGroundColor : "#283437";
+    $ArticaFontColor = preg_match('/^#[0-9a-fA-F]{3,6}$/', $ArticaFontColor) ? $ArticaFontColor : "#a7b1c2";
+    $ArticaFontColorTitle = preg_match('/^#[0-9a-fA-F]{3,6}$/', $ArticaFontColorTitle) ? $ArticaFontColorTitle : "#ffffff";
+    $ArticaFontColorFields = preg_match('/^#[0-9a-fA-F]{3,6}$/', $ArticaFontColorFields) ? $ArticaFontColorFields : "#ffffff";
+
     if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
         $HideArticaLogo=0;
         $ArticaBackGroundColor="#283437";
@@ -50,7 +62,11 @@ function new_css():string{
 
     $HTTP_X_ARTICA_SUBFOLDER=null;
     if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
-        $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+        // Sanitize: only allow alphanumeric, hyphens, underscores
+        $raw = $_SERVER["HTTP_X_ARTICA_SUBFOLDER"];
+        if(preg_match('/^[a-zA-Z0-9_-]+$/', $raw)){
+            $HTTP_X_ARTICA_SUBFOLDER = "/" . $raw . "/";
+        }
     }
 
     if($HideArticaLogo==0) {
@@ -65,7 +81,9 @@ function new_css():string{
             $fontFamily="font-family: \"open sans\",\"Helvetica Neue\",Helvetica,Arial,sans-serif;";
 
         }else{
-            $fontFamily="font-family: '{$_COOKIE["userfont"]}',Arial, \"MS UI Gothic\", \"MS P Gothic\", sans-serif;";
+            // Sanitize cookie: only allow alphanumeric, spaces, hyphens
+            $safefont = preg_replace('/[^a-zA-Z0-9 -]/', '', $_COOKIE["userfont"]);
+            $fontFamily="font-family: '$safefont',Arial, \"MS UI Gothic\", \"MS P Gothic\", sans-serif;";
 
         }
     }
@@ -317,7 +335,6 @@ function refresh(){
     $f[]="</div>";
     $f[]="</body>";
     $f[]="</html>";
-    header("X-Frame-Options: \"sameorigin\"");
     echo $tpl->_ENGINE_parse_body($f);
     return true;
 }
@@ -345,7 +362,7 @@ function captcha($return=false,$error=null){
     if(!isset($_COOKIE["visitorId"])){
        return refresh();
     }
-    $visitorId=$_COOKIE["visitorId"];
+    $visitorId = preg_replace('/[^a-zA-Z0-9]/', '', $_COOKIE["visitorId"]);
 
     if($HideArticaVersion==0) {
         $SP=null;
@@ -354,9 +371,13 @@ function captcha($return=false,$error=null){
         if($CURPATCH>0){
             $SP="&nbsp;Service Pack $CURPATCH";
         }
-        $ArticaVer = "Artica $CURVER{$SP} &copy; " . date("Y");
+        $ArticaVer = "Artica " . htmlspecialchars($CURVER) . "{$SP} &copy; " . date("Y");
 
     }
+
+    // Escape admin-configurable text for safe HTML output
+    $TitleOfArticaPageSafe = htmlspecialchars($TitleOfArticaPage, ENT_QUOTES, 'UTF-8');
+    $TextOfArticaPageSafe  = htmlspecialchars($TextOfArticaPage, ENT_QUOTES, 'UTF-8');
 
     $f[]="<!DOCTYPE html>";
     $f[]="<html xmlns=\"http://www.w3.org/1999/xhtml\">";
@@ -369,7 +390,7 @@ function captcha($return=false,$error=null){
     $f[]="<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\">";
     $f[]="<link rel='icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
     $f[]="<link rel='shortcut icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
-    $f[]="<title>$TitleOfArticaPage</title>";
+    $f[]="<title>$TitleOfArticaPageSafe</title>";
     $f[]=new_css();
     $f[]="<script src=\"/fingerprint/query\"></script>";
     $f[]="<script>";
@@ -424,26 +445,32 @@ $f[]="<body class=\"wrapper\" onload=\"initial();\">";
 
 
     if(!is_null($error)){
-        $TextOfArticaPage="<span style='color:#ee8d8d;font-weight: bolder'>$error</span>";
+        $errorSafe = htmlspecialchars($error, ENT_QUOTES, 'UTF-8');
+        $TextOfArticaPageSafe="<span style='color:#ee8d8d;font-weight: bolder'>$errorSafe</span>";
     }
 
 
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/fingerprint/captcha"));
-    if(!$json->Status){
-        $f[]=$tpl->div_error($json->Error);
+    if(!is_object($json) || !$json->Status){
+        $errMsg = is_object($json) ? htmlspecialchars($json->Error ?? '', ENT_QUOTES, 'UTF-8') : "API error";
+        $f[]=$tpl->div_error($errMsg);
     }
 
+    // Escape API response values for safe HTML output
+    $captchaImage = is_object($json) ? preg_replace('/[^a-zA-Z0-9+\/=]/', '', $json->Image ?? '') : '';
+    $captchaId    = is_object($json) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $json->Id ?? '') : '';
+    $visitorIdSafe = htmlspecialchars($visitorId, ENT_QUOTES, 'UTF-8');
 
     if($FORM_ACCEPTABLE) {
-        $f[]="<div class=\"LoginTitle2\">$TitleOfArticaPage</div>";
+        $f[]="<div class=\"LoginTitle2\">$TitleOfArticaPageSafe</div>";
         $f[] = "<div id=\"login_filed\">";
-        $f[] = "<div class=\"p1 title_gap\">$TextOfArticaPage";
+        $f[] = "<div class=\"p1 title_gap\">$TextOfArticaPageSafe";
         $f[] = "<div style='background-color: white;text-align: center;margin: 20px;padding: 10px;   border-radius: 5px;width: 80%;'>";
-        $f[]="<img src='data:image/png;base64,$json->Image'>";
+        $f[]="<img src='data:image/png;base64,$captchaImage'>";
         $f[] = "</div>";
         $f[]="</div>";
-        $f[]="<input type='hidden' id='uid' value='$visitorId' name='uid'>";
-        $f[]="<input type='hidden' id='captchakey' value='$json->Id' name='captchakey'>";
+        $f[]="<input type='hidden' id='uid' value='$visitorIdSafe' name='uid'>";
+        $f[]="<input type='hidden' id='captchakey' value='$captchaId' name='captchakey'>";
         $f[] = "<div id=\"name_title_ie\" style=\"display:none;margin:20px 0 -10px 78px;\" class=\"p1 title_gap\">{image_text}</div>";
         $f[] = "<div class=\"title_gap\">";
         $f[] = "<input type=\"text\" id=\"captchauser\" name=\"captchauser\" tabindex=\"1\" class=\"form_input\"autocapitalize=\"off\" autocomplete=\"off\" placeholder=\"{image_text}\" >";
@@ -464,7 +491,6 @@ $f[]="<body class=\"wrapper\" onload=\"initial();\">";
     $f[]="</html>";
 
     if($return){return $tpl->_ENGINE_parse_body($f);}
-    header("X-Frame-Options: \"sameorigin\"");
     echo $tpl->_ENGINE_parse_body($f);
     return true;
 }
@@ -472,25 +498,36 @@ $f[]="<body class=\"wrapper\" onload=\"initial();\">";
 function validate():bool{
     clean_xss_deep();
     $visitorId="";
-    if(isset($_COOKIE["visitorId"])){$visitorId=$_COOKIE["visitorId"];}
+    if(isset($_COOKIE["visitorId"])){
+        $visitorId = preg_replace('/[^a-zA-Z0-9]/', '', $_COOKIE["visitorId"]);
+    }
 
     if(isset($_POST["uid"])){
-        $visitorId=$_POST["uid"];
+        $visitorId = preg_replace('/[^a-zA-Z0-9]/', '', $_POST["uid"]);
     }
 
     if(strlen($visitorId)<10){
         return captcha(false,"Please activate Cookies!");
     }
 
-    webconsole_syslog("Check Captcha $visitorId...",__FILE__);
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/fingerprint/verify/{$_POST["captchakey"]}/{$_POST["captchauser"]}/$visitorId"));
-    if(!$json->Status){
-        webconsole_syslog("Check Captcha $visitorId Failed",__FILE__);
-        return captcha(false,$json->Error);
+    // Sanitize POST inputs before using in URL path
+    $captchaKey  = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST["captchakey"] ?? '');
+    $captchaUser = preg_replace('/[^a-zA-Z0-9]/', '', $_POST["captchauser"] ?? '');
+
+    if(empty($captchaKey) || empty($captchaUser)){
+        return captcha(false,"{error}");
+    }
+
+    webconsole_syslog("Check Captcha " . substr($visitorId, 0, 32) . "...",__FILE__);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/fingerprint/verify/$captchaKey/$captchaUser/$visitorId"));
+    if(!is_object($json) || !$json->Status){
+        webconsole_syslog("Check Captcha " . substr($visitorId, 0, 32) . " Failed",__FILE__);
+        $errMsg = is_object($json) ? ($json->Error ?? "{error}") : "{error}";
+        return captcha(false,$errMsg);
     }
 
     $mem=new lib_memcached();
-    $mem->saveKey("CAPTCHA:{$_SESSION["visitorId"]}",9999,1800);
+    $mem->saveKey("CAPTCHA:$visitorId",9999,1800);
 
     echo "<html>
 	<head><META HTTP-EQUIV=\"Refresh\" CONTENT=\"0; URL=/\"> </head>
@@ -506,7 +543,8 @@ function GetRemoteIP():string{
     if(isset($_SERVER["REMOTE_ADDR"])){$IPADDR=$_SERVER["REMOTE_ADDR"];}
     if(isset($_SERVER["HTTP_X_REAL_IP"])){$IPADDR=$_SERVER["HTTP_X_REAL_IP"];}
     if(isset($_SERVER["HTTP_X_FORWARDED_FOR"])){$IPADDR=$_SERVER["HTTP_X_FORWARDED_FOR"];}
-    return $IPADDR;
+    // Sanitize: only allow valid IP characters
+    return preg_replace('/[^0-9a-fA-F.:,]/', '', $IPADDR);
 }
 
 
@@ -522,7 +560,12 @@ function logon_events($succes):bool{
         }
     }
     if($uid==-100){$uid="Manager";}
+
+    // Sanitize for log injection: strip newlines and control characters
+    $uid = preg_replace('/[\x00-\x1f\x7f]/', '', $uid ?? '');
     $IPADDR=GetRemoteIP();
+    $succes = preg_replace('/[\x00-\x1f\x7f]/', '', $succes);
+
     $logFile="/var/log/artica-webauth.log";
     $date=date('M  j H:i:s');
     if(is_writable($logFile)) {

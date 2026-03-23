@@ -1074,6 +1074,7 @@ function sync_nodes($primary_node_id = 0, $secondary_node_id = 0)
             $array["VIP"]["{$vip["ID"]}"]["virtual_interface"] = $vip["virtual_interface"];
             $array["VIP"]["{$vip["ID"]}"]["enable"] = $vip["enable"];
             $array["VIP"]["{$vip["ID"]}"]["synckey"] = $vip["synckey"];
+            $array["VIP"]["{$vip["ID"]}"]["virtual_interface_id"] = $vip["virtual_interface_id"];
 
         }
 
@@ -1592,6 +1593,7 @@ function setup_nodes($data = null)
                         $keepalived_vips->netmask = $data["VIP"]["{$id}"]['netmask'];
                         $keepalived_vips->enable = $data["VIP"]["{$id}"]['enable'];
                         $keepalived_vips->synckey = $data["VIP"]["{$id}"]['synckey'];
+                        $keepalived_vips->virtual_interface_id = intval($data["VIP"]["{$id}"]['virtual_interface_id']);
                         $keepalived_vips->save(false, false);
                     } else {
                         $keepalived_vips = new keepalived_vips();
@@ -1601,6 +1603,7 @@ function setup_nodes($data = null)
                         $keepalived_vips->netmask = $data["VIP"]["{$id}"]['netmask'];
                         $keepalived_vips->enable = $data["VIP"]["{$id}"]['enable'];
                         $keepalived_vips->synckey = $data["VIP"]["{$id}"]['synckey'];
+                        $keepalived_vips->virtual_interface_id = intval($data["VIP"]["{$id}"]['virtual_interface_id']);
                         $keepalived_vips->save(false, false);
                     }
                 }
@@ -1729,6 +1732,7 @@ function setup_nodes($data = null)
                 $keepalived_vips->netmask = $data["VIP"]["{$id}"]['netmask'];
                 $keepalived_vips->enable = $data["VIP"]["{$id}"]['enable'];
                 $keepalived_vips->synckey = $data["VIP"]["{$id}"]['synckey'];
+                $keepalived_vips->virtual_interface_id = intval($data["VIP"]["{$id}"]['virtual_interface_id']);
                 $keepalived_vips->save(false, false);
             }
         }

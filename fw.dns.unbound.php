@@ -1049,7 +1049,8 @@ function unbound_security_popup():bool{
 
     $html[]=$tpl->BigCircleCheckbox("EnableUnboundBlackLists|SaveSecurity:yes","{activate_dns_blacklists}","{activate_dns_blacklists_explain}",$EnableUnboundBlackLists,$jjafter);
 
-    $html[]=$tpl->BigFieldIntegerCheckbox("UnBoundUnwantedReplyThreshold|SaveSecurity:yes","{UnBoundUnwantedReplyThreshold}","{UnBoundUnwantedReplyThreshold_explain}",$UnBoundUnwantedReplyThreshold,null,null,$jjafter);
+    $html[]=$tpl->BigFieldIntegerCheckbox("UnBoundUnwantedReplyThreshold|SaveSecurity:yes",
+        "{UnBoundUnwantedReplyThreshold}","{UnBoundUnwantedReplyThreshold_explain}",$UnBoundUnwantedReplyThreshold,null,null,$jjafter);
 
     echo $tpl->_ENGINE_parse_body($html);
 
@@ -1286,7 +1287,8 @@ function unbound_interfaces_popup():bool{
     $form[]=$tpl->field_interfaces_choose("InComingInterfaces", "{listen_interfaces}", $InComingInterfaces);
     $form[]=$tpl->field_checkbox("ListenOnlyLoopBack","{listen_only_loopback}",$ListenOnlyLoopBack);
 
-    $form[] = $tpl->field_checkbox("UnboundAutomaticInterface", "{interface_automatic}", $UnboundAutomaticInterface, false, "{interface_automatic_unbound}");
+    $form[] = $tpl->field_checkbox("UnboundAutomaticInterface", "{interface_automatic}",
+        $UnboundAutomaticInterface, false, "{interface_automatic_unbound}");
     $form[]=$tpl->field_interfaces("UnboundOutGoingInterface",
         "{outgoing_interface}", $UnboundOutGoingInterface);
 

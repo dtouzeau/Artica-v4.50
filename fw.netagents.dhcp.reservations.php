@@ -225,21 +225,30 @@ function res_form(): void {
     $h   = [];
     $h[] = "<div id='res-form-result-$id'></div>";
     $h[] = "<input type='hidden' id='res-existing-id-$id' value='" . htmlspecialchars($res_id) . "'>";
+    $h[] = "<input type='hidden' id='res-id-$id' value='" . htmlspecialchars($rid) . "'>";
 
     $h[] = "<div class='ibox'>";
     $h[] = "  <div class='ibox-title'><h5><i class='fas fa-bookmark'></i>&nbsp; {reservation_details}</h5></div>";
     $h[] = "  <div class='ibox-content'>";
 
-    // ID + Name row
+
     $h[] = "  <div class='row' style='margin-bottom:15px'>";
-    $h[] = "    <div class='col-md-5'>";
-    $h[] = "      <label>ID / {hostname}</label>";
-    $h[] = "      <input type='text' id='res-id-$id' class='form-control'" . ($isEdit ? " readonly" : "") . " value='$rid' placeholder='pc01'>";
-    $h[] = "      <p class='help-block'>{reservation_id_explain}</p>";
+    $h[] = "    <div class='col-md-6'>";
+    $h[] = "      <label>{hostname}</label>";
+    $h[] = "      <input type='text' id='res-name-$id' class='form-control' value='$rname' placeholder='PC-01'>";
     $h[] = "    </div>";
-    $h[] = "    <div class='col-md-7'>";
-    $h[] = "      <label>{description} <small class='text-muted'>{optional}</small></label>";
-    $h[] = "      <input type='text' id='res-name-$id' class='form-control' value='$rname' placeholder='PC-01 (Reception)'>";
+    $h[] = "    <div class='col-md-6'>";
+    $h[] = "      <label>{scope} <small class='text-muted'>{optional}</small></label>";
+    $h[] = "      <select id='res-scope-$id' class='form-control'>";
+    $h[] = "        <option value=''>{none}</option>";
+    foreach ($scopes as $sc) {
+        if (!is_object($sc)) continue;
+        $sid  = htmlspecialchars($sc->id ?? '');
+        $snet = htmlspecialchars(($sc->subnet ?? '') . '/' . ($sc->netmask ?? ''));
+        $sel  = ($rscope === $sid) ? " selected" : "";
+        $h[] = "        <option value='$sid'$sel>$snet</option>";
+    }
+    $h[] = "      </select>";
     $h[] = "    </div>";
     $h[] = "  </div>";
 
@@ -255,22 +264,7 @@ function res_form(): void {
     $h[] = "    </div>";
     $h[] = "  </div>";
 
-    // Scope dropdown
-    $h[] = "  <div class='row'>";
-    $h[] = "    <div class='col-md-8'>";
-    $h[] = "      <label>{scope} <small class='text-muted'>{optional}</small></label>";
-    $h[] = "      <select id='res-scope-$id' class='form-control'>";
-    $h[] = "        <option value=''>{none}</option>";
-    foreach ($scopes as $sc) {
-        if (!is_object($sc)) continue;
-        $sid  = htmlspecialchars($sc->id ?? '');
-        $snet = htmlspecialchars(($sc->subnet ?? '') . '/' . ($sc->netmask ?? ''));
-        $sel  = ($rscope === $sid) ? " selected" : "";
-        $h[] = "        <option value='$sid'$sel>$sid ($snet)</option>";
-    }
-    $h[] = "      </select>";
-    $h[] = "    </div>";
-    $h[] = "  </div>";
+
 
     // ── Per-host DHCP Options ──
     $h[] = "  <div class='row' style='margin-top:15px;margin-bottom:10px'>";
@@ -278,31 +272,31 @@ function res_form(): void {
     $h[] = "  </div>";
     $h[] = "  <div class='row' style='margin-bottom:8px'>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>option routers <small class='text-muted'>{comma_separated}</small></label>";
+    $h[] = "      <label>{gateways} <small class='text-muted'>{comma_separated}</small></label>";
     $h[] = "      <input type='text' id='res-routers-$id' class='form-control' value='$routers' placeholder='192.168.1.1'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>option domain-name-servers <small class='text-muted'>{comma_separated}</small></label>";
+    $h[] = "      <label>{domain-name-servers} <small class='text-muted'>{comma_separated}</small></label>";
     $h[] = "      <input type='text' id='res-dns-$id' class='form-control' value='$rdns' placeholder='8.8.8.8'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  <div class='row' style='margin-bottom:8px'>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>option ntp-servers <small class='text-muted'>{comma_separated}</small></label>";
+    $h[] = "      <label>{ntp-servers} <small class='text-muted'>{comma_separated}</small></label>";
     $h[] = "      <input type='text' id='res-ntp-$id' class='form-control' value='$rntp' placeholder='192.168.1.1'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>option time-servers <small class='text-muted'>{comma_separated}</small></label>";
+    $h[] = "      <label>{time-servers} <small class='text-muted'>{comma_separated}</small></label>";
     $h[] = "      <input type='text' id='res-time-$id' class='form-control' value='$rtime' placeholder='192.168.1.1'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  <div class='row'>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>next-server <small class='text-muted'>PXE/TFTP</small></label>";
+    $h[] = "      <label>{next-server} <small class='text-muted'>PXE/TFTP</small></label>";
     $h[] = "      <input type='text' id='res-nextserver-$id' class='form-control' value='$rnext_server' placeholder='192.168.1.10'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>filename <small class='text-muted'>PXE boot file</small></label>";
+    $h[] = "      <label>filename <small class='text-muted'>{pxe_file}</small></label>";
     $h[] = "      <input type='text' id='res-filename-$id' class='form-control' value='$rfilename' placeholder='pxelinux.0'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
@@ -337,15 +331,19 @@ function res_save(): void {
     $next_server = trim($_POST["res_next_server"] ?? '');
     $filename    = trim($_POST["res_filename"]    ?? '');
 
-    if ($rid === '') {
-        echo $tpl->_ENGINE_parse_body($tpl->div_warning("{reservation_id_required}"));
-        return;
-    }
+
     // Validate MAC format (client-side already validates, this is server defence)
     if (!preg_match('/^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/', $rmac)) {
         echo $tpl->_ENGINE_parse_body($tpl->div_warning("{invalid_mac_address}"));
         return;
     }
+    if ($rid === '') {
+        $rid=md5($rmac);
+    }
+    if ($rname==""){
+        echo $tpl->_ENGINE_parse_body($tpl->div_warning("{invalid} {hostname}"));
+    }
+
     if ($rip === '') {
         echo $tpl->_ENGINE_parse_body($tpl->div_warning("{fixed_ipaddr} {required}"));
         return;

@@ -195,7 +195,7 @@ class lib_sqlite{
         }
 
         try {
-            $db->exec("PRAGMA busy_timeout=5000");
+            $db->exec("PRAGMA busy_timeout=30000");
             $db->query($sql);
         } catch (PDOException $e){
             $error=$e->getMessage();
@@ -275,7 +275,7 @@ class lib_sqlite{
         }
 
         try {
-            $db->exec("PRAGMA busy_timeout=5000");
+            $db->exec("PRAGMA busy_timeout=30000");
             $results = $db->query($sql);
             if($this->ReadOnly){
                 $db->exec("PRAGMA query_only = 1;");

@@ -28,7 +28,14 @@ function tabs(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $id=intval($_GET["tabs"]);
-    $tabs["{monitored}"]="$page?monitored-point=$id";
+
+    $monit_installed=false;
+    $status=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/status/$id"));
+    if(is_object($status) && !(isset($status->Status) && !$status->Status)){
+        $monit_installed=(bool)($status->monit_installed??false);
+    }
+
+    if($monit_installed){ $tabs["{monitored}"]="$page?monitored-point=$id";}
     $tabs["{active2}"]="$page?start-point=$id&active=active";
     $tabs["{inactive2}"]="$page?start-point=$id&active=inactive";
     $html[]="<div style='margin-top:10px'>";

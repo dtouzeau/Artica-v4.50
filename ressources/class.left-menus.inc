@@ -2095,6 +2095,10 @@ class left_menus{
         }
 
         if($users->AsProxyMonitor) {
+            $TProxyFortiEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TProxyFortiEnable"));
+            if($TProxyFortiEnable==1) {
+                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.fortigate.tproxy.php", "ICO" => ico_firewall, "TEXT" => "Fortigate",));
+            }
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.ports.php", "ICO" => "fa-wrench", "TEXT" => "{listen_ports}",));
 
             $f[] = "<li id='left-menu'>";

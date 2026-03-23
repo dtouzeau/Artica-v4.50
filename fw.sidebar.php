@@ -204,12 +204,15 @@ if($users->AsAnAdministratorGeneric){
             );
         }
         if($users->AsDebianSystem) {
-           $f[] = line_icon("s_PopUp('/ssh/',800,600,'SSH')",
-                        ico_terminal,
-                        "{system_console}",
-                        "btn-primary"
-                    );
-                }
+            $DisableUnixShell = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableUnixShell"));
+            if ($DisableUnixShell == 0) {
+                $f[] = line_icon("s_PopUp('/ssh/',800,600,'SSH')",
+                    ico_terminal,
+                    "{system_console}",
+                    "btn-primary"
+                );
+            }
+        }
 
 		if($users->AsSystemAdministrator){
 			if($sock->GET_INFO("EnableMemcached")==1){

@@ -51,7 +51,6 @@ function startx():bool{
     $SERVICES["/etc/init.d/proftpd"]="exec.proftpd.install.php --uninstall";
     $SERVICES["/etc/init.d/wazuh-agent"]="/usr/sbin/artica-phpfpm-service -uninstall-wazuh";
     $SERVICES["/etc/init.d/splunk"]="/usr/sbin/artica-phpfpm-service -uninstall-splunk-uf";
-    $SERVICES["/etc/init.d/fail2ban"]="exec.fail2ban.php --uninstall";
     $SERVICES["/etc/init.d/suricata"]="/usr/sbin/artica-phpfpm-service -uninstall-ids";
     $SERVICES["/etc/init.d/snmpd"]="/usr/sbin/artica-phpfpm-service -uninstall-snmpd";
     $SERVICES["/etc/init.d/redis-server"]="/usr/sbin/artica-phpfpm-service -uninstall-redis";

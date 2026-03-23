@@ -201,12 +201,16 @@ function debianagent_status():bool{
     $html[]="<td style='33%;padding-left:5px'>";
     $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/debianagent/tokens"));
     $TokensCount=0;
+
     if(property_exists($data->Info,"tokens") && is_array($data->Info->tokens)){
         $TokensCount=count($data->Info->tokens);
     }
+
     if($TokensCount==0){
+        VERBOSE("/debianagent/create-token",__LINE__);
         $Data2=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/debianagent/create-token"));
         if(!$Data2->Status){
+            var_dump($Data2);
             $html[]=$tpl->_ENGINE_parse_body($tpl->widget_style1("bg-red",ico_bug, $Data2->Status,"{error}",$btn));
             $html[]="</td>";
             $html[]="</table>";
@@ -226,7 +230,6 @@ function debianagent_status():bool{
     $btn[0]["name"] = "{remove}";
     $btn[0]["icon"] = ico_trash;
     $btn[0]["js"] = "Loadjs('$page?revoke-token=$Token');";
-
     $html[]=$tpl->_ENGINE_parse_body($tpl->widget_style1("green-bg",ico_certificate,
         "{token}","$Token<br><small style='font-size:14px;color:white'>{expire} $zdatye</small>",$btn));
     $html[]="</td>";

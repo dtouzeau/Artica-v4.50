@@ -139,6 +139,9 @@ function popup(){
         $qProxy->acl_GroupType["reputation"]=$tpl->_ENGINE_parse_body("{use_reput_service}");
         $dnsdist_acls_errors=$qProxy->dnsdist_acls_errors();
     }
+    if($firewall==1){
+        $qProxy->acl_GroupType["dnsdynamic"]="{dnsdynamic}";
+    }
 
     if($EnableActiveDirectoryFeature==0){
         unset($qProxy->acl_GroupType_SMTP["adfrom"]);
@@ -161,7 +164,8 @@ function popup(){
             }
         }
 
-        if($firewall==1){if(!isset($qProxy->acl_GroupType_iptables[$num])){continue;}}
+        if($firewall==1){
+            if(!isset($qProxy->acl_GroupType_iptables[$num])){continue;}}
         if($dnsfw){if(!isset($qProxy->acl_GroupType_DNSFW[$num])){continue;}}
         $funct="Select".md5($num);
         $explain=null;

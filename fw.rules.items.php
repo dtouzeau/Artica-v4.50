@@ -624,6 +624,13 @@ function item_start():bool{
 	<script>LoadAjax('table-acls-items-$groupid','$page?countries-search=$groupid&js-after=$jsafter&function=$function&RefreshFunction=$RefreshFunction');</script>";
         return false;
     }
+    if($GroupType=="dnsdynamic"){
+        echo "<div id='table-acls-items-$groupid' style='margin-top:10px'></div>
+	<script>LoadAjax('table-acls-items-$groupid','fw.rules.items.dnsdynamic.php?head=yes&gpid=$groupid&js-after=$jsafter&function=$function&RefreshFunction=$RefreshFunction');</script>";
+        return false;
+    }
+
+
     if($GroupType=="categories"){
         $_GET["item-add"]=$groupid;
         item_category();

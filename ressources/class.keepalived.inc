@@ -643,18 +643,59 @@ class keepalived_vips
             $netmask = $MASK["$this->netmask"];
 
             $cdir = substr($this->virtual_ip, 0, strrpos($this->virtual_ip, '.')) . '.0/' . $this->netmask;
-            $sql = "INSERT INTO nics_virtuals (nic,org,ipaddr,netmask,cdir,gateway,ForceGateway,failover,metric,openvpn_nic,ipv6,from_failover_service)
+            $nic_last_id=0;
+            if ($this->virtual_interface_id>0){
+                $count_nic = $x->mysqli_fetch_array("select COUNT(*)as tcount, * from nics_virtuals WHERE ID='$this->virtual_interface_id'");
+                if (intval($count_nic['tcount']) > 0) {
+                    //error_log("KEEPALIVE UPDATE VIP LAST $this->virtual_interface_id} ".__FUNCTION__." ".__LINE__);
+
+                    $sql = "UPDATE nics_virtuals SET
+            nic='$this->dev',
+            ipaddr='$this->virtual_ip',
+            netmask='$netmask',
+            cdir='$cdir'
+            WHERE ID='$this->virtual_interface_id'";
+                    $x->QUERY_SQL($sql);
+                    if (!$x->ok) {
+                        echo $x->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
+                        return;
+                    }
+                    $nic_last_id=$this->virtual_interface_id;
+                }
+                else {
+                    $sql = "INSERT INTO nics_virtuals (ID,nic,org,ipaddr,netmask,cdir,gateway,ForceGateway,failover,metric,openvpn_nic,ipv6,from_failover_service)
+	VALUES('$this->virtual_interface_id','$this->dev','none','$this->virtual_ip','$netmask',
+	'$cdir','','0','1','1','0','0','1');
+	";
+                    $x->QUERY_SQL($sql);
+                    if (!$x->ok) {
+                        //error_log("MY SQL EROR {$x->mysql_error} $sql");
+                        echo $x->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
+                        return;
+                    }
+                    $nic_last_id=$this->virtual_interface_id;
+                }
+
+
+            }
+            else {
+                $sql = "INSERT INTO nics_virtuals (nic,org,ipaddr,netmask,cdir,gateway,ForceGateway,failover,metric,openvpn_nic,ipv6,from_failover_service)
 	VALUES('$this->dev','none','$this->virtual_ip','$netmask',
 	'$cdir','','0','1','1','0','0','1');
 	";
-            $x->QUERY_SQL($sql);
-            if (!$x->ok) {
-                echo $x->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
-                return;
+                $x->QUERY_SQL($sql);
+                if (!$x->ok) {
+                    //error_log("MY SQL EROR {$x->mysql_error} $sql");
+                    echo $x->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
+                    return;
+                }
+
+                //UPDATE VIP
+                $nic_last_id = $x->last_id;
             }
 
-            //UPDATE VIP
-            $nic_last_id = $x->last_id;
+
+            //error_log("KEEPALIVE VIP LAST ID $nic_last_id (set {$this->virtual_interface_id}) ".__FUNCTION__." ".__LINE__);
             $label = $this->dev . ":" . $nic_last_id;
             $sql = "UPDATE keepalived_virtual_interfaces SET 
                 label='$label',
@@ -677,6 +718,8 @@ class keepalived_vips
             }
             return true;
         } else {
+            //error_log("UPDATE KEEPALIVE VIP LAST ID {$this->virtual_interface_id} ".__FUNCTION__." ".__LINE__);
+
             $sql = "UPDATE keepalived_virtual_interfaces SET 
 				primary_node_id='$this->primary_node_id',
                 virtual_ip='$this->virtual_ip',
@@ -734,6 +777,8 @@ class keepalived_vips
             $lastNicID = $this->virtual_interface_id;
             $count_nic = $x->mysqli_fetch_array("select COUNT(*)as tcount, * from nics_virtuals WHERE ID='$this->virtual_interface_id'");
             if (intval($count_nic['tcount']) > 0) {
+                //error_log("KEEPALIVE UPDATE VIP LAST $this->virtual_interface_id} ".__FUNCTION__." ".__LINE__);
+
                 $sql = "UPDATE nics_virtuals SET
             nic='$this->dev',
             ipaddr='$this->virtual_ip',
@@ -746,17 +791,53 @@ class keepalived_vips
                     return;
                 }
             } else {
-                $sql = "INSERT INTO nics_virtuals (nic,org,ipaddr,netmask,cdir,gateway,ForceGateway,failover,metric,openvpn_nic,ipv6,from_failover_service)
+                if ($this->virtual_interface_id>0){
+                    $count_nic = $x->mysqli_fetch_array("select COUNT(*)as tcount, * from nics_virtuals WHERE ID='$this->virtual_interface_id'");
+                    if (intval($count_nic['tcount']) > 0) {
+                        //error_log("KEEPALIVE UPDATE VIP LAST $this->virtual_interface_id} ".__FUNCTION__." ".__LINE__);
+
+                        $sql = "UPDATE nics_virtuals SET
+            nic='$this->dev',
+            ipaddr='$this->virtual_ip',
+            netmask='$netmask',
+            cdir='$cdir'
+            WHERE ID='$this->virtual_interface_id'";
+                        $x->QUERY_SQL($sql);
+                        if (!$x->ok) {
+                            echo $x->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
+                            return;
+                        }
+                        $lastNicID=$this->virtual_interface_id;
+                    }
+                    else {
+                        $sql = "INSERT INTO nics_virtuals (ID,nic,org,ipaddr,netmask,cdir,gateway,ForceGateway,failover,metric,openvpn_nic,ipv6,from_failover_service)
+	VALUES('$this->virtual_interface_id','$this->dev','none','$this->virtual_ip','$netmask',
+	'$cdir','','0','1','1','0','0','1');
+	";
+                        $x->QUERY_SQL($sql);
+                        if (!$x->ok) {
+                            //error_log("MY SQL EROR {$x->mysql_error} $sql");
+                            echo $x->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
+                            return;
+                        }
+                        $lastNicID=$this->virtual_interface_id;
+                    }
+                }
+                else {
+                    $sql = "INSERT INTO nics_virtuals (nic,org,ipaddr,netmask,cdir,gateway,ForceGateway,failover,metric,openvpn_nic,ipv6,from_failover_service)
 	VALUES('$this->dev','none','$this->virtual_ip','$netmask',
 	'$cdir','','0','1','1','0','0','1');
 	";
-                $x->QUERY_SQL($sql);
-                if (!$x->ok) {
-                    echo $x->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
-                    return;
+                    $x->QUERY_SQL($sql);
+                    if (!$x->ok) {
+                        echo $x->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
+                        return;
+                    }
+                    $lastNicID= $x->last_id;
                 }
-                $lastNicID = $x->last_id;
+
             }
+            //error_log("KEEPALIVE VIP LAST ID $lastNicID (set {$this->virtual_interface_id}) ".__FUNCTION__." ".__LINE__);
 
             //UPDATE VIP
 
@@ -784,6 +865,11 @@ class keepalived_vips
             return true;
         }
 
+    }
+
+    public static function __callStatic($name, $arguments)
+    {
+        // TODO: Implement __callStatic() method.
     }
 
     public function delete($reload = true, $fromMaster = true)

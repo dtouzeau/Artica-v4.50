@@ -23,6 +23,9 @@ if(isset($_GET["notifs"])){notifs();exit;}
 if(isset($_GET["seen-updated"])){see_updated();exit;}
 if(isset($_GET["SetToken"])){SetToken();exit;}
 if(isset($_POST["SetToken"])){SetTokenConfirm();exit;}
+if(isset($_GET["deb10-js"])){deb10_js();exit;}
+if(isset($_GET["deb10-popup"])){deb10_popup();exit;}
+
 
 if(isset($_GET["refresh-interval"])){refresh_interval();exit;}
 //ABDEV 1/3
@@ -179,7 +182,6 @@ function notifs(){
             $ERR[] = "{certificates_center}||$txt||DANGER||js:document.location.href='/certificate-center'";
         }
     }
-
     if(!is_array($UfdbguardSMTPNotifs)){$UfdbguardSMTPNotifs=array();}
     if(!isset($UfdbguardSMTPNotifs["ENABLED_SQUID_WATCHDOG"])){$UfdbguardSMTPNotifs["ENABLED_SQUID_WATCHDOG"]=0;}
 
@@ -198,8 +200,6 @@ function notifs(){
             $ERR[] = "{incidents}||$text||DANGER||js:document.location.href='/incidents'";
         }
     }
-
-
     $hostname=php_uname('n');
     VERBOSE("RESOLV -> $hostname",__LINE__);
     $hostname_addr=$GLOBALS["CLASS_SOCKETS"]->gethostbyname($hostname);
@@ -208,6 +208,17 @@ function notifs(){
         $ERR[]="{unable_to_resolve} &laquo;$hostname&raquo;||{PLEASE_ADD_IN_ETCHOSTS}||||js:window.location.href ='/hostfile'";
 
     }
+
+    if($SQUIDEnable==1){
+        $TProxyFortiEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TProxyFortiEnable"));
+        if($TProxyFortiEnable==0) {
+            $HideFGateTproxy = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideFGateTproxy"));
+            if ($HideFGateTproxy == 0) {
+                $ERR[] = "{fortigate_use}||{fortigate_use_tproxy}||MOREINFO||js:Loadjs('fw.fortigate.tproxy.php?tooltip-js=yes');||js:Loadjs('$page?SetToken=HideFGateTproxy');";
+            }
+        }
+    }
+
     VERBOSE("--> APP_ARP_SCANNER()",__LINE__);
     $APP_ARP_SCANNER=APP_ARP_SCANNER();
     if(strlen($APP_ARP_SCANNER)>2){
@@ -271,6 +282,14 @@ function notifs(){
                 $ERR[] = "{new_feature_notice}||{boot_manager}||INFO||js:Loadjs('fw.system.information.php?boot-manager-js&seen=yes');||js:Loadjs('$page?SetToken=HideBootManagerIco');";
             }
         }
+        if($SQUIDEnable==1) {
+            $EnableArticaAuthenticationAgent = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaAuthenticationAgent"));
+            $HideAAAuthIco = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideAAAuthIco"));
+            if($EnableArticaAuthenticationAgent==0 && $HideAAAuthIco ==0){
+                $ERR[] = "{didyouknow}||{feature_artica_auth_agent_explain}||MOREINFO||js:Loadjs('fw.artica.auth.agent.php?tooltip-js=yes');||js:Loadjs('$page?SetToken=HideAAAuthIco');";
+            }
+        }
+
 
         if($SEE_SSHPROXY) {
             if ($SSHProxySectionSeen == 0) {
@@ -532,6 +551,13 @@ function notifs(){
     if($DEBIAN_VERSION<7) {
         $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/status"));
         $DEBIAN_VERSION = $json->DebianVersion;
+    }
+
+    if($DEBIAN_VERSION==10){
+        $HideDebian10SupportMonths=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideDebian10SupportMonths"));
+        if($HideDebian10SupportMonths==0) {
+            $ERR[] = "{info_end_of_support}||{info_end_of_support_months}||MOREINFO||js:Loadjs('$page?deb10-js=yes');||js:Loadjs('$page?SetToken=HideDebian10SupportMonths');";
+        }
     }
 
 
@@ -1054,6 +1080,7 @@ foreach ($ERR as $error){
 		$js=null;$js2=null;
 		$btn="btn-danger";
 		$btn_text="{fix_it}";
+        $btn_hide="{hide}";
 		if(isset($LEVEL_AV[$LEVEL])){
 		    if($LEVEL=="WARN"){
                 $class_text="text-warning";
@@ -1064,6 +1091,10 @@ foreach ($ERR as $error){
 
         }
 
+        if($LEVEL=="MOREINFO") {
+            $btn_hide = "{i_am_not_interested}";
+            $btn_text="{more_information}";
+        }
         $hide=null;
 
 		if(isset($ft[4])){
@@ -1073,7 +1104,7 @@ foreach ($ERR as $error){
                 if (trim($js2) <> null) {
                     $hide = "<button style=\"text-transform: capitalize;\" 
                             class=\"btn btn-primary btn-xs\" type=\"button\" 
-				OnClick=\"$js2\">" . $tpl->_ENGINE_parse_body("{hide}") .
+				OnClick=\"$js2\">" . $tpl->_ENGINE_parse_body($btn_hide) .
                         "</button>&nbsp;";
                 }
             }
@@ -1093,7 +1124,8 @@ foreach ($ERR as $error){
 
 
 		if(preg_match("#^js:(.+)#", $explain,$fz)){$js=$fz[1];$explain=null;}
-		if(isset($ft[2])){if($ft[2]=="INFO"){
+		if(isset($ft[2])){
+            if($ft[2]=="INFO" || $ft[2]=="MOREINFO"){
 		        $btn="btn-info";
 		        $icon="fa-info";
 		        $class_text="text-info";
@@ -2245,7 +2277,6 @@ function CVE_2021_44142():array{
     $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-samba.php')||DANGER||||js:Loadjs('$page?SetToken=$Token');";
     return $ERR;
 }
-
 function CVE_2022_29155():array{
     $page=CurrentPageName();
     $Token              = "HideCVE202229155I";
@@ -2258,8 +2289,6 @@ function CVE_2022_29155():array{
     return $ERR;
 
 }
-
-
 function NOTIF_MAIN_APT_GET_JSON():string{
     $DisableOsSystemUpdate = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableOsSystemUpdate"));
     if ($DisableOsSystemUpdate == 1) {
@@ -2292,4 +2321,16 @@ function NOTIF_MAIN_APT_GET_JSON():string{
     }
     return "$package_number {system_packages_can_be_upgraded}||js:document.location.href='/os-update'||WARN";
 
+}
+function deb10_js():bool{
+    $page=currentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog1("{info_end_of_support}","$page?deb10-popup=yes");
+}
+function deb10_popup():bool{
+    $page=currentPageName();
+    $tpl=new template_admin();
+    $html[]=$tpl->div_success("Linux Debian 10||<p style='font-size:14px'>{info_end_of_support_debian10}</p>");
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
 }

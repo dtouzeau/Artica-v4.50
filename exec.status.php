@@ -337,11 +337,6 @@ if (isset($argv[1])) {
         exit;
     }
 
-    if ($argv[1] == "--fail2ban") {
-        include_once(dirname(__FILE__) . '/ressources/class.status.fail2ban.inc');
-        echo fail2ban() . "\n";
-        exit;
-    }
     if ($argv[1] == "--unbound") {
         include_once(dirname(__FILE__) . '/ressources/class.status.unbound.inc');
         echo unbound() . "\n";
@@ -6243,7 +6238,7 @@ function CheckCallable():bool{
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
     if ($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MYSQL_INSTALLED") == 1) {if ($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMySQL") == 1) { $Callables[]="/ressources/class.status.mysql.inc"; } }
-    if (intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFail2Ban")) == 1) { $Callables[]='/ressources/class.status.fail2ban.inc'; }
+
 
     if (is_file("/etc/init.d/unbound")) {
         $Callables[]='/ressources/class.status.unbound.inc';

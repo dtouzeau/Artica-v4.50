@@ -14,7 +14,6 @@ function CheckSettings():bool{
     EnableUfdbGuard();
     EnableClamavDaemon();
     CicapEnabled();
-    EnableFail2Ban();
     return  true;
 }
 
@@ -71,31 +70,7 @@ function CicapEnabled()
     cluster_events(0, "Uninstalling ICAP AV...", null, __LINE__);
     shell_exec("/usr/sbin/artica-phpfpm-service -uninstall-cicap");
 }
-function EnableFail2Ban():bool{
-    $sock = new sockets();
-    $unix = new unix();
-    $php = $unix->LOCATE_PHP5_BIN();
-    $initd = "/etc/init.d/fail2ban";
-    $keyCode = intval($sock->GET_INFO("EnableFail2Ban"));
 
-    if ($keyCode == 1) {
-        if (is_file($initd)) {
-            cluster_events(2, "Reconfiguring Fail2ban service", null, __LINE__);
-            shell_exec("$php /usr/share/artica-postfix/exec.fail2ban.php --restart");
-            return true;
-        }
-        cluster_events(2, "{installing} Fail2ban service...", null, __LINE__);
-        shell_exec("$php /usr/share/artica-postfix/exec.fail2ban.php --install");
-        return true;
-    }
-
-    if (!is_file($initd)) {
-        return true;
-    }
-    cluster_events(0, "Uninstalling Fail2ban service...", null, __LINE__);
-    shell_exec("$php /usr/share/artica-postfix/exec.fail2ban.php --uninstall");
-    return true;
-}
 function NetDATAEnabled()
 {
     $sock = new sockets();

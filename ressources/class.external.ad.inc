@@ -330,7 +330,24 @@ class external_ad_search{
         $bind=ldap_bind($this->ldap_connection, $username, $password);
 
         if(!$bind){
-            $this->SyslogAd("{$this->KerbAuthInfos["LDAP_SERVER"]}:{$this->KerbAuthInfos["LDAP_PORT"]} $username bind failed");
+            $IPADDR="";
+            if(isset($_SERVER["REMOTE_ADDR"])){$IPADDR=$_SERVER["REMOTE_ADDR"];}
+            if(isset($_SERVER["HTTP_X_REAL_IP"])){$IPADDR=$_SERVER["HTTP_X_REAL_IP"];}
+            if(isset($_SERVER["HTTP_X_FORWARDED_FOR"])){$IPADDR=$_SERVER["HTTP_X_FORWARDED_FOR"];}
+
+            $ff=array();
+            if(function_exists("debug_backtrace")){
+                $trace=@debug_backtrace();
+                foreach ($trace as $entry) {
+                    $file=basename($entry["file"]);
+                    $function=$entry["function"];
+                    $line=$entry["line"];
+                    $ff[]="$function($line) [$file]";
+                }
+            }
+            $textAddon=implode("| ", $ff);
+
+            $this->SyslogAd("{$this->KerbAuthInfos["LDAP_SERVER"]}:{$this->KerbAuthInfos["LDAP_PORT"]} from $IPADDR/$username bind failed $textAddon");
             $error=ldap_err2str(ldap_errno($this->ldap_connection));
             $GLOBALS["CLASS_ACTV"][]=__FUNCTION__.": LINE:".__LINE__.":$error";
             $this->Debuglogs("Failed to login to DC {$this->KerbAuthInfos["LDAP_SERVER"]} - $username `$error`",__FUNCTION__,__LINE__);

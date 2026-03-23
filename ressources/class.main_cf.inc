@@ -1873,7 +1873,6 @@ function array_postfix_status(){
     $array[]="SPAMASSASSIN";
     $array[]="SPAMASS_MILTER";
     $array[]="DNSMASQ";
-    $array[]="APP_CLUEBRINGER";
     $array[]="MIMEDEFANG";
     $array[]="MIMEDEFANGX";
     $array[]="DKIM_FILTER";

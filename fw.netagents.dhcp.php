@@ -74,6 +74,7 @@ function dhcp_form(): bool {
         "{dhcp_scopes}"         => "fw.netagents.dhcp.scopes.php?id=$id",
         "{reservations}"   => "fw.netagents.dhcp.reservations.php?id=$id",
         "{configuration}"  => "fw.netagents.dhcp.config.php?id=$id",
+        "{events}"  => "fw.netagents.dhcp.events.php?id=$id",
     ];
     $h[] = $tpl->tabs_default($tabs);
 
@@ -105,17 +106,17 @@ function dhcp_leases_table():bool{
     $id  = intval($_GET["table"]);
     $page = CurrentPageName();
 
-    $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/dhcp/$id/assigned-ips"),true);
-    if (!is_object($json) && !is_array($json)) {
+    $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/dhcp/$id/assigned-ips"), true);
+    if (!is_array($json)) {
         echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}"));
         return false;
     }
-    if (is_object($json) && isset($json["Status"]) && !$json["Status"]) {
+    if (isset($json["Status"]) && !$json["Status"]) {
         echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars($json["Error"] ?? "{error}")));
         return false;
     }
 
-    $leases = is_array($json) ? $json : ($json["leases"]?? []);
+    $leases = $json["leases"] ?? [];
 
     $h   = [];
 
@@ -133,28 +134,40 @@ function dhcp_leases_table():bool{
     $h[] = "    <th data-sortable='true' data-type='text'>MAC</th>";
     $h[] = "    <th data-sortable='true' data-type='text'>{hostname}</th>";
     $h[] = "    <th data-sortable='true' data-type='text'>{expires}</th>";
+    $h[] = "    <th data-sortable='true' data-type='text'>{status}</th>";
     $h[] = "  </tr></thead><tbody>";
     $TRCLASS = null;
+    $now = new DateTime();
 
-    foreach ($leases["leases"] as $l) {
+    foreach ($leases as $l) {
             if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
-            $ip       = htmlspecialchars($l["ip_address"]   ?? $l["ip_address"] ?? '');
+            $ip       = htmlspecialchars($l["ip_address"]   ?? '');
             $mac      = htmlspecialchars($l["hardware_address"] ?? $l["mac"] ?? '');
             $hn       = htmlspecialchars($l["client_hostname"]  ?? $l["hostname"] ?? '—');
             // Go timestamps use Z suffix — use new DateTime() not substr()
             $endsRaw  = $l["ends"] ?? $l["expire"] ?? '';
             $endsStr  = '—';
+            $endsObj  = null;
             if ($endsRaw !== '') {
-                try { $endsStr = (new DateTime($endsRaw))->format('Y-m-d H:i'); } catch (Exception $e) {}
+                try { $endsObj = new DateTime($endsRaw); $endsStr = $endsObj->format('Y-m-d H:i'); } catch (Exception $e) {}
+            }
+            $bindingState = $l["binding_state"] ?? '';
+            if ($bindingState === 'active' && $endsObj !== null && $endsObj > $now) {
+                $statusLabel = "<span class='label label-success' style='color:#fff'>{active2}</span>";
+            } elseif ($bindingState === 'abandoned') {
+                $statusLabel = "<span class='label label-danger' style='color:#fff'>{abandoned}</span>";
+            } else {
+                $statusLabel = "<span class='label label-default' style='color:#fff'>{expired}</span>";
             }
             $h[] = "    <tr class='$TRCLASS'>";
             $h[] = "    <td>$ip</td>";
             $h[] = "    <td><span style='font-family:monospace'>$mac</span></td>";
             $h[] = "    <td>$hn</td><td>$endsStr</td>";
+            $h[] = "    <td>$statusLabel</td>";
             $h[] = "    </tr>";
     }
 
-    $h[] = "  </tbody><tfoot><tr><td colspan='4'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
+    $h[] = "  </tbody><tfoot><tr><td colspan='5'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
     $h[] = "</table>";
     $h[] = "<script>NoSpinner();" . implode("\n", $tpl->ICON_SCRIPTS);
     $h[] = "</script>";
@@ -164,22 +177,27 @@ function dhcp_leases_table():bool{
 }
 
 /** Returns a small health status badge (for auto-refresh). */
-function dhcp_health_badge(): void {
+function dhcp_health_badge(): bool {
     $tpl = new template_admin();
     $id  = intval($_GET["health-badge"]);
 
     $health = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/dhcp/$id/health"));
     if (!is_object($health) || !$health->installed) {
         echo "<span class='label label-danger'><i class='fas fa-times-circle'></i> {not_installed}</span>";
-        return;
+        return true;
     }
-    if ($health->running) {
-        $pid = intval($health->pid ?? 0);
-        echo "<span class='label label-success'><i class='fas fa-check-circle'></i> {running}"
-           . ($pid > 0 ? " (PID $pid)" : '') . "</span>";
-    } else {
+    if (!$health->running) {
         echo "<span class='label label-warning'><i class='fas fa-pause-circle'></i> {stopped}</span>";
+        return true;
     }
+    $pid = intval($health->pid ?? 0);
+    $h[] = "<span class='label label-success'><i class='fas fa-check-circle'></i> {running}</span>";
+   if ($pid > 0) $h[] = " &nbsp;<small class='text-muted'>PID $pid</small>";
+   if (!empty($health["uptime"])) {
+            $h[] = " &nbsp;<small class='text-muted'><i class='fas fa-clock'></i> " . htmlspecialchars($health["uptime"]) . "</small>";
+   }
+   echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+   return true;
 }
 
 /** Triggers dhcpd installation. Returns JSON-like HTML response. */
@@ -380,11 +398,15 @@ function dhcp_running_label():bool{
         $health["pid"]=0;
     }
 
+
     if(!isset($status["dhcp3"])){
         $status["dhcp3"]["version"]=$health["version"]="";
     }
 
     $version   = $status["dhcp3"]["version"];
+    if(!isset($health["pid"])){
+        $health["pid"]=0;
+    }
 
     if ($health["running"]) {
         $h[] = "    <span class='label label-primary'><i class='fas fa-check-circle'></i> {running}</span>";

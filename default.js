@@ -3479,18 +3479,26 @@ function closeAllPopoversPopup() {
 }
 $(function () {
 
+	var _popTimer = null;
+
 	function forceRemovePopovers() {
+		if (_popTimer) { clearTimeout(_popTimer); _popTimer = null; }
 		$('.popover').remove();
 		$('[data-toggle="popover"]').each(function () {
 			$(this).removeData('bs.popover');
 		});
 	}
 
+	function schedulePopoverClose() {
+		if (_popTimer) { clearTimeout(_popTimer); }
+		_popTimer = setTimeout(function () { forceRemovePopovers(); }, 10000);
+	}
+
 	$(document).off('.articaPopover');
 
 	$(document).on('mouseenter.articaPopover', '[data-toggle="popover"]', function () {
 
-		forceRemovePopovers(); // 🔥 full cleanup
+		forceRemovePopovers();
 
 		var $el = $(this);
 
@@ -3502,15 +3510,26 @@ $(function () {
 		});
 
 		$el.popover('show');
+		schedulePopoverClose();
 	});
 
-	// Close if mouse leaves trigger
+	// Mouse leaves trigger — schedule close
 	$(document).on('mouseleave.articaPopover', '[data-toggle="popover"]', function () {
-		forceRemovePopovers();
+		schedulePopoverClose();
 	});
 
-	// Close if touching popover
-	$(document).on('mouseenter click.articaPopover', '.popover', function () {
+	// Hovering over the popover itself keeps it open
+	$(document).on('mouseenter.articaPopover', '.popover', function () {
+		if (_popTimer) { clearTimeout(_popTimer); _popTimer = null; }
+	});
+
+	// Mouse leaves the popover — schedule close
+	$(document).on('mouseleave.articaPopover', '.popover', function () {
+		schedulePopoverClose();
+	});
+
+	// Click on popover closes it immediately
+	$(document).on('click.articaPopover', '.popover', function () {
 		forceRemovePopovers();
 	});
 

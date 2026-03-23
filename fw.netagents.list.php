@@ -293,6 +293,11 @@ function agents_table():bool{
         return true;
     }
     $Agents=array();
+    $search="";
+    if(isset($_GET["search"])) {
+        $search = $_GET["search"];
+    }
+
     $f=array();
     $f[]="<table class='table table-striped table-hover' id='table-agents'>";
     $f[]="<thead><tr>";
@@ -302,6 +307,10 @@ function agents_table():bool{
     }
     $f[]="  <th id='th-agent-mode'>{type}</th>";
     $f[]="  <th id='th-agent-hostname'>{hostname}</th>";
+    if($META_COMP_VIEW==0) {
+        $f[] = "  <th nowrap id='th-agent-lic'></th>";
+    }
+    $f[]="  <th nowrap id='th-agent-prodlogs'></th>";
     $f[]="  <th nowrap id='th-agent-logs'></th>";
     $f[]="  <th nowrap id='th-agent-services'></th>";
     $f[]="  <th nowrap id='th-agent-ux'></th>";
@@ -330,6 +339,13 @@ function agents_table():bool{
     foreach($json->agents as $agent){
         $id = $agent->id;
         $last_seen="-";
+
+        if(strlen($search)>1){
+            if(!preg_match("#$search#i",serialize($agent))){
+                continue;
+            }
+        }
+
         if(isset($agent->last_seen)){
             if($agent->last_seen != "0001-01-01T00:00:00Z"){
                 $date = preg_replace('/\.(\d{6})\d+/', '.$1', $agent->last_seen);
@@ -359,6 +375,8 @@ function agents_table():bool{
         }
         $f[]="  <td $wd1><span id='agent-$id-mode'></span></td>";
         $f[]="  <td style='width:99%'><span id='agent-$id-hostname'></span></td>";
+        $f[]="  <td $wd1><span id='agent-$id-lic'></span></td>";
+        $f[]="  <td $wd1><span id='agent-$id-prodlogs'></span></td>";
         $f[]="  <td $wd1><span id='agent-$id-logs'></span></td>";
         $f[]="  <td $wd1><span id='agent-$id-services'></span></td>";
         $f[]="  <td $wd1><span id='agent-$id-ux'></span></td>";
@@ -1053,6 +1071,61 @@ function blacklisted_js():bool{
     }
     return admin_tracks("set $AgentName Blacklisted for updates to $blacklistedInt");
 }
+
+function agent_info_license($Crustatus,$id,$tpl){
+
+    if(!isset($Crustatus["artica_license"])){
+        return $tpl;
+    }
+    //var_dump($agentJson->artica_license);
+    $license=$Crustatus["artica_license"];
+    $tpl->table_form_field_js("Loadjs('fw.netagents.license.php?id=$id');");
+    if($license["gold_license"]){
+        $tpl->table_form_field_text("{license}","{gold_license}",ico_certificate);
+        $tpl->table_form_field_js("");
+        return $tpl;
+    }
+
+
+    if(!$license["entreprise_license"]){
+        $tpl->table_form_field_bool("{license}",0,ico_certificate);
+        $tpl->table_form_field_js("");
+        return $tpl;
+
+    }
+
+    $tpl->table_form_field_text("{license}",$license["Info"]["license_status"],ico_certificate);
+    $tpl->table_form_field_js("");
+    return $tpl;
+
+}
+function agent_info_snapshots($Crustatus,$id,$tpl){
+
+    $artica=false;
+    if(isset($_GET["artica"])){
+        $artica=true;
+    }
+
+    if(!isset($Crustatus["artica_snapshots"])){
+        if($artica){
+            $tpl->table_form_field_js("Loadjs('fw.netagents.snapshots.php?snap-js=$id');");
+            $tpl->table_form_field_bool("{snapshots}",0,ico_file_zip);
+            return $tpl;
+        }
+        return $tpl;
+    }
+    $snaps=$Crustatus["artica_snapshots"];
+    if(!is_array($snaps)||count($snaps)===0){
+        $tpl->table_form_field_js("Loadjs('fw.netagents.snapshots.php?snap-js=$id')");
+        $tpl->table_form_field_bool("{snapshots}",0,ico_file_zip);
+        return $tpl;
+    }
+    $tpl->table_form_field_js("Loadjs('fw.netagents.snapshots.php?snap-js=$id')");
+    $tpl->table_form_field_text("{snapshots}",count($snaps),ico_file_zip);
+    return $tpl;
+
+}
+
 function agent_info_status_apt($Crustatus,$id,$tpl){
     $page=CurrentPageName();
 
@@ -1062,7 +1135,7 @@ function agent_info_status_apt($Crustatus,$id,$tpl){
     }
 
     foreach ($Crustatus["groups"] as $gps){
-        if($gps["blacklisted"]){
+        if(isset($gps["blacklisted"]) && $gps["blacklisted"]){
             $tpl->table_form_field_bool("{blacklisted}",$blacklisted,ico_stop);
             $tpl->table_form_field_bool("{system_upgrade}",0,ico_stop);
             return $tpl;
@@ -1089,27 +1162,34 @@ function agent_info_status_apt($Crustatus,$id,$tpl){
     }
 
     $apts=array();
+    $last_upgrade=0;
 
-        $upgrade_required=intval($Crustatus["aptget"]["upgrade_required"]);
-        $last_upgrade=intval($Crustatus["aptget"]["last_upgrade"]);
-        if($upgrade_required>0){
+    $upgrade_required=intval($Crustatus["aptget"]["upgrade_required"]);
+    if(isset($Crustatus["aptget"]["last_upgrade"])) {
+        $last_upgrade = intval($Crustatus["aptget"]["last_upgrade"]);
+    }
+    if($upgrade_required>0){
             $apts[]="{upgradable_packages}: $upgrade_required";
+            $tpl->table_form_field_js("Loadjs('fw.netagents.aptget.upgrade.php?id=$id')");
+            $tpl->table_form_field_button("{upgradable_packages}","{check_updates}",ico_refresh);
+            $tpl->table_form_field_js("");
         }else{
             $tpl->table_form_field_js("Loadjs('$page?apt-get-update-js=$id')");
             $tpl->table_form_field_button("{upgradable_packages}","{check_updates}",ico_refresh);
             $tpl->table_form_field_js("");
+    }
+    if($last_upgrade>0){
+        $ll="{success}";
+        if(!$Crustatus["aptget"]["last_results"]){
+               $ll="<span class='text-danger'>{with_errors}</span>";
         }
-        if($last_upgrade>0){
-            $ll="{success}";
-            if(!$Crustatus["aptget"]["last_results"]){
-                $ll="<span class='text-danger'>{with_errors}</span>";
-            }
 
-            $time=$tpl->time_to_date($last_upgrade);
-            $apts[]="{last_upgrade}: $time, $ll";
-        }
+        $time=$tpl->time_to_date($last_upgrade);
+        $apts[]="{last_upgrade}: $time, $ll";
+    }
 
     if(count($apts)>0){
+        $tpl->table_form_field_js("Loadjs('fw.netagents.aptget.reports.php?id=$id')");
         $tpl->table_form_field_text("{system_upgrade}","<small>".@implode(", ",$apts),ico_download);
     }
     return $tpl;
@@ -1151,7 +1231,7 @@ function agent_info_status_popup():bool{
     $tpl->table_form_field_js("Loadjs('fw.netagents.hostname.php?id=$id')");
     $tpl->table_form_field_text("{hostname}","<span style='text-transform:none'>".$Crustatus["hostname"]."</span>",ico_server);
     $tpl->table_form_field_js("");
-    if(strlen($json->description)>1) {
+    if(isset($json->description) && strlen($json->description)>1) {
         $tpl->table_form_field_text("{description}", "<small>$json->description</small>", ico_infoi);
     }
     $gp=array();
@@ -1187,9 +1267,9 @@ function agent_info_status_popup():bool{
         $tpl->table_form_field_text("{agent_version}",$json->version."&nbsp;/&nbsp;$CurVer",ico_infoi);
     }
 
-
+    $tpl=agent_info_snapshots($Crustatus,$id,$tpl);
     $tpl=agent_info_status_apt($Crustatus,$id,$tpl);
-
+    $tpl=agent_info_license($Crustatus,$id,$tpl);
 
 if($artica){
     $Version=AgentArticaVersion($id);
@@ -1229,15 +1309,15 @@ if($artica){
 
 function td_Aweb($agentJson):string{
     $tpl=new template_admin();
-    $AgentRefreshing=AgentRefreshing($agentJson->id);
+
 
     if($agentJson->status=="offline"){
         return $tpl->icon_browser("");
     }
 
-    if(strlen($AgentRefreshing)>1){
-        $ico=ico_refresh_animate;
-        return $tpl->_ENGINE_parse_body("<i class='$ico'></i>&nbsp;{{$AgentRefreshing}}");
+    $refresh=ico_refresh($agentJson);
+    if(strlen($refresh)>1){
+        return "$refresh";
     }
 
     if(!AgentArtica($agentJson->id)){
@@ -1281,6 +1361,7 @@ function td_status_all():bool{
         if($META_COMP_VIEW==0) {
             $status = base64_encode(td_status($jsonMain[$id]));
         }
+        $Art=new ArticaNetAgents($id);
 
         $td_memory=base64_encode(td_memory($jsonMain[$id]));
         $td_uptime=td_uptime($jsonMain[$id]);
@@ -1290,9 +1371,14 @@ function td_status_all():bool{
         $td_apt=base64_encode(td_apt($jsonMain[$id]));
         $td_ux=base64_encode(td_ux($jsonMain[$id]));
         $td_logs=base64_encode(td_logs($jsonMain[$id]));
-        $td_services=base64_encode(td_services($jsonMain[$id]));
 
-        $Art=new ArticaNetAgents($id);
+        $td_prodlogs=base64_encode(td_prodlogs($jsonMain[$id],$Art));
+        $td_services=base64_encode(td_services($jsonMain[$id]));
+        $td_license=base64_encode(td_license($jsonMain[$id]));
+
+
+
+
         if($META_COMP_VIEW==0) {
             $typeMode = base64_encode($Art->LabelType());
         }else{
@@ -1312,6 +1398,8 @@ function td_status_all():bool{
 
         $js[]="$('#agent-$id-services').html( base64_decode('$td_services') );";
         $js[]="$('#agent-$id-logs').html( base64_decode('$td_logs') );";
+        $js[]="$('#agent-$id-prodlogs').html( base64_decode('$td_prodlogs') );";
+        $js[]="$('#agent-$id-lic').html( base64_decode('$td_license') );";
         $js[]="$('#agent-$id-ux').html( base64_decode('$td_ux') );";
         $js[]="$('#agent-$id-mode').html( base64_decode('$typeMode') );";
         $js[]="$('#agent-$id-type').html( base64_decode('$type') );";
@@ -1345,6 +1433,63 @@ function td_ux($agentJson):string{
     }
     return $tpl->icon_shell();
 }
+function td_license($agentJson):string{
+    $tpl = new template_admin();
+    $id = $agentJson->id;
+
+    if(!isset($agentJson->artica_license)){
+        return "";
+    }
+    //var_dump($agentJson->artica_license);
+    $license=$agentJson->artica_license;
+    if($license->gold_license){
+        return $tpl->icon_certificate("Loadjs('fw.netagents.license.php?id=$id')","","{gold_license}");
+    }
+
+
+    if(!$license->entreprise_license){
+        return $tpl->_ENGINE_parse_body($tpl->icon_certificate("","","Community Edition<br>{$license->Info->license_status}"));
+    }
+    if(!isset($license->Info->license_status)){
+        return "";
+    }
+    return $tpl->icon_certificate("Loadjs('fw.netagents.license.php?id=$id')","",$license->Info->license_status);
+
+}
+
+function td_prodlogs($agentJson,$ArticaNetAgents):string{
+    $tpl = new template_admin();
+    $status = $agentJson->status;
+    $id = $agentJson->id;
+
+    if ($status <> "online") {
+        return "";
+    }
+
+    if(isset($agentJson->http_proxy)){
+        $http_proxy=$agentJson->http_proxy;
+        if($http_proxy->installed){
+            if(isset($http_proxy->enabled) && $http_proxy->enabled){
+                return $tpl->icon_logs2("Loadjs('fw.proxy.relatime.php?meta-id-js=$id')",
+                    "AsArticaMetaAdmin",false,"{APP_SQUID}: {requests}");
+            }
+        }
+    }
+    if(isset($agentJson->unbound)){
+        $unbound=$agentJson->unbound;
+        if($unbound->installed){
+            if(isset($unbound->enabled) && $unbound->enabled){
+                return "";
+                //return $tpl->icon_logs2("Loadjs('fw.proxy.relatime.php?meta-id-js=$id')",
+                //    "AsArticaMetaAdmin",false,"{APP_SQUID}: {requests}");
+            }
+        }
+    }
+
+    return "";
+
+
+}
 function td_logs($agentJson):string{
     $tpl = new template_admin();
     $status = $agentJson->status;
@@ -1358,7 +1503,7 @@ function td_logs($agentJson):string{
 }
 function td_services($agentJson):string{
     $tpl = new template_admin();
-    if(!is_null($agentJson->status)){
+    if(is_null($agentJson->status)){
         return $tpl->icon_services();
     }
     $status = $agentJson->status;
@@ -1378,6 +1523,12 @@ function td_status($agentJson):string{
     $status_class = "label-default";
     if($status == "online"){
         $status_class = "label-primary";
+        $action=AgentRefreshing($agentJson->id);
+        echo "// AgentRefreshing = $action\n";
+        if(strlen($action)>3){
+            $status=$action;
+        }
+
         return $tpl->_ENGINE_parse_body("<span class='label $status_class'>{{$status}}</span>");
     }
     if($status == "offline"){
@@ -1417,6 +1568,8 @@ function AgenSoft($id){
     $GLOBALS["AGENTSOFT"][$id]=$json;
     return $GLOBALS["AGENTSOFT"][$id];
 }
+
+
 function AgentRefreshing($id):string{
     $json=AgenSoft($id);
     if(!is_object($json)){
@@ -1589,15 +1742,40 @@ function td_cpu_graphs($id):array{
 
 //aptget] => Array ( [upgrade_required] => 183 [apt_running] => [last_upgrade] => 1770662194 [last_results] => ) [cached_at] => 2026-02-09T21:00:12.148501928+01:00 )
 
-function td_apt($agentJson):string{
-    $main=agent_status($agentJson->id);
 
+function ico_refresh($agentJson):string{
+
+    if($agentJson->status=="offline"){
+        return "";
+    }
+    $AgentRefreshing=AgentRefreshing($agentJson->id);
+    if(strlen($AgentRefreshing)==0){return "";}
+
+    $ico=ico_refresh_animate;
+    $id="ico-refresh-".__LINE__."-$agentJson->id";
+    $tpl=new template_admin();
+    list($tooltip,$none)=$tpl->Tooltips($id,"{{$AgentRefreshing}}");
+    return $tpl->_ENGINE_parse_body("<i class='$ico' id='$id' $tooltip></i>");
+}
+function td_apt($agentJson):string{
+
+    if($agentJson->status=="offline"){
+        return "&nbsp;";
+    }
+    $refresh=ico_refresh($agentJson);
+    if(strlen($refresh)>1){
+        return "$refresh";
+    }
+
+
+    $main=agent_status($agentJson->id);
 
     if(!isset($main["aptget"]["upgrade_required"])){
         echo "// !isset aptget->upgrade_required\n";;
         return "&nbsp;";
     }
     if($main["aptget"]["apt_running"]){
+        echo "//td_apt = apt_running\n";
         return "<i class='".ico_refresh_animate."'></i>";
     }
     if($main["aptget"]["upgrade_required"]>0){

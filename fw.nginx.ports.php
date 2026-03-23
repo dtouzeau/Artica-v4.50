@@ -314,6 +314,22 @@ function table():bool{
             }else{
                 $NICNAME = $eth->NICNAME;
             }
+            if($Ipaddr=="0.0.0.0"){
+                if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE"))==1 || intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE_SLAVE"))==1){
+
+                    $interfaceE=explode(":",$interface);
+                    $interfaceID=intval($interfaceE[1]);
+                    if($interfaceID>0){
+                        $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
+                        $ligne2=$q->mysqli_fetch_array("SELECT * FROM nics_virtuals WHERE ID={$interfaceID}");
+                        if(strlen($ligne2["ipaddr"])>3){
+                            $Ipaddr=$ligne2["ipaddr"];
+                        }
+
+                    }
+
+                }
+            }
 		}
 		$proto="http";
 		$ID=intval($ligne["ID"]);

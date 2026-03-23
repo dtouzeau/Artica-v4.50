@@ -3490,7 +3490,7 @@ Depends on your disk size, this section helps you put this storage to a new disk
 <squid_advanced_parameters_text>Tweaks and tunings about SQUID Advanced settings</squid_advanced_parameters_text>
 <sender_bcc>Duplicate outgoing mails</sender_bcc>
 <sender_bcc_text>Duplicate all outgoing messages of this user to an other email address</sender_bcc_text>
-<sender_bcc_explain>This feature will put in BCC all outgoing mails sent by this user.[br]You can only set one email address.[br]If you want to send to multiple emails, use a distribution list</sender_bcc_explain>
+<sender_bcc_explain>This feature automatically adds a BCC recipient to all outgoing emails sent by this user.[br]Only one email address can be specified.[br]To deliver copies to multiple recipients, please use a distribution list.</sender_bcc_explain>
 <sender_bcc_to>Duplicate outgoing mails to</sender_bcc_to>
 <squid_sizelimit>Headers/Page size limits</squid_sizelimit>
 <request_header_max_size_text>Request headers are usually relatively small (about 512 bytes).[br]
@@ -3806,7 +3806,7 @@ You will receive a quote from Artica Technology.</shallalist_buye>
 <finance-banking>Home page of banking companies are listed here. This is not restricted to online banking.</finance-banking>
 <finance-insurance>Websites for insurance companies and their ecosystems, whether material or social (such as mutuals, health insurance, etc.)</finance-insurance>
 <finance-moneylending>Sites one can apply for loans and mortgages or can obtain information about this business</finance-moneylending>
-<finance-realestate>Sites about all types of realestate, bying and selling homes, finding appartments for rent and selling.</finance-realestate>
+<finance-realestate>Sites covering all aspects of real estate, including buying and selling homes, finding apartments for rent, and listing properties for sale.</finance-realestate>
 <finance-other>All financial pages that do not fit in the financial categories above.</finance-other>
 <hobby-cooking> Sites concering food and food preparation.</hobby-cooking>
 <hobby-pets>Sites about all topics concerning pets: description, raise, food, looks, fairs, favorite pet stories and so on.</hobby-pets>

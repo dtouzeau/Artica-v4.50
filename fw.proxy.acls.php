@@ -72,9 +72,12 @@ function opts_popup():bool{
     $function=$_GET["function"];
     $AclsUsePages=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AclsUsePages"));
     $AclsUseRows=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AclsUseRows"));
+    $SquidBuilderAclsv2=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidBuilderAclsv2"));
     if($AclsUseRows==0){$AclsUseRows=30;}
     $form[]=$tpl->field_checkbox("AclsUsePages","{page_interval}",$AclsUsePages);
+    $form[]=$tpl->field_checkbox("SquidBuilderAclsv2","ACLs builder v2",$SquidBuilderAclsv2);
     $form[]=$tpl->field_numeric("AclsUseRows","{rows}",$AclsUseRows);
+
     echo $tpl->form_outside("",$form,"","{apply}","dialogInstance2.close();$function()");
 return true;
 

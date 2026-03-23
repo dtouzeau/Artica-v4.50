@@ -215,7 +215,8 @@ function table(){
     $jsafter        = base64_encode("$function()");
     $ProxyPac       = intval($_GET["ProxyPac"]);
     $t=time();
-
+    $qProxy->acl_GroupType["geoip"] = "{geoip_location}";
+    $qProxy->acl_GroupType["dnsdynamic"]="{dnsdynamic}";
 
 
     $acls->LoadGroupsInMemory(true);
@@ -260,8 +261,12 @@ function table(){
         $GroupName=$tpl->utf8_encode($ligne["GroupName"]);
         $SrcGroupType=$ligne["GroupType"];
         $addGroup=null;
-        $qProxy->acl_GroupType["geoip"] = "{geoip_location}";
-        $GroupType=$qProxy->acl_GroupType[$ligne["GroupType"]];
+        VERBOSE("Group Type = {$ligne["GroupType"]}",__LINE__);
+        if(isset($qProxy->acl_GroupType[$ligne["GroupType"]])) {
+            $GroupType = $qProxy->acl_GroupType[$ligne["GroupType"]];
+        }else{
+            $GroupType=$ligne["GroupType"];
+        }
         $gpsSlavles=array();
 
         $ico=$qProxy->acl_GroupTypeIcon[$ligne["GroupType"]];
@@ -321,6 +326,12 @@ function table(){
     if(isset($_GET["firewall_query"])) {
         $firewall_query = intval($_GET["firewall_query"]);
     }
+    if(isset($_GET["firewall"])){
+        if($_GET["firewall"]=="yes"){
+            $firewall_query=1;
+        }
+    }
+
     $new_object="Loadjs('fw.proxy.acls.objects.php?new-object-js=yes&ID=0&direction=0&TableLink=&RefreshTable=$function&ProxyPac=0&firewall=$firewall_query')";
     $import3x="Loadjs('fw.proxy.acls.objects.import3x.php?func=$function')";
     $users=new usersMenus();

@@ -90,6 +90,9 @@ function popup():bool{
         $KERNEL_PACKAGE = true;
         $kernbin = $tpl->kernel_binary_ver();
         $kernStr = php_uname("r");
+        if(preg_match("#^([0-9\.]+)\+deb.*?#",$kernStr,$m)){
+            $kernStr = $m[1];
+        }
         $kernStr = str_replace( "+deb13", "",$kernStr);
         $kernStr = str_replace("+deb14", "",$kernStr);
         $kernStr = str_replace("+deb15", "",$kernStr);

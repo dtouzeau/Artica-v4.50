@@ -35,26 +35,12 @@ function gscopes_page(): void {
     $id   = gid();
     $page = CurrentPageName();
 
-    $grp = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/groups/$id"));
-    if (!is_object($grp)) {
-        echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}"));
-        return;
-    }
-    if (isset($grp->Status) && !$grp->Status) {
-        echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars($grp->Error ?? "{error}")));
-        return;
-    }
-
-    $groupName  = htmlspecialchars($grp->name ?? "Group #$id");
-    $agentCount = intval($grp->agent_count ?? 0);
 
     $h   = [];
     $h[] = "<div id='gscopes-result-$id' style='margin-bottom:10px'></div>";
 
-    $h[] = "<div class='alert alert-info' style='margin-bottom:15px'>";
-    $h[] = "  <i class='fas fa-layer-group'></i> <strong>$groupName</strong>";
-    $h[] = "  &nbsp;<span class='badge' style='background:#1c84c6;color:#fff'>$agentCount</span> {agents}";
-    $h[] = "  <br><small class='text-muted'>{group_scope_push_explain}</small>";
+    $h[] = "<div style='margin-bottom:15px'>";
+    $h[] = "<small class='text-muted'>{group_scope_push_explain}</small>";
     $h[] = "</div>";
 
     $h[] = "<div style='margin-bottom:20px'>";
@@ -98,13 +84,12 @@ function gscope_form(): void {
     $h[] = "<div id='gscope-form-result-$id'></div>";
 
     // ── Identity & Type ──
+    $srid="gprp-$id-".time();
+
     $h[] = "<div class='ibox'>";
     $h[] = "  <div class='ibox-title'><h5><i class='fas fa-id-card'></i>&nbsp; {scope_identity}</h5></div>";
     $h[] = "  <div class='ibox-content'><div class='row'>";
-    $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>ID <small class='text-muted'>{auto_generated_if_empty}</small></label>";
-    $h[] = "      <input type='text' id='gscope-id-$id' class='form-control' placeholder='eth0-192.168.1.0/24'>";
-    $h[] = "    </div>";
+    $h[] = "      <input type='hidden' id='gscope-id-$id' value='$srid'>";
     $h[] = "    <div class='col-md-3'>";
     $h[] = "      <label>{type}</label>";
     $h[] = "      <select id='gscope-type-$id' class='form-control' onchange='GScopeTypeChange_$id()'>";
@@ -112,9 +97,13 @@ function gscope_form(): void {
     $h[] = "        <option value='relay'>relay</option>";
     $h[] = "      </select>";
     $h[] = "    </div>";
-    $h[] = "    <div class='col-md-3'>";
+    $h[] = "    <div class='col-md-2'>";
     $h[] = "      <label>{interface}</label>";
-    $h[] = "      <input type='text' id='gscope-iface-$id' class='form-control' placeholder='eth0'>";
+    $h[] = "      <input type='text' id='gscope-iface-$id' class='form-control' placeholder='ens192'>";
+    $h[] = "    </div>";
+    $h[] = "    <div class='col-md-1'>";
+    $h[] = "      <label>VLAN ID <small class='text-muted'>({optional})</small></label>";
+    $h[] = "      <input type='number' id='gscope-vlan-id-$id' class='form-control' min='0' max='4094' placeholder='0' value='0'>";
     $h[] = "    </div>";
     $h[] = "  </div></div></div>";
 
@@ -178,23 +167,23 @@ function gscope_form(): void {
     $h[] = "      <input type='text' id='gscope-ntp-$id' class='form-control' placeholder='192.168.1.1'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>option time-servers <small class='text-muted'>{comma_separated}</small></label>";
+    $h[] = "      <label>{time-servers} <small class='text-muted'>{comma_separated}</small></label>";
     $h[] = "      <input type='text' id='gscope-time-$id' class='form-control' placeholder='192.168.1.1'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  <div class='row' style='margin-bottom:10px'>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>next-server <small class='text-muted'>PXE/TFTP</small></label>";
+    $h[] = "      <label>{next-server} <small class='text-muted'>PXE/TFTP</small></label>";
     $h[] = "      <input type='text' id='gscope-nextserver-$id' class='form-control' placeholder='192.168.1.10'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-6'>";
-    $h[] = "      <label>filename <small class='text-muted'>PXE boot file</small></label>";
+    $h[] = "      <label>{filename} <small class='text-muted'>{pxe_file}</small></label>";
     $h[] = "      <input type='text' id='gscope-filename-$id' class='form-control' placeholder='pxelinux.0'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  <div class='row'>";
     $h[] = "    <div class='col-md-12'>";
-    $h[] = "      <label>option rfc3442-classless-static-routes <small class='text-muted'>CIDR gateway pairs, comma-separated</small></label>";
+    $h[] = "      <label>{rfc3442-classless-static-routes} <small class='text-muted'>CIDR gateway pairs, comma-separated</small></label>";
     $h[] = "      <input type='text' id='gscope-rfc3442-$id' class='form-control' placeholder='192.168.10.0/24 10.0.0.1, 0.0.0.0/0 192.168.1.254'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
@@ -206,32 +195,34 @@ function gscope_form(): void {
     $h[] = "  <div class='ibox-content'>";
     $h[] = "  <div class='row' style='margin-bottom:10px'>";
     $h[] = "    <div class='col-md-4'>";
-    $h[] = "      <label>allow unknown-clients</label>";
+    $h[] = "      <label>{deny_unkown_clients}</label>";
     $h[] = "      <select id='gscope-allow-unknown-$id' class='form-control'>";
-    $h[] = "        <option value=''>{inherit_default}</option>";
+    $h[] = "        <option value=''>{default}</option>";
     $h[] = "        <option value='allow'>allow</option>";
     $h[] = "        <option value='deny'>deny</option>";
     $h[] = "      </select>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-4'>";
-    $h[] = "      <label>ddns-domainname</label>";
+    list($tooltip,$none)=$tpl->Tooltips("gscope-ddns-domain-expl-$id","{ddns-domainname-explain}");
+    $h[] = "      <label id='gscope-ddns-domain-expl-$id' $tooltip>{ddns-domainname}</label>";
     $h[] = "      <input type='text' id='gscope-ddns-domain-$id' class='form-control' placeholder='example.com'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-4'>";
-    $h[] = "      <label>option broadcast-address</label>";
+    $h[] = "      <label>{broadcast}</label>";
     $h[] = "      <input type='text' id='gscope-broadcast-$id' class='form-control' placeholder='192.168.1.255'>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  <div class='row'>";
     $h[] = "    <div class='col-md-3'>";
-    $h[] = "      <label>ping-check <small class='text-muted'>(0 = {disabled})</small></label>";
-    $h[] = "      <input type='number' id='gscope-ping-check-$id' class='form-control' value='0' min='0'>";
+    list($tooltip,$nine)=$tpl->Tooltips("gscope-ping-check-$id-expl","{DHCPPing_check_explain}");
+
+    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='gscope-ping-check-$id'> <span id='gscope-ping-check-$id-expl' $tooltip>{DHCPPing_check}</span></label></div>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-3' style='padding-top:25px'>";
-    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='gscope-always-broadcast-$id'> always-broadcast</label></div>";
+    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='gscope-always-broadcast-$id'> {AllwaysBrodcast}</label></div>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-3' style='padding-top:25px'>";
-    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='gscope-get-lease-hostnames-$id'> get-lease-hostnames</label></div>";
+    $h[] = "      <div class='checkbox'><label><input type='checkbox' id='gscope-get-lease-hostnames-$id'> {get_lease_hostnames}</label></div>";
     $h[] = "    </div>";
     $h[] = "  </div>";
     $h[] = "  </div></div>";
@@ -346,8 +337,7 @@ function gscope_push(): void {
     elseif ($allow_unknown_mode === 'deny')  $flags["allow-unknown-clients"]  = false;
     if (!empty($_POST["always_broadcast"]))      $flags["always-broadcast"]     = true;
     if (!empty($_POST["get_lease_hostnames"]))   $flags["get-lease-hostnames"]  = true;
-    $ping_check = intval($_POST["ping_check"] ?? 0);
-    if ($ping_check > 0) $flags["ping-check"] = $ping_check;
+    if (!empty($_POST["ping_check"]))              $flags["ping-check"]          = true;
     $ddns_domain = trim($_POST["ddns_domainname"] ?? '');
     if ($ddns_domain !== '') $flags["ddns-domainname"] = $ddns_domain;
 
@@ -357,6 +347,7 @@ function gscope_push(): void {
         "id"            => trim($_POST["scope_id"]   ?? ''),
         "type"          => trim($_POST["scope_type"]  ?? 'direct'),
         "interface"     => trim($_POST["iface"]       ?? ''),
+        "vlan_id"       => intval($_POST["vlan_id"]   ?? 0),
         "subnet"        => trim($_POST["subnet"]      ?? ''),
         "netmask"       => trim($_POST["netmask"]     ?? ''),
         "authoritative" => !empty($_POST["authoritative"]),
@@ -512,6 +503,7 @@ function gscope_form_js_block(int $id, string $page): string {
     $l[] = "    scope_id:\$.trim(\$('#gscope-id-$id').val()),";
     $l[] = "    scope_type:\$('#gscope-type-$id').val(),";
     $l[] = "    iface:\$.trim(\$('#gscope-iface-$id').val()),";
+    $l[] = "    vlan_id:parseInt(\$('#gscope-vlan-id-$id').val(),10)||0,";
     $l[] = "    subnet:subnet, netmask:netmask,";
     $l[] = "    authoritative:\$('#gscope-auth-$id').is(':checked')?1:0,";
     $l[] = "    lease_default:\$('#gscope-ldef-$id').val(),";
@@ -527,7 +519,7 @@ function gscope_form_js_block(int $id, string $page): string {
     $l[] = "    allow_unknown_clients:\$('#gscope-allow-unknown-$id').val(),";
     $l[] = "    always_broadcast:\$('#gscope-always-broadcast-$id').is(':checked')?1:0,";
     $l[] = "    get_lease_hostnames:\$('#gscope-get-lease-hostnames-$id').is(':checked')?1:0,";
-    $l[] = "    ping_check:\$.trim(\$('#gscope-ping-check-$id').val()),";
+    $l[] = "    ping_check:\$('#gscope-ping-check-$id').is(':checked')?1:0,";
     $l[] = "    ddns_domainname:\$.trim(\$('#gscope-ddns-domain-$id').val()),";
     $l[] = "    relay_id:\$('#gscope-relay-id-$id').val(),";
     $l[] = "    pools_json:JSON.stringify(pools)";

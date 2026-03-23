@@ -500,6 +500,13 @@ function form_auth_method_popup():bool{
 function form_browsers_redirect_popup():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
+    $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
+
+    if($UnboundEnabled==0){
+       $f[]=$tpl->div_error("{APP_DNS_CACHE_NOT_INSTALLED}||{APP_DNS_CACHE_HOTSPOT}");
+    }else{
+        $f[]=$tpl->div_success("{APP_UNBOUND}||{APP_DNS_CACHE_HOTSPOT}");
+    }
 
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/80port"));
     $EnableHotSpotBrowsersRedirects=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableHotSpotBrowsersRedirects"));
@@ -518,10 +525,19 @@ function form_browsers_redirect_popup():bool{
     $jsrestart[]="LoadAjaxSilent('hotspot-main-status','$page?table=yes');";
     $jsrestart[]="dialogInstance2.close()";
 
-    echo $tpl->BigCircleCheckbox("EnableHotSpotBrowsersRedirects", "{CaptivePortalDetectionURLs}",  "{CaptivePortalDetectionURLs_explain}",$EnableHotSpotBrowsersRedirects,implode(";",$jsrestart),"AsSquidAdministrator");
+    $f[]=$tpl->BigCircleCheckbox("EnableHotSpotBrowsersRedirects", "{CaptivePortalDetectionURLs}",  "{CaptivePortalDetectionURLs_explain}",$EnableHotSpotBrowsersRedirects,implode(";",$jsrestart),"AsSquidAdministrator");
+    echo $tpl->_ENGINE_parse_body($f);
     return true;
 }
 function form_browsers_redirect_save():bool{
+    $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
+    if($UnboundEnabled==0){
+        $tpl=new template_admin();
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableHotSpotBrowsersRedirects",0);
+        echo $tpl->_ENGINE_parse_body("{APP_DNS_CACHE_NOT_INSTALLED}");
+        return false;
+    }
+
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableHotSpotBrowsersRedirects",intval($_POST["EnableHotSpotBrowsersRedirects"]));
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/browsers-redirects");
     return admin_tracks("Save Hotspot Captive Portal Detection URLs to {$_POST["EnableHotSpotBrowsersRedirects"]}");

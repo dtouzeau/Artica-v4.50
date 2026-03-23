@@ -60,8 +60,9 @@ function start():bool{
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
-function uninstall_perform(){
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SURICATA_NO_WIZARD",1);
+function uninstall_perform():bool{
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SURICATA_WIZARD",0);
+    return true;
 }
 
 function table(){

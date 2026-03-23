@@ -1151,8 +1151,8 @@ function table(){
     }
 
     if ($LicenseInfos["license_status"]=="{license_active}") {
-        $users->CORP_LICENSE=true;
-        $License_explain=null;
+            $users->CORP_LICENSE=true;
+            $License_explain=null;
     }
     if($REMOVE_LIC_STATUS){
         $License_explain="{license_explain_com_reset}<hr><div style='margin-top:10px;text-align:right;padding-right:50px;margin-bottom:30px'>$reset_license</div>";

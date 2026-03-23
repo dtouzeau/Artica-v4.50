@@ -1862,6 +1862,11 @@ return implode(', ', $timeParts);
     }
 
     public function time_to_date($xtime,$time=false){
+        if(strpos($xtime,"-")>0){
+            $date = new DateTime($xtime);
+            $xtime = $date->getTimestamp();
+        }
+
         if(!isset($GLOBALS["TPL"])){$GLOBALS["TPL"]=new templates();}
         return $this->_ENGINE_parse_body($GLOBALS["TPL"]->time_to_date($xtime,$time));
     }
@@ -1950,6 +1955,9 @@ return implode(', ', $timeParts);
     }
     public function kernel_binary_ver():int{
         $kernver = php_uname("r");
+        if(preg_match("#^([0-9\.]+)\+deb.*?#",$kernver,$m)){
+            $kernver = $m[1];
+        }
         $kernver = str_replace( "+deb13", "",$kernver);
         $kernver = str_replace("+deb14", "",$kernver);
         $kernver = str_replace("+deb15", "",$kernver);
@@ -1959,6 +1967,15 @@ return implode(', ', $timeParts);
         $kernver = str_replace( "+deb19", "",$kernver);
         $kernver = str_replace( "+deb20", "",$kernver);
         VERBOSE("([0-9\.-]+)-amd64 -> $kernver",__LINE__);
+
+        if (preg_match("#^([0-9\.]+)$#", $kernver, $re)) {
+            $kernbin = str_replace(".", "", $kernver);
+            $kernbin = str_replace("-", "", $kernbin);
+            VERBOSE("Current Kernel: $kernver -- $kernbin", __LINE__);
+            return intval($kernbin);
+
+        }
+
         if (!preg_match("#([0-9\.-]+)-amd64#", $kernver, $re)) {
             VERBOSE("ALERT !!!!! Current Kernel: NO MATCHES", __LINE__);
             return 0;
@@ -4286,6 +4303,22 @@ OnClick=\"blur()\" ><i class='fa-brands fa-whmcs'></i></button>";}
 
         return $this->icon_gen($ico,$iconoff,$js,true,"#f0ad4e");
     }
+    public function icon_firewall($js=null,$security=null):string{
+        $ico="fa-solid fa-shield";
+        $iconoff="fa-thin fa-shield";
+
+        if($js==null){return $this->icon_gen($ico,$iconoff,$js,false);}
+
+        if(!is_null($security)) {
+            if (strlen($security) > 2) {
+                if (!$this->IsSecurity($security)) {
+                    return $this->icon_gen($ico, $iconoff, $js, false);
+                }
+            }
+        }
+
+        return $this->icon_gen($ico,$iconoff,$js);
+    }
     public function icon_run($js=null,$security=null):string{
         $ico="fas fa-arrow-to-right";
         $iconoff="fal fa-arrow-to-right";
@@ -4552,6 +4585,24 @@ OnClick=\"blur()\" ><i class='fa-brands fa-whmcs'></i></button>";}
         if($js==null){return $this->icon_gen($ico,$iconff,$js,false);}
         return $this->icon_gen($ico,$iconff,$js,true,null,$tooltip);
     }
+    public function icon_logs2($js=null,$security=null,$ForceDisabled=false,$tooltip=null):string{
+        $ico="fa-solid fa-list-ol";
+        $iconff="fa-solid fa-list-ol";
+
+
+        if(!$this->IsSecurity($security)){return $this->icon_gen($ico,$iconff,$js,false);}
+
+        if($ForceDisabled){
+            return "<button type='button' class='btn btn-default btn-bitbucket' OnClick=\"$js\" >
+                            <i class='$iconff'></i>
+                    </button>";
+        }
+
+        if($js==null){return $this->icon_gen($ico,$iconff,$js,false);}
+        return $this->icon_gen($ico,$iconff,$js,true,null,$tooltip);
+    }
+
+
     public function icon_shell($js=null,$security=null,$ForceDisabled=false,$tooltip=null):string{
         $ico="fa-solid fa-square-terminal";
         $iconff="fa-regular fa-square-terminal";
@@ -4902,6 +4953,26 @@ OnClick=\"blur()\" ><i class='fa-brands fa-whmcs'></i></button>";}
 
         return "<button type='button' class='btn btn-white btn-bitbucket' OnClick=\"$js\" >
         <i class='$ico' style='color:$color'></i></button>";
+
+
+    }
+    public function icon_certificate($js = null, $security = null, $tooltips=null):string{
+        $ico=ico_certificate;
+        $tooltip="";
+        $id=md5($js.$tooltips.microtime(true));
+        if(!is_null($tooltips) && strlen($tooltips)>2){
+            list($tooltip,$jsadd)=$this->Tooltips("span-$id",$tooltips);
+        }
+
+        if (!$this->IsSecurity($security)) {
+            return "<button type='button' id='$id' class='btn btn-default btn-bitbucket' $tooltip OnClick=\"Blur()\" ><i class='$ico'></i></button>";
+        }
+        if ($js == null) {
+            return "<button type='button' id='$id' class='btn btn-default btn-bitbucket' $tooltip OnClick=\"Blur()\" ><i class='$ico'></i></button>";
+        }
+
+
+        return "<button type='button' id='$id' class='btn btn-white btn-bitbucket' $tooltip OnClick=\"$js\" ><i class='$ico' style='color:#1ab394'></i></button>";
 
 
     }
@@ -5826,6 +5897,30 @@ OnClick=\"blur()\" ><i class='fa-brands fa-whmcs'></i></button>";}
 
 
 
+    private function table_object_dnsdynamic():array{
+        if(isset($GLOBALS["ACLS_OBJECT:dnsdynamic"])){
+            return $GLOBALS["ACLS_OBJECT:dnsdynamic"];
+        }
+        $stats=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/cognixsys/stats"),true);
+        if(!isset($stats["Stats"])) {
+            $GLOBALS["ACLS_OBJECT:dnsdynamic"] = array();
+            return $GLOBALS["ACLS_OBJECT:dnsdynamic"];
+        }
+        if(!isset($stats["Stats"]["firewall_zones"])) {
+            $GLOBALS["ACLS_OBJECT:dnsdynamic"] = array();
+            return $GLOBALS["ACLS_OBJECT:dnsdynamic"];
+        }
+        foreach ($stats["Stats"]["firewall_zones"] as $json2){
+            $entries=$json2["entries"];
+            $gpid=$json2["gpid"];
+            $GLOBALS["ACLS_OBJECT:dnsdynamic"][$gpid]=$entries;
+        }
+        if(!isset($GLOBALS["ACLS_OBJECT:dnsdynamic"])){
+            $GLOBALS["ACLS_OBJECT:dnsdynamic"]=array();
+
+        }
+       return $GLOBALS["ACLS_OBJECT:dnsdynamic"];
+    }
 
     public function table_object($gpid,$link_table=null){
         $tpl=new template_admin();
@@ -5850,6 +5945,7 @@ OnClick=\"blur()\" ><i class='fa-brands fa-whmcs'></i></button>";}
                 $SMTP = 1;
             }
         }
+        VERBOSE("$gpid,$link_table",__LINE__);
 
         $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
         $qProxy=new mysql_squid_builder(true);
@@ -5857,9 +5953,10 @@ OnClick=\"blur()\" ><i class='fa-brands fa-whmcs'></i></button>";}
         $ligne=$q->mysqli_fetch_array("SELECT GroupName,GroupType FROM webfilters_sqgroups WHERE ID='$gpid'");
         if(!$q->ok){echo $q->mysql_error;}
         $GroupName=null;
-
-
         $GroupType=$ligne["GroupType"];
+
+
+
         $acl_GroupType=array();
         foreach ($qProxy->acl_GroupType as $index=>$val){
             $acl_GroupType[$index]=$val;
@@ -5896,6 +5993,16 @@ OnClick=\"blur()\" ><i class='fa-brands fa-whmcs'></i></button>";}
         VERBOSE("$gpid - $GroupType - $GroupTypeName - {$ligne["GroupName"]}",__LINE__);
 
         $icon=$qProxy->acl_GroupTypeIcon[$GroupType];
+
+
+
+        if($GroupType=="dnsdynamic"){
+            $arry=$this->table_object_dnsdynamic();
+            $GroupName=$tpl->utf8_encode($ligne["GroupName"]);
+            return array("GROUPNAME"=>"$GroupName","ITEMS"=>$arry[$gpid],"TYPE"=>$GroupTypeName,
+                "NOITEMS"=>False,"ICO"=>$icon);
+
+        }
 
         if($GroupType=="AclsGroup"){
             $GroupName=$tpl->utf8_encode($ligne["GroupName"]);
@@ -10077,7 +10184,7 @@ if(typeof dialogInstance == 'object'){
         $text=$this->_ENGINE_parse_body($text);
 
 
-        if(strpos($text,"||")>3){
+        if(strpos($text,"||")>2){
             $tb=explode("||",$text);
             $title=$tb[0];
             $text=$tb[1];
@@ -10620,6 +10727,68 @@ $('#data_$id .input-group.date').datepicker({
         $this->XHR[]="if(!document.getElementById('$id')){alert('$name:$id !!');return;};XHR.appendData('$name',  document.getElementById('$id').getAttribute('data-values'));";
         return $this->_field_intr($label,@implode("\n",$h),$explain);
 
+    }
+
+    public function NameSpaceIntToStr($nsID=0):string{
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/network/namespaces/list"));
+        if(!is_object($json) || !$json->success){
+            $err="";
+            return "{unknown}";
+
+        }
+
+        if(!isset($json->data) || !is_array($json->data) || count($json->data)==0){
+            return "{unknown}";
+        }
+        foreach($json->data as $ns) {
+            $id = intval($ns->ID ?? $ns->id ?? 0);
+            $name = htmlspecialchars($ns->name ?? "ns-$id");
+            if($nsID==$id){
+                return $name;
+            }
+        }
+        return "{unknown}";
+    }
+
+    public function field_NameSpaces($name,$value):string{
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/network/namespaces/list"));
+        if(!is_object($json) || !$json->success){
+            $err="";
+            return $this->field_array_hash(array(),$name,"{namespace}","",false);
+
+        }
+
+        if(!isset($json->data) || !is_array($json->data) || count($json->data)==0){
+            return $this->field_array_hash(array(),$name,"{namespace}","",false);
+        }
+        foreach($json->data as $ns){
+            $id=intval($ns->ID ?? $ns->id ?? 0);
+            $name=htmlspecialchars($ns->name ?? "ns-$id");
+            $enabled=isset($ns->enabled) ? intval($ns->enabled) : 0;
+            $exists=isset($ns->exists) ? $ns->exists : false;
+            $ns_addr="-";
+            if(isset($ns->ns_addrs) && is_array($ns->ns_addrs) && count($ns->ns_addrs)>0){
+                $ns_addr=htmlspecialchars($ns->ns_addrs[0]);
+            }
+            $host_addr="-";
+            if(isset($ns->host_addrs) && is_array($ns->host_addrs) && count($ns->host_addrs)>0){
+                $host_addr=htmlspecialchars($ns->host_addrs[0]);
+            }
+            $has_nat=(isset($ns->has_nat) && $ns->has_nat) ? "NAT" : "-";
+            $enabled_text="{active2}";
+            if(!$enabled){
+                $enabled_text="{inactive2}";
+
+            }elseif($exists){
+                $lo_up=isset($ns->lo_up) ? $ns->lo_up : false;
+                if(!$lo_up){
+                    $enabled_text="{degraded}";
+                }
+            }
+            $MAIN[$id]="$name ($enabled_text - $has_nat)";
+
+        }
+        return $this->field_array_hash($MAIN,$name,"{namespace}",$value,false);
     }
 
     public function field_numeric($name,$label=null,$value=0,$explain=null,$js=null,$disabled=false){

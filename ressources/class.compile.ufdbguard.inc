@@ -137,6 +137,11 @@ class compile_ufdbguard{
 
 	}
     private function unserializeb64($data):array{
+
+        if(is_array($data)){
+            return $data;
+        }
+
         if(is_null($data)){
             return array();
         }

@@ -7,6 +7,10 @@ include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 include_once(dirname(__FILE__)."/ressources/class.webconsole.params.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+if(isset($_GET["webshell-js"])){webshell_js();exit;}
+if(isset($_GET["webshell-popup"])){webshell_popup();exit;}
+if(isset($_POST["EnableUnixShell"])){webshell_save();exit;}
+
 if(isset($_GET["restart-console-js"])){wait_restart_perform();exit;}
 if(isset($_GET["restart-schedule-js"])){restart_schedule_js();exit;}
 if(isset($_GET["restart-schedule-popup"])){restart_schedule_popup();exit;}
@@ -282,7 +286,35 @@ function reverse_api_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     return $tpl->js_dialog1("{inlude_rest_api}","$page?reverse-api-popup=yes");
+}
+function webshell_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog2("{webshell_console}","$page?webshell-popup=yes",650);
+}
+function webshell_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $EnableUnixShell=1;
 
+    $DisableUnixShell=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableUnixShell"));
+    if($DisableUnixShell==1){
+        $EnableUnixShell=0;
+    }
+   echo $tpl->BigCircleCheckbox("EnableUnixShell","{enable_feature}",
+        "{webshell_explain}",$EnableUnixShell,
+       "dialogInstance2.close();LoadAjaxSilent('artica-web','$page?table-static=yes')");
+    return true;
+}
+function webshell_save():bool{
+    $EnableUnixShell=intval($_POST["EnableUnixShell"]);
+    if($EnableUnixShell==1){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisableUnixShell",0);
+    }else{
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisableUnixShell",1);
+    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/htopweb/restart");
+    return true;
 }
 function nic_js():bool{
     $page=CurrentPageName();
@@ -363,6 +395,13 @@ function nic_popup():bool{
 
     $form[]=$tpl->field_interfaces_choose("LighttpdArticaListenInterface", "{listen_interface}", $LighttpdArticaListenInterface);
     $form[]=$tpl->field_numeric("ArticaHttpsPort", "{listen_port}", $ArticaHttpsPort);
+
+    $EnableNamespaces=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNamespaces"));
+    if($EnableNamespaces==1){
+        $WebConsoleNamespaceID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WebConsoleNamespaceID"));
+        $form[]=$tpl->field_NameSpaces("WebConsoleNamespaceID",$WebConsoleNamespaceID);
+    }
+
     echo  $tpl->form_outside(null,$form,
         null,"{apply}",js_after_forms(),$security);
 
@@ -884,6 +923,15 @@ function table_static(){
     $tpl->table_form_field_bool("{EnableLockUnixConsole}",$EnableLockUnixConsole,ico_user_lock);
 
     $tpl->table_form_section("{http_engine}");
+
+    $DisableUnixShell=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableUnixShell"));
+    $tpl->table_form_field_js("Loadjs('$page?webshell-js=yes')",$security);
+    if($DisableUnixShell==0){
+        $tpl->table_form_field_bool("{webshell_console}",true,ico_terminal);
+    }else{
+        $tpl->table_form_field_bool("{webshell_console}",false,ico_terminal);
+    }
+
     $ArticaWebReverse=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaWebReverse"));
     $tpl->table_form_field_js("Loadjs('$page?reverse-proxy-js=yes')",$security);
 
@@ -967,6 +1015,17 @@ function table_static(){
 
     $tpl->table_form_field_js("Loadjs('$page?nic-js=yes')");
     if($LighttpdArticaListenInterface==null){$LighttpdArticaListenInterface="{all}";}
+
+
+    $EnableNamespaces=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNamespaces"));
+    if($EnableNamespaces==1){
+        $WebConsoleNamespaceID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WebConsoleNamespaceID"));
+        if($WebConsoleNamespaceID>0) {
+            $LighttpdArticaListenInterface=$tpl->NameSpaceIntToStr($WebConsoleNamespaceID);
+            $LighttpdArticaListenInterface="<small>{namespace} - $LighttpdArticaListenInterface</small>";
+        }
+    }
+
     $tpl->table_form_field_text("{listen_interface}","$LighttpdArticaListenInterface:$ArticaHttpsPort $ssl",ico_nic);
 
 
@@ -977,7 +1036,6 @@ function table_static(){
     }
 
     $APP_NGINX_CONSOLE_HTTPV2=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NGINX_CONSOLE_HTTPV2"));
-
     $APP_NGINX_CONSOLE_SUB_MODULE=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NGINX_CONSOLE_SUB_MODULE"));
 
     if($APP_NGINX_CONSOLE_HTTPV2==1) {
@@ -994,7 +1052,7 @@ function table_static(){
     }
 
 
-$tpl->table_form_field_js("Loadjs('$page?http-js=yes')");
+    $tpl->table_form_field_js("Loadjs('$page?http-js=yes')");
     $tpl->table_form_field_bool("{Enable_XSS_Protection}",$NoXSSProtection,ico_shield);
 
     $LighttpdAllowAuthenticateScreen=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LighttpdAllowAuthenticateScreen"));
@@ -1034,7 +1092,6 @@ $tpl->table_form_field_js("Loadjs('$page?http-js=yes')");
             $tpl->table_form_field_text("{limit_countries}","$c {countries}",ico_earth);
         }
     }
-
 
     $tpl->table_form_field_js("Loadjs('fw.articaweb.ngx_stream_access_module.php');");
     $tpl->table_form_field_button("{limit_access}","{manage} <span id='CountOfStreamAccessModule'>$ngx_stream_access_module</span>",ico_shield);

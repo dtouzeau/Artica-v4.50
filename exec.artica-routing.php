@@ -3,7 +3,6 @@
 ini_set("bug_compat_42" , "off"); ini_set("session.bug_compat_warn" , "off"); 
 include_once(dirname(__FILE__).'/ressources/class.ini.inc');
 include_once(dirname(__FILE__).'/ressources/class.ldap.inc');
-include_once(dirname(__FILE__).'/ressources/class.domains.diclaimers.inc');
 include_once(dirname(__FILE__).'/ressources/class.mail.inc');
 include_once(dirname(__FILE__).'/ressources/class.mysql.inc');
 include_once(dirname(__FILE__).'/framework/class.unix.inc');if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}

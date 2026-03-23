@@ -930,6 +930,7 @@ function status2(){
     $H3="<span style='font-size:12px'>";
     $ALREADY_INTERFACE=array();
     $EnableipV6=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableipV6"));
+    $EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
 	foreach($results as $index=>$ligne) {
         $md=md5(serialize($ligne));
         if (!isset($PhysicalsInterfaces[$ligne["Interface"]])) {
@@ -1131,12 +1132,13 @@ function status2(){
             "</td>";
         $html[]="<td class=\"$text_class\" style='width:99%' nowrap>
 ".$tpl->td_href("$H3$IPADDR&nbsp;&nbsp;($NICNAME)</span>",null,$JS)."$carrier_changes_text$macvlan_text$ipv6Text$defaultGatewayTips</span></td>";
-        $ico_graphs_rx=$tpl->icon_stats("");
-        $ico_graphs_tx=$tpl->icon_stats("");
-        if(is_file("img/squid/{$Interface}rx-hourly.png")){
-            $ico_graphs_rx=$tpl->icon_stats("Loadjs('fw.rrd.php?img={$Interface}rx')");
-            $ico_graphs_tx=$tpl->icon_stats("Loadjs('fw.rrd.php?img={$Interface}tx')");
+        $ico_graphs_rx=$tpl->icon_nothing();
+        $ico_graphs_tx=$tpl->icon_nothing();
+        if($EnableDebianAgent==0) {
+            $ico_graphs_rx = $tpl->icon_stats("Loadjs('fw.rrd.php?iface={$Interface}')");
+            $ico_graphs_tx = $tpl->icon_stats("Loadjs('fw.rrd.php?iface={$Interface}')");
         }
+
 
 
         if($EnableVnStat==1){
@@ -4101,8 +4103,8 @@ function table(){
             if (count($NETADDR) == 0) {
                 $NETADDR_TEXT = $tpl->icon_nothing();
                 if ($nicz->IPADDR <> null) {
-                    $NETADDR_TEXT = "<span $muted>{$qico}$nicz->IPADDR</span>";
-                    $ComputerMacAddress = "<span $muted>{$qico}$ComputerMacAddress</span>";
+                    $NETADDR_TEXT = "<span $muted>$qico$nicz->IPADDR</span>";
+                    $ComputerMacAddress = "<span $muted>$qico$ComputerMacAddress</span>";
                 } else {
                     $ComputerMacAddress = "<span $muted>$qico$ComputerMacAddress</span>";
                 }
@@ -4186,6 +4188,17 @@ function table(){
         if($val=="tailscale0"){
             $metric_warning=null;
             $metric_text=null;$gateway_text=null;$error=null;$hardware_text=null;
+        }
+        if(preg_match("#veth[0-9]+h$#",$val)){
+            $metric_warning=null;
+            $href=null;
+            $metric_text=null;$gateway_text=null;$error=null;$hardware_text=null;
+            $ComputerMacAddress=$NetStatus->MacAddr;
+            $FIREHOLE_ROW       =$tpl->icon_nothing();
+            $PROXY_ARP          = $tpl->icon_nothing();
+            $MASQUERADE         = $tpl->icon_nothing();
+            $watchdog_field     = $tpl->icon_nothing();
+            $access_internet    = $tpl->icon_nothing();
         }
 
         if($ComputerMacAddress==null){$ComputerMacAddress=$tpl->icon_nothing();}

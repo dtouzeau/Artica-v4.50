@@ -18,6 +18,7 @@ function agent_info_net():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $id=intval($_GET["id"]);
+    $_GET["agent-id"]=$id;
 
     $Main=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/status/$id"),true);
     if(json_last_error()>JSON_ERROR_NONE){
@@ -120,7 +121,11 @@ function build_interface_card(array $iface,?array $detail,int $id,string $page):
     $h[]="      </div>";
     $h[]="      <div class='col-md-6 text-right'>";
     // Metrics chart link
-    $h[]="        <a href='javascript:void(0)' onclick=\"Loadjs('fw.netagents.interface.metrics.php?agent-interface-metrics-js=$id')\" class='btn btn-xs btn-white'><i class='".ico_speed."'></i> {statistics}</a>";
+    $h[]="        <a href='javascript:void(0)' onclick=\"Loadjs('fw.netagents.network.ifaces.metrics.php?netif-js=$id')\" class='btn btn-xs btn-white'><i class='".ico_speed."'></i> {statistics}</a>";
+    $h[]="        <a href='javascript:void(0)' onclick=\"Loadjs('fw.netagents.netstats.php?js={$_GET["agent-id"]}')\" class='btn btn-xs btn-white'><i class='".ico_nic."'></i> {open_ports}</a>";
+
+
+
     $h[]="      </div>";
     $h[]="    </div>";
     $h[]="  </div>";

@@ -30,13 +30,12 @@ if(isset($_GET["ip-popup-start"])){ip_popup_start();exit;}
 if(isset($_GET["ip-view"])){ip_save();exit;}
 if(isset($_GET["main-page"])){page();exit;}
 if(isset($_GET["search-file-js"])){search_file_js();exit;}
+if(isset($_GET["meta-id-js"])){node_js();exit;}
+if(isset($_GET["meta-id-popup"])){node_popup();exit;}
 if(isset($_GET["search-file-popup"])){search_file_popup();exit;}
 if(isset($_GET["opts"])){search_opts_js();exit;}
 if(isset($_GET["search-opts-popup"])){search_opts_popup();exit;}
 if(isset($_GET["search-opts-reset"])){search_opts_reset();exit;}
-
-
-
 if(isset($_POST["remote_addr"])){search_opts_save();exit;}
 if($EnableUfdbGuard==1){if($users->AsProxyMonitor){tabs();exit;}}
 if($users->AsProxyMonitor){if($EnableDNSDist==1){tabs();exit;}}
@@ -51,6 +50,13 @@ function search_file_js():bool{
     $ID=intval($_GET["search-file-js"]);
     return $tpl->js_dialog2("{search} N.$ID","$page?search-file-popup=$ID",2048);
 }
+function node_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $ID=intval($_GET["meta-id-js"]);
+    return $tpl->js_dialog2("{APP_SQUID} {requests} N.$ID","$page?meta-id-popup=$ID",2048);
+}
+
 function search_opts_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -522,6 +528,53 @@ function WebFilterPolicy($data):array{
 
     return $data;
 }
+
+
+function node_popup():bool{
+    $ID=intval($_GET["meta-id-popup"]);
+    $page       = CurrentPageName();
+    $tpl        = new template_admin();
+    $t=time();
+
+    $html[]="<div class=\"row\"> 
+		<div class='ibox-content'>
+		<div class=\"input-group\">
+      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["PROXY_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
+      		<span class=\"input-group-btn\">
+       		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"ss$t();\">Go!</button>
+      	</span>
+     </div>
+    </div>
+</div>
+	<div class='row' id='spinner'>
+		<div id='progress-firehol-restart'></div>
+		<div  class='ibox-content'>
+			<div id='table-loader-$t'></div>
+		</div>
+	</div>
+	<script>
+		function Search$t(e){
+			if(checkEnter(e) ){
+			    ss$t();
+			}
+		}
+		
+		function ss$t(){
+			var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
+			LoadAjax('table-loader-$t','$page?search='+ss+'&search-node=$ID');
+		}
+		
+		function Start$t(){
+			var ss=document.getElementById('search-this-$t').value;
+			ss$t();
+		}
+		Start$t();
+		NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
+	</script>";
+
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
 function search_file_popup(){
     $ID=$_GET["search-file-popup"];
     $page       = CurrentPageName();
@@ -665,11 +718,21 @@ function search(){
     $logfileD                   = new logfile_daemon();
     $SquidVersion               = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidVersion");
     $search_id                  = 0;
+    $search_node                = 0;
     $GLOBALS["redirect_text"]              = $tpl->_ENGINE_parse_body("{ForceRedirect}");
 
     if(isset($_GET["search-id"])){$search_id=intval($_GET["search-id"]);}
+    if(isset($_GET["search-node"])){$search_node=intval($_GET["search-node"]);}
+
+
+
     $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
     if($Enablehacluster==1){$SquidNoAccessLogs=0; }
+    if($search_node>0){
+        $Enablehacluster=0;
+        $SquidNoAccessLogs=0;
+        $search_id=0;
+    }
 
     if($_GET["search"]==null){$_GET["search"]="50 events";}
     if($SquidNoAccessLogs==1){echo $tpl->div_error("<a href=\"/logs-rotate\" style='color:red'>{FATAL_SQUID_ACCESS_LOG}</a>");return;}
@@ -734,16 +797,74 @@ function search(){
         $sock->REST_API_TIMEOUT=300;
     }
 
-    $data=$sock->REST_API("/proxy/accesses/{$MAIN["MAX"]}/{$MAIN["TERM"]}/{$_GET["SearchString"]}/{$_GET["FinderList"]}/$DATE/$logfile/$ipaddr");
+    if($search_node==0){
+        $uri = "/proxy/accesses/{$MAIN["MAX"]}/{$MAIN["TERM"]}/{$_GET["SearchString"]}/{$_GET["FinderList"]}/$DATE/$logfile/$ipaddr";
+        $data = $sock->REST_API($uri);
+        $json=json_decode($data);
+        if (json_last_error()> JSON_ERROR_NONE) {
+            echo $tpl->div_error(json_last_error_msg());
+        }
+        if(!$json->Status){
+            echo $tpl->div_error($json->Error);
+            return false;
+        }
+    }else{
+        $agentID = $search_node;
+        $data = array(
+            "max"         => $MAIN["MAX"],          // max lines to return (default: 50)
+            "term"        => $MAIN["TERM"],           // search term (substring match)
+            "search"      => $_GET["SearchString"],           // alias for term
+            "finder_list" => $_GET["FinderList"],           // comma-separated field filters
+            "date"        => $DATE,           // date filter (YYYY-MM-DD or similar)
+            "logfile"     => $logfile,           // specific log file path on agent
+            "ipaddr"      => $ipaddr            // filter by client IP
+        );
 
-    $json=json_decode($data);
-    if (json_last_error()> JSON_ERROR_NONE) {
-        echo $tpl->div_error(json_last_error_msg());
+        $json = json_decode(
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON(
+                "/netagents/proxy/accesses/$agentID",
+                $data
+            )
+        );
+
+        // Error check (netagent envelope)
+        if (is_object($json) && isset($json->Status) && !$json->Status) {
+            echo $tpl->_ENGINE_parse_body($tpl->div_error("Error: " . $json->Error));
+            return false;
+        }
+
+        // Success response fields:
+        // $json->success  (bool)
+        // $json->lines    (array of raw access log lines)
+        // $json->count    (int — number of lines returned)
+        // $json->source   (string — log file path on agent)
+        // $json->error    (string — only on failure)
+
+        if (!$json->success) {
+            $errstr="";
+            if(isset($json->Error)){
+                $errstr=$json->Error;
+            }
+            echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}||$errstr"));
+            return true;
+        }
+
+        if(!isset($json->count)){
+            echo $tpl->_ENGINE_parse_body($tpl->div_success("{no_data}"));
+            return true;
+        }
+        if($json->count==0){
+            echo $tpl->_ENGINE_parse_body($tpl->div_success("{no_data} L.".__LINE__));
+            return true;
+        }
+
+        if ($json->success) {
+            $filename="/usr/share/artica-postfix/ressources/logs/access.log.$agentID.tmp";
+            file_put_contents($filename,@implode("\n",$json->lines));
+        }
     }
-    if(!$json->Status){
-        echo $tpl->div_error($json->Error);
-        return false;
-    }
+
+
     $ipaddr=$tpl->javascript_parse_text("{members}");
     $destination=$tpl->javascript_parse_text("{destinations}");
     $zdate=$tpl->_ENGINE_parse_body("{zDate}");
@@ -1473,6 +1594,9 @@ function search(){
         $domain_field = $tpl->td_href($URL,
             "{actions}", "Loadjs('fw.proxy.relatime.actions.php?dom=" . urlencode($URL) . "&category-id=$category_id&urlsrc=$URLSRCEncoded')");
 
+        if($search_node>0){
+            $domain_field=$URL;
+        }
 
         $html[] = "<tr>";
         $html[] = "<td><span style='color:$color'>$date{$proxy_server}</span></td>";
@@ -1550,6 +1674,11 @@ function search(){
 
         $ipencode = urlencode($iptext);
         $iptext = $tpl->td_href($ip, null, "Loadjs('fw.proxy.relatime.actions.php?dom=$ipencode&from=yes')");
+
+        if($search_node>0){
+            $iptext=$ip;
+        }
+
         $link = str_replace("%color%", $color, $link);
         $domain_field = str_replace("%color%", $color, $domain_field);
         $zCode0 = str_replace("%color%", $color, $zCode0);
@@ -1592,6 +1721,10 @@ function search(){
             }
             $DESTINATION_TEXT = $tpl->td_href($peer_rule_from_id . $FinalDestinationText, $FinalDestinationText,
                 "Loadjs('fw.proxy.parents.php?ruleid-js=$acl_peer_id',true);");
+
+            if($search_node>0){
+                $DESTINATION_TEXT=$FinalDestinationText;
+            }
 
         }
 
