@@ -127,7 +127,6 @@ function delayed_net():bool{
     $sh[]="$touch /etc/artica-postfix/network-delayed";
     $sh[]="$logger -i -t network \"Starting Delayed Network feature.\" || true";
     $sh[]="/usr/sbin/artica-phpfpm-service -restart-network >/dev/null 2>&1";
-    $sh[]="/usr/bin/php /usr/share/artica-postfix/exec.lighttpd.php --system-reload >/dev/null 2>&1";
     $sh[]="/etc/init.d/monit restart >/dev/null 2>&1";
     $sh[]="";
     $modprobe=$unix->find_program("modprobe");

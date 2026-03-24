@@ -9739,8 +9739,9 @@ if(typeof dialogInstance == 'object'){
             $view_pass2=null;
         }
 
-        $F="<div class=\"input-group\"><input type='password' id='$id' class='form-control' value='$value' style='font-size:14px'>$view_pass1</div>";
-        $F2="<div class=\"input-group\"><input type='password' id='$id2' class='form-control' value='$value' style='font-size:14px'>$view_pass2</div>";
+        $maskedValue=($value!==null && strlen($value)>0) ? '%%MASKED%%' : '';
+        $F="<div class=\"input-group\"><input type='password' id='$id' class='form-control' value='$maskedValue' style='font-size:14px' onfocus=\"if(this.value==='%%MASKED%%'){this.value='';}\">$view_pass1</div>";
+        $F2="<div class=\"input-group\"><input type='password' id='$id2' class='form-control' value='$maskedValue' style='font-size:14px' onfocus=\"if(this.value==='%%MASKED%%'){this.value='';}\">$view_pass2</div>";
 
         $NoSpinner="NoSpinner()";
 
@@ -9761,11 +9762,12 @@ if(typeof dialogInstance == 'object'){
         if($notnull){
             $cannot_be_a_null_value=$this->javascript_parse_text("{cannot_be_a_null_value}");
             $this->XHR[]="var F$id=document.getElementById('$id').value;";
+            $this->XHR[]="if(F$id==='%%MASKED%%'){F$id='';}";
             $this->XHR[]="if(F$id.length==0){ FieldHTMLError('$id'); document.getElementById('inside-form-alert').innerHTML='<div class=\"alert alert-danger\"><strong>$label</strong> $cannot_be_a_null_value</div>';NoSpinner();return;}";
 
-
-            $this->XHR[]="var aF$id=document.getElementById('$id').value;";
+            $this->XHR[]="var aF$id=F$id;";
             $this->XHR[]="var bF$id=document.getElementById('$id2').value;";
+            $this->XHR[]="if(bF$id==='%%MASKED%%'){bF$id='';}";
             $this->XHR[]="if ( aF$id.length > 0 ){";
             $this->XHR[]="\tif( aF$id.length < 5 ){ $NoSpinner;alert('Password is too short (minimum five characters)!');return;}";
             $this->XHR[]="\tif( aF$id == bF$id ){ }else{ $NoSpinner;alert('Passwords Do Not Match!');return;}";
@@ -9783,17 +9785,19 @@ if(typeof dialogInstance == 'object'){
 
         $this->XHR[]="var aF$id=document.getElementById('$id').value;";
         $this->XHR[]="var bF$id=document.getElementById('$id2').value;";
+        $this->XHR[]="if(aF$id==='%%MASKED%%'){aF$id='';}";
+        $this->XHR[]="if(bF$id==='%%MASKED%%'){bF$id='';}";
         $this->XHR[]="if( aF$id.length > 0 ){";
         $this->XHR[]="\tif( aF$id.length < 5 ){ $NoSpinner;alert('Password is too short (minimum five characters)!');return;}";
         $this->XHR[]="\tif( aF$id == bF$id ){ }else{ $NoSpinner;alert('Passwords Do Not Match!');return;}";
         $this->XHR[]="}";
-        $this->XHR[]="XHR.appendData('$name',  encodeURIComponent(document.getElementById('$id').value));";
+        $this->XHR[]="if(aF$id!==''){XHR.appendData('$name',  encodeURIComponent(aF$id));}";
         $tt[]=$this->_field_intr($label,$F,$explain);
         $tt[]=$this->_field_intr("&nbsp;",$F2);
         return @implode("\n", $tt);
 
     }
-    public function field_password($name,$label,$value=null,$notnull=false,$explain=null,$disabled=false){
+    public function field_password($name,$label,$value=null,$notnull=false,$explain=null,$disabled=false):string{
 
         if(!isset($GLOBALS["EnableShowPasswords"])){
             $GLOBALS["EnableShowPasswords"]=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableShowPasswords"));
@@ -9831,8 +9835,9 @@ if(typeof dialogInstance == 'object'){
         if($GLOBALS["EnableShowPasswords"]==0){$view_pass1=null;}
 
 
+        $maskedValue=($value!==null && strlen($value)>0) ? '%%MASKED%%' : '';
         $F="<div class=\"input-group\">
-            <input type='password' name='{$name}' placeholder='{$label}' id='$id' class='form-control' value='$value' style='font-size:14px'>
+            <input type='password' name='{$name}' placeholder='{$label}' id='$id' class='form-control' value='$maskedValue' style='font-size:14px' onfocus=\"if(this.value==='%%MASKED%%'){this.value='';}\">
             $view_pass1
             </div>";
 
@@ -9841,6 +9846,7 @@ if(typeof dialogInstance == 'object'){
         if($notnull){
             $cannot_be_a_null_value=$this->javascript_parse_text("{cannot_be_a_null_value}");
             $this->XHR[]="var F$id=document.getElementById('$id').value;";
+            $this->XHR[]="if(F$id==='%%MASKED%%'){F$id='';}";
             $this->XHR[]="if(F$id.length==0){ FieldHTMLError('$id'); document.getElementById('inside-form-alert').innerHTML='<div class=\"alert alert-danger\"><strong>$label</strong> $cannot_be_a_null_value</div>';NoSpinner();return;}";
             $this->XHR[]="XHR.appendData('$name',  encodeURIComponent(F$id));";
             return $this->_field_intr($label,$F,$explain);
@@ -9851,7 +9857,9 @@ if(typeof dialogInstance == 'object'){
             return $this->_field_intr($label,$F,$explain);
         }
 
-        $this->XHR[]="XHR.appendData('$name',  encodeURIComponent(document.getElementById('$id').value));";
+        $this->XHR[]="var F$id=document.getElementById('$id').value;";
+        $this->XHR[]="if(F$id!=='%%MASKED%%'){XHR.appendData('$name',  encodeURIComponent(F$id));}";
+
         return $this->_field_intr($label,$F,$explain);
 
 

@@ -313,9 +313,7 @@ function rule_save(){
 	$_POST["description"]=url_decode_special_tool($_POST["description"]);
 	$_POST["value"]=url_decode_special_tool($_POST["value"]);
 	
-	$hostname=$sock->getFrameWork("system.php?hostname-g=yes");
-
-	$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT GroupName FROM webfilters_sqgroups WHERE ID=$gpid"));
+    $ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT GroupName FROM webfilters_sqgroups WHERE ID=$gpid"));
 	$GroupName=$ligne["GroupName"];
 
 	if($_POST["description"]==null){

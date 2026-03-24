@@ -429,30 +429,7 @@ function dmicode():bool{
 
 }
 
-function rotatebuild(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.logrotate.php --reconfigure >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.disable.php --monit >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
 
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.haproxy.php --monit >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-
-}
-function rotateClean(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.logrotate.php --clean --force >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
 function total_memory(){
     $unix=new unix();
     $mem=$unix->TOTAL_MEMORY_MB();
@@ -861,29 +838,7 @@ function time_capsule_status(){
     echo "<articadatascgi>". base64_encode(@implode("\n",$results))."</articadatascgi>";
 }
 
-function restart_lighttpd(){
-    writelogs_framework("RESTART WEB CONSOLE !",__FUNCTION__,__FILE__,__LINE__);
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $rm=$unix->find_program("rm");
 
-
-    $tmpfile=$unix->FILE_TEMP();
-    $SCRIPT[]="#!/bin/sh";
-    if(!is_file("/usr/local/ArticaWebConsole/sbin/artica-webconsole")){
-        $SCRIPT[]=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.lighttpd.php --apache-build >/dev/null 2>&1";
-    }
-    $SCRIPT[]="/etc/init.d/artica-webconsole restart >/dev/null 2>&1";
-    $SCRIPT[]="$rm -f $tmpfile";
-    $SCRIPT[]="";
-
-    @file_put_contents($tmpfile, @implode("\n", $SCRIPT));
-    @chmod($tmpfile,0755);
-    $cmd=trim("$nohup $tmpfile >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-
-}
 
 function restart_webconsole_scheduled(){
     $unix=new unix();
@@ -1790,15 +1745,7 @@ function cache_pages(){
 
 }
 
-function syslogdb_tests_nas(){
-    $unix=new unix();
 
-    $php=$unix->LOCATE_PHP5_BIN();
-    $cmd="$php /usr/share/artica-postfix/exec.logrotate.php --test-nas 2>&1";
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    exec($cmd,$results);
-    echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
-}
 
 function squidoldlogs_tests_nas(){
     $unix=new unix();

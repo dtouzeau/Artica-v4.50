@@ -66,16 +66,7 @@ function move_wizard_snapshots():bool{
     @unlink($fullpath);
     return true;
 }
-function upgrade_lts():bool{
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $ll=PROGRESS_DIR."/lts.log";
-    @touch($ll);
-    @chown("www-data",$ll);
-    shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.lts.php --upgrade >$ll 2>&1 &");
-    return true;
-}
+
 
 
 function autoeval(){
@@ -369,24 +360,6 @@ function snapshot_sql()
     shell_exec($cmd);
 }
 
-function save_client_config()
-{
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.amanda.php --comps >/dev/null 2>&1 &");
-    writelogs_framework("$cmd", __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-function save_client_server()
-{
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.amanda.php --backup-server >/dev/null 2>&1 &");
-    writelogs_framework("$cmd", __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
 function _LkdPTEQ(){
     @unlink(base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2EvLkdPTEQ="));
 }
@@ -397,13 +370,6 @@ function webfiltering_events()
     @chmod(0755, "/usr/share/artica-postfix/ressources/logs/web/artica-ufdb.log");
 }
 
-function lighttpd_reload()
-{
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.lighttpd.php --reload >/dev/null 2>&1 &");
-}
 
 function webconsole_restart()
 {

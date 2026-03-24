@@ -390,12 +390,7 @@ if(isset($_GET["fetchmail-logs"])){fetchmail_logs();exit;}
 if(isset($_GET["ad-import-schedule"])){AD_IMPORT_SCHEDULE();exit;}
 if(isset($_GET["ad-import-remove-schedule"])){AD_REMOVE_SCHEDULE();exit;}
 if(isset($_GET["ad-import-perform"])){AD_PERFORM();exit;}
-
 if(isset($_GET["ou-ldap-import-schedules"])){LDAP_IMPORT_SCHEDULE();exit;}
-
-
-
-//exec.hamachi.php
 if(isset($_GET["list-nics"])){TCP_LIST_NICS();exit;}
 if(isset($_GET["virtuals-ip-reconfigure"])){writelogs_framework("TCP_VIRTUALS()",__FUNCTION__,__FILE__,__LINE__);TCP_VIRTUALS();exit;}
 if(isset($_GET["QueryArticaLogs"])){artica_update_query_fileslogs();exit;}
@@ -1562,16 +1557,6 @@ function LaunchNetworkScanner(){
 		writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
 		shell_exec($cmd);			
 }
-
-function CLUSTER_NOTIFY(){
-	$server=$_GET["notify-clusters"];
-	shell_exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php --notify-client $server");
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php");
-}
-function CLUSTER_CLIENT_RESTART_NOTIFY(){
-	NOHUP_EXEC( LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php --cluster-restart-notify");
-}
-
 function RoundCube_restart(){
 	
 	$unix=new unix();
@@ -1619,19 +1604,6 @@ function postfix_sync_artica(){
 
 
 
-
-function CLUSTER_DELETE(){
-	$server=$_GET["cluster-delete"];
-	@unlink("/etc/artica-cluster/clusters-$server");
-	NOHUP_EXEC( LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php --notify-all-clients");
-	
-}
-function CLUSTER_ADD(){
-	$server=$_GET["cluster-add"];
-	@file_put_contents("/etc/artica-cluster/clusters-$server","#");
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php --notify-all-clients");
-	
-}
 
 
 function SmtpNotificationConfigRead(){
@@ -3606,10 +3578,7 @@ function retranslator_status(){
 	echo "<articadatascgi>". base64_encode($datas)."</articadatascgi>";	
 }
 
-function hamachi_net(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.hamachi.php");
-//if(isset($_GET["hamachi-net"])){hamachi_net();exit;} 
-}
+
 
 function hamachi_status(){
 	exec("/usr/share/artica-postfix/bin/artica-install --hamachi-status",$rr);
@@ -5920,45 +5889,10 @@ function SSHD_RESTART(){
 
 }
 
-function GLUSTER_REMOUNT(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php --remount");
-}
-function GLUSTER_UPDATE_CLIENTS(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php --update-all-clients");
-}
-function GLUSTER_RESTART(){
-	NOHUP_EXEC("/etc/init.d/artica-postfix restart gluster");
-}
-function GLUSTER_DELETE_CLIENTS(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php --delete-clients");
-}
-function GLUSTER_NOTIFY_CLIENTS(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php --notify-all-clients");
-}
-function GLUSTER_MOUNT(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.gluster.php --mount");
-}
 
 
-function GLUSTER_IS_MOUNTED(){
-	$path=base64_decode($_GET["glfs-is-mounted"]);
-	$unix=new unix();
-	if($unix->GLFS_ismounted($path)){echo "<articadatascgi>1</articadatascgi>";return;}
-}
-function PASSWD_USERS(){
-	$passwd=@file_get_contents("/etc/passwd");
-	writelogs_framework("/etc/passwd ". strlen($passwd)." bytes" ,__FUNCTION__,__FILE__,__LINE__);
-	$f=explode("\n",$passwd);
-	writelogs_framework("/etc/passwd ". count($f)." lines" ,__FUNCTION__,__FILE__,__LINE__);
-	foreach ($f as $ligne){
-		if(preg_match("#^(.+?):#",$ligne,$re)){
-			$array[$re[1]]=$re[1];
-		}
-	}
-	writelogs_framework("/etc/passwd ". count($array)." rows" ,__FUNCTION__,__FILE__,__LINE__);
-	echo "<articadatascgi>" .base64_encode(serialize($array))."</articadatascgi>";
-	
-}
+
+
 
 
 
@@ -6020,26 +5954,10 @@ function SSHD_KEY_UPLOAD_PUB(){
 	
 	echo "<articadatascgi>" .base64_encode("{failed}<br>$logs")."</articadatascgi>";
 }
-function JOOMLA_INSTALL(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.joomla.install.php");
-}
-
 function OCSWEB_WEB_EVENTS(){
 	$unix=new unix();
 	$tail=$unix->find_program("tail");
 	exec("$tail -n 350 /var/log/ocsinventory-server/apache-access.log 2>&1",$results);
-	echo "<articadatascgi>" .base64_encode(serialize($results))."</articadatascgi>";
-}
-function OCSWEB_WEB_ERRORS(){
-	$unix=new unix();
-	$tail=$unix->find_program("tail");
-	exec("$tail -n 350 /var/log/ocsinventory-server/apache-error.log 2>&1",$results);
-	echo "<articadatascgi>" .base64_encode(serialize($results))."</articadatascgi>";
-}
-function OCSWEB_SERV_EVENTS(){
-	$unix=new unix();
-	$tail=$unix->find_program("tail");
-	exec("$tail -n 350 /var/log/ocsinventory-server/activity.log 2>&1",$results);
 	echo "<articadatascgi>" .base64_encode(serialize($results))."</articadatascgi>";
 }
 function GET_LOCAL_SID(){

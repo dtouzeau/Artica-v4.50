@@ -47,7 +47,7 @@ if(isset($argv[1])){
     if($argv[1]=="--artica-syslog"){die();}
     if($argv[1]=="--artica-fpm"){exit;}
     if($argv[1]=="--freshclam"){clamav_freshclam();exit;}
-    if($argv[1]=="--webservices"){webservices();exit;}
+
     if($argv[1]=="--squid-db"){$GLOBALS["OUTPUT"]=true;exit;}
     if($argv[1]=="--bandwidthd"){$GLOBALS["OUTPUT"]=true;bandwidthd();exit;}
     if($argv[1]=="--clamav-milter"){$GLOBALS["OUTPUT"]=true;clamav_milter();exit;}
@@ -102,7 +102,7 @@ shell_exec("$php /usr/share/artica-postfix/exec.convert-to-sqlite.php");
 $functions=array("upgrades","artica_monitor","bandwidthd","hypercache_tail","vsftpd","irqbalance","artica_firewall","artica_fw_hotspot",
     "specialreboot","buildscript","mysqlInit","remove_nested_services","netdiscover",
     "conntrackd","nscd_init_debian","wsgate_init_debian","buildscriptLoopDisk",
-    "ifup","ftpproxy","webservices","phppfm","cicap",
+    "ifup","ftpproxy","phppfm","cicap",
     "CleanUbuntu","UpstartJob","debian_mirror","artica_categories","roundcube_http","fetchmail","vde_switch","squid_db","clamav_freshclam","postgres",
     "artica_iso","syncthing","proftpd",
     "not_shutdown","cgconfig","cgredconfig","clamdscan","policyd_weight");
@@ -1140,74 +1140,7 @@ function ftpproxy(){
 
 }
 
-function webservices(){
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    $INITD_PATH="/etc/init.d/artica-webservices";
-    $daemonbinLog="Web services";
 
-
-    $f[]="#!/bin/sh";
-    $f[]="### BEGIN INIT INFO";
-    $f[]="# Provides:         artica-webservices";
-    $f[]="# Required-Start:    \$local_fs \$syslog \$network";
-    $f[]="# Required-Stop:     \$local_fs \$syslog \$network";
-    $f[]="# Should-Start:";
-    $f[]="# Should-Stop:";
-    $f[]="# Default-Start:     3 4 5";
-    $f[]="# Default-Stop:      0 1 6";
-    $f[]="# Short-Description: $daemonbinLog";
-    $f[]="# chkconfig: - 80 75";
-    $f[]="# description: $daemonbinLog";
-    $f[]="### END INIT INFO";
-    $f[]="case \"\$1\" in";
-    $f[]=" start)";
-    $f[]="    $php /usr/share/artica-postfix/exec.php-fpm.php --start --script \$2 \$3";
-    $f[]="    $php /usr/share/artica-postfix/exec.lighttpd.php --fpm-start --script \$2 \$3";
-    $f[]="    $php /usr/share/artica-postfix/exec.squidguard-http.php --start --script \$2 \$3 || true";
-    $f[]="    /etc/init.d/artica-status reload --script \$2 \$3";
-    $f[]="    ;;";
-    $f[]="";
-    $f[]="  stop)";
-    $f[]="    $php /usr/share/artica-postfix/exec.php-fpm.php --stop --script \$2 \$3";
-    $f[]="    $php /usr/share/artica-postfix/exec.lighttpd.php --fpm-stop --script \$2 \$3";
-    $f[]="    $php /usr/share/artica-postfix/exec.squidguard-http.php --stop --script \$2 \$3 || true";
-    $f[]="    ;;";
-    $f[]="";
-    $f[]=" restart)";
-
-    $f[]="    $php /usr/share/artica-postfix/exec.php-fpm.php --restart --script \$2 \$3";
-    $f[]="    $php /usr/share/artica-postfix/exec.php5-fcgi.php --restart --script \$2 \$3";
-    $f[]="    $php /usr/share/artica-postfix/exec.lighttpd.php --restart --script \$2 \$3";
-    $f[]="    $php /usr/share/artica-postfix/exec.squidguard-http.php --restart --script \$2 \$3 || true";
-    $f[]="    /etc/init.d/artica-status reload --script \$2 \$3";
-    $f[]="    ;;";
-    $f[]="";
-    $f[]="  *)";
-    $f[]="    echo \"Usage: \$0 {start|stop|restart} (+ '--verbose' for more infos)\"";
-    $f[]="    exit 1";
-    $f[]="    ;;";
-    $f[]="esac";
-    $f[]="exit 0\n";
-
-
-    echo "$daemonbinLog: [INFO] Writing $INITD_PATH with new config\n";
-    @unlink($INITD_PATH);
-    @file_put_contents($INITD_PATH, @implode("\n", $f));
-    @chmod($INITD_PATH,0755);
-
-    if(is_file('/usr/sbin/update-rc.d')){
-        shell_exec("/usr/sbin/update-rc.d -f " .basename($INITD_PATH)." defaults >/dev/null 2>&1");
-    }
-
-    if(is_file('/sbin/chkconfig')){
-        shell_exec("/sbin/chkconfig --add " .basename($INITD_PATH)." >/dev/null 2>&1");
-        shell_exec("/sbin/chkconfig --level 345 " .basename($INITD_PATH)." on >/dev/null 2>&1");
-    }
-
-
-
-}
 
 
 

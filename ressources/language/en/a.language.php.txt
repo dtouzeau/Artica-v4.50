@@ -22,7 +22,7 @@ Artica will save this information into hosts file in order to resolve your Windo
 <leave_ad>Disconnect From the Active Directory server</leave_ad>
 <DisableSambaFileSharing>Share Engine did not provide Shared folders</DisableSambaFileSharing>
 <EnableCyrusImapToAd>Enable Mailboxes authentication through Active Directory</EnableCyrusImapToAd>
-<SQUID_STATS>Squid Proxy Cache web statistics</SQUID_STATS>
+<SQUID_STATS>Web proxy cache statistics</SQUID_STATS>
 <WELCOME_ARTICA_STATS_SQUID>Welcome on the Web proxy dedicated Area</WELCOME_ARTICA_STATS_SQUID>
 <caches_squid>Proxy cache(s)</caches_squid>
 <ZarafaStoreOutside>Store attachments outside database</ZarafaStoreOutside>

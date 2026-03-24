@@ -2019,9 +2019,9 @@ class features{
         return $this->build_paragraph($config);
     }
     public function APP_DOCKER():string{
-        if($this->ASReverseProxyAppliance){
+
             return "";
-        }
+
         $APP_DOCKER_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DOCKER_INSTALLED"));
         if($APP_DOCKER_INSTALLED==0){return "";}
         $config["SECURITY"]="AsSystemAdministrator";

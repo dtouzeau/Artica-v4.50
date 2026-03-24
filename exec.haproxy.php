@@ -139,7 +139,6 @@ function install(){
     echo "[".__LINE__."]:Starting OK\n";
     build_progress_restart(70,"{starting} OK");
     system("/usr/sbin/artica-phpfpm-service -reconfigure-syslog");
-    system("$php /usr/share/artica-postfix/exec.logrotate.php --reconfigure");
     build_progress_restart(100,"{success}");
     sleep(1);
     build_progress_restart(100,"{success}");

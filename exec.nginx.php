@@ -721,7 +721,7 @@ function force_restart(){
 	}	
 	if($GLOBALS["OUTPUT"]){echo "Reloading.....: ".date("H:i:s")." [INIT]: Reconfiguring PHP-FPM\n";}
 	system("/usr/sbin/artica-phpfpm-service -reload-webconsole -debug >/dev/null 2>&1");
-	system("$php /usr/share/artica-postfix/exec.lighttpd.php --fpm-reload >/dev/null 2>&1");
+
 	
 	$pids=$unix->PIDOF_PATTERN_ALL("nginx: worker process");
 	$kill=$unix->find_program("kill");

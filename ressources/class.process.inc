@@ -103,7 +103,6 @@ function MemoryInstances(){
 		$arrayK["exec.squid.php"]=10;
 		$arrayK["exec.squid.watchdog.php"]=10;
 		$arrayK["exec.squid-db.php"]=5;
-		$arrayK["exec.hamachi.php"]=5;
 		$arrayK["exec.virtuals-ip.php"]=10;
 		$arrayK["exec.watchdog.php"]=3;
 		$arrayK["exec.test-connection.php"]=5;
@@ -113,10 +112,8 @@ function MemoryInstances(){
 		$arrayK["exec.mysql.build.php"]=30;
 		$arrayK["exec.smtp-hack.export.php"]=10;
 		$arrayK["exec.postfix-logger.php"]=10;	
-		$arrayK["exec.openvpn.php"]=5;
-		$arrayK["exec.ipband.php"]=60;					
+		$arrayK["exec.ipband.php"]=60;
 		$arrayK["exec.testspeed.php"]=15;
-		$arrayK["exec.logrotate.php"]=240;
 		$arrayK["exec.cache.pages.php"]=10;
 		$arrayK["exec.admin.status.postfix.flow.php"]=10;
 

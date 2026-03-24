@@ -28,8 +28,3 @@ function certificate_client(){
     $unix=new unix();
     $unix->framework_execute("exec.webconsole.certificates.php --client -generic \"\"","manager-certificate.progress","manager-certificate.log");
 }
-function reload_webconsole(){
-    $unix=new unix();
-    $unix->framework_exec("exec.lighttpd.php --reload");
-
-}

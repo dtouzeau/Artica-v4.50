@@ -1277,6 +1277,7 @@ function Get_extension($filename){
 function replace_accents($s) {
     if(!class_exists("htmltools_inc")){include_once(dirname(__FILE__)."/class.html.tools.inc");}
     $t=new htmltools_inc();
+    $s=html_entity_decode($s);
     return $t->replace_accents($s);
 }
 function CleanEscapes($html){

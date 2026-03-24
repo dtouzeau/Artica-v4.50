@@ -17,7 +17,6 @@ if(isset($_GET["unlink-disk"])){unlink_disk();exit;}
 if(isset($_GET["create-swap"])){create_swap();exit;}
 if(isset($_GET["remove-swap"])){remove_swap();exit;}
 if(isset($_GET["rescan-swap"])){rescan_swap();exit;}
-if(isset($_GET["hdparm"])){hdparm_direct();exit;}
 if(isset($_GET["move-disk"])){move_disk();exit;}
 
 foreach ($_GET as $num=>$ligne){$a[]="$num=$ligne";}

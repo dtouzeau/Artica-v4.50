@@ -2573,7 +2573,11 @@ function nic_config_tab(){
 	$tpl=new template_admin();
 	$eth=$_GET["nic-config-tab"];
     $md=$_GET["md"];
-	$MIITOOLS=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->getFrameWork("system.php?mii-tools=yes&eth=$eth"));
+	$miiJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/mii-tools/".urlencode($eth)));
+	$MIITOOLS=array();
+	if(is_object($miiJson) && !empty($miiJson->status)){
+		$MIITOOLS["{flow_control}"]=!empty($miiJson->flow_control);
+	}
     $EnableVLANs=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableVLANs");
     $FIRECRACKER_VM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIRECRACKER_VM"));
 	$bonding = false;
@@ -2628,34 +2632,43 @@ function nic_config_tab(){
 function nic_mii_tool(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$eth=null;
-	$MIITOOLS=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->getFrameWork("system.php?mii-tools=yes&eth=$eth")));
-	
-	
-	$form_miitolsA[null]="{select}";
-	$form_miitolsHT["HD"]="Half duplex";
-	$form_miitolsHT["FD"]="Full duplex";
-	
-	foreach ($MIITOOLS["CAP"] as $val=>$b){
+	$eth=$_GET["mii-tools"];
+
+	$miiJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/mii-tools/".urlencode($eth)));
+	if(!is_object($miiJson) || empty($miiJson->status)){
+		$err=is_object($miiJson)?htmlspecialchars($miiJson->error ?? '{error}'):'{error}';
+		echo $tpl->_ENGINE_parse_body($tpl->div_error($err));
+		return;
+	}
+
+	$form_miitolsA=array(''=>'{select}');
+	$form_miitolsHT=array('HD'=>'Half duplex','FD'=>'Full duplex');
+	$MII_DEFAULT='';
+
+	$caps=(array)($miiJson->capabilities ?? array());
+	foreach($caps as $val=>$b){
 		$caption=$val;
-		if(strpos($MIITOOLS["INFOS"], $val)>0){$MII_DEFAULT=$val;}
-		if(preg_match("#([0-9]+)(.*?)-([A-Z]+)#", $val,$re)){
-			$caption="{$re[1]} {$re[2]} {$form_miitolsHT[$re[3]]}";
+		if(strlen($miiJson->info ?? '')>0 && strpos($miiJson->info,$val)!==false){
+			$MII_DEFAULT=$val;
+		}
+		if(preg_match("#([0-9]+)(.*?)-([A-Z]+)#",$val,$re)){
+			$ht=isset($form_miitolsHT[$re[3]])?$form_miitolsHT[$re[3]]:'';
+			$caption="{$re[1]} {$re[2]} $ht";
 		}
 		$form_miitolsA[$val]=$caption;
-	
 	}
-	
-	if($MIITOOLS["FLOWC"]==1){$explflw=" {flow_control}";}
-	
-	
-	$form[]=$tpl->field_checkbox("autonegotiation","Autonegotiation",$MIITOOLS["AUTONEG"]);
-	$form[]=$tpl->field_checkbox("flow-control","{flow_control}",$MIITOOLS["FLOWC"]);
-	$form[]=$tpl->field_array_hash($form_miitolsA, "media", "{type}", $MII_DEFAULT);
+
+	$explflw='';
+	if(!empty($miiJson->flow_control)){$explflw=' {flow_control}';}
+
+	$form=array();
+	$form[]=$tpl->field_checkbox("autonegotiation","Autonegotiation",$miiJson->autoneg?1:0);
+	$form[]=$tpl->field_checkbox("flow-control","{flow_control}",$miiJson->flow_control?1:0);
+	$form[]=$tpl->field_array_hash($form_miitolsA,"media","{type}",$MII_DEFAULT);
 	$security="AsSystemAdministrator";
-	$html=$tpl->form_outside(null, @implode("\n", $form),"{$MIITOOLS["INFOS"]} $explflw","{apply}","LoadAjax('network-interfaces-table','$page?table=yes');",$security);
+	$info=htmlspecialchars($miiJson->info ?? '');
+	$html=$tpl->form_outside(null,implode("\n",$form),"$info $explflw","{apply}","LoadAjax('network-interfaces-table','$page?table=yes');",$security);
 	echo $tpl->_ENGINE_parse_body($html);
-	
 }
 
 function nic_security(){

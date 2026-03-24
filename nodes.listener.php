@@ -1981,7 +1981,7 @@ function squid_admin_mysql_mysql($severity, $subject, $text,$function,$file,$lin
 
 function elkMaster(){
 
-    $hostname=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("system.php?hostname-g=yes");
+    $hostname=php_uname("n");
     $node=$_GET["node"];
 
     if($node==null){

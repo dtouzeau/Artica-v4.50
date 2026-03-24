@@ -375,7 +375,6 @@ function install(){
     build_progress("{installing}...",50);
     system("/usr/local/sbin/reverse-proxy -nginx-reconfigure -debug");
     build_progress("{installing}...",60);
-    system("$php5 /usr/share/artica-postfix/exec.lighttpd.php --nginx-build");
     build_progress("{installing} {success}",100);
     return true;
 
@@ -1148,7 +1147,6 @@ function enable_checks(){
         $php=$unix->LOCATE_PHP5_BIN();
         $nginx=$unix->find_program("nginx");
         system("$nginx -c /etc/nginx/nginx.conf -s reload 2>&1");
-        system("$php /usr/share/artica-postfix/exec.lighttpd.php --fpm-reload");
     }
 
 
@@ -1551,76 +1549,7 @@ function build(){
 
 }
 
-function build_ngnix($siteID){
-    $nginx_config="/etc/nginx/wordpress/$siteID.conf";
-    $siteID=intval($siteID);
-    if($siteID==0){
-        die();
-    }
-    $GLOBALS["INSTANCE_ID"]=$siteID;
-    echo "Installing ID $siteID\n";
-    $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM wp_sites WHERE ID=$siteID");
-    $hostname=$ligne["hostname"];
-    echo "Installing $hostname\n";
 
-    if(is_file($nginx_config)){ $md5_first=md5_file($nginx_config); }
-
-    build_progress_build("$hostname {configuring}",20);
-    echo "Creating $nginx_config\n";
-    if(!create_nginx_config($ligne)){
-        build_progress_build("$hostname {failed}",110);
-        return false;
-    }
-    $md5_second=md5_file($nginx_config);
-    $unix=new unix();
-    $nginx=$unix->find_program("nginx");
-
-    if($GLOBALS["ONLYCONFIG"]){
-        if($md5_first==$md5_second){
-            build_progress_build("$hostname {success} {no_change}",100);
-            return true;
-        }
-        echo "Reloading Nginx service...\n";
-        build_progress_build("{reloading}....",99);
-        system("$nginx -c /etc/nginx/nginx.conf -s reload 2>&1");
-        build_progress_build("$hostname {success}",100);
-        return true;
-    }
-    $readonly=$ligne["readonly"];
-    build_progress_build("$hostname {configuring}",10);
-    wordpress_unlock($siteID);
-
-    build_progress_build("$hostname {apply_permissions}",30);
-    ChmodSite($ligne,30);
-    build_progress_build("$hostname {sitename}",51);
-    Check_disable_wp_cron($ligne);
-    build_progress_build("$hostname {sitename}",52);
-    Check_wpconfig_include($ligne);
-    build_progress_build("$hostname {sitename}",54);
-
-
-    if($readonly==1){
-        echo "Website is on readonly mode...\n";
-        build_progress_build("$hostname {readonly}",60);
-        wordpress_lock($siteID);
-    }
-
-    $unix=new unix();
-    $nginx=$unix->find_program("nginx");
-
-
-    if($md5_first==$md5_second){
-        build_progress_build("$hostname {success} {no_change}",100);
-        return true;
-    }
-    echo "Reloading Nginx service...\n";
-    build_progress_build("{reloading}....",99);
-    system("$nginx -c /etc/nginx/nginx.conf -s reload 2>&1");
-    $unix->framework_exec("exec.lighttpd.php --fpm-reload");
-    build_progress_build("$hostname {success}",100);
-    return true;
-}
 
 function phpini($hostname,$sitepath){
     if(is_numeric($hostname)){

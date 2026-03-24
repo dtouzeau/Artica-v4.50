@@ -135,7 +135,6 @@ function install(){
     system("/usr/sbin/artica-phpfpm-service -build-pam");
     build_progress(95, "{restart_status_service}");
     system("/usr/sbin/artica-phpfpm-service -nsswitch");
-    system("$php /usr/share/artica-postfix/exec.logrotate.php --reconfigure");
     build_progress(98, "{restart_status_service}");
     if(is_file("/etc/init.d/munin-node")){system("$php /usr/share/artica-postfix/exec.munin.php --reconfigure");}
     build_progress(100, "{done}");

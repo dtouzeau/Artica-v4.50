@@ -20,7 +20,7 @@ function remove() {
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LighttpdManagerCertDown",0);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LighttpdServerCertificate","");
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LighttpdManagerEnforce",0);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("webconsole.php?reload-webconsole=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/webconsole/reconfigure");
     echo "LoadAjaxSilent('client-certificate-status','fw.articaweb.status.php?status=yes');\n";
 }
 
@@ -110,7 +110,7 @@ function Save(){
         if($_POST["FORCE"]==1){
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LighttpdArticaClientAuth",1);
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LighttpdManagerEnforce",1);
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("webconsole.php?reload-webconsole=yes");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/webconsole/reconfigure");
         }
     }
 

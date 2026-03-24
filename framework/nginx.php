@@ -651,30 +651,7 @@ function remove_website(){
 	shell_exec($cmd);
 }
 
-function reconfigure_php_fpm(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/fpm.reload.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/fpm.reload.progress.txt";
 
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.lighttpd.php --fpm-reload --sleep=3 >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-
-    if(is_file("/etc/init.d/firehol")){
-        $cmd="$nohup /etc/init.d/firehol restart >/dev/null 2>&1 &";
-        writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-        shell_exec($cmd);
-    }
-
-}
 
 function build_main(){
 	$unix=new unix();

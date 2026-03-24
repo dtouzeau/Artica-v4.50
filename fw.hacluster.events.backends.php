@@ -197,7 +197,6 @@ function search():bool{
         $line=str_replace("HaClusterTool.go","",$line);
         $line=str_replace("ClusterClient.go","",$line);
         $line=str_replace("[exec.arpscan.php}]:","<span class='label $label_class'>ARP Scanner</span>&nbsp;",$line);
-        $line=str_replace("[exec.lighttpd.php}]:","<span class='label $label_class'>Web Console</span>&nbsp;",$line);
 		$line=$tpl->_ENGINE_parse_body($line);
 		$html[]="<tr>
 				<td style='width:1%' nowrap>$FTime</td>

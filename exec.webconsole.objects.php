@@ -82,34 +82,11 @@ function bandwidth():string{
 
 
 
-function GetContainerStats():array{
-
-    $statsf=dirname(__FILE__)."/Docker/stats.json";
-    if(!is_file($statsf)){
-       return array();
-    }
-    $statsData=@file_get_contents($statsf);
-    if(strlen($statsData)==0) {return array();}
-    $DockerContainersStats = unserialize($statsf);
-    if(!is_array($DockerContainersStats)){return array();}
-    return $DockerContainersStats;
-}
 
 
 
 
-function GetMyContainerID():string{
 
-    if(!is_file("/proc/self/cgroup")){return "";}
-    $f=explode("\n",@file_get_contents("/proc/self/cgroup"));
-    foreach ($f as $line){
-        if(preg_match("#cpu:\/docker\/(.+)#",$line,$re)){
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("MyContainerID",$re[1]);
-            return $re[1];
-        }
-    }
-    return "";
-}
 
 
 

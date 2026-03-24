@@ -124,7 +124,6 @@ function install():bool{
     build_progress_restart(75,"{starting} OK");
     system("/usr/sbin/artica-phpfpm-service -reconfigure-syslog");
     build_progress_restart(80,"{starting} OK");
-    system("$php /usr/share/artica-postfix/exec.logrotate.php --reconfigure");
     build_progress_restart(85,"{starting} OK");
     system("$php /usr/share/artica-postfix/exec.squid.global.access.php --auth");
     build_progress_restart(90,"{starting} OK");

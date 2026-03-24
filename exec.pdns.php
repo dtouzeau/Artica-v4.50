@@ -44,7 +44,6 @@ if($argv[1]=="--dnsseck"){dnsseck();exit;}
 if($argv[1]=="--dnssec"){dnsseck();exit;}
 if($argv[1]=="--reload"){reload_service();exit;}
 if($argv[1]=="--rebuild-database"){rebuild_database();exit;}
-if($argv[1]=="--replic-artica"){replic_artica_servers();exit;}
 if($argv[1]=="--reconstruct-db"){reconstruct_database();exit;}
 
 
@@ -1070,83 +1069,7 @@ $f[]="#makeGraphs 1m month";
 $f[]="#makeGraphs 1y year";
 }
 
-function replic_artica_servers(){
-	
-	$me=basename(__FILE__);
-	$unix=new unix();
-	$pidpath="/etc/artica-postfix/pids/$me.pid";
-	$pid=$unix->get_pid_from_file($pidpath);
-	if($unix->process_exists($pid,$me)){
-		squid_admin_mysql(2, "Task $pid already executed...", __FUNCTION__, __FILE__, __LINE__);
-		exit();
-	}
-	
-	@file_put_contents($pidpath, getmypid());	
-	
-		$q=new mysql();
-		$sql="SELECT * FROM pdns_replic";
-		$results = $q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){
-			system_admin_events($q->mysql_error, __FUNCTION__, __FILE__, __LINE__);
-			return;
-		}
 
-	while ($ligne = mysqli_fetch_assoc($results)) {	
-		$hostname=$ligne["hostname"];
-		$port=$ligne["host_port"];
-		$datas=unserialize(base64_decode($ligne["host_cred"]));
-		$username=$datas["username"];
-		$password=$datas["password"];
-		replic_artica_servers_perform("$hostname:$port",$username,$password);
-	}
-	
-}
-function replic_artica_servers_perform($host,$username,$password){
-	$unix=new unix();
-	$curl=new ccurl("https://$host/exec.gluster.php");
-	$curl->parms["PDNS_REPLIC"]=base64_encode(serialize(array("username"=>$username,"password"=>md5($password))));
-	if(!$curl->get()){
-		squid_admin_mysql(2, "Error while fetching $host with $curl->error", __FUNCTION__, __FILE__, __LINE__);
-		return;
-	}
-	
-	if(preg_match("#<ERROR>(.*?)</ERROR>#is", $curl->data,$re)){
-		squid_admin_mysql(2, "Connection error while fetching $host {$re[1]}", __FUNCTION__, __FILE__, __LINE__);
-	}
-	
-	if(!preg_match("#<REPLIC>(.*?)</REPLIC>#is",$curl->data,$re)){
-		squid_admin_mysql(2, "Protocol error while fetching $host", __FUNCTION__, __FILE__, __LINE__);
-		return;		
-	}
-	
-	$datas=unserialize(base64_decode($re[1]));
-	squid_admin_mysql(2, "Received ". count($datas) . " from $host", __FUNCTION__, __FILE__, __LINE__);
-	
-	$sql="DELETE FROM records WHERE articasrv='$host'";
-	$q=new mysql();
-	$q->QUERY_SQL($sql,"powerdns");
-	if(!$q->ok){
-		system_admin_events($q->mysql_error." For Host $host", __FUNCTION__, __FILE__, __LINE__);
-		return;
-	}
-	$t=time();
-	$pdns=new pdns();
-	$pdns->articasrv=$host;
-	while (list ($ip, $hostname) = each ($datas) ){
-		if(strpos($hostname, ".")>0){
-			$tr=explode(".", $hostname);
-			$hostname=strtolower($tr[0]);
-			unset($tr[0]);
-			$pdns->domainname=strtolower(@implode(".", $tr));
-		}
-		
-		$pdns->EditIPName($hostname, $ip, "A");
-	}
-	$took=$unix->distanceOfTimeInWords($t,time(),true);
-	squid_admin_mysql(2, "Success update ". count($datas) . " records from $host took:$took", __FUNCTION__, __FILE__, __LINE__);
-	
-
-}
 
 
 

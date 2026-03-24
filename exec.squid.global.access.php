@@ -549,15 +549,6 @@ function enable_hotspot(){
         }
     }
 
-    $php=$unix->LOCATE_PHP5_BIN();
-
-    if(!is_file("/etc/init.d/artica-hotspot")){
-        system("$php /usr/share/artica-postfix/exec.hotspot-service.php --install");
-        $unix->framework_exec("exec.hotspot-service.php --start");
-    }else{
-        $unix->framework_exec("exec.hotspot-service.php --restart");
-    }
-
     build_progress("{installing} {reconfiguring}",12);
     $squid_url_rewrite=new squid_url_rewrite();
     $squid_url_rewrite->build();
@@ -623,7 +614,7 @@ function disable_hotspot(){
     }
 
     system("/etc/init.d/cron reload");
-    system("$php /usr/share/artica-postfix/exec.hotspot-service.php --uninstall");
+
     if( is_file($squidbin)){
         squid_admin_mysql(2, "{reloading_proxy_service} (".__FUNCTION__.")", null,__FILE__,__LINE__);
         system("/usr/sbin/artica-phpfpm-service -rest-api /proxy/nohup/reload");

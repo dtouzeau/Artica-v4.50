@@ -48,6 +48,10 @@ if(isset($_GET["form-register-popup"])){form_register_popup();exit;}
 if(isset($_GET["form-wifi4eu-js"])){form_wifi4eu_js();exit;}
 if(isset($_GET["form-wifi4eu-popup"])){form_wifi4eu_popup();exit;}
 
+if(isset($_GET["form-google-js"])){form_google_js();exit;}
+if(isset($_GET["form-google-popup"])){form_google_popup();exit;}
+if(isset($_POST["GoogleClientID"])){Save();exit;}
+
 page();
 
 function page(){
@@ -180,6 +184,29 @@ function form_register_popup():bool{
     return true;
 
 }
+function form_google_popup():bool{
+
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $HotSpotAuthentGoogle=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotAuthentGoogle"));
+    $GoogleClientID=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoogleClientID");
+    $GoogleClientSecret=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoogleClientSecret");
+    $GoogleRedirectURI=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoogleRedirectURI");
+
+    $form[]=$tpl->field_checkbox("HotSpotAuthentGoogle","{enable_feature}",$HotSpotAuthentGoogle,"GoogleClientID,GoogleClientSecret,GoogleRedirectURI");
+    $form[]=$tpl->field_text("GoogleClientID", "Client ID", $GoogleClientID);
+    $form[]=$tpl->field_text("GoogleClientSecret", "{STRONGSWAN_SECRET}", $GoogleClientSecret);
+    $form[]=$tpl->field_text("GoogleRedirectURI", "{redirect_url}", $GoogleRedirectURI);
+
+    $jsrestart[]="LoadAjaxSilent('hotspot-main-status','$page?table=yes');";
+    $jsrestart[]="dialogInstance2.close()";
+    $jsrestart[]=form_jsrestart();
+
+    echo $tpl->form_outside("",
+        $form,null,"{apply}",@implode("\n",$jsrestart),"AsSquidAdministrator");
+    return true;
+
+}
 
 function form_wifi4eu_popup():bool{
     $tpl=new template_admin();
@@ -230,7 +257,8 @@ function form_wifi4eu_popup():bool{
         $last_config=distanceOfTimeInWords($lasttime,time());
     }
 
-    echo $tpl->form_outside("{last_config}:&nbsp;<span id='last-config'>$last_config</span>", $form,null,"{apply}",@implode("\n",$jsrestart),"AsSquidAdministrator");
+    echo $tpl->form_outside("{last_config}:&nbsp;<span id='last-config'>$last_config</span>",
+        $form,null,"{apply}",@implode("\n",$jsrestart),"AsSquidAdministrator");
     return true;
 
 
@@ -325,6 +353,12 @@ function form_wifi4eu_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $tpl->js_dialog2("{APP_WIFI4EU}","$page?form-wifi4eu-popup=yes");
+    return true;
+}
+function form_google_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $tpl->js_dialog2("Google Auth","$page?form-google-popup=yes");
     return true;
 }
 
@@ -732,9 +766,8 @@ function table():bool{
         " {disable_account_in} <strong>$Timez[$HotSpotDisableAccountTime] </strong>, ".
         " {remove_account_in} <strong>$Timez[$HotSpotRemoveAccountTime]</strong></small>",ico_timeout);
 
+
     $HotSpotAuthentVoucher=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotAuthentVoucher"));
-
-
     if($HotSpotAuthentVoucher==1){
         $tpl->table_form_field_js("Loadjs('$page?form-auth-js=yes')");
         if($HotSpotVoucherRemovePass==1) {
@@ -743,6 +776,16 @@ function table():bool{
             $tpl->table_form_field_bool("{vouchers_rooms}", 1, ico_user_lock);
         }
     }
+
+    $HotSpotAuthentGoogle=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotAuthentGoogle"));
+    $tpl->table_form_field_js("Loadjs('$page?form-google-js=yes')");
+
+    if($HotSpotAuthentGoogle==1){
+        $tpl->table_form_field_bool("Google Auth", 1, "fab fa-google");
+    }else{
+        $tpl->table_form_field_bool("Google Auth", 0, "fab fa-google");
+    }
+
 
 
     $UfdbguardSMTPNotifs=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbguardSMTPNotifs")));

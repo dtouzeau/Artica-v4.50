@@ -16,7 +16,6 @@ function squid_increment_func($array){
         $array[] = "storeid_file_rewrite_checkupdates";
         $array[]="adker_watchdog";
         $array[]="ufdbguardd";
-        $array[]="WSUS_HTTP";
         $array[]="ziproxy";
         $array[]="msktutil_watch";
         $array[]="RemoveServices";
@@ -443,35 +442,7 @@ function iptables_transparent():string{
 	
 }
 
-function WSUS_HTTP_PID(){
-	$pid=$GLOBALS["CLASS_UNIX"]->get_pid_from_file("/var/run/wsus-http/http-server.pid");
-	if($GLOBALS["CLASS_UNIX"]->process_exists($pid)){
-		return $pid;
-	}
-	return $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN("/usr/share/artica-postfix/wsus-http.py");
-}
 
-function WSUS_HTTP(){
-
-	
-	if(!is_file("/etc/init.d/cache-httpd")){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("WindowsUpdateCaching", 0);
-		return;
-	}
-	
-	squid_admin_mysql(0, "Windows Update Caching will be disabled ( feature replaced by HyperCache Proxy Service)", "The HyperCache Proxy service is able to cache more updates sites than the Windows Updates Feature..");
-	shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.squid.windowsupdate.enable.php --disable >/dev/null 2>&1 &");
-	
-	
-	
-}
-function WSUS_SCHEDULER_PID(){
-	$pid=$GLOBALS["CLASS_UNIX"]->get_pid_from_file("/var/run/wsus-http/scheduler.pid");
-	if($GLOBALS["CLASS_UNIX"]->process_exists($pid)){
-		return $pid;
-	}
-	return $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN("/usr/share/artica-postfix/wsus-scheduler.py");
-}
 
 
 

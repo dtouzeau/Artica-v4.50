@@ -833,7 +833,7 @@ function parseTemplate_build_main($ARRAY){
 	$f2[]="<UL class=\"tasks\" id=\"cantDisplayTasks\">";
 	if($UfdbGuardHTTPDisableHostname==0){
 		$hostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
-		if($hostname==null){$hostname=$sock->getFrameWork("system.php?hostname-g=yes");$sock->SET_INFO($hostname,"myhostname");}
+		if($hostname==null){$hostname=php_uname("n");$sock->SET_INFO($hostname,"myhostname");}
 		$f[]="        <tr><td class=\"info_title\">{proxy_server}:</td><td class=\"info_content\">$hostname</td></tr>";
 		$f2[]="<li><strong>{proxy_server}</strong>: $hostname</li>";
 	}

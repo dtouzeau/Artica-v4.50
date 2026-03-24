@@ -189,9 +189,17 @@ function user_passwd_change():bool{
     $tpl->CLEAN_POST();
     $user=$tpl->CLEAN_BAD_XSS($_POST["chgpasswd"]);
     $password=$_POST["chgpasswdStr"];
-    $userEnc=base64_encode(serialize(array($user,$password)));
-    admin_tracks("Change a system user password of [$user]");
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("system.php?system-user-pass=$userEnc");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON(
+        "/system/user/chpasswd",
+        array("user"=>$user,"password"=>$password)
+    ));
+    if(is_object($json) && !empty($json->success)){
+        admin_tracks("Changed system user password of [$user]");
+    } else {
+        $err=is_object($json)?($json->error ?? 'unknown error'):'connection error';
+        echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars($err)));
+        return false;
+    }
     return true;
 }
 function new_user_js():bool{

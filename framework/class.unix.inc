@@ -177,6 +177,9 @@ class unix {
     private function go_exec_fallback($cmd){
         $sh=$this->sh_command($cmd);
         $nohup=$this->find_program("nohup");
+        if(is_writable("/usr/share/artica-postfix/ressources/logs/php.log")) {
+            error_log("$cmd -> $sh", 3, "/var/log/go-shield/exec.log");
+        }
         shell_exec("$nohup $sh >/dev/null 2>&1 &");
     }
 
@@ -259,59 +262,8 @@ class unix {
     }
 
     public function go_exec($cmd):bool{
-        $Masterbin = "/bin/go-exec";
-
-        if(!is_file("/bin/go-forker")){
-            $php=$this->LOCATE_PHP5_BIN();
-            $this->go_exec_syslog("Runing go-forker installation");
-            shell_exec("$php /usr/share/artica-postfix/exec.go.exec.php --forker");
-        }
-        if(preg_match("#\/nohup\s+(.+)#",$cmd,$re)){
-            $cmd=$re[1];
-        }
-        $trace=debug_backtrace();
-        $file=basename($trace[1]["file"]);
-        $function=trim($trace[1]["function"]);
-        $line=intval($trace[1]["line"]);
-        $this->go_exec_syslog($cmd." ($file/$function/$line)");
-        if (!is_file($Masterbin)) {
-            $this->go_exec_syslog("GO Exec bin not found, use fallback");
-            $this->go_exec_fallback($cmd);
-            return false;
-        }
-
-        $pid = $this->go_exec_pid();
-        if (!$this->process_exists($pid)) {
-            $this->go_exec_syslog("GO Exec not running, use fallback");
-            $this->go_exec_fallback($cmd);
-            return false;
-        }
-
-        if(!function_exists("curl_init")){
-            $this->go_exec_syslog("GO Exec curl_init not found");
-            $this->go_exec_fallback($cmd);
-            return false;
-        }
-        $cmd = base64_encode($cmd);
-        $cURLConnection = curl_init();
-        curl_setopt($cURLConnection, CURLOPT_URL, "http://127.0.0.1:3334/$cmd");
-        curl_setopt($cURLConnection, CURLOPT_NOPROXY, "*");
-        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
-        $resp = curl_exec($cURLConnection);
-        $curl_error_num=intval(curl_errno($cURLConnection));
-        curl_close($cURLConnection);
-        if($this->is_curl_error($curl_error_num)){
-            $this->go_exec_syslog("[FATAL] ".$this->mysql_error);
-            $this->go_exec_fallback($cmd);
-            return false;
-        }
-
-        if ($resp == "TRUE") {
+           $this->go_exec_fallback($cmd);
             return true;
-        }
-        $this->go_exec_fallback($cmd);
-        return false;
-
     }
     private function is_curl_error($curl_error_num=0){
         if($curl_error_num==7){

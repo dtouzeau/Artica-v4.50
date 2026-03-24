@@ -502,7 +502,6 @@ function install():bool{
     build_progress_restart(65,"{please_wait}");
     system("/usr/sbin/artica-phpfpm-service -install-ntp");
     build_progress_restart(75,"{please_wait}");
-    system("$php /usr/share/artica-postfix/exec.logrotate.php --reconfigure");
     UNIX_RESTART_CRON();
 
     build_progress_restart(80,"{please_wait}");

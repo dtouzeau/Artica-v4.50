@@ -129,13 +129,6 @@ function section_workingdir_popup():bool{
 
     $html[]="<div id='docker-workdir-progress'></div>";
     $form[]=$tpl->field_browse_directory("ArticaRepoDir","{working_directory}",$ArticaRepoDir);
-
-    /*$jsafter=$tpl->framework_buildjs(
-        "docker.php?move-workdir=yes",
-        "docker.workdir.progress","docker.workdir.log",
-        "docker-workdir-progress",section_js(),null,null,"AsDockerAdmin"
-    );
-    */
     $jsafter="BootstrapDialog1.close();LoadAjax('table-articamirror2','$page?table_flat=yes');";
     $html[]=$tpl->form_outside(null,$form,null,"{apply}",$jsafter,"AsDebianSystem");
     echo $tpl->_ENGINE_parse_body($html);

@@ -264,7 +264,7 @@ class system_tasks{
         $this->tasks_processes[3]="exec.acls.php --acls";
         $this->tasks_processes[4]="exec.getent.php --force";
         $this->tasks_processes[5]="exec.mysql.build.php --mysqltuner --force";
-        $this->tasks_processes[8]="exec.logrotate.php --run";
+        //$this->tasks_processes[8]="exec.logrotate.php --run";
         $this->tasks_processes[10]="exec.ipband.php --status";
         $this->tasks_processes[11]="exec.ipband.php --parseresolv";
         $this->tasks_processes[12]="exec.mysql.clean.php";
@@ -278,7 +278,7 @@ class system_tasks{
         $this->tasks_processes[22]="exec.pdns.php --replic-artica";
         $this->tasks_processes[23]="exec.httptrack.php";
         $this->tasks_processes[24]="exec.xapian.index.php";
-        $this->tasks_processes[28]="exec.lighttpd.nets.php --restart";
+        //$this->tasks_processes[28]="exec.lighttpd.nets.php --restart";
         $this->tasks_processes[29]="exec.freeweb.rdcube-replic.php --all";
         //$this->tasks_processes[30]="exec.arpscan.php";
         $this->tasks_processes[31]="exec.zarafa-backup.php --exec";
@@ -362,6 +362,7 @@ class system_tasks{
         $this->task_disabled[5]=true;
         $this->task_disabled[6]=true;
         $this->task_disabled[7]=true;
+        $this->task_disabled[8]=true;
         $this->task_disabled[9]=true;
         $this->task_disabled[40]=true;
         $this->task_disabled[4]=true;
@@ -369,6 +370,7 @@ class system_tasks{
         $this->task_disabled[25]=true;
         $this->task_disabled[26]=true;
         $this->task_disabled[27]=true;
+        $this->task_disabled[28]=true;
         $this->task_disabled[30]=true;
         $this->task_disabled[33]=true;
         $this->task_disabled[38]=true;

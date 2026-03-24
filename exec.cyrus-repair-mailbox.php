@@ -1,7 +1,6 @@
 <?php
 include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
 include_once(dirname(__FILE__).'/ressources/class.ini.inc');
-include_once(dirname(__FILE__).'/ressources/class.gluster.inc');
 include_once(dirname(__FILE__).'/framework/class.unix.inc');if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/framework/frame.class.inc");
 

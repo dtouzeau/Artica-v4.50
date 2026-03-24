@@ -2677,7 +2677,7 @@ function certificate_new_popup():bool{
     @unlink("/usr/share/artica-postfix/ressources/logs/web/Myprivkey.csr");
 
     if($ligne["CommonName"]==null){
-        $ligne["CommonName"]=$sock->getFrameWork("system.php?hostname-g=yes");
+        $ligne["CommonName"]=php_uname("n");
     }
     $array_country_codes=array();
     $db=file_get_contents(dirname(__FILE__) . '/ressources/databases/ISO-3166-Codes-Countries.txt');

@@ -541,8 +541,6 @@ function start_watchdog(){
     $functions=array("CRON_NECESSARIES","PARANOID_MODE_CLEAN","TEST_ACTIVE_DIRECTORY","CheckActiveDirectoryEmergency","ALL_STATUS","CheckOldCachesLog","DeletedCaches","caches_center","caches_size");
 
     Events("* * * * * * * * * * * * * * * * START WATCHDOG * * * * * * * * * * * * * * * *");
-    Events("Testing Memory");
-    $unix->framework_exec("exec.system.CheckMemory.php");
     $GLOBALS["ALL_SCORES"]=0;
 
     foreach ($functions as $func) {

@@ -29,7 +29,7 @@ if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("QEMU_HOST"))==1){$subtitle="Qemu 
 
 $title="{your_system}";
 $hostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
-if($hostname==null){$sock=new sockets();$hostname=$sock->getFrameWork("system.php?hostname-g=yes");}
+if($hostname==null){$sock=new sockets();$hostname=php_uname("n");}
 if($hostname==null){$hostname="localhost.localdomain";}
 
 $Server_infos="<a class='btn btn-white btn-bitbucket' 

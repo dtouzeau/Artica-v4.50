@@ -1180,25 +1180,7 @@ function test_ssl_port(){
 
 
 
-function watchdog_restart(){
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/squid.watchdog.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/squid.watchdog.progress.log";
 
-    @unlink($ARRAY["PROGRESS_FILE"]);
-    @unlink($ARRAY["LOG_FILE"]);
-    @touch($ARRAY["PROGRESS_FILE"]);
-    @touch($ARRAY["LOG_FILE"]);
-    @chmod($ARRAY["PROGRESS_FILE"],0777);$array["POURC"]=2;$array["TEXT"]="{please_wait}";@file_put_contents($GLOBALS["PROGRESS_FILE"], serialize($array));
-    @chmod($GLOBALS["LOG_FILE"],0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.init-tail-cache.php --restart >{$ARRAY["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    $unix->ToSyslog($cmd);
-    shell_exec($cmd);
-
-}
 function quotarules_status_progress(){
     $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/squid.quotasband.status.progress";
     $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/squid.quotasband.status.progress.txt";
@@ -1899,16 +1881,6 @@ function cached_kerberos_tickets(){
 
     @file_put_contents("/usr/share/artica-postfix/ressources/logs/web/kerberos-tickets-squid", serialize($array));
     @chmod("/usr/share/artica-postfix/ressources/logs/web/kerberos-tickets-squid",0755);
-}
-
-function windows_update_delete(){
-    $path=$_GET["windows-update-delete"];
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd="$php5 /usr/share/artica-postfix/exec.windowsupdate.php --delete \"$path\"";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-
 }
 
 

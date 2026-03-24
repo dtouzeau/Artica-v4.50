@@ -93,8 +93,6 @@ function install_rest(){
     $sock=new sockets();
     $sock->SET_INFO("EnablePDNSRESTFul",1);
     $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    system("$php /usr/share/artica-postfix/exec.lighttpd.php --nginx-reload");
     build_progress(100, "{installing} {APP_POWERDNS_RESTFUL} {done}");
 }
 
@@ -102,9 +100,6 @@ function uninstall_rest(){
     build_progress(50, "{uninstalling} {APP_POWERDNS_RESTFUL}");
     $sock=new sockets();
     $sock->SET_INFO("EnablePDNSRESTFul",0);
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    system("$php /usr/share/artica-postfix/exec.lighttpd.php --nginx-reload");
     build_progress(100, "{uninstalling} {APP_POWERDNS_RESTFUL} {done}");
 }
 

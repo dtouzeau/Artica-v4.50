@@ -39,7 +39,6 @@ if(isset($_GET["disable-ntopng"])){disable_ntopng();exit;}
 if(isset($_GET["enable-ntopng"])){enable_ntopng();exit;}
 if(isset($_GET["syncthing-installed"])){syncthing_installed();exit;}
 if(isset($_GET["disk-parent-of"])){disks_parent_of();exit;}
-if(isset($_GET["folders-monitors-progress"])){dirs_monitors_execute();exit;}
 if(isset($_GET["change-new-uuid"])){change_new_uuid();exit;}
 if(isset($_GET["restart-all-extrn-scvcs"])){restart_all_extrn_services();exit;}
 if(isset($_GET["critical-paths-locations"])){critical_paths_locations();exit;}
@@ -49,14 +48,10 @@ if(isset($_GET["artica-status-restart"])){artica_status_restart();exit;}
 if(isset($_GET["remove-logs-file"])){remove_file();exit;}
 if(isset($_GET["install-artica-key"])){install_artica_key();exit;}
 if(isset($_GET["install-artica-tgz"])){install_artica_tgz();exit;}
-if(isset($_GET["mii-tool-save"])){MII_TOOLS_SAVE();exit;}
-if(isset($_GET["mii-tools"])){MII_TOOLS();exit;}
 if(isset($_GET["create-new-uuid"])){CREATE_NEW_UUID();exit;}
 if(isset($_GET["MEM_TOTAL_INSTALLEE"])){MEM_TOTAL_INSTALLEE();exit;}
 if(isset($_GET["mylinux"])){mylinux();exit;}
 if(isset($_GET["syslog_purge-nas"])){syslog_purge_to_nas();exit;}
-if(isset($_GET["test-a-route"])){test_a_route();exit;}
-if(isset($_GET["hostname-g"])){hostname_g();exit;}
 if(isset($_GET["ucarp-status-service"])){ucarp_status_service();exit;}
 if(isset($_GET["create-user"])){create_user();exit;}
 if(isset($_GET["create-user-progress"])){create_user_progress();exit;}
@@ -79,7 +74,6 @@ if(isset($_GET["all-services"])){all_services();exit;}
 if(isset($_GET["generic-start"])){generic_start();exit;}
 if(isset($_GET["parse-blocked"])){parse_blocked();exit;}
 if(isset($_GET["meminfo"])){meminfo();exit;}
-if(isset($_GET["HugePages"])){HugePages();exit;}
 if(isset($_GET["zoneinfo-set"])){zone_info_set();exit;}
 if(isset($_GET["uidNumber"])){uidNumber();exit;}
 if(isset($_GET["tune2fs-values"])){tune2fs_values();exit;}
@@ -91,8 +85,6 @@ if(isset($_GET["archiverlogs"])){archiverlogs();exit;}
 if(isset($_GET["wizard-execute"])){wizard_execute();exit;}
 if(isset($_GET["ucarp-compile"])){ucarp_compile();exit;}
 if(isset($_GET["ucarp-status"])){ucarp_status();exit;}
-if(isset($_GET["ucarp-start-tenir"])){ucarp_start();exit;}
-if(isset($_GET["ucarp-stop-tenir"])){ucarp_stop();exit;}
 if(isset($_GET["syslogdb-restart"])){syslogdb_restart();exit;}
 if(isset($_GET["syslogdb-status"])){syslogdb_status();exit;}
 if(isset($_GET["syslogdb-query"])){syslogdb_query();exit;}
@@ -103,7 +95,6 @@ if(isset($_GET["apply-patch"])){APPLY_PATCH();exit;}
 if(isset($_GET["apply-soft"])){APPLY_SOFT();exit;}
 if(isset($_GET["syslogarchive-logs"])){syslogarchive_logs();exit;}
 if(isset($_GET["routes-show"])){routes_show();exit;}
-if(isset($_GET["virtip-delete"])){virtip_delete();exit;}
 if(isset($_GET["ifconfig-show"])){ifconfig_show();exit;}
 if(isset($_GET["ifconfig-initd"])){ifconfig_initd();exit;}
 if(isset($_GET["ifconfig-initdcontent"])){ifconfig_initdcontent();exit;}
@@ -396,12 +387,6 @@ function debian_version(){
 	
 }
 
-function hostname_g(){
-	$unix=new unix();
-	$hostname=$unix->hostname_g();
-	if($hostname==null){$hostname="localhost.localdomain";}
-	echo "<articadatascgi>$hostname</articadatascgi>";
-}
 
 function ArchStruct(){
 	$unix=new unix();
@@ -790,15 +775,7 @@ function ucarp_status(){
 	
 }
 
-function ucarp_status_service(){
-	$unix=new unix();
-	$php=$unix->LOCATE_PHP5_BIN();
-	$cmd="$php /usr/share/artica-postfix/exec.status.php --ucarp --nowachdog";
-	exec($cmd,$results);
-	writelogs_framework($cmd." ->".count($results)." lines",__FUNCTION__,__FILE__,__LINE__);
-	echo "<articadatascgi>". base64_encode(implode("\n",$results))."</articadatascgi>";
-	
-}
+
 
 
 function rsync_debian_status(){
@@ -1241,31 +1218,9 @@ function empty_swap(){
 }
 
 
-function test_a_route(){
-	$unix=new unix();
-	$item=$_GET["test-a-route"];
-	
-	if(!$unix->isIPAddress($item)){
-		$item=gethostbyname($item);
-	}
-	$results[]="Testing route for $item";
-	$unix=new unix();
-	$ip=$unix->find_program("ip");
-	$cmd="$ip route get $item 2>&1";
-	writelogs_framework($cmd);
-	exec($cmd,$results);
-	echo "<articadatascgi>".base64_encode(@implode("\n", $results))."</articadatascgi>";
-}
 
 
-function syslog_purge_to_nas(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.logrotate.php --purge-nas >/dev/null 2>&1 &";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-}
+
 function MEM_TOTAL_INSTALLEE(){
 	$unix=new unix();
 	$MEM_TOTAL_INSTALLEE=$unix->MEM_TOTAL_INSTALLEE();
@@ -1323,13 +1278,7 @@ function ntopng_restart(){
 	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.ntopng.php --restart >/dev/null 2>&1 &");
 	shell_exec("$nohup /etc/init.d/artica-status restart >/dev/null 2>&1 &");
 }
-function upgrade_php_47():bool{
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    @chmod("/usr/share/artica-postfix/bin/php-upgrade",0755);
-    shell_exec("$nohup /usr/share/artica-postfix/bin/php-upgrade >/dev/null 2>&1 &");
-    return true;
-}
+
 function ntopng_status(){
 	$unix=new unix();
 	$nohup=$unix->find_program("nohup");
@@ -1382,78 +1331,8 @@ function CREATE_NEW_UUID(){
     $unix=new unix();
     $unix->CREATE_NEW_UUID();
 }
-function MII_TOOLS(){
-	$unix=new unix();
-	$eth=$_GET["eth"];
-	$miitool=$unix->find_program("mii-tool");
-	if(!is_file($miitool)){
-		$ARRAY["STATUS"]=false;
-		$ARRAY["ERROR"]="mii-tool no such binary";
-        writelogs_framework("mii-tool no such binary",__FUNCTION__,__FILE__,__LINE__);
-		echo "<articadatascgi>".base64_encode(serialize($ARRAY))."</articadatascgi>";
-		return false;
-	}
-    writelogs_framework("$miitool -v $eth 2>&1",__FUNCTION__,__FILE__,__LINE__);
-	exec("$miitool -v $eth 2>&1",$results);
-	foreach ($results as $num=>$line){
-        writelogs_framework("$line",__FUNCTION__,__FILE__,__LINE__);
-		if(preg_match("#failed#", $line)){
-			$ARRAY["STATUS"]=false;
-			$ARRAY["ERROR"]="$line";
-			echo "<articadatascgi>".base64_encode(serialize($ARRAY))."</articadatascgi>";
-			return false;
-		}
-		if(preg_match("#$eth:\s+(.+)#", $line,$re)){
-			$ARRAY["STATUS"]=true;
-			$ARRAY["INFOS"]=$line;
-			$ARRAY["AUTONEG"]=0;
-			$ARRAY["FLOWC"]=0;
-			if(preg_match("#flow-control#", $line)){
-				$ARRAY["FLOWC"]=1;
-			}
-			
-			continue;
-		}
-		
-		if(preg_match("#product info:\s+(.+)#", $line,$re)){
-			$ARRAY["PRODUCT"]=trim($re[1]);
-		}
-		
-		if(preg_match("#autonegotiation.*?enabled#", $line,$re)){
-			$ARRAY["AUTONEG"]=1;
-		}
-		
-		if(preg_match("#capabilities:\s+(.+)#",$line,$re)){
-			$cap=explode(" ",$re[1]);
-			foreach ($cap as $b){
-				if(trim($b)==null){continue;}
-				$ARRAY["CAP"][$b]=true;
-			}
-		}
-		
-	}
-	
-	echo "<articadatascgi>".base64_encode(serialize($ARRAY))."</articadatascgi>";
-	
-}
-function MII_TOOLS_SAVE(){
-	$unix=new unix();
-	$flow_control=$_GET["flow-control"];
-	$autonegotiation=$_GET["autonegotiation"];
-	$duptype=$_GET["duptype"];
-	$eth=$_GET["MII-TOOL"];
-	$miitool=$unix->find_program("mii-tool");
-	if(!is_file($miitool)){return;}
-	if($flow_control==1){$flow_control_text=" flow-control";}
-	
-	if($autonegotiation==1){
-	$cmd="$miitool --force=$duptype $eth";
-	}else{
-		$cmd="$miitool --advertise=$duptype $eth";
-	}
-	writelogs_framework("$cmd",__FUNCTION__,__LINE__);
-	echo "<articadatascgi>".base64_encode(shell_exec($cmd))."</articadatascgi>";
-}
+
+
 function install_artica_tgz(){
 	$filename=$_GET["filename"];
 	$unix=new unix();
@@ -1822,24 +1701,6 @@ function dashboard_refresh(){
 	system("$nohup $php5 /usr/share/artica-postfix/exec.squid.interface-size.php --force --progress >{$GLOBALS["LOGSFILES"]} 2>&1 &");	
 	
 	
-}
-
-
-
-
-function php_snmp_progress(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/php-snmp.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/php-snmp.progress.txt";
-	@unlink($GLOBALS["CACHEFILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["CACHEFILE"],0777);
-	@chmod($GLOBALS["LOGSFILES"],0777);
-	system("$nohup $php5 /usr/share/artica-postfix/exec.lighttpd.php --php-snmp >{$GLOBALS["LOGSFILES"]} 2>&1 &");
 }
 function install_cluster_master(){
     $unix=new unix();

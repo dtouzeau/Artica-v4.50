@@ -73,7 +73,7 @@ if($EnableIntelCeleron==0){
 	system("$php /usr/share/artica-postfix/exec.squid.php --build --force");
 	build_progress("{reconfiguring_web_interface}",90);
 	
-	system("$php /usr/share/artica-postfix/exec.lighttpd.php --apache-build");
+
 	echo "EnableIntelCeleron: 0 -> Stop procedure\n";
 	build_progress("{done}...",100);
 	sleep(5);

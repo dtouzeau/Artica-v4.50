@@ -348,12 +348,16 @@ function tabs(){
 	$MUNIN_CLIENT_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MUNIN_CLIENT_INSTALLED"));
 	$EnableMunin=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMunin"));
 	if($MUNIN_CLIENT_INSTALLED==1){if($EnableMunin==1){$MUNIN=true;}}
+    $DisableMinimalSquidStatistics = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableMinimalSquidStatistics"));
 	//enable_watchdog_squid_explain
-	
-	$array["{status}"]="$page?status=yes";
-    $array["{performance}"]="fw.proxy.status.performance.php";
-    $array["{members}"]="fw.proxy.status.ipmembers.php";
-    $array["{watchdog}"]="$page?watchdog=yes";
+	// <i class="fa-sharp fa-solid fa-chart-pie"></i>
+	$array["<i class='fas fa-tachometer-alt'></i>&nbsp;{status}"]="$page?status=yes";
+    if($DisableMinimalSquidStatistics==0){
+        $array["<i class='fa-solid fa-chart-pie'></i>&nbsp;{statistics}"]="fw.proxy.status.minimal.statistics.php";
+    }
+    $array["<i class='fa-solid fa-jet-fighter'></i>&nbsp;{performance}"]="fw.proxy.status.performance.php";
+    $array["<i class='fa-solid fa-users'></i>&nbsp;{members}"]="fw.proxy.status.ipmembers.php";
+    $array["<i class='fa-solid fa-shield-dog'></i>&nbsp;{watchdog}"]="$page?watchdog=yes";
 	if($MUNIN){
 		$array["{requests}"]="$page?requests=yes";
 		$array["{traffic}"]="$page?traffic=yes";

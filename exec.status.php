@@ -178,10 +178,6 @@ if (isset($argv[1])) {
     if ($argv[1] == "--dnscache") {
         exit;
     }
-    if ($argv[1] == "--wsus") {
-        echo WSUS_HTTP() . "\n";
-        exit;
-    }
     if ($argv[1] == "--defaults") {
         $GLOBALS["VERBOSE"] = true;
         Build_default_values();
@@ -246,11 +242,7 @@ if (isset($argv[1])) {
     if ($argv[1] == "--patchs-backup") {
         exit;
     }
-    if($argv[1]=="--hotspot-web"){
-        include_once("$RDIR/class.status.hotspot.inc");
-        echo HOTSPOT_STATUS();
-        exit;
-    }
+
 
 
 
@@ -911,7 +903,7 @@ if (isset($argv[1])) {
        $func=array("ntlm_auth_path","squid_master_status","proxypac","privoxy","squidguardweb","ufdbguardd","articadb","ftp_proxy","cntlm","cntlm_parent","ucarp","squid_nat","ziproxy","killstrangeprocesses","iptables_transparent");
 
 
-        if (function_exists("WSUS_HTTP")) { $func[] = WSUS_HTTP(); }
+
         foreach ($func as $function){
             if(is_null($function)){continue;}
             if(!function_exists($function)){continue;}
@@ -1206,7 +1198,7 @@ function LoadIncludes(){
         "class.status.haproxy.inc","class.status.adagent.inc","class.status.privoxy.inc","class.status.sealion.inc",
         "class.status.watchdog.me.inc","class.status.splunk.inc","class.status.elasticsearch.inc","class.status.prads.inc",
         "class.status.videocache.inc","class.status.squid.inc","class.status.postfix.inc","class.status.pdns.inc","class.status.defaults.inc","class.status.xapian.inc","class.status.elasticsearch.inc","class.status.wordpress.inc","class.status.dwagent.inc","class.status.quagga.inc",
-        "class.status.saslauthd.inc","class.status.wanproxy.inc","class.status.fsm.inc","class.status.haexchange.inc","class.status.hotspot.inc","class.status.vasd.inc");
+        "class.status.saslauthd.inc","class.status.wanproxy.inc","class.status.fsm.inc","class.status.haexchange.inc","class.status.vasd.inc");
 
     foreach ($RESSOURCES as $ressource){
         $fname=$GLOBALS["BASE_ROOT"] . "/ressources/$ressource";
@@ -1872,13 +1864,13 @@ function launch_all_status($force = false){
         "framework", "pdns_server", "pdns_recursor", "cyrus_imap",  "saslauthd",   "clamscan",  "spamassassin_milter", "spamassassin",   "ksrn", "DWAGENT_STATUS","CIESCACHE_STATUS",
         "mailman", "rpcbind",  "ntlm_auth_path", "scanned_only", "roundcube", "cups",
         "gdm",  "hamachi",  "artica_notifier", "pure_ftpd",
-        "ocs_agent",  "wanproxy","go_exec_update" ,"sshportal", "gluster", "auditd", "milter_dkim", "dropbox", "killstrangeprocesses", "dockerd",
+        "ocs_agent",  "wanproxy","sshportal", "gluster", "auditd", "milter_dkim", "dropbox", "killstrangeprocesses", "dockerd",
          "tftpd",  "bandwith", "lsm", "Build_default_values",
         "pptpd", "pptp_clients", "ddclient", "cluebringer", "proftpd_status", "splunk",
          "openvpn", "vboxguest", "sabnzbdplus",   "SwapWatchdog", "mosquitto","APP_ARTICAFSMON",        "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
         "iscsi", "netatalk", "smartd",   "greyhole_watchdog", "tomcat",
         "cgroups",  "arpd", "ps_mem", "ipsec", "openvpn", "ifconfig_network",
-        "udevd_daemon",  "arkwsd", "arkeiad", "haproxy", "hacluster", "privoxy", "ad_rest", "CleanLogs", "checksyslog", "freeradius", "maillog_watchdog", "arp_spoof","go_squid_auth","HOTSPOT_STATUS",
+        "udevd_daemon",  "arkwsd", "arkeiad", "haproxy", "hacluster", "privoxy", "ad_rest", "CleanLogs", "checksyslog", "freeradius", "maillog_watchdog", "arp_spoof","go_squid_auth",
          "CleanCloudCatz",   "Scheduler", "exim4", "ntopng",   "XMail", "conntrackd", "iptables", "wordpress",
          "vde_all", "sealion_agent", "syncthing", "killstrangeprocesses","keepalived");
 
@@ -5261,36 +5253,7 @@ function sshportal()
 }
 //=====================================================================================================
 
-function go_exec_update():bool{
-    $prebin=prebin();
-    $ARROOT = ARTICA_ROOT;
-    $goserver_src   = "$ARROOT/bin/go-shield/exec/go-exec";
-    $monit_file     = "/etc/monit/conf.d/go-exec.monitrc";
-    $goserver_dst   = "/bin/go-exec";
 
-
-
-    if(!is_file($goserver_src)){return false;}
-    if(!is_file($goserver_dst)){
-        squid_admin_mysql(1,"{installing} Go Exec service",null,__FILE__,__LINE__);
-        shell_exec("$prebin/exec.go.exec.php >/dev/null 2>&1 &");
-        return true;
-    }
-
-    if(!is_file($monit_file)){
-        squid_admin_mysql(1,"{installing} Go Exec Monitor configuration",null,__FILE__,__LINE__);
-        shell_exec("$prebin/exec.go.exec.php --monit >/dev/null 2>&1 &");
-        return true;
-    }
-
-
-    $goserver_src_md5 = md5_file($goserver_src);
-    $goserver_dst_md5 = md5_file($goserver_dst);
-    if($goserver_src_md5==$goserver_dst_md5){return true;}
-    squid_admin_mysql(1,"Trying update the Go Exec service",null,__FILE__,__LINE__);
-    shell_exec("$prebin/exec.go.exec.php --update >/dev/null 2>&1 &");
-    return true;
-}
 function prebin():string{
     return "{$GLOBALS["nohup"]} {$GLOBALS["NICE"]}{$GLOBALS["PHP5"]} /usr/share/artica-postfix";
 }
@@ -6199,9 +6162,6 @@ function CheckGLOBALS(): bool
         @touch("/etc/artica-postfix/settings/Daemons/ArticaWatchDogList");
     }
     $GLOBALS["ArticaWatchDogList"] = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaWatchDogList"));
-
-    $GoExec=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Exec_Enable"));
-    if ($GoExec==0){ system("{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.go.exec.php"); }
     return true;
 }
 

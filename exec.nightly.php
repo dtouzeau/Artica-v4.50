@@ -1156,12 +1156,7 @@ function RestartDedicatedServices($aspid=false){
         squid_admin_mysql(1,"{reloading_proxy_service} after Artica update",null,__FILE__,__LINE__);
         system("/usr/sbin/artica-phpfpm-service -reload-proxy");
     }
-    $GoExec=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Exec_Enable"));
-    if ($GoExec==0){
-        system("$php /usr/share/artica-postfix/exec.go.exec.php");
-    }
 
-	
 	if(is_file("/etc/init.d/c-icap-access")){
 		build_progress_manu("{starting} - Restarting c-icap tail",100);
 		shell_exec("$nohup /etc/init.d/c-icap-access restart >/dev/null 2>&1 &");
@@ -1170,8 +1165,7 @@ function RestartDedicatedServices($aspid=false){
     if(is_file("/etc/init.d/unbound")) {
         shell_exec("$php $Aroot/exec.unbound.php --restart >/dev/null 2>&1 &");
     }
-    shell_exec("$php $Aroot/exec.go.exec.php --update >/dev/null 2>&1 &");
-    shell_exec("$php $Aroot/exec.squid.global.access.php --auth >/dev/null 2>&1 &");
+     shell_exec("$php $Aroot/exec.squid.global.access.php --auth >/dev/null 2>&1 &");
     if(is_file("/etc/init.d/nginx")){
         $NGINX_SP663=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NGINX_SP663"));
         if($NGINX_SP663==0){
