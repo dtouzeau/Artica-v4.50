@@ -6,8 +6,6 @@ function squid_increment_func($array){
         $array[] = "squid_master_status";
         $array[] = "squid_nat";
         $array[] = "squid_db";
-        $array[] = "cntlm";
-        $array[] = "cntlm_parent";
         $array[] = "squidguardweb";
         $array[] = "iptables_transparent";
         $array[] = "hypercache_logger";
@@ -173,7 +171,6 @@ function RemoveServices():bool{
 	$servicesINIT[]="SquidRouterMode";
 	$servicesINIT[]="proxy-wccp";
 	$servicesINIT[]="privoxy";
-	$servicesINIT[]="cntlm";
     $servicesINIT[]="squid-dns";
 
 
@@ -831,149 +828,8 @@ function msktutil_watch():bool{
 
 //========================================================================================================================================================
 
-function cntlm_pid(){
-	$filename="/var/run/cntlm.pid";
-	if(is_file($filename)){
-		$pid=trim(@file_get_contents($filename));
-		if($GLOBALS["CLASS_UNIX"]->process_exists($pid)){return $pid;}
-	}
-	$cntlm=$GLOBALS["CLASS_UNIX"]->find_program("cntlm");
-	return $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN("$cntlm.*?cntlm\.pid");
-}
-function cntlm_parent_pid(){
-	$filename="/var/run/cntlm-parent.pid";
-	if(is_file($filename)){
-		$pid=trim(@file_get_contents($filename));
-		if($GLOBALS["CLASS_UNIX"]->process_exists($pid)){return $pid;}
-	}
-	
-	
-	$cntlm=$GLOBALS["CLASS_UNIX"]->find_program("cntlm");
-	return $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN("$cntlm.*?cntlm-parent");
-}
 
 
-function cntlm_parent(){
-	
-	if($GLOBALS["VERBOSE"]){echo "\n\n ***** CNTLM PARENT ******* \n\n";}
-	$bin=$GLOBALS["CLASS_UNIX"]->find_program("cntlm");
-	if(!is_file($bin)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CNTLMInstalled", 0);
-		$l[]="";
-		$l[]="[APP_CNTLM_PARENT]";
-		$l[]="service_name=APP_CNTLM_PARENT";
-		$l[]="installed=0";
-		$l[]="service_disabled=0";
-		return implode("\n",$l);
-	}
-	
-	$master_pid=cntlm_parent_pid();
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CNTLMInstalled", 1);
-	$EnableCNTLM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidEnableParentNTLM"));
-	
-	$l[]="";
-	$l[]="[APP_CNTLM_PARENT]";
-	$l[]="service_name=APP_CNTLM_PARENT";
-	$l[]="service_cmd=/etc/init.d/cntlm-parent";
-	$l[]="master_version=".cntlm_version();
-	$l[]="service_disabled=$EnableCNTLM";
-	$l[]="pid_path=/var/run/cntlm-parent.pid";
-	$l[]="watchdog_features=1";
-	$l[]="family=network";
-	
-	
-	
-	if($EnableCNTLM==0){
-		if($GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-			$cmd=trim("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.cntlm-parent.php --stop >/dev/null 2>&1 &");
-			shell_exec2($cmd);
-		}
-		$l[]="";
-		return implode("\n",$l);
-	}
-	
-	
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		if(!$GLOBALS["DISABLE_WATCHDOG"]){
-			$cmd=trim("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.cntlm-parent.php --start >/dev/null 2>&1 &");
-			shell_exec2($cmd);
-		}
-		$l[]="";
-		return implode("\n",$l);
-	}
-	
-	$l[]=GetMemoriesOf($master_pid,"APP_CNTLM_PARENT");
-	$l[]="";
-	
-	return implode("\n",$l);
-	
-}
-
-
-function cntlm(){
-	$bin=$GLOBALS["CLASS_UNIX"]->find_program("cntlm");
-	if(!is_file($bin)){
-		$l[]="";
-		$l[]="[APP_CNTLM]";
-		$l[]="service_name=APP_CNTLM";
-		$l[]="installed=0";
-		$l[]="service_disabled=0";
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CNTLMInstalled", 0);
-		return implode("\n",$l);
-	}
-	
-	if($GLOBALS["VERBOSE"]){echo "\n\n ***** CNTLM ******* \n\n";}
-
-	$master_pid=cntlm_pid();
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("CNTLMInstalled", 1);
-	$EnableCNTLM=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableCNTLM");
-	$EnableKerbAuth=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth");
-	if(!is_numeric($EnableCNTLM)){$EnableCNTLM=0;}
-	if(!is_numeric($EnableKerbAuth)){$EnableKerbAuth=0;}
-	if($EnableKerbAuth==0){$EnableCNTLM=0;}
-	$l[]="";
-	$l[]="[APP_CNTLM]";
-	$l[]="service_name=APP_CNTLM";
-	$l[]="service_cmd=/etc/init.d/cntlm";
-	$l[]="master_version=".cntlm_version();
-	$l[]="service_disabled=$EnableCNTLM";
-	$l[]="pid_path=/var/run/cntlm.pid";
-	$l[]="watchdog_features=1";
-	$l[]="family=network";
-
-	
-
-	if($EnableCNTLM==0){
-		if($GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-			if(is_file("/etc/init.d/cntlm")){
-				squid_admin_mysql(1, "NTLM Proxy service running (disabled) [action=stop]", null,__FILE__,__LINE__);
-				$cmd=trim("{$GLOBALS["NICE"]} /etc/init.d/cntlm stop >/dev/null 2>&1 &");
-                shell_exec2($cmd);
-			}
-
-		}
-		if($GLOBALS["VERBOSE"]){echo "CNTLM :Disbaled\n";}
-		$l[]="";
-		return implode("\n",$l);
-	}
-
-
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		if(!$GLOBALS["DISABLE_WATCHDOG"]){
-			if(is_file("/etc/init.d/cntlm")){
-				squid_admin_mysql(1, "NTLM Proxy service down [{action}={start}]", null,__FILE__,__LINE__);
-				$cmd=trim("{$GLOBALS["NICE"]} /etc/init.d/cntlm start >/dev/null 2>&1 &");
-				shell_exec2($cmd);
-			}
-		}
-		$l[]="";
-		return implode("\n",$l);
-		}
-	$l[]=GetMemoriesOf($master_pid,"APP_CNTLM");
-	$l[]="";
-
-	return implode("\n",$l);
-}
 
 
 
@@ -1112,22 +968,7 @@ function squid_master_status($buildcache=false):string{
 }
 // ======================================================================================
 
-function cntlm_version():string{
-	$cacheFile="/etc/artica-postfix/cntlm_version";
-	if($GLOBALS["CLASS_UNIX"]->file_time_min($cacheFile)<800){return @file_get_contents("/etc/artica-postfix/cntlm_version");}
 
-	$bin=$GLOBALS["CLASS_UNIX"]->find_program("cntlm");
-	if(!is_file($bin)){if($GLOBALS['VERBOSE']){echo "cntlm -> no such file\n";}return "";}
-	exec("$bin -h 2>&1",$array);
-	foreach ($array as $pid=>$line){
-		if(preg_match("#Proxy version\s+([0-9\.\-a-z]+)#i", $line,$re)){
-			@unlink($cacheFile);
-			@file_put_contents($cacheFile, $re[1]);
-			return $re[1];}
-			if($GLOBALS['VERBOSE']){echo "cntlm_version(),  \"$line\", not found \n";}
-	}
-    return "";
-}
 //====================================================================================
 function squid_tasks():bool{
     $php=$GLOBALS["CLASS_UNIX"]->LOCATE_PHP5_BIN();

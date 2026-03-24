@@ -2567,7 +2567,7 @@ exec.mailarchive.clean.php
 exec.squid.cached.sitesinfos.php
 exec.awstats.php
 exec.cyrus-restore.php
-exec.squid.downgrade.php$this->task_disabled[21]=true;
+exec.squid.downgrade.php
 exec.squid.upgradev10.php
 exec.thinclient.php
 exec.ulogd.install.php
@@ -2578,3 +2578,10 @@ exec.upgrade-php.php
 fw.wsusoffline.php
 fw.wsusoffline.files.php
 fw.wsusoffline.client.php
+exec.squidparse.hourly.php
+exec.artica-routing.php
+exec.atomi.php
+exec.barnyard.php
+exec.cas-server.php
+exec.cntlm.php
+exec.cntlm-parent.php

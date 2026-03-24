@@ -1101,7 +1101,6 @@ function RestartDedicatedServices($aspid=false){
     $python_delete[]="ubound-srn.py";
     $python_delete[]="srn-smtp.py";
     $python_delete[]="exec.rpz-master.php";
-    $python_delete[]="exec.atomi.php";
 
     foreach ($python_delete as $pythonrem){
         if(is_file("/usr/share/artica-postfix/$pythonrem")){
