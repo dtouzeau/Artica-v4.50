@@ -1,5 +1,5 @@
 <?php
-include_once(dirname(__FILE__).'/class.mysql-multi.inc');
+
 
 class wordpress{
 	var $groupware;

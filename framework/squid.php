@@ -2511,14 +2511,6 @@ function current_version(){
     echo "<articadatascgi>". base64_encode($unix->squid_version())."</articadatascgi>";
 
 }
-function downgrade(){
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.downgrade.php \"{$_GET["downgrade"]}\" >/dev/null 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
 
 
 function purge_all_statistics(){

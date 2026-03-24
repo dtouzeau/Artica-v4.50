@@ -921,16 +921,6 @@ function status():bool{
 
 
 
-
-function awstats(){
-	
-
-}
-
-function awstats_import_sql($servername){
-
-}
-
 function framework(){
 	$unix=new unix();
 	if($GLOBALS["OUTPUT"]){echo "Starting......: ".date("H:i:s")." [INIT]: Nginx[".__LINE__."](".basename(__FILE__).") Framework...\n";}

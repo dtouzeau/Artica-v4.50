@@ -1,6 +1,5 @@
 <?php
 include_once(dirname(__FILE__).'/class.mysql.squid.builder.php');
-include_once(dirname(__FILE__).'/class.mysql.xapian.builder.inc');
 include_once(dirname(__FILE__).'/class.sqlite.inc');
 include_once(dirname(__FILE__).'/class.sockets.inc');
 if(is_file(dirname(__FILE__).'/class.tasks.inc')){include_once(dirname(__FILE__).'/class.tasks.inc');}
@@ -3196,36 +3195,10 @@ if(!$this->TABLE_EXISTS('amavis_event_hours','artica_events')){
 			if(!$this->ok){writelogs("Fatal: $this->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
 		}
 
-		$this->CheckTablesAwstats();
+
 	}
 
-public function CheckTablesAwstats(){
-	
-	if(!$this->TABLE_EXISTS('awstats_files','artica_backup')){	
-			$sql="CREATE TABLE IF NOT EXISTS `artica_backup`.`awstats_files` (
-			`servername` VARCHAR( 255 ) NOT NULL ,
-			`awstats_file` VARCHAR( 80 ) NOT NULL ,
-			`content` BLOB NOT NULL ,
-			KEY `servername` (`servername`),
-			KEY `awstats_file` (`awstats_file`)
-			) ENGINE=MYISAM;";
-		$this->QUERY_SQL($sql,"artica_backup");
-		if(!$this->ok){writelogs("Fatal: $this->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}	
-	}
 
-	
-	if(!$this->TABLE_EXISTS('awstats','artica_backup')){	
-			$sql="CREATE TABLE IF NOT EXISTS `artica_backup`.`awstats` (`website` VARCHAR( 255 ) NOT NULL ,
-			`key` VARCHAR( 100 ) NOT NULL ,`value` VARCHAR( 255 ) NOT NULL ,
-			KEY `website` (`website`),
-			KEY `key` (`key`),
-			KEY `value` (`value`)
-			) ENGINE=MYISAM;";
-		$this->QUERY_SQL($sql,"artica_backup");
-		if(!$this->ok){writelogs("Fatal: $this->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
-	}	
-	
-}
 
 
 
@@ -4636,7 +4609,7 @@ if(!$this->TABLE_EXISTS('emailing_campain_queues','artica_backup')){
 		 $this->CheckTableWebsites();
 		 $this->CheckTableThinClient();
 		 $this->CheckTables_qos();
-		 $this->CheckTablesAwstats();
+
 		
 		 $this->check_vps_tables();
 		 $this->check_networks_tables();

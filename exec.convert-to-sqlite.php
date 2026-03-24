@@ -1,7 +1,6 @@
 <?php
 include_once(dirname(__FILE__).'/ressources/class.sockets.inc');
 include_once(dirname(__FILE__).'/ressources/class.mysql.squid.builder.php');
-include_once(dirname(__FILE__).'/ressources/class.mysql.xapian.builder.inc');
 
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $GLOBALS["CLASS_SOCKETS"]->heads_exec_root($argv);

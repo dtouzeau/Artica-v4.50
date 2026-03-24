@@ -194,7 +194,7 @@ class ntpd{
         $conf[]="filegen loopstats file loopstats type day enable";
         $conf[]="filegen peerstats file peerstats type day enable";
         $conf[]="filegen protostats file protostats type day enable";
-        //$conf[]="filegen rawstats file rawstats type day enable";
+
         //$conf[]="filegen sysstats file sysstat type day enable";
         //$conf[]="filegen timingstats file timingstats type day enable";
 

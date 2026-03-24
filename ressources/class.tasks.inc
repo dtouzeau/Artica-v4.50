@@ -303,7 +303,7 @@ class system_tasks{
         //$this->tasks_processes[56]="exec.syslog-engine.php";
         //$this->tasks_processes[57]="exec.syslog-engine.php --psmem";
         $this->tasks_processes[58]="exec.testspeed.php";
-        $this->tasks_processes[59]="exec.mysql.backup.php";
+        //$this->tasks_processes[59]="exec.mysql.backup.php";
         $this->tasks_processes[60]="exec.mailsync.php --alltasks";
         $this->tasks_processes[61]="exec.clean.logs.php --cleandb";
         $this->tasks_processes[62]="exec.zarafa.learn.php";
@@ -383,6 +383,7 @@ class system_tasks{
         $this->task_disabled[52]=true;
         $this->task_disabled[53]=true;
         $this->task_disabled[56]=true;
+        $this->task_disabled[59]=true;
         $this->task_disabled[65]=true;
         $this->task_disabled[41]=true;
         $this->task_disabled[71]=true;

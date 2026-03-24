@@ -19,7 +19,6 @@ foreach ($_GET as $num=>$line){
 writelogs_framework("Get query " .@implode(",",$f),"main()",__FILE__,__LINE__);
 if(isset($_GET["Dir-Files"])){Dir_Files();exit;}
 if(isset($_GET["repair-settings"])){repair_settings_inc();exit;}
-if(isset($_GET["squid-rebuild-reconfigure"])){squid_rebuild_reconfigure();exit;}
 if(isset($_GET["clamav-status"])){clamav_status();exit;}
 if(isset($_GET["hypercachestoreid-ini-status"])){HYPERCACHE_STOREID_INI_STATUS();exit;} 
 if(isset($_GET["hypercacheweb-ini-status"])){HYPERCACHE_WEB_INI_STATUS();exit;}
@@ -29,14 +28,11 @@ if(isset($_GET["GetLangagueFile"])){LOAD_LANGUAGE_FILE();exit;}
 
 if(isset($_GET["SaveSMTPNotifications"])){SaveSMTPNotifications();exit;}
 if(isset($_GET["SmtpNotificationConfig"])){SmtpNotificationConfig();exit;}
-if(isset($_GET["refresh-frontend"])){Refresh_frontend();exit;}
 if(isset($_GET["find-program"])){find_sock_program();exit;}
 if(isset($_GET["syslog-query"])){SYSLOG_QUERY();exit;}
 if(isset($_GET["aptcheck"])){aptcheck();exit;}
 if(isset($_GET["SetServerTime"])){SetServerTime();exit;}
-if(isset($_GET["CompileSSHDRules"])){CompileSSHDRules();exit;}
 if(isset($_GET["ou-ldap-import-execute"])){LDAP_IMPORT_EXEC();exit;}
-if(isset($_GET["sys-sync-paquages"])){SysSyncPaquages();exit;}
 if(isset($_GET["GetTotalMemMB"])){GetTotalMemMB();exit;}
 if(isset($_GET["process-ttl"])){process_timeexec();exit;}
 if(isset($_GET["myisamchk"])){myisamchk();exit;}
@@ -71,15 +67,10 @@ if(isset($_GET["RestartApacheGroupwareNoForce"])){RestartApacheGroupwareNoForce(
 if(isset($_GET["snort-networks"])){snort_networks();exit;}
 if(isset($_GET["restart-snort"])){restart_snort();exit;}
 if(isset($_GET["snort-status"])){snort_status();exit;}
-if(isset($_GET["awstats-perform"])){awstats_perform();exit;}
 if(isset($_GET["VIPTrackRun"])){VIPTrackRun();exit;}
 
 if(isset($_GET["sabnzbdplus-ini-status"])){sabnzbdplus_src_status();exit;}
 if(isset($_GET["sabnzbdplus-restart"])){sabnzbdplus_restart();exit;}
-
-
-if(isset($_GET["start-install-app"])){SETUP_CENTER_LAUNCH();exit;}
-
 if(isset($_GET["ChangeMysqlLocalRoot"])){ChangeMysqlLocalRoot();exit;}
 if(isset($_GET["ChangeMysqlLocalRoot2"])){ChangeMysqlLocalRoot2();exit;}
 if(isset($_GET["ChangeMysqlDir"])){ChangeMysqlDir();exit;}
@@ -94,7 +85,6 @@ if(isset($_GET["viewlogs"])){viewlogs();exit;}
 if(isset($_GET["LdapdbStat"])){LdapdbStat();exit;}
 if(isset($_GET["LdapdbSize"])){LdapdbSize();exit;}
 if(isset($_GET["ldap-restart"])){ldap_restart();exit;}
-if(isset($_GET["buildFrontEnd"])){buildFrontEnd();exit;}
 if(isset($_GET["cpualarm"])){cpualarm();exit;}
 
 if(isset($_GET["TaskLastManager"])){TaskLastManager();exit;}
@@ -180,17 +170,6 @@ if(isset($_GET["UpdateUtilitySource"])){UpdateUtilitySource();exit;}
 if(isset($_GET["stunnel-ini-status"])){STUNNEL_INI_STATUS();exit;}
 if(isset($_GET["stunnel-restart"])){STUNNEL_RESTART();exit;}
 
-
-
-if(isset($_GET["hamachi-net"])){hamachi_net();exit;}
-if(isset($_GET["hamachi-status"])){hamachi_status();exit;}
-if(isset($_GET["hamachi-sessions"])){hamachi_sessions();exit;}
-if(isset($_GET["hamachi-ip"])){hamachi_currentIP();exit;}
-if(isset($_GET["hamachi-restart"])){hamachi_restart();exit;}
-if(isset($_GET["hamachi-delete-net"])){hamachi_delete_network();exit;}
-
-
-
 if(isset($_GET["pptpd-ini-status"])){pptpd_status();exit;}
 if(isset($_GET["pptpd-clients-ini-status"])){pptpd_clients_status();exit;}
 if(isset($_GET["pptpd-chap"])){pptpd_chap();exit;}
@@ -219,9 +198,6 @@ if(isset($_GET["ocsInventoryagntWinVer"])){InventoryAgentsWindowsVersions();exit
 if(isset($_GET["UpdateFusionInventory"])){OCSAGENT_UPDATE_FUSION_INVENTORY();exit;}
 if(isset($_GET["winexe-ver"])){WINEXE_VERSION();exit;}
 if(isset($_GET["moveOcsAgentPackage"])){OCSWEB_MOVE_INVENTORY_WIN_PACKAGE();exit;}
-if(isset($_GET["ocs-web-events"])){OCSWEB_WEB_EVENTS();exit;}
-if(isset($_GET["ocs-web-errors"])){OCSWEB_WEB_ERRORS();exit;}
-if(isset($_GET["ocs-service-events"])){OCSWEB_SERV_EVENTS();exit;}
 if(isset($_GET["sysctl-value"])){KERNEL_SYSCTL_VALUE();exit;}
 if(isset($_GET["sysctl-setvalue"])){KERNEL_SYSCTL_SET_VALUE();exit;}
 
@@ -234,7 +210,6 @@ if(isset($_GET["artica-meta-unjoin"])){artica_meta_unjoin();exit;}
 if(isset($_GET["artica-meta-push"])){artica_meta_push();exit;}
 if(isset($_GET["artica-meta-user"])){artica_meta_user();exit;}
 if(isset($_GET["artica-meta-export-dns"])){artica_meta_user_export_dns();exit;}
-if(isset($_GET["artica-meta-awstats"])){artica_meta_export_awstats();exit;}
 if(isset($_GET["artica-meta-computer"])){artica_meta_computer();exit;}
 if(isset($_GET["artica-meta-fetchmail-rules"])){artica_meta_fetchmail_rules();exit;}
 if(isset($_GET["artica-meta-ovpn"])){artica_meta_ovpn();exit;}
@@ -283,9 +258,6 @@ if(isset($_GET["opendkim-status"])){opendkim_status();exit;}
 
 if(isset($_GET["opendkim-show-keys"])){OPENDKIM_SHOW_KEYS();exit;}
 if(isset($_GET["opendkim-build-keys"])){OPENDKIM_BUILD_KEYS();exit;}
-
-
-
 if(isset($_GET["opendkim-show-tests-keys"])){OPENDKIM_SHOW_TESTS_KEYS();exit;}
 
 
@@ -328,8 +300,6 @@ if(isset($_GET["system-debian-kernel"])){system_debian_kernel();exit;}
 if(isset($_GET["system-debian-upgrade-kernel"])){system_debian_kernel_upgrade();exit;}
 if(isset($_GET["system-reboot-force"])){system_reboot_force();exit;}
 //clamav
-if(isset($_GET["update-clamav"])){ClamavUpdate();exit;}
-if(isset($_GET["clamd-restart"])){clamd_restart();exit;}
 if(isset($_GET["clamav-av-pattern-status"])){clamd_pattern_status();exit;}
 if(isset($_GET["clamd-reload"])){clamd_reload();exit;}
 
@@ -349,20 +319,6 @@ if(isset($_GET["pure-ftpd-users"])){pureftpd_users();exit;}
 
 //NFS
 if(isset($_GET["reload-nfs"])){NFS_RELOAD();exit;}
-
-
-//amavis restart
-if(isset($_GET["amavis-restart"])){RestartAmavis();exit;}
-if(isset($_GET["amavis-get-events"])){amavis_get_events();exit;}
-if(isset($_GET["amavis-configuration-file"])){amavis_get_config();exit;}
-if(isset($_GET["amavis-get-status"])){amavis_get_status();exit;}
-if(isset($_GET["amavis-template-load"])){amavis_get_template();exit;}
-if(isset($_GET["amavis-template-save"])){amavis_save_template();exit;}
-if(isset($_GET["amavis-template-help"])){amavis_template_help();exit;}
-if(isset($_GET["amavis-watchdog"])){amavis_watchdog();exit;}
-
-
-
 
 //rsync
 if(isset($_GET["RestartRsyncServer"])){RestartRsyncServer();exit;}
@@ -412,18 +368,16 @@ if(isset($_GET["postfix-ssl"])){postfix_single_ssl();exit;}
 if(isset($_GET["postfix-sasl-mech"])){postfix_single_sasl_mech();exit;}
 if(isset($_GET["postfix-postfinger"])){postfix_postfinger();exit;}
 if(isset($_GET["postfix-iptables-compile"])){postfix_iptables_compile();exit;}
-if(isset($_GET["postfix-body-checks"])){postfix_body_checks();exit;}
 if(isset($_GET["postfix-smtp-sender-restrictions"])){postfix_smtp_senders_restrictions();exit;}
 if(isset($_GET["maillog-query"])){maillog_query();exit;}
 if(isset($_GET["postfix-whitelisted-global"])){postfix_whitelisted_global();exit;}
 if(isset($_GET["postfinder"])){postfinder();exit;}
-if(isset($_GET["postfix-multi-configure-hostname"])){postfix_multi_configure_hostname();exit;}
+
 //cluebringer
 
 
 if(isset($_GET["cluebringer-restart"])){cluebringer_restart();exit;}
-if(isset($_GET["cluebringer-ini-status"])){cluebringer_status();exit;}
-if(isset($_GET["cluebringer-passwords"])){cluebringer_passwords();exit;}
+
 
 
 
@@ -480,13 +434,7 @@ if(isset($_GET["safebox-logs"])){safebox_logs();exit;}
 if(isset($_GET["check-safebox"])){safebox_check();exit;}
 
 //ntpd
-
-if(isset($_GET["ntpd-events"])){ntpd_events();exit;}
-
 //zabix
-if(isset($_GET["zabbix-restart"])){zabbix_restart();exit;}
-
-
 //cyrus
 
 
@@ -513,12 +461,6 @@ if(isset($_GET["cyrus-db-config"])){cyrus_db_config();exit;}
 
 
 if(isset($_GET["emailing-remove-emailrelays"])){emailing_emailrelays_remove();exit;}
-
-//restore
-
-if(isset($_GET["cyr-restore"])){cyrus_restore_mount_dir();exit;}
-if(isset($_GET["cyr-restore-container"])){cyr_restore_container();;exit;}
-if(isset($_GET["cyr-restore-mailbox"])){cyr_restore_mailbox();;exit;}
 
 
 //WIFI
@@ -694,7 +636,6 @@ if(isset($_GET["MailManSaveGlobalSettings"])){MailManSync();exit;}
 //DHCPD
 if(isset($_GET["restart-dhcpd"])){RestartDHCPDService();exit;}
 if(isset($_GET["apply-dhcpd"])){RestartDHCPDService();exit;}
-if(isset($_GET["apply-bind"])){ApplyBINDService();exit;}
 if(isset($_GET["dhcpd-status"])){dhcp_status();exit;}
 
 
@@ -727,13 +668,6 @@ if(isset($_GET["imapsync-stop"])){imapsync_stop();exit;}
 if(isset($_GET["imapsync-show"])){imapsync_show();exit;}
 
 //gluster
-if(isset($_GET["gluster-remounts"])){GLUSTER_REMOUNT();exit;}
-if(isset($_GET["gluster-mounts"])){GLUSTER_MOUNT();exit;}
-if(isset($_GET["gluster-update-clients"])){GLUSTER_UPDATE_CLIENTS();exit;}
-if(isset($_GET["gluster-restart"])){GLUSTER_RESTART();exit;}
-if(isset($_GET["gluster-delete-clients"])){GLUSTER_DELETE_CLIENTS();exit;}
-if(isset($_GET["gluster-notify-clients"])){GLUSTER_NOTIFY_CLIENTS();exit;}
-if(isset($_GET["glfs-is-mounted"])){GLUSTER_IS_MOUNTED();exit;}
 
 if(isset($_GET["lessfs"])){LESSFS_RESTART();exit;}
 if(isset($_GET["lessfs-mounts"])){LESSFS_MOUNTS();exit;}
@@ -749,13 +683,6 @@ if(isset($_GET["reconfigure-cyrus"])){ReconfigureCyrusImapDaemon();exit;} // --r
 if(isset($_GET["reconfigure-cyrus-debug"])){ReconfigureCyrusImapDaemonDebug();exit;} // --reconfigure-cyrus
 if(isset($_GET["restart-cyrus-debug"])){rRestartCyrusImapDaemonDebug();exit;} // --reconfigure-cyrus
 if(isset($_GET["repair-mailbox"])){CyrusRepairMailbox();exit;}
-if(isset($_GET["cyr-restore-computer"])){cyr_restore_computer();exit;}
-
-//backup
-if(isset($_GET["backup-sql-test"])){backup_sql_tests();exit;}
-if(isset($_GET["backup-build-cron"])){backup_build_cron();exit;}
-if(isset($_GET["backup-task-run"])){backup_task_run();exit;}
-
 
 if(isset($_GET["backuppc-ini-status"])){BACKUPPPC_INI_STATUS();exit;}
 if(isset($_GET["backuppc-affect"])){backuppc_affect();exit;}
@@ -812,10 +739,7 @@ if(isset($_GET["smbpass"])){samba_password();exit;}
 if(isset($_GET["home-single-user"])){samba_build_home_single();exit;}
 
 //dropbox
-if(isset($_GET["dropbox-status"])){dropbox_status();exit;}
-if(isset($_GET["dropbox-service-status"])){dropbox_service_status();exit;}
-if(isset($_GET["dropbox-service-uri"])){dropbox_service_uri();exit;}
-if(isset($_GET["dropbox-service-dump"])){dropbox_files_status();exit;}
+
 
 
 //
@@ -851,8 +775,6 @@ if(isset($_GET["EnableEmergingThreatsBuild"])){EnableEmergingThreatsBuild();exit
 //apache-groupware
 if(isset($_GET["reload-apache-groupware"])){ReloadApacheGroupWare();exit;}
 if(isset($_GET["build-vhosts"])){BuildVhosts();exit;}
-if(isset($_GET["vhost-delete"])){DeleteVHosts();exit;}
-if(isset($_GET["install-joomla"])){JOOMLA_INSTALL();exit;}
 
 if(isset($_GET["replicate-performances-config"])){ReplicatePerformancesConfig();exit;}
 if(isset($_GET["reload-dansguardian"])){reload_dansguardian();exit;}
@@ -872,7 +794,7 @@ if(isset($_GET["dansguardian-template"])){dansguardian_template();exit;}
 if(isset($_GET["dansguardian-get-template"])){dansguardian_get_template();exit;}
 
 
-if(isset($_GET["searchww-cat"])){dansguardian_search_categories();exit;}
+
 if(isset($_GET["export-community-categories"])){dansguardian_community_categories();exit;}
 if(isset($_GET["create-user-folder"])){directory_create_user();exit;}
 if(isset($_GET["delete-user-folder"])){directory_delete_user();exit;}
@@ -962,23 +884,9 @@ if(isset($_GET["mime-type"])){mime_type();exit;}
 if(isset($_GET["sync-remote-smtp-artica"])){postfix_sync_artica();exit;}
 
 //etc/hosts
-if(isset($_GET["etc-hosts-open"])){etc_hosts_open();exit;}
-if(isset($_GET["etc-hosts-add"])){etc_hosts_add();exit;}
-if(isset($_GET["etc-hosts-del"])){etc_hosts_del();exit;}
-if(isset($_GET["etc-hosts-del-by-values"])){etc_hosts_del_by_values();exit;}
-
-
-
 if(isset($_GET["full-hostname"])){hostname_full();exit;}
-
 //computers
 if(isset($_GET["nmap-scan"])){nmap_scan();exit;}
-
-
-//users UNix
-if(isset($_GET["unixLocalUsers"])){PASSWD_USERS();exit;}
-
-
 //tcp
 if(isset($_GET["ifconfig-interfaces"])){ifconfig_interfaces();exit;}
 if(isset($_GET["ifconfig-all"])){ifconfig_all();exit;}
@@ -999,7 +907,7 @@ if(isset($_GET["nic-infos"])){TCP_NIC_INFOS();exit;}
 if(isset($_GET["ip-to-mac"])){ip_to_mac();exit;}
 if(isset($_GET["arp-ip"])){arp_and_ip();exit;}
 if(isset($_GET["hostToMac"])){hostToMac();exit;}
-if(isset($_GET["browse-computers-import-list"])){import_computer_from_list();exit;}
+
 
 
 
@@ -1021,7 +929,6 @@ if(isset($_GET["SetupIndexFile"])){SetupIndexFile();exit;}
 if(isset($_GET["install-web-services"])){InstallWebServices();exit;}
 if(isset($_GET["install-web-service-unique"])){InstallWebServiceUnique();exit;}
 if(isset($_GET["ForceRefreshLeft"])){ForceRefreshLeft();exit;}
-if(isset($_GET["ForceRefreshRight"])){ForceRefreshRight();exit;}
 if(isset($_GET["perform-autoupdate"])){artica_update();exit;}
 
 
@@ -1042,11 +949,8 @@ if(isset($_GET["folder-remove"])){folder_delete();exit;}
 if(isset($_GET["file-content"])){file_content();exit;}
 if(isset($_GET["file-remove"])){file_remove();exit;}
 
-//CLUSTERS
-if(isset($_GET["notify-clusters"])){CLUSTER_NOTIFY();exit;}
-if(isset($_GET["cluster-restart-notify"])){CLUSTER_CLIENT_RESTART_NOTIFY();exit;}
-if(isset($_GET["cluster-delete"])){CLUSTER_DELETE();exit;}
-if(isset($_GET["cluster-add"])){CLUSTER_ADD();exit;}
+
+
 
 //computers
 if(isset($_GET["computers-import-nets"])){COMPUTERS_IMPORT_ARTICA();exit;}
@@ -1545,10 +1449,7 @@ function ViewArticaLogs(){
 	echo "<articadatascgi>$datas</articadatascgi>";
 	}
 	
-function ExecuteImportationFrom(){
-	$path=$_GET["ExecuteImportationFrom"];
-	NOHUP_EXEC( LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.cyrus-restore.php \"$path\"");
-}
+
 function LaunchNetworkScanner(){
 		$unix=new unix();
 		$nohup=$unix->find_program("nohup");
@@ -2436,10 +2337,8 @@ function postfix_multi_configure(){
 function postfix_multi_disable(){
 	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.postfix-multi.php --removes");
 }
-function zabbix_restart():bool{
-	NOHUP_EXEC("/etc/init.d/artica-postfix restart zabbix");
-	return true;
-}
+
+
 
 function postfix_multi_stat(){
 	$instance=$_GET["postfix-mutli-stat"];
@@ -3135,26 +3034,6 @@ function squid_config(){
 
 
 
-
-
-function etc_hosts_open(){
-	$datas=explode("\n",@file_get_contents("/etc/hosts"));
-	foreach ($datas as $num=>$ligne){
-		if(trim($ligne)==null){continue;}
-		$newf[]=$ligne;
-	}	
-	$newf[]="\n";
-	$datz=serialize($newf);
-	echo "<articadatascgi>". base64_encode($datz)."</articadatascgi>";	
-}
-function etc_hosts_add(){
-}
- 
-function etc_hosts_del(){
-}
-
-function etc_hosts_del_by_values(){}
-
 function file_content(){
 	$datas=@file_get_contents(base64_decode($_GET["file-content"]));
 	echo "<articadatascgi>". base64_encode($datas)."</articadatascgi>";	
@@ -3579,46 +3458,6 @@ function retranslator_status(){
 }
 
 
-
-function hamachi_status(){
-	exec("/usr/share/artica-postfix/bin/artica-install --hamachi-status",$rr);
-	$ini=new iniFrameWork();
-	$ini->loadString(implode("\n",$rr));
-	echo "<articadatascgi>". base64_encode(serialize($ini->_params))."</articadatascgi>";
-}
-function hamachi_sessions(){
-	$unix=new unix();
-	$session=array();
-	exec($unix->find_program("hamachi")." list",$l);
-	foreach ($l as $num=>$ligne){
-		if(preg_match("#You have no networks#", $ligne)){break;}
-		if(preg_match("#\[(.+?)\]#",$ligne,$re)){$net=$re[1];continue;}
-		if(preg_match("#([0-9\.]+)#",$ligne,$re)){
-			$session[$net][]=$re[1];
-		}
-	}
-	echo "<articadatascgi>". base64_encode(serialize($session))."</articadatascgi>";
-}
-
-function hamachi_currentIP(){
-	$unix=new unix();
-	$cmd=$unix->find_program("hamachi")." 2>&1";
-	exec($cmd,$datas);
-	
-	foreach ($datas as $num=>$ligne){
-		if(preg_match("#address.+?([0-9\.]+)\s+#",$ligne,$re)){
-			echo "<articadatascgi>". $re[1]."</articadatascgi>";
-			break;
-		}
-	}
-	
-}
-
-function hamachi_restart(){
-	NOHUP_EXEC("/etc/init.d/artica-postfix restart hamachi");
-	
-}
-
 function POWERDNS_RESTART(){
 	$unix=new unix();
 	$php5=$unix->LOCATE_PHP5_BIN();
@@ -3628,12 +3467,7 @@ function POWERDNS_RESTART(){
 	shell_exec("$nohup /etc/init.d/pdns-recursor restart >/dev/null 2>&1 &");
 }
 
-function hamachi_delete_network(){
-	$unix=new unix();
-	$_GET["hamachi-delete-net"]=base64_decode($_GET["hamachi-delete-net"]);
-	exec($unix->find_program("hamachi")." -c /etc/hamachi leave {$_GET["hamachi-delete-net"]}",$l);
-	exec($unix->find_program("hamachi")." -c /etc/hamachi delete {$_GET["hamachi-delete-net"]}",$l);
-}
+
 
 
 
@@ -4148,22 +3982,8 @@ function disk_directory_size(){
 	}
 }
 
-function cyrus_move_default_dir_to_currentdir(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.cyrus-restore.php --move-default-current");
-}
-function  cyrus_move_newdir(){
-	$cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.cyrus-restore.php --move-new-dir {$_GET["cyrus-SaveNewDir"]}";
-	NOHUP_EXEC("$cmd");
-	shell_exec($cmd);
-}
-function cyrus_rebuild_all_mailboxes(){
-	$f="/usr/share/artica-postfix/ressources/logs/web/". md5($_GET["cyrus-rebuild-all-mailboxes"])."-mailboxes-rebuilded.log";
-	@unlink("$f");
-	@file_put_contents($f,"");
-	@chmod($f,0755);
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.cyrus-restore.php --rebuildmailboxes {$_GET["cyrus-rebuild-all-mailboxes"]}");
-	
-}
+
+
 
 function cyrus_imap_status(){
 	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.status.php --cyrus-imap --nowachdog",$results);
@@ -4273,11 +4093,6 @@ function CleanCache(){
 }
 
 
-
-
-function RestartAmavis(){
-	NOHUP_EXEC("/etc/init.d/amavis reload");
-}
 
 
 function fstab_acl(){
@@ -4931,62 +4746,10 @@ function milter_greylist_multi_status(){
 	echo "<articadatascgi>". base64_encode(@implode("\n",$results))."</articadatascgi>";	
 }
 
-function amavis_get_events(){
-	$maillog=$_GET["maillog"];
-	$unix=new unix();
-	$gep=$unix->find_program("grep");
-	$tail=$unix->find_program("tail");
-	$cmd="$tail -n 3000 $maillog|$gep amavis 2>&1";
-	exec($cmd,$results);
-	writelogs_framework("$cmd (". count($results).")" ,__FUNCTION__,__FILE__,__LINE__);
-	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";	
-}
 
-function amavis_get_config(){
-	echo "<articadatascgi>". base64_encode(@file_get_contents("/usr/local/etc/amavisd.conf"))."</articadatascgi>";
-}
-
-function amavis_get_status(){
-	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.status.php --amavis-full --nowachdog",$results);
-	echo "<articadatascgi>". base64_encode(@implode("\n",$results))."</articadatascgi>";	
-}
 function opendkim_status(){
 	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.status.php --opendkim --nowachdog",$results);
 	echo "<articadatascgi>". base64_encode(@implode("\n",$results))."</articadatascgi>";
-}
-function amavis_watchdog(){
-	$unix=new unix();
-	$php=$unix->LOCATE_PHP5_BIN();
-	$cmd="$php /usr/share/artica-postfix/exec.status.php --amavis-watchdog --verbose >/tmp/amavis.txt";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
-
-function amavis_get_template(){
-	$tplname=$_GET["amavis-template-load"];
-	writelogs_framework("loading \"$tplname\"",__FUNCTION__,__FILE__,__LINE__);
-	if(is_file("/usr/local/etc/amavis/$tplname.txt")){
-		writelogs_framework("loading /usr/local/etc/amavis/$tplname.txt",__FUNCTION__,__FILE__,__LINE__);
-		$datas=@file_get_contents("/usr/local/etc/amavis/$tplname.txt");
-	}
-		
-	if(trim($datas)==null){	
-		writelogs_framework("loading /usr/share/artica-postfix/bin/install/amavis/$tplname.txt",__FUNCTION__,__FILE__,__LINE__);
-		$datas=@file_get_contents("/usr/share/artica-postfix/bin/install/amavis/$tplname.txt");
-	}
-	
-	echo "<articadatascgi>". base64_encode($datas)."</articadatascgi>";
-}
-
-function amavis_template_help(){
-	writelogs_framework("loading /usr/share/artica-postfix/bin/install/amavis/README.customize",__FUNCTION__,__FILE__,__LINE__);
-	$datas=@file_get_contents("/usr/share/artica-postfix/bin/install/amavis/README.customize");
-	echo "<articadatascgi>". base64_encode($datas)."</articadatascgi>";
-}
-
-function amavis_save_template(){
-	$tplname=$_GET["amavis-template-save"];
-	copy("/etc/artica-postfix/settings/Daemons/amavis-template-$tplname","/usr/local/etc/amavis/$tplname.txt");
 }
 
 
@@ -5954,12 +5717,7 @@ function SSHD_KEY_UPLOAD_PUB(){
 	
 	echo "<articadatascgi>" .base64_encode("{failed}<br>$logs")."</articadatascgi>";
 }
-function OCSWEB_WEB_EVENTS(){
-	$unix=new unix();
-	$tail=$unix->find_program("tail");
-	exec("$tail -n 350 /var/log/ocsinventory-server/apache-access.log 2>&1",$results);
-	echo "<articadatascgi>" .base64_encode(serialize($results))."</articadatascgi>";
-}
+
 function GET_LOCAL_SID(){
 	$unix=new unix();
 	echo "<articadatascgi>" .$unix->GET_LOCAL_SID()."</articadatascgi>";
@@ -6090,28 +5848,7 @@ function squidGuardDatabaseMaintenance(){
 function squidGuardDatabaseMaintenanceNow(){
 	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.c-icap.php --db-maintenance");
 }
-function SETUP_CENTER_LAUNCH(){
-	$app=$_GET["start-install-app"];
-	writelogs_framework("$app to install",__FUNCTION__,__FILE__,__LINE__);
-	if(trim($app)==null){return;}
-	$unix=new unix();
-	$cmd="/usr/share/artica-postfix/bin/artica-install --install-status $app";
-	exec($cmd,$results);
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	foreach ($results as $num=>$ligne){
-		writelogs_framework("$ligne",__FUNCTION__,__FILE__,__LINE__);
-	}
-	$tmpfile="/usr/share/artica-postfix/ressources/install/$app.dbg";
-	
-	//if(is_file($tmpfile)){if($unix->file_time_min($tmpfile)<1){return;}}
 
-	
-	@file_put_contents("Scheduled","/usr/share/artica-postfix/ressources/install/$app.dbg");
-	shell_exec("/bin/chmod 777 /usr/share/artica-postfix/ressources/install/$app.dbg");
-	
-	writelogs_framework("Schedule /usr/share/artica-postfix/bin/artica-make $app >$tmpfile 2>&1",__FUNCTION__,__FILE__,__LINE__);
-	NOHUP_EXEC("/usr/share/artica-postfix/bin/artica-make $app >$tmpfile 2>&1");
-	}
 
 function KERNEL_SYSCTL_VALUE(){
 	$key=base64_decode($_GET["key"]);
@@ -6357,13 +6094,6 @@ function KEYBOARD_KEY_MAP(){
 	echo "<articadatascgi>". base64_encode(serialize($array))."</articadatascgi>";	
 }
 
-function THINCLIENT_REBUILD(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.thinclient.php --workstations");
-}
-
-function THINCLIENT_REBUILD_CD(){
-	NOHUP_EXEC(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.thinclient.php");
-}
 
 
 function virtualbox_stop(){
@@ -6715,14 +6445,6 @@ function artica_meta_user_export_dns(){
 	shell_exec($cmd);		
 }
 
-function artica_meta_export_awstats(){
-	$ArticaMetaEnabled=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaMetaEnabled"));
-	if($ArticaMetaEnabled<>1){return;}
-	$cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.artica.meta.users.php --export-awstats >/dev/null 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);		
-	
-}
 function artica_meta_export_openvpn_sites(){
 	$ArticaMetaEnabled=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaMetaEnabled"));
 	if($ArticaMetaEnabled<>1){return;}
@@ -6770,9 +6492,6 @@ function postfix_mem_disk_status(){
 	
 }
 
-function awstats_perform(){
-	
-}
 
 function WakeOnLan(){
 	$wol=new WakeOnLanClass(null);
@@ -7032,11 +6751,7 @@ function saslauthd_restart(){
 	$unix=new unix();
 	$unix->THREAD_COMMAND_SET("/etc/init.d/artica-postfix restart saslauthd");
 }
-function cyrus_sync_to_ad(){
-	$unix=new unix();
-	$cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.cyrus-restore.php --ad-sync --force";
-	$unix->THREAD_COMMAND_SET($cmd);
-}
+
 
 function right_status(){
 	$unix=new unix();

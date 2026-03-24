@@ -1,6 +1,5 @@
 <?php
 include_once(dirname(__FILE__).'/ressources/class.mysql.squid.builder.php');
-include_once(dirname(__FILE__).'/ressources/class.mysql.xapian.builder.inc');
 include_once(dirname(__FILE__) . '/framework/class.unix.inc');
 include_once(dirname(__FILE__) . '/framework/frame.class.inc');
 include_once(dirname(__FILE__) . '/framework/class.settings.inc');

@@ -4,16 +4,8 @@ include_once(dirname(__FILE__)."/frame.class.inc");
 include_once(dirname(__FILE__)."/class.unix.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}if(!isset($GLOBALS["ARTICALOGDIR"])){$GLOBALS["ARTICALOGDIR"]=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaLogDir"); if($GLOBALS["ARTICALOGDIR"]==null){ $GLOBALS["ARTICALOGDIR"]="/var/log/artica-postfix"; } }
 
-if(isset($_GET["group-deluser"])){group_deluser();exit;}
-if(isset($_GET["group-adduser"])){group_adduser();exit;}
-if(isset($_GET["group-add"])){group_add();exit;}
-if(isset($_GET["system-user-pass"])){system_user_chpasswd();exit;}
-if(isset($_GET["system-user-add"])){system_user_add();exit;}
-if(isset($_GET["reset-all"])){reset_all();exit;}
 if(isset($_GET["reset-rrd"])){reset_rrd();exit;}
-if(isset($_GET["artica-notifs-restart"])){artica_notifs_restart();exit;}
 if(isset($_GET["dhtest"])){dhtest();exit;}
-if(isset($_GET["create-directory"])){create_directory();exit;}
 if(isset($_GET["force-status"])){force_status();exit;}
 if(isset($_GET["dnsperf-progress"])){dnsperf_progress();exit;}
 if(isset($_GET["sysctl-reconfigure"])){sysctl_progress();exit;}
@@ -22,18 +14,13 @@ if(isset($_GET["seeker"])){seeker();exit;}
 
 if(isset($_GET["make-writable"])){make_www_writable();exit;}
 if(isset($_GET["phpldapadmin_installed"])){phpldapadmin_installed();exit;}
-if(isset($_GET["php-snmp-progress"])){php_snmp_progress();exit;}
 if(isset($_GET["EnableMilterGreylistExternalDB"])){EnableMilterGreylistExternalDB();exit;}
 if(isset($_GET["dashboard-refresh"])){dashboard_refresh();exit;}
-if(isset($_GET["upgradev10"])){upgradev10();exit;}
 if(isset($_GET["ChangePerformance"])){ChangePerformance();exit;}
 if(isset($_GET["modinfo"])){modinfo();exit;}
 if(isset($_GET["optimize-celeron"])){optimize_celeron();exit;}
 if(isset($_GET["sensors"])){sensors();exit;}
 if(isset($_GET["NetDiscover-restart"])){NetDiscover_Restart();exit;}
-if(isset($_GET["phpmyadpmin-version"])){phpmyadmin_version();exit;}
-if(isset($_GET["phpmyadpmin-install"])){phpmyadmin_install();exit;}
-if(isset($_GET["phpmyadmin-installed"])){phpmyadmin_installed();exit;}
 if(isset($_GET["BackupLogsMaxStoragePercent-info"])){BackupLogsMaxStoragePercent_info();exit;}
 if(isset($_GET["disable-ntopng"])){disable_ntopng();exit;}
 if(isset($_GET["enable-ntopng"])){enable_ntopng();exit;}
@@ -51,11 +38,8 @@ if(isset($_GET["install-artica-tgz"])){install_artica_tgz();exit;}
 if(isset($_GET["create-new-uuid"])){CREATE_NEW_UUID();exit;}
 if(isset($_GET["MEM_TOTAL_INSTALLEE"])){MEM_TOTAL_INSTALLEE();exit;}
 if(isset($_GET["mylinux"])){mylinux();exit;}
-if(isset($_GET["syslog_purge-nas"])){syslog_purge_to_nas();exit;}
-if(isset($_GET["ucarp-status-service"])){ucarp_status_service();exit;}
-if(isset($_GET["create-user"])){create_user();exit;}
-if(isset($_GET["create-user-progress"])){create_user_progress();exit;}
-if(isset($_GET["group-delete"])){group_delete();exit;}
+
+
 
 if(isset($_GET["ip-to-mac"])){ip_to_mac();exit;}
 if(isset($_GET["proc-net-dev"])){proc_net_dev();exit;}
@@ -72,7 +56,6 @@ if(isset($_GET["process1"])){process1();exit;}
 if(isset($_GET["restart-ldap"])){restart_ldap();exit;}
 if(isset($_GET["all-services"])){all_services();exit;}
 if(isset($_GET["generic-start"])){generic_start();exit;}
-if(isset($_GET["parse-blocked"])){parse_blocked();exit;}
 if(isset($_GET["meminfo"])){meminfo();exit;}
 if(isset($_GET["zoneinfo-set"])){zone_info_set();exit;}
 if(isset($_GET["uidNumber"])){uidNumber();exit;}
@@ -131,23 +114,13 @@ if(isset($_GET["roolback-sp"])){roolback_sp();exit;}
 if(isset($_GET["kernel-events"])){searchlogs_kernel();exit;}
 if(isset($_GET["delete-all-sps"])){delete_all_sp_js();exit;}
 if(isset($_GET["roolback-global"])){roolback_global();exit;}
-if(isset($_GET["upgrade-php-47"])){upgrade_php_47();exit;}
-
 if(isset($_GET["TrackAdmins-install"])){trackadmin_install();exit;}
 if(isset($_GET["TrackAdmins-uninstall"])){trackadmin_uninstall();exit;}
-if(isset($_GET["uprade-samba"])){upgrade_samba();exit;}
-if(isset($_GET["uprade-openldap"])){upgrade_openldap();exit;}
 
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
 die("DIE " .__FILE__." Line: ".__LINE__);
 
-
-function reset_all():bool{
-    $unix=new unix();
-    $unix->framework_execute("exec.reset.php --confirm --byconsole","system.reset.progress","system.reset.progress.log");
-    return true;
-}
 function reset_rrd(){
     $unix=new unix();
     $base="/home/artica/rrd";
@@ -167,62 +140,8 @@ function force_databases():bool{
     return $unix->framework_exec("exec.convert-to-sqlite.php --force");
 }
 
-function artica_notifs_restart():bool{
-    $unix=new unix();
-    $unix->framework_exec("exec.smtpd.php --restart");
-    return true;
-}
-function system_user_chpasswd():bool{
-    $main=unserialize(base64_decode($_GET["system-user-pass"]));
-    $user=$main[0];
-    $password=$main[1];
-    $unix=new unix();
-    $chpasswd=$unix->find_program("chpasswd");
-    $echo=$unix->find_program("echo");
-    $passwd=$unix->shellEscapeChars($password);
-
-    $cmd="$echo $user:$passwd | $chpasswd 2>&1";
-    exec("$cmd",$results);
-    foreach ($results as $line){
-        writelogs_framework("$line",__FUNCTION__,__FILE__,__LINE__);
-    }
-    return true;
-}
 
 
-function system_user_add():bool{
-    $main=unserialize(base64_decode($_GET["system-user-add"]));
-    $user=$main[0];
-    $password=$main[1];
-    $unix=new unix();
-    if(!$unix->SystemCreateUser($user,$user,"/bin/bash","/home/$user")){
-        @file_put_contents(PROGRESS_DIR."/useradd-$user","FALSE");
-        @file_put_contents(PROGRESS_DIR."/useradd-$user.log",@implode("<br>",$GLOBALS["SystemCreateUser"]));
-        return false;
-    }
-    if(!is_dir("/home/$user")){
-        @mkdir("/home/$user/.ssh",0700,true);
-    }
-    if(!is_file("/home/$user/.ssh/authorized_keys")){
-        @touch("/home/$user/.ssh/authorized_keys");
-    }
-    $chpasswd=$unix->find_program("chpasswd");
-    $echo=$unix->find_program("echo");
-    $passwd=$unix->shellEscapeChars($password);
-
-    $cmd="$echo $user:$passwd | $chpasswd 2>&1";
-    exec("$cmd",$results);
-    foreach ($results as $line){
-        writelogs_framework("$line",__FUNCTION__,__FILE__,__LINE__);
-    }
-
-    @chown("/home/$user",$user);
-    @chown("/home/$user/.ssh",$user);
-    @chown("/home/$user/.ssh/authorized_keys",$user);
-    @chmod("/home/$user/.ssh/authorized_keys",0600);
-    @file_put_contents(PROGRESS_DIR."/useradd-$user","TRUE");
-    return true;
-}
 
 
 function roolback_global():bool{
@@ -230,14 +149,6 @@ function roolback_global():bool{
     $version=$_GET["roolback-global"];
     $unix->framework_execute("exec.nightly.php --rollback $version","roolback.progress","roolback.progress.txt");
     return true;
-}
-function upgrade_samba(){
-    $unix=new unix();
-    $unix->framework_execute("exec.samba.upgrade.php --upgrade","exec.samba.upgrade.progress","exec.samba.upgrade.txt");
-}
-function upgrade_openldap(){
-    $unix=new unix();
-    $unix->framework_execute("exec.openldap.upgrade.php --upgrade","exec.openldap.upgrade.progress","exec.openldap.upgrade.txt");
 }
 
 
@@ -317,63 +228,7 @@ function trackadmin_install(){
 
 }
 
-function uncompress_root(){
-	$unix=new unix();
-	$SQUID=false;
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$tar=$unix->find_program("tar");
-	$nohup=$unix->find_program("nohup");
-	$filename=$_GET["uncompress-root"];
-	
-	if(preg_match("#^squid.*?#", $filename)){$SQUID=TRUE;}
-	
-	$FilePath="/usr/share/artica-postfix/ressources/conf/upload/$filename";
 
-	if(!is_file($FilePath)){
-		writelogs_framework("$FilePath -> no such file",__FUNCTION__,__FILE__,__LINE__);
-		echo "<articadatascgi>".base64_encode(serialize(array("R"=>false,"T"=>"{failed}: $FilePath no such file")))."</articadatascgi>";
-	}
-	
-	
-	$cmd="$tar  -tvvf $FilePath 2>&1";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	exec($cmd,$results);
-	foreach ($results as $num=>$line){
-		if(preg_match("#Unrecognized archive#i", $line)){
-			@unlink($FilePath);
-			echo "<articadatascgi>".base64_encode(serialize(array("R"=>false,"T"=>"{failed}: Unrecognized archive format")))."</articadatascgi>";
-			return;
-		}
-		
-		if(preg_match("#Archive Format:.*?null.*?Compression: none#i", $line)){
-			@unlink($FilePath);
-			echo "<articadatascgi>".base64_encode(serialize(array("R"=>false,"T"=>"{failed}: Corrupted archive format")))."</articadatascgi>";
-			return;
-		}	
-
-		if(preg_match("#Error exit delayed from previous errors#i", $line)){
-			@unlink($FilePath);
-			echo "<articadatascgi>".base64_encode(serialize(array("R"=>false,"T"=>"{failed}: exit delayed from previous errors")))."</articadatascgi>";
-			return;
-		}		
-
-		
-		writelogs_framework($line,__FUNCTION__,__FILE__,__LINE__);
-	}
-	
-	$cmd="$tar -xhf $FilePath -C / 2>&1";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	exec($cmd,$results);
-	
-	echo "<articadatascgi>".base64_encode(serialize(array("R"=>true,"T"=>"{success}")))."</articadatascgi>";
-	shell_exec("$nohup /etc/init.d/artica-status reload >/dev/null 2>&1 &");
-	
-	if($SQUID){
-		shell_exec("$nohup /etc/init.d/squid restart --force >/dev/null 2>&1 &");
-		shell_exec("$nohup /etc/init.d/ufdb restart --force >/dev/null 2>&1 &");
-	}
-	
-}
 
 function debian_version(){
 	if(!is_file("/etc/debian_version")){return;}
@@ -462,25 +317,6 @@ function routes_show(){
 	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
 }
 
-function restart_ldap(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php=$unix->LOCATE_PHP5_BIN();
-	
-	$EnableOpenLDAP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenLDAP"));
-	if($EnableOpenLDAP==0){return;}
-	
-	
-	$cmd=trim("$php /usr/share/artica-postfix/exec.initslapd.php >/dev/null 2>&1");
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);		
-	shell_exec($cmd);
-	$cmd=trim("$nohup $php /etc/init.d/slapd restart --framework=". basename(__FILE__)." >/dev/null 2>&1 &");
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
-function parse_blocked(){
-
-}
 
 
 function all_services(){
@@ -1122,80 +958,6 @@ function ethToIp($MacResolvInterface){
 		
 	}
 }
-function group_adduser():bool{
-    $unix=new unix();
-    $pattern=unserialize(base64_decode($_GET["group-adduser"]));
-    $gpname=$pattern[0];
-    $user=$pattern[1];
-    $fname=PROGRESS_DIR."/linkuser.$gpname.$user";
-    if(is_file($fname)){@unlink($fname);}
-    if(!$unix->SystemAddUserToGroup($user,$gpname)){
-        @file_put_contents($fname,@implode("\n",$GLOBALS["SystemCreateUser"]));
-        return false;
-    }
-    return true;
-
-}
-
-function group_deluser():bool{
-    $unix=new unix();
-    $pattern=unserialize(base64_decode($_GET["group-deluser"]));
-    $gpname=$pattern[0];
-    $user=$pattern[1];
-    $gpasswd=$unix->find_program("gpasswd");
-    shell_exec("$gpasswd -d \"$user\" \"$gpname\"");
-    return true;
-}
-
-function group_add():bool{
-    $unix=new unix();
-    $groupadd=$unix->find_program("groupadd");
-    $group=$_GET["group-add"];
-    $fname=PROGRESS_DIR."/groupadd.$group";
-    shell_exec("$groupadd \"$group\" >$fname 2>&1");
-    return true;
-}
-function group_delete():bool{
-    $unix=new unix();
-    $groupdel=$unix->find_program("groupdel");
-    $group=$_GET["group-delete"];
-    $fname=PROGRESS_DIR."/groupdel.$group";
-    shell_exec("$groupdel \"$group\" >$fname 2>&1");
-    return true;
-}
-
-function create_user(){
-	$data=$_GET["create-user"];
-	@mkdir("/usr/share/artica-postfix/ressources/logs/web/create-users",0755,true);
-	$filename=md5($data);
-	@file_put_contents("/usr/share/artica-postfix/ressources/logs/web/create-users/$filename", $data);
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	exec("$php5 /usr/share/artica-postfix/exec.create-user.php --create $filename 2>&1",$results);
-	echo "<articadatascgi>".base64_encode(@implode("\n", $results))."</articadatascgi>";
-}
-
-function create_user_progress(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/create-user.progress";
-	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/create-user.progress.txt";
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOG_FILE"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOG_FILE"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOG_FILE"], 0755);
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.create-user.php --progress >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-	
-	
-}
-
-
 function empty_swap(){
 	$unix=new unix();
 	$php5=$unix->LOCATE_PHP5_BIN();
@@ -1740,40 +1502,7 @@ function uninstall_cluster_master(){
 
 
 
-function phpmyadmin_install(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	
-	$GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/phpmyadmin.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/phpmyadmin.progress.log";
-	@unlink($GLOBALS["CACHEFILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["CACHEFILE"],0777);
-	@chmod($GLOBALS["LOGSFILES"],0777);
-	system("$nohup $php5 /usr/share/artica-postfix/exec.install-phpmyadmin.php >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-		
-	
-}
-function upgradev10(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	
-	$GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/upgradev10.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/upgradev10.progress.txt";
-	@unlink($GLOBALS["CACHEFILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["CACHEFILE"],0777);
-	@chmod($GLOBALS["LOGSFILES"],0777);
-	system("$nohup $php5 /usr/share/artica-postfix/exec.squid.upgradev10.php >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-	
-		
-}
+
 
 
 
@@ -1848,26 +1577,7 @@ function ucarp_isactive(){
 	
 }
 
-function phpmyadmin_installed(){
-	if(!is_file("/usr/share/phpmyadmin/index.php")){
-		echo "<articadatascgi>FALSE</articadatascgi>";
-		return;
-	}
-	
-	echo "<articadatascgi>TRUE</articadatascgi>";
-}
-function phpmyadmin_version(){
-	
-	$f=explode("\n",@file_get_contents("/usr/share/phpmyadmin/libraries/Config.class.php"));
-	foreach ($f as $num=>$ligne){
-		if(preg_match("#PMA_VERSION.*?([0-9\.]+)#", $ligne,$re)){
-			echo "<articadatascgi>{$re[1]}</articadatascgi>";
-			return;
-		}
-		
-	}
-	
-}
+
 
 function  NetDiscover_Restart(){
 	$unix=new unix();
@@ -1985,23 +1695,7 @@ function EnableMilterGreylistExternalDB(){
 	
 }
 
-function remove_directory(){
-	
-	
-	
-}
 
-function create_directory(){
-	$unix=new unix();
-	$directory=urldecode(base64_decode($_GET["create-directory"]));
-	writelogs_framework("Create directory [$directory]" ,__FUNCTION__,__FILE__,__LINE__);
-	$mkdir=$unix->find_program("mkdir");
-	$cmod=$unix->find_program("chmod");
-	$directory=$unix->shellEscapeChars($directory);
-	system("$mkdir -p \"$directory\"");
-	writelogs_framework("$mkdir -p \"$directory\"" ,__FUNCTION__,__FILE__,__LINE__);
-	system("$cmod 0755 \"$directory\"");
-}
 
 
 

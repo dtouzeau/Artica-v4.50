@@ -732,26 +732,7 @@ class unix {
 
     }
 
-    private function LOCATE_AWSTATS_POSSIBLE_DIRS(){
-        $f[]="/usr/local/awstats";
-        $f[]="/usr/share/awstats";
-        $f[]="/root/awstats-6.3";
-        $f[]="/srv/www/ispcp/engine/awstats";
-        return $f;
-    }
-    public function LOCATE_AWSTATS_PLUGINS_DIR():string{
-        $possibledirs=$this->LOCATE_AWSTATS_POSSIBLE_DIRS();
-        foreach ($possibledirs as $path){
-            if(is_dir($path."/plugins")){return $path."/plugins";}
-        }
-        return "";
-    }
-    public function RECONFIGURE_SQUID(){
-        $php5=$this->LOCATE_PHP5_BIN();
-        $nohup=$this->find_program("nohup");
-        shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.squid.php --reload-squid >/dev/null 2>&1");
 
-    }
     public function isDirInFsTab($directory){
         $directoryRegex=$directory;
         $directoryRegex=str_replace("/", "\/", $directoryRegex);

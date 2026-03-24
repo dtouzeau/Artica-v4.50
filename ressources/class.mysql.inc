@@ -2153,11 +2153,6 @@ function check_vps_tables(){
 		return $q->Check_smtp_logs_table();	
 	}
 
-	public function CheckTablesAwstats(){
-		include_once(dirname(__FILE__).'/class.mysql.builder.inc');
-		$q=new mysql_builder();
-		return $q->CheckTablesAwstats();
-	}
 	
 	
 	public function CheckTablesPostfilter(){
@@ -2165,11 +2160,7 @@ function check_vps_tables(){
 		$q=new mysql_builder();
 		return $q->CheckTablesPostfilter();
 	}
-	public function checkTablesSamba(){
-		include_once(dirname(__FILE__).'/class.mysql.builder.inc');
-		$q=new mysql_builder();
-		return $q->checkTablesSamba();
-	}	
+
 	
 	
 	

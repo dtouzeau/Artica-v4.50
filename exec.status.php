@@ -825,10 +825,7 @@ if (isset($argv[1])) {
         echo itcharter();
         exit;
     }
-    if ($argv[1] == "--ulogd") {
-        echo ulogd();
-        exit();
-    }
+
     if ($argv[1] == "--xapian") {
         echo xapian_web();
         exit();
@@ -1860,7 +1857,7 @@ function launch_all_status($force = false){
         "APP_WHAZU_AGENT","APP_ARTICAPCAP",
         "philesight", "cron",  "disks_monitor",    "netdata","TAILSCALE_STATUS","VASD_STATUS","ZEBRA_STATUS","OSPF_STATUS","APP_URBACKUP","rustdesk","MANTICORE_STATUS",
         "CleanLogs",   "wpa_supplicant","sqlite_dbs",
-        "fetchmail", "milter_greylist", "irqbalance", "ulogd",
+        "fetchmail", "milter_greylist", "irqbalance",
         "framework", "pdns_server", "pdns_recursor", "cyrus_imap",  "saslauthd",   "clamscan",  "spamassassin_milter", "spamassassin",   "ksrn", "DWAGENT_STATUS","CIESCACHE_STATUS",
         "mailman", "rpcbind",  "ntlm_auth_path", "scanned_only", "roundcube", "cups",
         "gdm",  "hamachi",  "artica_notifier", "pure_ftpd",
@@ -5104,95 +5101,9 @@ function ocs_agent()
 }
 
 //========================================================================================================================================================
-function ulogd_pid()
-{
-
-    $pid = $GLOBALS["CLASS_UNIX"]->get_pid_from_file("/var/run/ulogd.pid");
-    if ($GLOBALS["CLASS_UNIX"]->process_exists($pid)) {
-        return $pid;
-    }
-    $Masterbin = "/usr/local/sbin/ulogd";
-    return $GLOBALS["CLASS_UNIX"]->PIDOF($Masterbin);
-}
-
-function ulogd_version()
-{
-    if (isset($GLOBALS["ULOGDVERSION"])) {
-        return $GLOBALS["ULOGDVERSION"];
-    }
-    exec("/usr/local/sbin/ulogd -V 2>&1", $results);
-    foreach ($results as $line) {
-
-        if (preg_match("#ulogd Version\s+([0-9\.]+)#", $line, $re)) {
-            $GLOBALS["ULOGDVERSION"] = $re[1];
-            return $GLOBALS["ULOGDVERSION"];
-        }
-    }
-    return null;
-
-}
-
-function ulogd()
-{
-    if (!is_file("/etc/init.d/ulogd")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UlogdEnabled", 0);
-        return null;
-    }
 
 
-    $bin_path = "/usr/local/sbin/ulogd";
-    if ($bin_path == null) {
-        return null;
-    }
-    $pid_path = "/var/run/ulogd.pid";
-    $master_pid = ulogd_pid();
 
-
-    if (!is_file("/etc/artica-postfix/settings/Daemons/UlogdEnabled")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UlogdEnabled", 0);
-    }
-
-    $UlogdEnabled = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UlogdEnabled"));
-    $FireHolEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
-    if ($FireHolEnable == 0) {
-        $UlogdEnabled = 0;
-    }
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_ULOGD_INSTALLED", 1);
-
-
-    $l[] = "[APP_ULOGD]";
-    $l[] = "service_name=APP_ULOGD";
-    $l[] = "master_version=" . ulogd_version();
-    $l[] = "service_cmd=/etc/init.d/ulogd";
-    $l[] = "service_disabled=$UlogdEnabled";
-    $l[] = "pid_path=$pid_path";
-    $l[] = "family=network";
-    $l[] = "watchdog_features=1";
-
-    if ($UlogdEnabled == 0) {
-        if (is_file("/etc/init.d/ulogd")) {
-            squid_admin_mysql(0, "Uninstall FireWall logger service", "If you need, this service, re-install it on System/Firewall/FireWall logger service", __FILE__, __LINE__);
-            shell_exec2(trim("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]}{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.ulogd.php --uninstall >/dev/null 2>&1 &"));
-        }
-
-        return implode("\n", $l);
-    }
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        if ($GLOBALS["CLASS_UNIX"]->ServerRunSince() > 3) {
-            squid_admin_mysql(0, "FireWall logger service is not running [{action}={start}]", null, __FILE__, __LINE__);
-        }
-        shell_exec2("/etc/init.d/ulogd start >/dev/null 2>&1 &");
-        $l[] = "running=0\ninstalled=1";
-        $l[] = "";
-        return implode("\n", $l);
-
-    }
-    $l[] = "running=1";
-    $l[] = GetMemoriesOf($master_pid,"APP_ULOGD");
-    $l[] = "";
-    return implode("\n", $l);
-}
 
 
 //==========================================================================================

@@ -68,22 +68,6 @@ echo $tpl->build_firewall("choose-proxy=yes");
 
 
 
-function ulogd_status(){
-	$sock=new sockets();
-	$tpl=new template_admin();
-	$users=new usersMenus();
-	if(!$users->APP_ULOGD_INSTALLED){return $tpl->status_array("{APP_ULOGD}","{not_installed}",false,true);}
-	$UlogdEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UlogdEnabled"));
-	$UlogdVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("UlogdVersion");
-	$FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
-	if($FireHolEnable==0){$UlogdEnabled=0;}
-	if($UlogdEnabled==0){return $tpl->status_array("{APP_ULOGD}",null,false,true,"v$UlogdVersion");}
-	
-	$sock->getFrameWork('ulogd.php?status=yes');
-	$ini=new Bs_IniHandler("ressources/logs/web/ulogd.status");
-	return $tpl->DAEMON_STATUS_ROW("APP_ULOGD",$ini,null,0);
-
-}
 
 
 

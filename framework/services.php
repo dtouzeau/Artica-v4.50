@@ -437,13 +437,7 @@ function total_memory(){
     echo "<articadatascgi>$mem</articadatascgi>";
 }
 
-function restart_ldap_standard(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup /etc/init.d/artica-postfix restart ldap >/dev/null 2>&1 &";
-    writelogs_framework($cmd,__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
+
 function restart_mysql_emergency(){
     $filetime="/etc/artica-postfix/cron.2/".basename(__FILE__).".".__FUNCTION__.".time";
     $unix=new unix();
@@ -458,18 +452,7 @@ function restart_mysql_emergency(){
 
 }
 
-function restart_ldap(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $init=$unix->SLAPD_INITD_PATH();
-    $stamp="/etc/artica-postfix/socket.ldap.start";
-    if($unix->file_time_min($stamp)<2){return;}
-    @unlink($stamp);
-    $cmd="$nohup $init start >/dev/null 2>&1 &";
-    writelogs_framework($cmd,__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-    @file_put_contents($stamp, time());
-    shell_exec($cmd);
-}
+
 function chmod_rrd(){
     $unix=new unix();
     $chmod=$unix->find_program("chmod");

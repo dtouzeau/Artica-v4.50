@@ -1977,15 +1977,7 @@ $p=new postfix_maillog_buffer($buffer);if($p->parse()){$p=null;return true;}
 
 
 
-if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_CYRUS_INSTALLED"))==1){
-    $EnableCyrusImap=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableCyrusImap"));
-    if($EnableCyrusImap==1){
-	    if(!class_exists("cyrus_maillog")){
-	        include_once(dirname(__FILE__)."/ressources/class.cyrus.maillog.inc");
-	    }
-        $p=new cyrus_maillog($buffer);if($p->ParseBuffer()){$p=null;return true;}
-    }
-}
+
 
 
 if(preg_match("#createuser\[.+?User store\s+'(.+?)'\s+createdi#",$buffer,$re)){
@@ -2120,11 +2112,7 @@ if(preg_match("#(.+?)\/smtpd\[.+?fatal:\s+config variable inet_interfaces#", $bu
 
 
 
-if(preg_match("#cyrus\/.+?\[[0-9]+]#",$buffer)){
-	include_once(dirname(__FILE__)."/ressources/class.cyrus.maillog.inc");
-	$cyrus=new cyrus_maillog();
-	if($cyrus->ParseBuffer($buffer)){return;}
-	}
+
 	
 if(preg_match("#master\[.+?fatal: bind 127.0.0.1 port 33559: Address already in use#", $buffer,$re)){
 	error_log("Postfix: bind 127.0.0.1 port 33559: Address already in use -> startit",0);

@@ -947,31 +947,8 @@ class left_menus{
 
 
     public function Xapian(){
-        $EnableXapianSearch=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableXapianSearch"));
-        if($EnableXapianSearch==0){return "";}
         if(!$this->users->AsAnAdministratorGeneric){return "";}
         $f[]="<!-- InstantSearch START -->";
-        $f[]="                <li id='left-menu'>";
-        $f[]="                    <a href='#' ><i class=\"fa fa-search\"></i> <span class=\"nav-label\">{InstantSearch}</span> </a>";
-        $f[]="                    <ul class='nav nav-second-level'>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.xapian.php');\">
-												<i class=\"fas fa-cogs\"></i> <span class=\"nav-label\">{parameters}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.xapian.resources.php');\">
-												<i class=\"fa fas fa-database\"></i> <span class=\"nav-label\">{resources}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.system.tasks.php?ForceTaskType=24');\">
-												<i class=\"fa fa-clock\"></i> <span class=\"nav-label\">{schedules}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="					 </ul>";
-        $f[]="                </li>";
         $f[]="<!-- InstantSearch END -->";
         return @implode("\n",$f);
     }

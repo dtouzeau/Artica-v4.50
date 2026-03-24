@@ -168,14 +168,8 @@ class cron{
 	function LoadArticaTaskList(){
 		include_once(dirname(__FILE__) . '/class.users.menus.inc'); 
 		$usermenus=new usersMenus();
-        $POSTFIX_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_INSTALLED"));
-        if($POSTFIX_INSTALLED==1){
-			$this->array_artica_task["artica-cron-awstats-mail"]=array(
-			"CronFileCommand"=>"1,5,10,15,20,25,30,35,40,45,50,55 * * * * root $usermenus->ARTICA_ROOT_PATH/bin/artica-install -awstats generate >/dev/null",
-			"CronFileDescriptions"=>'{artica-cron-awstats.mail_text}',
-			"CronFileMailto"=>'none',
-			"CronFileToDelete"=>"no");
-		}
+
+
 		
 		$this->array_artica_task["artica-cron-keepup2date"]=array(
 		"CronFileCommand"=>"@hourly root /opt/kav/5.5/kav4mailservers/bin/keepup2date -q",
