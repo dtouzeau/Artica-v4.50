@@ -375,19 +375,9 @@ function build():bool{
 	$f[]="read only = true";
 	$f[]="timeout = 300";
 	
-	$EnableWsusOffline=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWsusOffline"));
+
 	
-	if($EnableWsusOffline==1){
-		$wsusofflineStorageDir=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("wsusofflineStorageDir"));
-		if($wsusofflineStorageDir==null){$wsusofflineStorageDir="/usr/share/wsusoffline";}
-		$f[]="";
-		$f[]="[wsusoffline]";
-		$f[]="path = $wsusofflineStorageDir/client";
-		$f[]="comment = RSYNC WSUS";
-		$f[]="read only = true";
-		$f[]="timeout = 300";
-		
-	}
+
 	$f[]="";
 	$q=new mysql();
 	$sql="SELECT *  FROM rsyncd_folders WHERE enabled=1 ORDER BY directory";

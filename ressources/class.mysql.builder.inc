@@ -198,15 +198,6 @@ public function check_storage_table($force=false){
 		}
 		
 
-		$sql="CREATE TABLE IF NOT EXISTS `artica_backup`.`wsusoffline_dirs` (
-				`path` VARCHAR( 128 ) NOT NULL PRIMARY KEY,
-				`filename` VARCHAR( 128 ) NOT NULL  DEFAULT 'filename',
-				`sizebytes` INT(10) UNSIGNED NOT NULL DEFAULT 0,
-				`filemtime`  INT(10) UNSIGNED NOT NULL DEFAULT 0,
-				 KEY `path`(`path`),
-				 KEY `filename`(`filename`)
-				) ENGINE=MYISAM;";
-		$this->QUERY_SQL($sql,'artica_backup');
 		
 		
 		

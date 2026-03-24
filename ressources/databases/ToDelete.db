@@ -2431,6 +2431,8 @@ framework/btrfs.php
 framework/ulogd.php
 framework/richfilemanager.php
 framework/mysql.php
+framework/xapian.php
+framework/wsusoffline.php
 exec.users.SuperAdmin.php
 exec.amanda.php
 exec.3proxy.php
@@ -2462,6 +2464,10 @@ ressources/class.compile_squid.inc
 ressources/class.corssroads.inc
 ressources/class.ext.tarcompress.inc
 ressources/class.cyrus.maillog.inc
+ressources/class.j-chkmail.inc
+ressources/class.mailman.ctl.inc
+ressources/class.mailman.inc
+ressources/class.mailmanCTL.inc
 fstab.php
 freshclam.events.php
 freeradius.users.php
@@ -2561,8 +2567,14 @@ exec.mailarchive.clean.php
 exec.squid.cached.sitesinfos.php
 exec.awstats.php
 exec.cyrus-restore.php
-exec.squid.downgrade.php
+exec.squid.downgrade.php$this->task_disabled[21]=true;
 exec.squid.upgradev10.php
 exec.thinclient.php
 exec.ulogd.install.php
 exec.ulogd.php
+exec.mailman.php
+exec.securiteinfo.cloud.php
+exec.upgrade-php.php
+fw.wsusoffline.php
+fw.wsusoffline.files.php
+fw.wsusoffline.client.php

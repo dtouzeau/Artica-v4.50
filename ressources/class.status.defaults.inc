@@ -984,17 +984,7 @@ function iscsi_version(){
 
 	return null;}
 
-function WSUSOFFLINE_VERSION(){
-	if(isset($GLOBALS["WSUSOFFLINE_VERSION"])){return $GLOBALS["WSUSOFFLINE_VERSION"];}
-	$results=explode("\n",@file_get_contents("/usr/share/wsusoffline/sh/versions/installed-version.txt"));
-	foreach ($results as $line){
-		if(preg_match("#^([0-9\.]+)(.*?)\s+#", $line,$re)){
-			$GLOBALS["WSUSOFFLINE_VERSION"]=$re[1].$re[2];
-			return $GLOBALS["WSUSOFFLINE_VERSION"];
-		}
-	}
 
-	return null;}
 
 function APP_SPLUNK_FORWARDER_VERSION(){
 	if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
@@ -2293,13 +2283,8 @@ function Build_default_values(){
 	}
 
 
-	if(is_file("/usr/share/wsusoffline/sh/versions/installed-version.txt")){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("WSUSOFFLINE_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("WSUSOFFLINE_VERSION", WSUSOFFLINE_VERSION());
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("WSUSOFFLINE_INSTALLED", 0);
 
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("WSUSOFFLINE_INSTALLED", 0);
-	}
 
 
 

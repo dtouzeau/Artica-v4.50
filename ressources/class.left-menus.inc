@@ -493,32 +493,6 @@ class left_menus{
     public function WSUSOFFLINE(): string
     {
 
-        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WSUSOFFLINE_INSTALLED"))==0){return "";}
-        $EnableWsusOffline=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWsusOffline"));
-        if($EnableWsusOffline==0){return "";}
-        if(!$this->users->AsProxyMonitor){return "";}
-        $f[]="<!-- WSUSOFFLINE START -->";
-        $f[]="                <li id='left-menu'>";
-        $f[]="                    <a href='#' ><i class=\"fa fab fa-windows\"></i> <span class=\"nav-label\">{APP_WSUSOFFLINE}</span> </a>";
-        $f[]="                    <ul class='nav nav-second-level'>";
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.wsusoffline.php');\">
-														<i class=\"fa fa-wrench\"></i> <span class=\"nav-label\">{parameters}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.wsusoffline.client.php');\">
-														<i class=\"fa fa-info\"></i> <span class=\"nav-label\">{clients} (howto)</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.wsusoffline.files.php');\">
-														<i class=\"fa fa-list\"></i> <span class=\"nav-label\">{storage}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="					 </ul>";
-        $f[]="                </li>";
-        $f[]="<!-- WSUSOFFLINE END -->";
         return @implode("\n",$f);
     }
 

@@ -166,12 +166,7 @@ function  uninstall_service(){
 	build_progress_install("{APP_SAMBA}: {disable_feature}",20);
 	$unix=new unix();
     $rm=$unix->find_program("rm");
-	$EnableWsusOffline=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWsusOffline"));
-	if($EnableWsusOffline==1){
-		echo "WSUS Offline is used by Samba service, please disable WSUS Offline First.\n";
-		build_progress_install("{failed}",110);
-		return;
-	}
+
 
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSamba", 0);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("PromoteSamba", 0);
@@ -371,19 +366,7 @@ function build(){
 	}
 	
 	
-	$EnableWsusOffline=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWsusOffline"));
-	if($EnableWsusOffline==1){
-		$wsusofflineStorageDir=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("wsusofflineStorageDir"));
-		if($wsusofflineStorageDir==null){$wsusofflineStorageDir="/usr/share/wsusoffline";}
-		$f[]="[wsus]";
-		$f[]="\tguest ok = yes";
-		$f[]="\tguest only = yes";
-		$f[]="\tread only = yes";
-		$f[]="\tavailable = yes";
-		$f[]="\tbrowsable = yes";
-		$f[]="\tguest account = nobody";
-		$f[]="\tpath = $wsusofflineStorageDir/client";
-	}
+
 	
 	
 	$f[]="";

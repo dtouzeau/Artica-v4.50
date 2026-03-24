@@ -84,7 +84,7 @@ function features():bool{
     $RSYNC=$features->RSYNC();
     $NTPD_SERVER=$features->NTPD_SERVER();
     $HAPROXY=$features->HAPROXY();
-    $WSUSOFFLINE=$features->WSUSOFFLINE();
+
     $INSTANTSEARCH=$features->INSTANTSEARCH();
     $SPLUNK=$features->SPLUNK();
     $FIREHOL=$features->FIREHOL();
@@ -577,7 +577,6 @@ function features():bool{
     }
     //END KEEPALIVED
     $network_services[] = $TAILSCALE;
-    $network_services[] = $WSUSOFFLINE;
     $network_services[] = $APP_LINK_BALANCER;
 
 

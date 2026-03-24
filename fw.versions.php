@@ -259,7 +259,6 @@ function table():bool{
     $html[]=APP_OPENVPN($UPDATES_ARRAY);
     $html[]=APP_PPTP_CLIENT($UPDATES_ARRAY);
     $html[]=APP_STRONGSWAN($UPDATES_ARRAY);
-    $html[]=APP_WSUSOFFLINE($UPDATES_ARRAY);
     $html[]=APP_SPLUNK_FORWARDER($UPDATES_ARRAY);
     $html[]=APP_QAT($UPDATES_ARRAY);
 
@@ -1915,16 +1914,7 @@ function APP_STRONGSWAN($UPDATES_ARRAY):string{
     $html[]="</tr>";
     if(!is_array($html)){$html=array();} return @implode("\n",$html);
 }
-function APP_WSUSOFFLINE($UPDATES_ARRAY):string{
-    if(isset($UPDATES_ARRAY["REVERSE_APPLIANCE"])){return "";}
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WSUSOFFLINE_INSTALLED"))==0){return "";}
-    $html[]="<tr>";
-    $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_WSUSOFFLINE}:</strong></td>";
-    $html[]="<td nowrap>".$GLOBALS["CLASS_SOCKETS"]->GET_INFO("WSUSOFFLINE_VERSION")."</td>";
-    $html[]="<td>&nbsp;</td>";
-    $html[]="</tr>";
-    if(!is_array($html)){$html=array();} return @implode("\n",$html);
-}
+
 function APP_SPLUNK_FORWARDER($UPDATES_ARRAY):string{
     $tpl=new template_admin();
     $SPLUNK_UF_VERSION = $tpl->icon_nothing();

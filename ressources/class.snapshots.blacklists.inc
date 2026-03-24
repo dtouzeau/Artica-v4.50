@@ -367,7 +367,6 @@ function artica_backup_blacklists(){
     $ARRAY["artica_backup_blacklists"]["artica_clusters"]=true;
     $ARRAY["artica_backup_blacklists"]["mysqldbtables"]=true;
     $ARRAY["artica_backup_blacklists"]["categoryuris_"]=true;
-    $ARRAY["artica_backup_blacklists"]["wsusoffline_dirs"]=true;
     $ARRAY["artica_backup_blacklists"]["squid_speed"]=true;
     return $ARRAY;
 }

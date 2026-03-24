@@ -277,7 +277,7 @@ class system_tasks{
         $this->tasks_processes[20]="exec.apt-get.php --pkg-upgrade";
         $this->tasks_processes[22]="exec.pdns.php --replic-artica";
         $this->tasks_processes[23]="exec.httptrack.php";
-        $this->tasks_processes[24]="exec.xapian.index.php";
+        //$this->tasks_processes[24]="exec.xapian.index.php";
         //$this->tasks_processes[28]="exec.lighttpd.nets.php --restart";
         $this->tasks_processes[29]="exec.freeweb.rdcube-replic.php --all";
         //$this->tasks_processes[30]="exec.arpscan.php";

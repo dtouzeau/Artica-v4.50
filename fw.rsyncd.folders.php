@@ -389,20 +389,7 @@ function table(){
     }
 	
 	
-	$EnableWsusOffline=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWsusOffline"));
-	if($EnableWsusOffline==1){
-		$wsusofflineStorageDir=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("wsusofflineStorageDir"));
-		if($wsusofflineStorageDir==null){$wsusofflineStorageDir="/usr/share/wsusoffline";}
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$html[]="<tr class='$TRCLASS' id='row-parent-wsufoff'>";
-		$html[]="<td><H3>$wsusofflineStorageDir/client</H3><div style='margin-top:-5px'><small>WsusOffline replication</small></div></td>";
-		$html[]="<td class=\"center\"><i class='fas fa-check'></i></td>";
-		$html[]="<td class=\"center\">".$tpl->icon_nothing()."</td>";
-		$html[]="<td class=\"center\"><i class='fas fa-check'></i></td>";
-		$html[]="<td class=\"center\"><i class='fas fa-check'></i></td>";
-		$html[]="<td class=\"center\" style='width:1%'&nbsp;</td>";
-		$html[]="</tr>";
-	}
+
 	
 	$sql="SELECT *  FROM rsyncd_folders ORDER BY directory";
 	$results=$q->QUERY_SQL($sql);

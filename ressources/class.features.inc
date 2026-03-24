@@ -1258,19 +1258,9 @@ class features{
 
 
     public function WSUSOFFLINE():string{
-        if($this->ASReverseProxyAppliance){
+
             return "";
-        }
-        $config["SECURITY"]="AsSquidAdministrator";
-        $config["TOKEN_INSTALLED"]="WSUSOFFLINE_INSTALLED";
-        $config["TITLE"]="{APP_WSUSOFFLINE}";
-        $config["EXPLAIN"]="{APP_WSUSOFFLINE_EXPLAIN}";
-        $config["TOKEN"]="EnableWsusOffline";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/wsusoffline.install.prg";
-        $config["LOG_FILE"]=PROGRESS_DIR."/wsusoffline.install.log";
-        $config["CMD_ON"]="wsusoffline.php?install=yes";
-        $config["CMD_OFF"]="wsusoffline.php?uninstall=yes";
-        return $this->build_paragraph($config);
+
 
     }
     public function INSTANTSEARCH(){

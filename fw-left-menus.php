@@ -563,7 +563,6 @@ function xgen(){
         $f[] = "<!-- DWAgent property doesn't exists -->";
     }
     $f[]=$leftmenus->FreeRadius();
-    $f[]=$leftmenus->WSUSOFFLINE();
     $f[]=$leftmenus->Rsync();
     $f[]="<!-- [".__LINE__."]: ACTIVE DIRECTORY START -->";
     $f[]=$leftmenus->ActiveDirectory();
