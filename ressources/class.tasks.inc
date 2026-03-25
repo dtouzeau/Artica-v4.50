@@ -307,7 +307,7 @@ class system_tasks{
         $this->tasks_processes[60]="exec.mailsync.php --alltasks";
         $this->tasks_processes[61]="exec.clean.logs.php --cleandb";
         $this->tasks_processes[62]="exec.zarafa.learn.php";
-        $this->tasks_processes[63]="exec.keepup2date.php --UpdateUtility";
+        //$this->tasks_processes[63]="exec.keepup2date.php --UpdateUtility";
         $this->tasks_processes[64]="exec.postfix.miltergrey.stats.php";
         //$this->tasks_processes[65]="exec.logrotate.php --clean";
         //$this->tasks_processes[66]="exec.initslapd.php --restart-www";
@@ -384,6 +384,7 @@ class system_tasks{
         $this->task_disabled[53]=true;
         $this->task_disabled[56]=true;
         $this->task_disabled[59]=true;
+        $this->task_disabled[53]=true;
         $this->task_disabled[65]=true;
         $this->task_disabled[41]=true;
         $this->task_disabled[71]=true;

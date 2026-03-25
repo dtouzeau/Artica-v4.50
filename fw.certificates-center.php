@@ -2110,9 +2110,19 @@ function certificate_csr_verify(){
 
     if(!$NOT_BUILD){
         if(strlen($ligne["csr"])<50){
-            $sock=new sockets();
-            $CommonName=urlencode($CommonName);
-            echo base64_decode($sock->getFrameWork("system.php?BuildCSR=$CommonName"));
+            $tpl=new template_admin();
+            $cleanCN=preg_replace('/[^a-zA-Z0-9.*_\-]/','',$CommonName);
+            $buildJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON(
+                "/certificate/build-csr",
+                array("common_name"=>$cleanCN)
+            ));
+            if(is_object($buildJson) && !empty($buildJson->success)){
+                echo "<p class='text-success'><i class='fas fa-check-circle'></i> CSR generated for ".htmlspecialchars($cleanCN)."</p>";
+                $ligne=$q->mysqli_fetch_array($sql);
+            } else {
+                $err=is_object($buildJson)?htmlspecialchars($buildJson->error ?? 'unknown error'):'connection error';
+                echo $tpl->_ENGINE_parse_body($tpl->div_error($err));
+            }
         }
     }
 
@@ -2677,7 +2687,7 @@ function certificate_new_popup():bool{
     @unlink("/usr/share/artica-postfix/ressources/logs/web/Myprivkey.csr");
 
     if($ligne["CommonName"]==null){
-        $ligne["CommonName"]=php_uname("n");
+        $ligne["CommonName"]=$sock->getFrameWork("system.php?hostname-g=yes");
     }
     $array_country_codes=array();
     $db=file_get_contents(dirname(__FILE__) . '/ressources/databases/ISO-3166-Codes-Countries.txt');

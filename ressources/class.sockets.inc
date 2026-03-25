@@ -2250,7 +2250,7 @@ class sockets{
         $NOCOMMANDS["nginx.php?reverse-fs=yes"]=true;
         if(isset($NOCOMMANDS[trim($uri)])){$CLUSTER=false;}
 
-        $NOCOMMANDX["system\.php\?install-artica-tgz=yes"]=true;
+
         $NOCOMMANDX["network\.php\?ifconfig-array="]=true;
 
         foreach ($NOCOMMANDX as $pattern=>$none){

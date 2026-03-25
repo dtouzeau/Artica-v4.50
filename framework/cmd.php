@@ -35,7 +35,6 @@ if(isset($_GET["SetServerTime"])){SetServerTime();exit;}
 if(isset($_GET["ou-ldap-import-execute"])){LDAP_IMPORT_EXEC();exit;}
 if(isset($_GET["GetTotalMemMB"])){GetTotalMemMB();exit;}
 if(isset($_GET["process-ttl"])){process_timeexec();exit;}
-if(isset($_GET["myisamchk"])){myisamchk();exit;}
 if(isset($_GET["filesize"])){_filesize();exit;}
 if(isset($_GET["chmod"])){_chmod();exit;}
 if(isset($_GET["readfile"])){_readfile();exit;}
@@ -51,9 +50,6 @@ if(isset($_GET["iptables-save"])){iptables_save();exit;}
 if(isset($_GET["wake-on-lan"])){WakeOnLan();exit;}
 
 if(isset($_GET["net-ads-leave"])){net_ads_leave();exit;}
-if(isset($_GET["process1-force"])){process1_force();exit;}
-
-
 if(isset($_GET["rdpproxy-ini-status"])){RDP_INI_STATUS();exit;}
 if(isset($_GET["syncthing-ini-status"])){SYNCTHING_INI_STATUS();exit;}
 if(isset($_GET["right-status"])){right_status();exit;}
@@ -64,11 +60,7 @@ if(isset($_GET["RestartApacheGroupwareNoForce"])){RestartApacheGroupwareNoForce(
 
 //snort
 
-if(isset($_GET["snort-networks"])){snort_networks();exit;}
-if(isset($_GET["restart-snort"])){restart_snort();exit;}
-if(isset($_GET["snort-status"])){snort_status();exit;}
 if(isset($_GET["VIPTrackRun"])){VIPTrackRun();exit;}
-
 if(isset($_GET["sabnzbdplus-ini-status"])){sabnzbdplus_src_status();exit;}
 if(isset($_GET["sabnzbdplus-restart"])){sabnzbdplus_restart();exit;}
 if(isset($_GET["ChangeMysqlLocalRoot"])){ChangeMysqlLocalRoot();exit;}
@@ -76,10 +68,6 @@ if(isset($_GET["ChangeMysqlLocalRoot2"])){ChangeMysqlLocalRoot2();exit;}
 if(isset($_GET["ChangeMysqlDir"])){ChangeMysqlDir();exit;}
 
 
-
-if(isset($_GET["change-mysql-params"])){ChangeMysqlParams();exit;}
-if(isset($_GET["mysql-myd-file"])){mysql_myd_file();exit;}
-if(isset($_GET["mysql-check"])){mysql_check();exit;}
 
 if(isset($_GET["viewlogs"])){viewlogs();exit;}
 if(isset($_GET["LdapdbStat"])){LdapdbStat();exit;}
@@ -2049,14 +2037,14 @@ function restart_ufdbguard(){
 function delete_mailbox(){
 	$unix=new unix();
 	$php5=$unix->LOCATE_PHP5_BIN();
-	shell_exec("$php5 /usr/share/artica-postfix/exec.cyrus.php --delete-mailbox {$_GET["DelMbx"]}");
+	shell_exec("$php5 /usr/share/artica-postfix/exec.cyrus.php --delete-mailbox ".escapeshellarg($_GET["DelMbx"]));
 }
 
 function umount_disk(){
 	$mount=$_GET["umount-disk"];
 	$unix=new unix();
 	writelogs_framework("umount $mount",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($unix->find_program("umount")." -l \"$mount\"");
+	shell_exec($unix->find_program("umount")." -l ".escapeshellarg($mount));
 }
 
 function fdisk_list(){
@@ -2419,7 +2407,7 @@ function ChangeLDPSSET(){
 	$password=base64_decode($_GET["password"]);
 	$password=$unix->shellEscapeChars($password);
 	
-	$vals=shell_exec("/usr/share/artica-postfix/bin/artica-install --change-ldap-settings {$_GET["ldap_server"]} {$_GET["ldap_port"]} {$_GET["suffix"]} {$_GET["username"]} $password {$_GET["change_ldap_server_settings"]}");
+	$vals=shell_exec("/usr/share/artica-postfix/bin/artica-install --change-ldap-settings ".escapeshellarg($_GET["ldap_server"])." ".escapeshellarg($_GET["ldap_port"])." ".escapeshellarg($_GET["suffix"])." ".escapeshellarg($_GET["username"])." $password ".escapeshellarg($_GET["change_ldap_server_settings"]));
 	echo "<articadatascgi>$vals</articadatascgi>";
 }
 function ASSPOriginalConf(){
@@ -5067,12 +5055,6 @@ function pptpd_status(){
 	echo "<articadatascgi>". base64_encode(@implode("\n",$results))."</articadatascgi>";	
 }
 
-function snort_status(){
-	exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.status.php --snort --nowachdog",$results);
-	echo "<articadatascgi>". base64_encode(@implode("\n",$results))."</articadatascgi>";		
-}
-
-
 
 
 function iscsi_status(){
@@ -6586,34 +6568,7 @@ function postfix_freeze(){
 
 }
 
-function LESSFS_RESTART(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$cmd=$nohup.LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.lessfs.php >/dev/null 2>&1 &";
-	if(isset($_GET["mount"])){
-		$cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.lessfs.php --restart";
-	}
-	
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);			
-	
-}
 
-function LESSFS_MOUNTS(){
-	$unix=new unix();
-	$array=$unix->LESSFS_ARRAY();
-	echo "<articadatascgi>". base64_encode(serialize($array))."</articadatascgi>";
-	}
-	
-	
-function LESSFS_RESTART_SERVICE(){
-	unlink("/usr/share/artica-postfix/ressources/logs/web/LESS_FS_RESTART");
-	@file_put_contents("/usr/share/artica-postfix/ressources/logs/web/LESS_FS_RESTART","scheduled\nPlease Wait....");
-	@chmod("/usr/share/artica-postfix/ressources/logs/web/LESS_FS_RESTART",0777);
-	$cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.lessfs.php >>/usr/share/artica-postfix/ressources/logs/web/LESS_FS_RESTART 2>&1";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	NOHUP_EXEC($cmd);		
-}
 
 
 
@@ -6743,10 +6698,7 @@ function net_ads_leave(){
 	echo "<articadatascgi>". @implode("\n",$results)."</articadatascgi>";	
 }
 
-function process1_force(){
-	$unix=new unix();
-	$unix->Process1(true);
-}
+
 function saslauthd_restart(){
 	$unix=new unix();
 	$unix->THREAD_COMMAND_SET("/etc/init.d/artica-postfix restart saslauthd");
@@ -6789,13 +6741,6 @@ function clamd_pattern_status(){
 
 
 	
-function SpamAssDBVer(){
-	$path="/usr/share/artica-postfix/ressources/logs/sa.update.dbg";
-	if(!is_file($path)){echo "<articadatascgi>00000</articadatascgi>";return "00000";}
-	$f=explode("\n",@file_get_contents($path));
-	foreach ( $f as $index=>$line ){if(preg_match("#metadata version.+?([0-9]+)#",$line,$re)){$ptemp=$re[1];break;}}
-	echo "<articadatascgi>$ptemp</articadatascgi>";
-}
 
 function samba_server_role(){
 	$unix=new unix();
@@ -6861,21 +6806,7 @@ function my_rbl_check(){
 	shell_exec("$cmd");
 }
 
-function ChangeMysqlParams(){
-	$basePath="/etc/artica-postfix/settings/Mysql";
-	$arrayMysqlinfos=unserialize(base64_decode($_GET["change-mysql-params"]));
-	$user=$arrayMysqlinfos["USER"];
-	$password=trim($arrayMysqlinfos["PASSWORD"]);
-	$server=$arrayMysqlinfos["SERVER"];
-	writelogs_framework("Change mysql parameters to $user:$password@$server",__FUNCTION__,__FILE__,__LINE__);
-	@file_put_contents("$basePath/database_admin",$user);
-	if($password==null){@unlink("$basePath/database_password");}else{@file_put_contents("$basePath/database_password",$password);}
-	@file_put_contents("$basePath/mysql_server",$server);
-	shell_exec("/usr/bin/php /usr/share/artica-postfix/exec.status.php --process1 --force ".time());
-	$unix=new unix();
-	$unix->THREAD_COMMAND_SET("/etc/init.d/roundcube restart");
-	$unix->THREAD_COMMAND_SET($cmd);
-}
+
 
 function VIPTrackRun(){
 	$unix=new unix();
@@ -6897,54 +6828,11 @@ function postfix_whitelisted_global(){
 	
 	
 }
-function cyrus_db_config(){
-	$unix=new unix();
-	$cmd="/usr/share/artica-postfix/bin/artica-install --cyrus-db_config";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	$unix->THREAD_COMMAND_SET($cmd);
-}
 
-function winbindd_stop(){
-	$unix=new unix();
-	$cmd="/etc/init.d/artica-postfix stop winbindd";
-	$unix->THREAD_COMMAND_SET($cmd);	
-}
 
-function myisamchk(){
-	$db=$_GET["database"];
-	$table=$_GET["table"];
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	exec("$nohup $php5 /usr/share/artica-postfix/exec.myisamchk.php $db $table >/dev/null 2>&1 &");
-	return;
-	
-}
 
-function mysql_myd_file(){
-	$db=$_GET["database"];
-	$table=$_GET["table"];
-	$unix=new unix();
-	$MYSQL_DATADIR=$unix->MYSQL_DATADIR();
-	if(!is_file("$MYSQL_DATADIR/$db/$table.MDY")){
-		echo "<articadatascgi>NO</articadatascgi>";
-		return;
-	}else{
-		echo "<articadatascgi>YES</articadatascgi>";
-	}
-	
-}
 
-function mysql_check(){
-	$db=$_GET["database"];
-	$table=$_GET["table"];	
-	$instance_id=$_GET["instance-id"];
-	if(!is_numeric($instance_id)){$instance_id=0;}
-	$cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.mysql.build.php --mysqlcheck $db $table $instance_id";	
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	$unix=new unix();
-	$unix->THREAD_COMMAND_SET($cmd);		
-}
+
 
 function SetServerTime(){
 	$time=$_GET["SetServerTime"];
@@ -7387,23 +7275,8 @@ function ufdbguard_compilator_events(){
 	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";	
 }
 
-function snort_networks(){
-	$cmd=LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.snort.php --networks";
-	shell_exec($cmd);
-}
 
-function restart_snort(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$cmd=trim($nohup." /etc/init.d/artica-postfix restart snort >/dev/null 2>&1 &");
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
-	shell_exec($cmd);
 
-	$cmd=trim($nohup." /etc/init.d/artica-postfix restart fcron >/dev/null 2>&1 &");
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
-	shell_exec($cmd);	
-	
-}
 
 function WriteToSyslog($text,$file,$error=false){
 	$file=basename($file);

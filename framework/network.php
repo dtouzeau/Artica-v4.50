@@ -183,7 +183,9 @@ function ethtools_k(){
 	$nic=$_GET["nic"];
 	$unix=new unix();
 	$ethtool=$unix->find_program("ethtool");
-	shell_exec("$ethtool -k $nic >/usr/share/artica-postfix/ressources/logs/ethtool_$nic.txt 2>&1");
+	$nic_safe=escapeshellarg($nic);
+	$nic_base=preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $nic);
+	shell_exec("$ethtool -k $nic_safe >/usr/share/artica-postfix/ressources/logs/ethtool_$nic_base.txt 2>&1");
 }
 function ethtools_edit(){
 	
@@ -210,13 +212,13 @@ function ethtools_edit(){
 	$MAINT["udp-fragmentation-offload"]="ufo";
 
 	if(isset($MAINT[$key])){$key=$MAINT[$key];}
-	
-	
+
+
 	if($nic==null){
 		writelogs_framework("$key $val -> NIC is null -> ".@implode(" - ", $_GET),__FUNCTION__,__FILE__,__LINE__);
 		return;
 	}
-	$cmd="$ethtool -K $nic $key $val";
+	$cmd="$ethtool -K ".escapeshellarg($nic)." ".escapeshellarg($key)." ".escapeshellarg($val);
 	$cmdlines[$cmd]=$cmd;
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EthtoolsCommands", serialize($cmdlines));
 	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
@@ -328,7 +330,7 @@ function ifconfig(){
 	$net=$_GET["ifconfig"];
 	$unix=new unix();
 	$ifconfig=$unix->find_program("ifconfig");
-	exec("$ifconfig $net 2>&1",$results);
+	exec("$ifconfig ".escapeshellarg($net)." 2>&1",$results);
 	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
 }
 
@@ -510,7 +512,7 @@ function down_interface(){
 	$down_interface=$_GET["down-interface"];
 	$unix=new unix();
 	$ifconfig=$unix->find_program("ifconfig");
-	shell_exec("$ifconfig $down_interface down");
+	shell_exec("$ifconfig ".escapeshellarg($down_interface)." down");
 }
 function iptables_spamhausrules(){
 	$unix=new unix();

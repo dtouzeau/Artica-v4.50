@@ -1950,7 +1950,7 @@ function IfReallyExists(){
 
 function CheckSystemUsersAndGroups():bool{
     $unix=new unix();
-    $Groups=array("root","daemon","nogroup","bin","sys","adm","tty","disk","lp","mail","news","uucp","man","proxy","kmem","dialout","fax","voice","cdrom","floppy","tape","sudo","audio","dip","www-data","backup","operator","list","irc","src","gnats","shadow","utmp","video","sasl","plugdev","staff","games","users","nogroup","input","kvm","render","crontab","netdev","ssh","mysql","apt-mirror","ssl-cert","ntp","mlocate","prads","freerad","vnstat","stunnel4","vde2-net","memcache","davfs2","ziproxy","openldap","munin","msmtp","Debian-snmp","opendkim","avahi","sambashare","winbindd_priv","ArticaStats","nvram","postfix","postdrop","squid","clamav","unbound","smokeping","mosquitto","quaggavty","quagga");
+    $Groups=array("root","daemon","nogroup","bin","sys","adm","tty","disk","lp","mail","news","uucp","man","proxy","kmem","dialout","fax","voice","cdrom","floppy","tape","sudo","audio","dip","www-data","backup","operator","list","irc","src","gnats","shadow","utmp","video","sasl","plugdev","staff","games","users","nogroup","input","kvm","render","crontab","netdev","ssh","mysql","apt-mirror","ssl-cert","ntp","mlocate","prads","freerad","vnstat","stunnel4","vde2-net","memcache","davfs2","ziproxy","openldap","munin","msmtp","Debian-snmp","opendkim","avahi","sambashare","winbindd_priv","ArticaStats","nvram","postfix","postdrop","squid","clamav","unbound","smokeping","quaggavty","quagga");
 
     foreach ($Groups as $GroupName){
         if($unix->UnixGroupExists($GroupName)){
@@ -1964,7 +1964,7 @@ function CheckSystemUsersAndGroups():bool{
 
     }
 
-    $users=array("daemon","bin","sys","sync","man","lp","mail","news","uucp","proxy","www-data","backup","list","irc","gnats","nobody","_apt","mysql","apt-mirror","privoxy","ntp","redsocks","prads","freerad","vnstat","stunnel4","sshd","vde2-net","memcache","davfs2","ziproxy","proftpd","ftp","openldap","munin","msmtp","Debian-snmp","opendkim","avahi","ArticaStats","postfix","squid","smokeping","mosquitto","quagga","unbound");
+    $users=array("daemon","bin","sys","sync","man","lp","mail","news","uucp","proxy","www-data","backup","list","irc","gnats","nobody","_apt","mysql","apt-mirror","privoxy","ntp","redsocks","prads","freerad","vnstat","stunnel4","sshd","vde2-net","memcache","davfs2","ziproxy","proftpd","ftp","openldap","munin","msmtp","Debian-snmp","opendkim","avahi","ArticaStats","postfix","squid","smokeping","quagga","unbound");
 
     foreach ($users as $UserName){
         if($unix->UnixUserExists($UserName)){

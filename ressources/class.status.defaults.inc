@@ -1316,7 +1316,6 @@ function Build_default_values(){
     $f[]="lighttpd.service";
     $f[]="lm-sensors.service";
     $f[]="mariadb.service";
-    $f[]="mosquitto.service";
     $f[]="munin-node.service";
     $f[]="nfs-client.target";
     $f[]="nmbd.service";

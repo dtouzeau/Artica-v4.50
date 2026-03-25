@@ -2545,9 +2545,7 @@ function FTPSettingsEdit(){
 			@chown($this->homeDirectory,$this->uid);
 			return;
 		}
-		$sock=new sockets();
-		$sock->getFrameWork("services.php?makedir=".urlencode(base64_encode($this->homeDirectory)));
-		
+
 	}
 	
 	

@@ -4,7 +4,7 @@ if(preg_match("#--verbose#",implode(" ",$argv))){$GLOBALS["VERBOSE"]=true;}if($G
 include_once(dirname(__FILE__).'/ressources/class.ldap.inc');
 include_once(dirname(__FILE__)."/framework/frame.class.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.inc");
-
+include_once(dirname(__FILE__).'/ressources/class.manager.inc');
 
 if($argv[1]=='--users'){parseusers();exit;}
 if($argv[1]=="--change-suffix"){ChangeSuffix();exit;}
@@ -106,7 +106,8 @@ function ChangeSuffix(){
 		echo "Skipping exporting datas $filebackup exists\n";
 	}
     ChangeSuffix_progress("{restarting}...",30);
-    @file_put_contents("/etc/artica-postfix/ldap_settings/suffix", $ChangeLDAPSuffixTo);
+
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/system/manager", array("suffix" => $ChangeLDAPSuffixTo));
     system("/usr/sbin/artica-phpfpm-service -restart-ldap");
     system("/usr/sbin/artica-phpfpm-service -nsswitch");
 
@@ -160,7 +161,8 @@ function proxycnx(){
 	$q=new mysql();
 	$sql="SELECT * FROM openldap_proxy WHERE enabled=1";
 	$results = $q->QUERY_SQL($sql,$database);
-	$localdb_suffix=trim(@file_get_contents("/etc/artica-postfix/ldap_settings/suffix"));
+    $Manager=new class_manager();
+	$localdb_suffix=$Manager->suffix;
 	
 	$f[]="database\tmeta";
 	$f[]="suffix\t\"$OpenLdapProxySuffix\"";   

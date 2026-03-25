@@ -73,7 +73,7 @@ function LoadMounted(){
 function convert_disk(){
 	$unix=new unix();
 	$pvcreate=$unix->find_program("pvcreate");
-	$cmd="$pvcreate {$_GET["dev"]} 2>&1";
+	$cmd="$pvcreate ".escapeshellarg($_GET["dev"])." 2>&1";
 	exec($cmd,$results);
 	writelogs_framework("$cmd ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
 	foreach ($results as $num=>$line){if(preg_match("#File descriptor\s+[0-9]+#",$line)){continue;}$ff[]=$line;}	
@@ -83,7 +83,7 @@ function vgcreate(){
 	$unix=new unix();
 	$gpname=$_GET["gpname"];
 	$vgcreate=$unix->find_program("vgcreate");
-	$cmd="$vgcreate \"$gpname\" {$_GET["dev"]} 2>&1";
+	$cmd="$vgcreate ".escapeshellarg($gpname)." ".escapeshellarg($_GET["dev"])." 2>&1";
 	exec($cmd,$results);
 	foreach ($results as $num=>$line){if(preg_match("#File descriptor\s+[0-9]+#",$line)){continue;}$ff[]=$line;}
 	
@@ -176,7 +176,7 @@ function lvdisplay(){
 	$unix=new unix();
 	$lvdisplay=$unix->find_program("lvdisplay");
 	$vg=$_GET["lvdisplay"];
-	$cmd="lvdisplay --units k {$_GET["lvdisplay"]} 2>&1";
+	$cmd="lvdisplay --units k ".escapeshellarg($_GET["lvdisplay"])." 2>&1";
 	exec($cmd,$results);
 	$array=array();	
 	writelogs_framework("$cmd ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
@@ -305,7 +305,7 @@ function lvremove(){
 function loopdel(){
 	$unix=new unix();
 	$php=$unix->LOCATE_PHP5_BIN();
-	$cmd="$php /usr/share/artica-postfix/exec.loopdisks.php --remove \"{$_GET["loop-del"]}\" 2>&1";
+	$cmd="$php /usr/share/artica-postfix/exec.loopdisks.php --remove ".escapeshellarg($_GET["loop-del"])." 2>&1";
 	exec($cmd,$results);
 	writelogs_framework("$cmd ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
 	echo "<articadatascgi>". @implode("\n",$results)."</articadatascgi>";		

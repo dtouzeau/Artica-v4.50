@@ -254,7 +254,7 @@ function postfix_debug_peer_list(){
 			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
 			shell_exec($cmd);
 		}else{
-			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure \"{$_GET["hostname"]}\" >/dev/null 2>&1 &";
+			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure ".escapeshellarg($_GET["hostname"])." >/dev/null 2>&1 &";
 			shell_exec($cmd);
 			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
 		}
@@ -268,15 +268,15 @@ function postfix_debug_peer_list(){
 function postfix_instance_delete(){
 	$unix=new unix();
 	$postmulti=$unix->find_program("postmulti");
-	$instance="postfix-{$_GET["instance-delete"]}";
-	$cmd="$postmulti -i $instance -p stop";
+	$instance="postfix-".preg_replace('/[^a-zA-Z0-9_\-]/', '', $_GET["instance-delete"]);
+	$cmd="$postmulti -i ".escapeshellarg($instance)." -p stop";
 	$results=array();
 	exec($cmd,$results);
 	writelogs_framework($cmd ." ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
-	$cmd="$postmulti -i $instance -e disable";
+	$cmd="$postmulti -i ".escapeshellarg($instance)." -e disable";
 	$results=array();
 	exec($cmd,$results);
-	writelogs_framework($cmd ." ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);	
+	writelogs_framework($cmd ." ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
 	$rm=$unix->find_program("rm");
 	$directory="/var/spool/$instance";
 	if(is_dir($directory)){
@@ -395,7 +395,7 @@ function query_maillog(){
 	}	
 	
 	if(isset($_GET["prefix"])){
-		$prefix="$grep --binary-files=text -i -E '{$_GET["prefix"]}(\[|:)$searchEmails' $maillog|";
+		$prefix="$grep --binary-files=text -i -E ".escapeshellarg($_GET["prefix"]."(\\[|:)".$searchEmails)." $maillog|";
 		$maillogSecond=null;
 	}
 	
@@ -436,7 +436,7 @@ function query_maillog(){
 function milter_greylist_service_debug(){
 	if(isset($_GET["hostname"])){
 		if($_GET["hostname"]<>"master"){
-			$cmdp=" --hostname={$_GET["hostname"]} --ou=\"{$_GET["ou"]}\"";
+			$cmdp=" --hostname=".escapeshellarg($_GET["hostname"])." --ou=".escapeshellarg($_GET["ou"]);
 		}
 	}
 	
@@ -523,7 +523,7 @@ function mailbox_transport(){
 			shell_exec($cmd);
 			return;
 		}else{
-			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure \"{$_GET["hostname"]}\" >/dev/null 2>&1 &";
+			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure ".escapeshellarg($_GET["hostname"])." >/dev/null 2>&1 &";
 			shell_exec($cmd);
 			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
 			return;
@@ -541,7 +541,7 @@ function mailbox_transport_maps(){
 			shell_exec($cmd);
 			return;
 		}else{
-			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure \"{$_GET["hostname"]}\" >/dev/null 2>&1 &";
+			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure ".escapeshellarg($_GET["hostname"])." >/dev/null 2>&1 &";
 			shell_exec($cmd);
 			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
 			return;

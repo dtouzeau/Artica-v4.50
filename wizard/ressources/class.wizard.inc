@@ -784,8 +784,7 @@ return true;
             $sidentity->SET($key,$val);
         }
         $sidentity->Save();
-        $timezoneenc=urlencode(base64_encode(trim($this->timezone_def)));
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("system.php?zoneinfo-set=$timezoneenc");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/system/timezone", array("timezone"=>trim($this->timezone_def)));
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableArpDaemon", 0);
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePHPFPM",0);
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableFreeWeb",0);

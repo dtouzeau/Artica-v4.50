@@ -69,7 +69,7 @@ function  apply_client_ssl():bool{
 function remove_host():bool{
     $host=$_GET["remove-host"];
     $unix=new unix();
-    return $unix->framework_exec("exec.syslog-engine.php --remove-host \"$host\"");
+    return $unix->framework_exec("exec.syslog-engine.php --remove-host ".escapeshellarg($host));
 
 }
 

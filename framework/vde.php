@@ -68,7 +68,7 @@ function switch_uninstall(){
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
 	
-	$cmd=trim("$php5 /usr/share/artica-postfix/exec.vde.php --remove $switch >{$GLOBALS["LOGSFILES"]} >/dev/null 2>&1 &");
+	$cmd=trim("$php5 /usr/share/artica-postfix/exec.vde.php --remove ".escapeshellarg($switch)." >{$GLOBALS["LOGSFILES"]} >/dev/null 2>&1 &");
 	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 	
@@ -79,7 +79,7 @@ function switch_install(){
 	$nohup=$unix->find_program("nohup");
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$switch=$_GET["switch"];
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --install $switch >/dev/null 2>&1 &");
+	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --install ".escapeshellarg($switch)." >/dev/null 2>&1 &");
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);	
 	
@@ -89,7 +89,7 @@ function switch_remove(){
 	$unix=new unix();
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$switch=$_GET["switch-remove"];
-	$cmd=trim("$php5 /usr/share/artica-postfix/exec.vde.php --remove $switch >/dev/null 2>&1 &");
+	$cmd=trim("$php5 /usr/share/artica-postfix/exec.vde.php --remove ".escapeshellarg($switch)." >/dev/null 2>&1 &");
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);	
 }
@@ -99,7 +99,7 @@ function switch_network_restart(){
 	$nohup=$unix->find_program("nohup");
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$switch=$_GET["switch"];
-	$cmd=trim("/etc/init.d/virtualnet-$switch restart  >/dev/null 2>&1");
+	$cmd=trim("/etc/init.d/virtualnet-".escapeshellarg($switch)." restart  >/dev/null 2>&1");
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);	
 	
@@ -110,7 +110,7 @@ function switch_restart(){
 	$nohup=$unix->find_program("nohup");
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$switch=$_GET["switch"];
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --restart-switch $switch >/dev/null 2>&1 &");	
+	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --restart-switch ".escapeshellarg($switch)." >/dev/null 2>&1 &");
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
 	shell_exec($cmd);	
 }
@@ -120,9 +120,9 @@ function switch_reconfigure(){
 	$nohup=$unix->find_program("nohup");
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$switch=$_GET["switch"];
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --reconfigure-switch $switch >/dev/null 2>&1 &");
+	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --reconfigure-switch ".escapeshellarg($switch)." >/dev/null 2>&1 &");
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
+	shell_exec($cmd);
 }
 
 function switch_main_status(){
@@ -130,7 +130,7 @@ function switch_main_status(){
 	$nohup=$unix->find_program("nohup");
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$switch=$_GET["switch-main-status"];
-	$cmd=trim("$php5 /usr/share/artica-postfix/exec.status.php --vde-uniq $switch --nowachdog 2>&1");	
+	$cmd=trim("$php5 /usr/share/artica-postfix/exec.status.php --vde-uniq ".escapeshellarg($switch)." --nowachdog 2>&1");	
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
 	exec($cmd,$results);
 	echo "<articadatascgi>".@implode("\n", $results)."</articadatascgi>";
@@ -140,33 +140,35 @@ function virtual_delete(){
 	$unix=new unix();
 	$virtname=$_GET["virtual-delete"];
 	$nic=$_GET["nic"];
-	$pidfile="/var/run/$virtname.pid";
+	$virtname_safe=escapeshellarg($virtname);
+	$nic_safe=escapeshellarg($nic);
+	$pidfile="/var/run/".basename($virtname).".pid";
 	$ipbin=$unix->find_program("ip");
 	$ifconfig=$unix->find_program("ifconfig");
 	$nohup=$unix->find_program("nohup");
 	$php5=$unix->LOCATE_PHP5_BIN();
-	
-	
+
+
 	$pid=$unix->get_pid_from_file($pidfile);
 	$kill=$unix->find_program("kill");
 	if($unix->process_exists($pid)){unix_system_kill($pid);sleep(1);}
 	if($unix->process_exists($pid)){unix_system_kill_force($pid);sleep(1);}
-	
-	$cmd="$ipbin route flush table $virtname";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	
-	
-	$cmd="/usr/share/artica-postfix/bin/rt_tables.pl --remove-name $virtname >/dev/null 2>&1";
+
+	$cmd="$ipbin route flush table $virtname_safe";
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 
-	
-	$cmd="$ifconfig $virtname down";
+
+	$cmd="/usr/share/artica-postfix/bin/rt_tables.pl --remove-name $virtname_safe >/dev/null 2>&1";
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
-	
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --reconfigure-switch $nic >/dev/null 2>&1 &");
+
+
+	$cmd="$ifconfig $virtname_safe down";
+	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
+	shell_exec($cmd);
+
+	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --reconfigure-switch $nic_safe >/dev/null 2>&1 &");
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 }
@@ -213,7 +215,7 @@ function DeleteDatabasePath(){
 	$unix=new unix();
 	$nohup=$unix->find_program("nohup");
 	$rm=$unix->find_program("rm");
-	$cmd=trim("$rm -rf $DeleteDatabasePath >/dev/null &");
+	$cmd=trim("$rm -rf ".escapeshellarg($DeleteDatabasePath)." >/dev/null &");
 	@unlink("/usr/share/artica-postfix/LocalDatabases/dbsize.xp");
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
 	shell_exec($cmd);		
@@ -224,7 +226,7 @@ function port_delete(){
 	$ID=$_GET["port-delete"];
 	$nohup=$unix->find_program("nohup");
 	$php5=$unix->LOCATE_PHP5_BIN();
-	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --remove-port $ID >/dev/null 2>&1 &");	
+	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --remove-port ".escapeshellarg($ID)." >/dev/null 2>&1 &");	
 }
 
 function port_reconfigure(){
@@ -232,7 +234,7 @@ function port_reconfigure(){
 	$ID=$_GET["port-reconfigure"];
 	$nohup=$unix->find_program("nohup");
 	$php5=$unix->LOCATE_PHP5_BIN();
-	shell_exec("/etc/init.d/virtualport-$ID stop");
-	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --build-port $ID >/dev/null 2>&1 &");
+	shell_exec("/etc/init.d/virtualport-".escapeshellarg($ID)." stop");
+	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.vde.php --build-port ".escapeshellarg($ID)." >/dev/null 2>&1 &");
 	
 }

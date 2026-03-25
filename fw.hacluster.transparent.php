@@ -131,7 +131,8 @@ function table(){
 
     $CPU_NUMBER=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CPU_NUMBER"));
     if($CPU_NUMBER==0){
-        $CPU_NUMBER=intval($GLOBALS["CLASS_SOCKETS"]->getFrameWork("services.php?CPU-NUMBER=yes"));
+        $_cpuJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/cpu-number"));
+        $CPU_NUMBER=(is_object($_cpuJson) && !empty($_cpuJson->success))?intval($_cpuJson->cpu_number):2;
     }
     $CPUz[1] = "1 CPU (monocore)";
     if($CPU_NUMBER>2) {

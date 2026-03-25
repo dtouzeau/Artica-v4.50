@@ -26,7 +26,7 @@ function install_tgz(){
 	$unix=new unix();
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.msktutil.install.php --install {$_GET["key"]} {$_GET["OS"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.msktutil.install.php --install ".escapeshellarg($_GET["key"])." ".escapeshellarg($_GET["OS"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
 	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 

@@ -101,10 +101,8 @@ function register(){
         if($key=="ERROR_SHOW"){continue;}
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO($key,$val);
     }
-
     if($LDAPSyncProvID==1){ $LDAPSyncProvID=rand(1,900); }
-
-    @file_put_contents("/etc/artica-postfix/ldap_settings/suffix", $RESULTS["LDAPSyncProvClientSearchBase"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/system/manager", array("suffix" => $RESULTS["LDAPSyncProvClientSearchBase"]));
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableLDAPSyncProv",1);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LDAPSyncProvID",$LDAPSyncProvID);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableLDAPSyncProvClient",1);

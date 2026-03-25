@@ -146,12 +146,8 @@ function table(){
 
     $CPU_NUMBER=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CPU_NUMBER"));
     if($CPU_NUMBER==0){
-        if(!is_file("/usr/share/artica-postfix/ressources/interface-cache/CPU_NUMBER")){
-            $sock=new sockets();
-            $CPU_NUMBER=intval($sock->getFrameWork("services.php?CPU-NUMBER=yes"));
-        }else{
-            $CPU_NUMBER=intval(@file_get_contents("/usr/share/artica-postfix/ressources/interface-cache/CPU_NUMBER"));
-        }
+        $_cpuJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/cpu-number"));
+        $CPU_NUMBER=(is_object($_cpuJson) && !empty($_cpuJson->success))?intval($_cpuJson->cpu_number):2;
     }
 
 

@@ -2514,11 +2514,7 @@ function IsPhysicalAddress($address){
     return true;
 }
 function getLocalTimezone(){
-    if(!class_exists("sockets")){return;}
     $content=trim(@file_get_contents("/etc/timezone"));
-    if($content==null){
-        $content= $GLOBALS["CLASS_SOCKETS"]->GET_INFO("system.php?etc-timezone=yes");
-    }
     return $content;
 
 }

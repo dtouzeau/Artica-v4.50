@@ -87,7 +87,7 @@ function digg(){
 	$interface=$_GET["interface"];
 	if($interface==null){$interface="127.0.0.1";}
 	if($hostname==null){$hostname="www.google.com";}
-	$cmd="$digg @$interface $hostname 2>&1";
+	$cmd="$digg @".escapeshellarg($interface)." ".escapeshellarg($hostname)." 2>&1";
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
 	exec($cmd,$results);
 	echo "<articadatascgi>".base64_encode(serialize($results))."</articadatascgi>";

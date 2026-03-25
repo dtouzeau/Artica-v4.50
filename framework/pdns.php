@@ -87,8 +87,10 @@ function pdns_util_load_zone(){
     $unix=new unix();
     $zone=$_GET["pdns-util-load-zone"];
     $pdnsutil=$unix->find_program("pdnsutil");
-    $DESTF=PROGRESS_DIR."/$zone.dump";
-    shell_exec("$pdnsutil list-zone $zone >$DESTF 2>&1");
+    $zone_safe=escapeshellarg($zone);
+    $zone_base=preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $zone);
+    $DESTF=PROGRESS_DIR."/$zone_base.dump";
+    shell_exec("$pdnsutil list-zone $zone_safe >$DESTF 2>&1");
     @chown($DESTF,"www-data");
     @chgrp($DESTF,"www-data");
     @chmod($DESTF,0755);
@@ -97,9 +99,11 @@ function pdns_util_save_zone(){
     $unix=new unix();
     $zone=$_GET["pdns-util-save-zone"];
     $pdnsutil=$unix->find_program("pdnsutil");
-    $DESTF=PROGRESS_DIR."/$zone.log";
-    $SESTF=PROGRESS_DIR."/$zone.save";
-    shell_exec("$pdnsutil load-zone $zone $SESTF >$DESTF 2>&1");
+    $zone_safe=escapeshellarg($zone);
+    $zone_base=preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $zone);
+    $DESTF=PROGRESS_DIR."/$zone_base.log";
+    $SESTF=PROGRESS_DIR."/$zone_base.save";
+    shell_exec("$pdnsutil load-zone $zone_safe $SESTF >$DESTF 2>&1");
     @chown($DESTF,"www-data");
     @chgrp($DESTF,"www-data");
     @chmod($DESTF,0755);
@@ -772,9 +776,13 @@ function create_zone(){
     $ipaddr=base64_decode($_GET["ip"]);
     $nsserver_exp=explode(".",$nsserver);
     $logfile=PROGRESS_DIR."/pdns.add.domain.txt";
-    shell_exec("$pdnsutil create-zone $domain {$nsserver_exp[0]}.$domain >$logfile 2>&1");
-    shell_exec("$pdnsutil add-record $domain {$nsserver_exp[0]} A $ipaddr >>$logfile 2>&1");
-    shell_exec("$pdnsutil set-kind $domain master >>$logfile 2>&1");
+    $domain_safe=escapeshellarg($domain);
+    $nsprefix_safe=escapeshellarg($nsserver_exp[0].".".$domain);
+    $nsname_safe=escapeshellarg($nsserver_exp[0]);
+    $ipaddr_safe=escapeshellarg($ipaddr);
+    shell_exec("$pdnsutil create-zone $domain_safe $nsprefix_safe >$logfile 2>&1");
+    shell_exec("$pdnsutil add-record $domain_safe $nsname_safe A $ipaddr_safe >>$logfile 2>&1");
+    shell_exec("$pdnsutil set-kind $domain_safe master >>$logfile 2>&1");
     $unix->framework_exec("exec.pdns.php --cleandb");
 }
 function check_domain(){

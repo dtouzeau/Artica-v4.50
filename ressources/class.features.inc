@@ -1077,6 +1077,7 @@ class features{
     }
 
     public function APP_CGROUPS():string{
+        return "";
         if($this->ASReverseProxyAppliance){
             return "";
         }

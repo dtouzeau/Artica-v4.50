@@ -40,7 +40,7 @@ if(function_exists("apc_clear_cache")){
 		
 	}
 	$sock->DeleteCache();	
-	$sock->getFrameWork("system.php?process1=yes");
+
 	
 
 	

@@ -69,18 +69,6 @@ function mysql_server():string{
 	$l[]=GetMemoriesOf($master_pid,"APP_MYSQL");
 	$l[]="";
 
-
-	$AS_CGROUP=false;
-	if($GLOBALS["CLASS_SOCKETS"]->EnableIntelCeleron==1){$AS_CGROUP=true;}
-	if($AS_CGROUP){
-		events("mysqld cgroup must be enabled ....",__FUNCTION__,__LINE__);
-		$cgroups=new status_cgroups();
-		if($cgroups->GetLimit($master_pid)=="unlimited"){
-			$cgroups->set_limit("mysql", $master_pid);
-		}
-
-	}
-
     $ServerRunSince=$GLOBALS["CLASS_UNIX"]->ServerRunSince();
     $GLOBALS["CLASS_UNIX"]->framework_exec("exec.mysql.start.php --engines --framework=".__FILE__);
 

@@ -1,6 +1,8 @@
 #!/usr/bin/php
 <?php
 
+use MongoDB\Driver\Manager;
+
 if(is_file("/etc/artica-postfix/FROM_ISO")){$GLOBALS["PHP5_BIN_PATH"]="/usr/bin/php5";}
 $GLOBALS["VERBOSE"]=false;
 $GLOBALS["FORCE"]=false;
@@ -16,6 +18,7 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once(
 include_once(dirname(__FILE__).'/ressources/class.ldap.inc');
 include_once(dirname(__FILE__).'/ressources/class.opendlap.certificates.inc');
 include_once(dirname(__FILE__)."/framework/frame.class.inc");
+include_once(dirname(__FILE__).'/ressources/class.manager.inc');
 
 
 xstart();
@@ -118,11 +121,13 @@ function xstart(){
 
 	system("$addgroup nvram >/dev/null 2>&1");
 	Debuglogs('slapd: [INFO] writing new configuration...');
+
+
+    $Manager=new class_manager();
 	
-	
-	$artica_admin=trim(@file_get_contents("/etc/artica-postfix/ldap_settings/admin"));
-	$artica_password=trim(@file_get_contents("/etc/artica-postfix/ldap_settings/password"));
-	$ldap_suffix=trim(@file_get_contents("/etc/artica-postfix/ldap_settings/suffix"));
+	$artica_admin=$Manager->admin;
+	$artica_password=$Manager->password;
+	$ldap_suffix=$Manager->suffix;
 	$artica_password_cmd=$unix->shellEscapeChars($artica_password);
 	
 	if(is_file('/usr/bin/smbpasswd')){
@@ -133,22 +138,10 @@ function xstart(){
 	
 	if($ldap_suffix==null){
 		$ldap_suffix='dc=my-domain,dc=com';
-		@file_put_contents("/etc/artica-postfix/ldap_settings/suffix", $ldap_suffix);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/system/manager", array("suffix" => $ldap_suffix));
+
 	}
-	
-	
-	if($artica_password==null){
-		$artica_password='secret';
-		@file_put_contents("/etc/artica-postfix/ldap_settings/password", $artica_password);
-	}
-	
-	if($artica_admin==null){
-		$artica_admin='Manager';
-		@file_put_contents("/etc/artica-postfix/ldap_settings/admin", $artica_admin);
-	}
-	 
-	
-	Debuglogs('SAVE_SLAPD_CONF() set permission for openldap');
+    Debuglogs('SAVE_SLAPD_CONF() set permission for openldap');
 	system('/bin/chown -R openldap /var/lib/ldap');
 	system('/bin/chown -R openldap /var/run/slapd');
 	system("/bin/chown -R openldap $SCHEMA_PATH");

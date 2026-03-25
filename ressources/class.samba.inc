@@ -660,10 +660,7 @@ function createRootID($requested_password=null){
 		
 	}
 	
-	
-	$sock=new sockets();
-	$sock->getFrameWork("services.php?changeRootPasswd=yes&pass=".urlencode(base64_encode($requested_password)));
-	
+
 	
 }
 

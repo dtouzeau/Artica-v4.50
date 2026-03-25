@@ -14,6 +14,7 @@ include_once(dirname(__FILE__).'/ressources/class.groups.inc');
 include_once(dirname(__FILE__).'/ressources/class.mount.inc');
 include_once(dirname(__FILE__).'/framework/class.unix.inc');if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/framework/frame.class.inc");
+include_once(dirname(__FILE__).'/ressources/class.manager.inc');
 
 if(preg_match("#--verbose#",implode(" ",$argv))){$GLOBALS["VERBOSE"]=true;}
 if(preg_match("#--force#",implode(" ",$argv))){$GLOBALS["FORCE"]=true;}
@@ -313,11 +314,12 @@ function ldap_conf($aspid=false){
 	}
 
 	$ASLOCAL=false;
-	$admin=@file_get_contents("/etc/artica-postfix/ldap_settings/admin");
-	$password=@file_get_contents("/etc/artica-postfix/ldap_settings/password");
-	$port=@file_get_contents("/etc/artica-postfix/ldap_settings/port");
-	$server=@file_get_contents("/etc/artica-postfix/ldap_settings/server");
-	$suffix=@file_get_contents("/etc/artica-postfix/ldap_settings/suffix");
+    $Manager=new class_manager();
+	$admin=$Manager->admin;
+	$password=$Manager->password;
+	$port=$Manager->port;
+	$server=$Manager->server;
+	$suffix=$Manager->suffix;
 	$chmod=$unix->find_program("chmod");
 	if($server==null){$server="127.0.0.1";}
 	if($server=="localhost"){$server="127.0.0.1";}

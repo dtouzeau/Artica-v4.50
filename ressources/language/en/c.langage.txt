@@ -4104,3 +4104,6 @@ It will also provide the required firewall rules to properly interconnect both c
 <fortigate_subtitle0>Allows asymmetric traffic flows and Prevents drops in proxy / policy-routing setups</fortigate_subtitle0>
 <fortigate_subtitle5>If Artica Proxy is deployed within the same network as client machines, this rule prevents routing loops by forcing traffic to use the actual gateway. Replace 10.10.1.254 with your Internet gateway.</fortigate_subtitle5>
 <microstats_explain>The minimal statistics feature is enabled, allowing you to monitor web traffic metrics through your proxy.[br]For advanced analytics, you can deploy a dedicated statistics server.</microstats_explain>
+<usage>Usage</usage>
+<destroyed>Destroyed</destroyed>
+<lifecycle>Lifecycle</lifecycle>

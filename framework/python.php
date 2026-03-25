@@ -102,7 +102,7 @@ function pip_install(){
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
 	//elasticsearch
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.pip.php --install {$_GET["pip-install"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.pip.php --install ".escapeshellarg($_GET["pip-install"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
 	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 

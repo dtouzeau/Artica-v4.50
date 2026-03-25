@@ -72,7 +72,7 @@ function multiple_instance_reconfigure():bool{
 
 function multiple_stop():bool{
     $unix=new unix();
-    $id=$_GET["multi-stop"];
+    $id=escapeshellarg($_GET["multi-stop"]);
     $unix->framework_execute("exec.postfix-multi.php --instance-stop $id",
     "postfix-multi.$id.progress",
         "postfix-multi.$id.progress.log");
@@ -80,7 +80,7 @@ function multiple_stop():bool{
 }
 function multiple_instance_reinstall():bool{
     $unix=new unix();
-    $instance_id=$_GET["reinstall-instance"];
+    $instance_id=escapeshellarg($_GET["reinstall-instance"]);
     $unix->framework_execute("exec.postfix-multi.php --instance-reinstall $instance_id",
         "postfix-multi.$instance_id.reinstall.progress",
         "postfix-multi.$instance_id.reinstall.log");
@@ -90,7 +90,7 @@ function multiple_instance_reinstall():bool{
 
 function multiple_start(){
     $unix=new unix();
-    $id=$_GET["multi-start"];
+    $id=escapeshellarg($_GET["multi-start"]);
     $unix->framework_execute("exec.postfix-multi.php --instance-start $id",
         "postfix-multi.$id.progress",
         "postfix-multi.$id.progress.log");
@@ -141,7 +141,7 @@ function smtp_tool(){
 }
 
 function multiple_status():bool{
-    $ID=$_GET["multi-status"];
+    $ID=escapeshellarg($_GET["multi-status"]);
     $unix=new unix();
     $php=$unix->LOCATE_PHP5_BIN();
     writelogs_framework("$php /usr/share/artica-postfix/exec.postfix-multi.php --status $ID",__FUNCTION__,__FILE__,__LINE__);
@@ -175,7 +175,7 @@ function all_status_wait(){
 	shell_exec($cmd);
 }
 function history_delete(){
-	@unlink("/home/artica/postfix/history/{$_GET["history-delete"]}.log");
+	@unlink("/home/artica/postfix/history/".basename($_GET["history-delete"]).".log");
 }
 
 function postfix_ipset_compile(){

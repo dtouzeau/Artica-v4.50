@@ -971,7 +971,7 @@ function logsfinder(){
     $unix=new unix();
     $python=$unix->find_program("python");
     $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $python /usr/share/artica-postfix/squid-logssearch.py {$_GET["logsfinder"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    $cmd="$nohup $python /usr/share/artica-postfix/squid-logssearch.py ".escapeshellarg($_GET["logsfinder"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 }
@@ -1157,7 +1157,7 @@ function test_ssl_port(){
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
     $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.squid.testssslports.php {$_GET["ID"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.squid.testssslports.php ".escapeshellarg($_GET["ID"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 }

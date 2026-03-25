@@ -429,8 +429,7 @@ function step1_save(){
     $GLOBALS["TIMEZONES"]=$_POST["timezones"];
     $_SESSION["TIMEZONES"]=$_POST["timezones"];
     if(isset($_POST["timezones"])){$sock->SET_INFO("timezones",$_POST["timezones"]);}
-    $timezoneenc=urlencode(base64_encode(trim($_POST["timezone"])));
-    $data=$sock->getFrameWork("system.php?zoneinfo-set=$timezoneenc");
+    $sock->REST_API_POST_JSON("/system/timezone", array("timezone"=>trim($_POST["timezone"])));
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("TempWizard",base64_encode(serialize($savedsettings)));
 
 }

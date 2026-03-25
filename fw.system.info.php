@@ -24,52 +24,19 @@ function infos(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $hostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
-    $cgroupsEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("cgroupsEnabled"));
-    $cgroupsPHPNonPtime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("cgroupsPHPNonPtime"));
-
-    $cgroupsPHPCpuShares=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("cgroupsPHPCpuShares"));
-    $cgroupsPHPDiskIO=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("cgroupsPHPDiskIO"));
-    $SYSTEM_DISK_SPEED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEM_DISK_SPEED"));
-    if($cgroupsPHPCpuShares==0){$cgroupsPHPCpuShares=256;}
-    if($cgroupsPHPDiskIO==0){$cgroupsPHPDiskIO=450;}
 
     $CPU_NUMBER=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CPU_NUMBER"));
 
     if($CPU_NUMBER==0){
-        $CPU_NUMBER=intval($GLOBALS["CLASS_SOCKETS"]->getFrameWork("services.php?CPU-NUMBER=yes"));
+        $_cpuJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/cpu-number"));
+        $CPU_NUMBER=(is_object($_cpuJson) && !empty($_cpuJson->success))?intval($_cpuJson->cpu_number):2;
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("CPU_NUMBER",$CPU_NUMBER);
     }
 
-    $cgroupsPHPCpuChoose=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("cgroupsPHPCpuChoose"));
-    $cgroupsPHPDiskBandwidth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("cgroupsPHPDiskBandwidth"));
-    if($cgroupsPHPDiskBandwidth==0){$cgroupsPHPDiskBandwidth=10;}
-
-    for ($i=0;$i<$CPU_NUMBER+1;$i++){
-        $CPUZ[0]="{CPU} #".$i+1;
-    }
-
-    $CPUSHARE[102]="10%";
-    $CPUSHARE[204]="20%";
-    $CPUSHARE[256]="25%";
-    $CPUSHARE[307]="30%";
-    $CPUSHARE[512]="50%";
-    $CPUSHARE[620]="60%";
-    $CPUSHARE[716]="70%";
-    $CPUSHARE[819]="80%";
-    $CPUSHARE[921]="90%";
-    $CPUSHARE[1024]="100%";
 
 
-    $BLKIO[100]="10%";
-    $BLKIO[200]="20%";
-    $BLKIO[250]="25%";
-    $BLKIO[300]="30%";
-    $BLKIO[450]="45%";
-    $BLKIO[500]="50%";
-    $BLKIO[700]="70%";
-    $BLKIO[800]="80%";
-    $BLKIO[900]="90%";
-    $BLKIO[1000]="100%";
+
+
 
     $html[]="
 	
@@ -87,21 +54,6 @@ function infos(){
 
 
 
-    $SYSTEM_DISK_SPEED_TEXT=null;
-    if($cgroupsEnabled==1){
-        if($SYSTEM_DISK_SPEED>0){
-            $SYSTEM_DISK_SPEED_TEXT="/{$SYSTEM_DISK_SPEED}MB/s";
-        }
-        $form[]=$tpl->field_section("{limit_background_processes_consumption}","{enable_processes_limitation_explain}");
-        $form[]=$tpl->field_checkbox("cgroupsPHPNonPtime","{only_during_production_time}",$cgroupsPHPNonPtime);
-        $form[]=$tpl->field_array_hash($CPUZ, "cgroupsPHPCpuChoose", "{cpu}", $cgroupsPHPCpuChoose);
-        $form[]=$tpl->field_array_hash($CPUSHARE, "cgroupsPHPCpuShares", "{cpu_performance} ({artica_processes})", $cgroupsPHPCpuShares);
-        $form[]=$tpl->field_array_hash($BLKIO, "cgroupsPHPDiskIO", "{disk_performance} ({artica_processes})", $cgroupsPHPDiskIO);
-        $form[]=$tpl->field_numeric("cgroupsPHPDiskBandwidth","{bandwidth} {disk} (MB/s)$SYSTEM_DISK_SPEED_TEXT",$cgroupsPHPDiskBandwidth);
-
-
-
-    }
 
     $jsrestart=$tpl->framework_buildjs("/system/optimize",
         "system.optimize.progress","system.optimize.progress.txt",
@@ -131,31 +83,6 @@ function SaveConfig(){
 
     $sock->SET_INFO("EnableSystemOptimize", $_POST["EnableSystemOptimize"]);
     $sock->SET_INFO("EnableIntelCeleron", $_POST["EnableIntelCeleron"]);
-
-    $cgroups["cgroupsPHPNonPtime"]=true;
-    $cgroups["cgroupsPHPCpuChoose"]=true;
-    $cgroups["cgroupsPHPCpuShares"]=true;
-    $cgroups["cgroupsPHPDiskIO"]=true;
-    $cgroups["cgroupsPHPDiskBandwidth"]=true;
-
-    $RESTART_CGROUPS=false;
-
-    foreach ($_POST as $key=>$val){
-        if(isset($cgroups[$key])){
-            $sock->SET_INFO($key,$val);
-            $RESTART_CGROUPS=true;
-        }
-
-    }
-
-
-    if($RESTART_CGROUPS){
-        $sock->getFrameWork("cgroup.php?ApplyCgroupConf=yes");
-    }
-
-
-
-
 }
 
 function chhostname_js(){

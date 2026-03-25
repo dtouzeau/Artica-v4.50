@@ -1864,11 +1864,11 @@ function launch_all_status($force = false){
         "ocs_agent",  "wanproxy","sshportal", "gluster", "auditd", "milter_dkim", "dropbox", "killstrangeprocesses", "dockerd",
          "tftpd",  "bandwith", "lsm", "Build_default_values",
         "pptpd", "pptp_clients", "ddclient", "cluebringer", "proftpd_status", "splunk",
-         "openvpn", "vboxguest", "sabnzbdplus",   "SwapWatchdog", "mosquitto","APP_ARTICAFSMON",        "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
+         "openvpn", "vboxguest", "sabnzbdplus",   "SwapWatchdog", "APP_ARTICAFSMON",        "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
         "iscsi", "netatalk", "smartd",   "greyhole_watchdog", "tomcat",
         "cgroups",  "arpd", "ps_mem", "ipsec", "openvpn", "ifconfig_network",
         "udevd_daemon",  "arkwsd", "arkeiad", "haproxy", "hacluster", "privoxy", "ad_rest", "CleanLogs", "checksyslog", "freeradius", "maillog_watchdog", "arp_spoof","go_squid_auth",
-         "CleanCloudCatz",   "Scheduler", "exim4", "ntopng",   "XMail", "conntrackd", "iptables", "wordpress",
+         "CleanCloudCatz",   "Scheduler", "exim4", "ntopng",   "XMail",  "iptables", "wordpress",
          "vde_all", "sealion_agent", "syncthing", "killstrangeprocesses","keepalived");
 
     ToSyslog("launch_all_status(): " . count($functions));
@@ -2131,16 +2131,6 @@ function launch_all_status($force = false){
         $cmd = trim("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} " . __FILE__ . " --samba >/usr/share/artica-postfix/ressources/logs/web/samba.status 2>&1 &");
         shell_exec2($cmd);
     }
-
-
-    $GLOBALS["CLASS_UNIX"]->BLKID_ALL();
-    events("*****  FINISH $TOOK ****", __FUNCTION__, __LINE__);
-    events("********************************************************************", __FUNCTION__, __LINE__);
-    if ($GLOBALS["VERBOSE"]) {
-        echo " *****  FINISH **** \n\n";
-    }
-
-
 }
 
 // ========================================================================================================
@@ -4102,85 +4092,6 @@ function exim4():bool{
     }
     return true;
 }
-
-//========================================================================================================================================================
-//========================================================================================================================================================
-function conntrackd_version()
-{
-    if (isset($GLOBALS["conntrackd_version"])) {
-        return $GLOBALS["conntrackd_version"];
-    }
-    $bin_path = $GLOBALS["CLASS_UNIX"]->find_program("conntrackd");
-    exec("$bin_path -v 2>&1", $results);
-    foreach ($results as $pid => $line) {
-        if (preg_match("#v([0-9\.]+)#", $line, $re)) {
-            $GLOBALS["conntrackd_version"] = $re[1];
-            return $GLOBALS["conntrackd_version"];
-        }
-    }
-}
-
-//========================================================================================================================================================
-function conntrackd()
-{
-    if (!is_file("/etc/init.d/artica-postfix")) {
-        return;
-    }
-
-    $bin = $GLOBALS["CLASS_UNIX"]->find_program("conntrackd");
-    $EnableConntrackd = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableConntrackd");
-    if (!is_numeric($EnableConntrackd)) {
-        $EnableConntrackd = 0;
-    }
-    $master_pid = $GLOBALS["CLASS_UNIX"]->PIDOF($bin, true);
-    if ($EnableConntrackd == 0) {
-        if ($GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-            shell_exec2("/etc/init.d/conntrackd stop");
-        }
-    }
-
-    $l[] = "[APP_CONNTRACKD]";
-    $l[] = "service_name=APP_CONNTRACKD";
-    $l[] = "master_version=" . conntrackd_version();;
-    $l[] = "service_disabled=$EnableConntrackd";
-    $l[] = "watchdog_features=1";
-    $l[] = "installed=1";
-    $l[] = "family=system";
-    $l[] = "service_cmd=/etc/init.d/conntrackd";
-    if ($EnableConntrackd == 0) {
-        if ($GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-            $cmd = "{$GLOBALS["nohup"]} {$GLOBALS["NICE"]}/etc/init.d/conntrackd stop >/dev/null 2>&1 &";
-            events("$cmd", __FUNCTION__, __LINE__);
-            shell_exec2($cmd);
-
-        }
-        $l[] = "";
-        return implode("\n", $l);
-        return;
-    }
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        if (!$GLOBALS["DISABLE_WATCHDOG"]) {
-            $cmd = trim("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.conntrackd.php --start >/dev/null 2>&1 &");
-            shell_exec2($cmd);
-        }
-        return implode("\n", $l);
-    } else {
-        if ($EnableConntrackd == 0) {
-            shell_exec2("{$GLOBALS["KILLBIN"]} -9 $master_pid >/dev/null 2>&1");
-        }
-    }
-    $l[] = "running=1";
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-    return implode("\n", $l);
-}
-
-//========================================================================================================================================================
-
-
-
-
 function syncthing()
 {
     if (!is_file("/etc/init.d/artica-postfix")) {
@@ -6096,7 +6007,6 @@ function CheckCallable():bool{
     $Callables[]="/ressources/class.status.privoxy.inc";
     $Callables[]="/ressources/class.status.sealion.inc";
     $Callables[]="/ressources/class.status.openvpn.inc";
-    $Callables[]="/ressources/class.status.mosquitto.inc";
     $Callables[]="/ressources/class.status.watchdog.me.inc";
     $Callables[]="/ressources/class.status.splunk.inc";
     $Callables[]="/ressources/class.status.tailscale.inc";
@@ -6484,17 +6394,11 @@ function Default_values(){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("WindowsUpdateUseLocalProxy", 1);
         @chmod("/etc/artica-postfix/settings/Daemons/WindowsUpdateUseLocalProxy", 0755);
     }
-    if (!is_dir("/etc/artica-postfix/ldap_settings")) {
-        @mkdir("/etc/artica-postfix/ldap_settings", 0755, true);
-    }
     if (!is_file("/etc/artica-postfix/settings/Daemons/UnlockWebStats")) {
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnlockWebStats", 0);
     }
     if (!is_file("/etc/artica-postfix/settings/Daemons/EnableIntelCeleron")) {
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableIntelCeleron", 0);
-    }
-    if (!is_file("/etc/artica-postfix/ldap_settings/port")) {
-        @file_put_contents("/etc/artica-postfix/ldap_settings/port", 389);
     }
     if (!is_file("/etc/artica-postfix/settings/Daemons/SquidDisableAllFilters")) {
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidDisableAllFilters", 0);

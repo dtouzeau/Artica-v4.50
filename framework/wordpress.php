@@ -103,7 +103,7 @@ function readonly_off(){
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
     $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress.install.php --readonly-off $ID >/dev/null 2>&1 &";
+    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress.install.php --readonly-off ".escapeshellarg($ID)." >/dev/null 2>&1 &";
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 }
@@ -112,7 +112,7 @@ function readonly_on(){
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
     $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress.install.php --readonly-on $ID >/dev/null 2>&1 &";
+    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress.install.php --readonly-on ".escapeshellarg($ID)." >/dev/null 2>&1 &";
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 }
@@ -136,7 +136,7 @@ function plugins_install(){
         return false;
     }
 
-    $unix->framework_execute("exec.wordpress.install.php --install-plugin $ID \"$filename\"","wordpress.single-install.$ID","wordpress.single-install.$ID.log");
+    $unix->framework_execute("exec.wordpress.install.php --install-plugin $ID ".escapeshellarg($filename),"wordpress.single-install.$ID","wordpress.single-install.$ID.log");
 }
 function templates_install(){
     $ID=intval($_GET["templates-install"]);
@@ -147,7 +147,7 @@ function templates_install(){
         return false;
     }
 
-    $unix->framework_execute("exec.wordpress.install.php --install-theme $ID \"$filename\"","wordpress.single-install.$ID","wordpress.single-install.$ID.log");
+    $unix->framework_execute("exec.wordpress.install.php --install-theme $ID ".escapeshellarg($filename),"wordpress.single-install.$ID","wordpress.single-install.$ID.log");
     return true;
 }
 
@@ -161,7 +161,7 @@ function plugins_uninstall(){
         return false;
     }
 
-    $unix->framework_execute("exec.wordpress.install.php --uninstall-plugin $ID \"$plugin\"","wordpress.single-install.$ID","wordpress.single-install.$ID.log");
+    $unix->framework_execute("exec.wordpress.install.php --uninstall-plugin $ID ".escapeshellarg($plugin),"wordpress.single-install.$ID","wordpress.single-install.$ID.log");
 }
 function templates_uninstall(){
     $ID=intval($_GET["templates-uninstall"]);
@@ -172,7 +172,7 @@ function templates_uninstall(){
         return false;
     }
 
-    $unix->framework_execute("exec.wordpress.install.php --uninstall-theme $ID \"$template\"","wordpress.single-install.$ID","wordpress.single-install.$ID.log");
+    $unix->framework_execute("exec.wordpress.install.php --uninstall-theme $ID ".escapeshellarg($template),"wordpress.single-install.$ID","wordpress.single-install.$ID.log");
     return true;
 }
 
@@ -182,7 +182,7 @@ function plugins_enable(){
     $unix=new unix();
     $wp_cli_phar=$unix->find_program("wp-cli.phar");
     $path="/home/wordpress_sites/site$ID";
-    $cmd="$wp_cli_phar --allow-root plugin activate $plugin --path=$path >/dev/null 2>&1";
+    $cmd="$wp_cli_phar --allow-root plugin activate ".escapeshellarg($plugin)." --path=$path >/dev/null 2>&1";
     writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 }
@@ -192,7 +192,7 @@ function plugins_disable(){
     $unix=new unix();
     $wp_cli_phar=$unix->find_program("wp-cli.phar");
     $path="/home/wordpress_sites/site$ID";
-    $cmd="$wp_cli_phar --allow-root plugin deactivate $plugin --path=$path >/dev/null 2>&1";
+    $cmd="$wp_cli_phar --allow-root plugin deactivate ".escapeshellarg($plugin)." --path=$path >/dev/null 2>&1";
     writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 }
@@ -202,7 +202,7 @@ function templates_enable(){
     $unix=new unix();
     $wp_cli_phar=$unix->find_program("wp-cli.phar");
     $path="/home/wordpress_sites/site$ID";
-    $cmd="$wp_cli_phar --allow-root theme activate $template --path=$path >/dev/null 2>&1";
+    $cmd="$wp_cli_phar --allow-root theme activate ".escapeshellarg($template)." --path=$path >/dev/null 2>&1";
     writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 }
@@ -234,7 +234,7 @@ function updates_install(){
     $version=$_GET["VersionToUpgrade"];
     writelogs_framework("Upgrade $ID to $version",__FUNCTION__,__FILE__,__LINE__);
     $unix=new unix();
-    $unix->framework_execute("exec.wordpress.install.php --upgrade-core $ID \"$version\"",
+    $unix->framework_execute("exec.wordpress.install.php --upgrade-core $ID ".escapeshellarg($version),
         "wordpress.single-upgrade.$ID", "wordpress.single-upgrade.$ID.log");
 }
 
@@ -418,7 +418,7 @@ function export(){
 	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
 	@chmod($GLOBALS["LOG_FILE"], 0755);
 	
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress-backup.php --export \"$servername\" >{$GLOBALS["LOG_FILE"]} 2>&1 &";
+	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress-backup.php --export ".escapeshellarg($servername)." >{$GLOBALS["LOG_FILE"]} 2>&1 &";
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 }
@@ -427,7 +427,7 @@ function backup_import(){
     $fname=$_GET["import-backup"];
     $siteid=intval($_GET["siteid"]);
     $unix=new unix();
-    $unix->framework_execute("exec.wordpress.install.php --backup-uploaded \"$fname\" $siteid",
+    $unix->framework_execute("exec.wordpress.install.php --backup-uploaded ".escapeshellarg($fname)." $siteid",
         "wordpres.$siteid.restore.backup.progress",
         "wordpres.$siteid.restore.backup.log"
     );
@@ -437,7 +437,7 @@ function backup_restore(){
     $backupid=$_GET["restore-backup"];
     $siteid=intval($_GET["siteid"]);
     $unix=new unix();
-    $unix->framework_execute("exec.wordpress.install.php --backup-restore $backupid $siteid",
+    $unix->framework_execute("exec.wordpress.install.php --backup-restore ".escapeshellarg($backupid)." $siteid",
         "wordpres.$siteid.restore.backup.progress",
         "wordpres.$siteid.restore.backup.log"
     );
@@ -454,11 +454,11 @@ function backup_delete():bool{
 }
 
 function backup_now():bool{
-    $ID=$_GET["backup-now"];
+    $ID=intval($_GET["backup-now"]);
 	$unix=new unix();
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
-	
+
 	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/wordpress.backup.$ID.progress";
 	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/wordpress.backup.$ID.log";
 	@unlink($GLOBALS["PROGRESS_FILE"]);
@@ -478,8 +478,9 @@ function import(){
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
 	$filename=$_GET["filename"];
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/wordpress.import.$filename.progress";
-	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/wordpress.import.$filename.progress.txt";
+	$fn_base=basename($filename);
+	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/wordpress.import.$fn_base.progress";
+	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/wordpress.import.$fn_base.progress.txt";
 	@unlink($GLOBALS["PROGRESS_FILE"]);
 	@unlink($GLOBALS["LOG_FILE"]);
 	@touch($GLOBALS["PROGRESS_FILE"]);
@@ -487,7 +488,7 @@ function import(){
 	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
 	@chmod($GLOBALS["LOG_FILE"], 0755);
 
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress-backup.php --import \"$filename\" >{$GLOBALS["LOG_FILE"]} 2>&1 &";
+	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress-backup.php --import ".escapeshellarg($filename)." >{$GLOBALS["LOG_FILE"]} 2>&1 &";
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 }

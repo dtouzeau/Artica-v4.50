@@ -69,6 +69,10 @@ function tabs(){
     if($users->AsAnAdministratorGeneric) {
         $array["{your_system}"] = "$page?system-start=yes";
     }
+    $EnableConntrackd=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableConntrackd"));
+    if($EnableConntrackd==1){
+        $array["{connections}"] = "fw.conntrackd.php";
+    }
 
     if($EnableStatsCommunicator==1){
         $suffix_gen=" ({your_server})";

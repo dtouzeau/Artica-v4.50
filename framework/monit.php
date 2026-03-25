@@ -104,7 +104,7 @@ function delete_cache(){
 	if($unix->IsProtectedDirectory($directory,true)){return;}
 	$rm=$unix->find_program("rm");
 	$nohup=$unix->find_program("nohup");
-	shell_exec("$nohup $rm -rf \"$directory\" >/dev/null 2>&1 &");
+	shell_exec("$nohup $rm -rf ".escapeshellarg($directory)." >/dev/null 2>&1 &");
 }
 function www_events(){
 	$servername=$_GET["servername"];

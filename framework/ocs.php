@@ -101,23 +101,8 @@ function kill_proc(){
 	
 }
 
-function ApplyCgroupConf(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.cgroups.php --reload >/dev/null 2>&1 &");
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);	
-}
 
-function restart(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.cgroups.php --restart >/dev/null 2>&1 &");
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);		
-}
+
 
 function kill_proc_all(){
 	$kill=$unix->find_program("kill");

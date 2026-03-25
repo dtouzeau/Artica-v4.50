@@ -119,7 +119,6 @@ system("/usr/sbin/artica-phpfpm-service -uninstall-ldap");
 build_progress("{reconfiguring_proxy_service}",47);
 system("$php5 /usr/share/artica-postfix/exec.squid.php --build --force");
 build_progress("{limit_artica_processes}",50);
-system("$php5 /usr/share/artica-postfix/exec.cgroups.php --start");
 build_progress("{done}",100);
 sleep(5);
 system("/etc/init.d/ufdb-http restart");

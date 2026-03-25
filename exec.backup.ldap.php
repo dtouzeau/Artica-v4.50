@@ -3,6 +3,7 @@ include_once(dirname(__FILE__).'/framework/class.unix.inc');if(!isset($GLOBALS["
 include_once(dirname(__FILE__)."/framework/frame.class.inc");
 include_once(dirname(__FILE__).'/ressources/class.os.system.inc');
 include_once(dirname(__FILE__).'/ressources/class.ftp.client.inc');
+include_once(dirname(__FILE__).'/ressources/class.manager.inc');
 $GLOBALS["FORCE"]=false;
 $GLOBALS["VERBOSE"]=false;
 if(preg_match("#--verbose#",implode(" ",$argv))){$GLOBALS["DEBUG"]=true;$GLOBALS["VERBOSE"]=true;}
@@ -51,14 +52,13 @@ function perform_ldap_restore($filepath): bool{
         return false;
     }
 
-
+    $Manager=new class_manager();
     $unix               = new unix();
     $tmp_dn             = null;
     $base               = basename($filepath);
     $tmpfile            = $unix->FILE_TEMP();
     $target_directory   = "/home/artica/ldap_backup";
-    $suffix             = trim(@file_get_contents("/etc/artica-postfix/ldap_settings/suffix"));
-    $php5               = $unix->LOCATE_PHP5_BIN();
+    $suffix             = $Manager->suffix;
     $rm                 = $unix->find_program("rm");
     $slapadd            = $unix->find_program("slapadd");
     $NewF               = array();
@@ -153,7 +153,8 @@ function perform_ldap_backup(){
     $gzip=$unix->find_program("gzip");
     $nice=$unix->EXEC_NICE();
     $container_path="$target_directory/".time().".gz";
-    $suffix=trim(@file_get_contents("/etc/artica-postfix/ldap_settings/suffix"));
+    $Manager=new class_manager();
+    $suffix=$Manager->suffix;
     echo "Current suffix: $suffix\n";
 
     build_progress("{backup} $container_path",50);

@@ -121,23 +121,7 @@ class SocketsAsRoot{
 			exec("$check --verbose 2>&1",$results);
 			return base64_encode(@implode("\n",$results));
 		}
-// *************************************************************************************************************************		
-		if($uri=="services.php?is-dpkg-running=yes"){
-			$this->Runned=true;
-			$pgrep=$unix->find_program("pgrep");
-			$master_pid=0;
-			$cmdline="$pgrep -l -f \"/dpkg\" 2>&1";
-			exec("$cmdline",$results);
-			foreach ($results as $num=>$line){
-				if(preg_match("#pgrep#", $line)){continue;}
-				if(preg_match("#^([0-9]+)\s+#", $line,$re)){
-					$array[$re[1]]=true;
-				}
-			}
-			return base64_encode(serialize($array));
-		}
-				
-// *************************************************************************************************************************		
+// *************************************************************************************************************************
 		if($uri=="cmd.php?MalwarePatrolDatabasesCount=yes"){
 			$datas=explode("\n",@file_get_contents("/etc/squid3/malwares.acl"));
 			$count=0;
@@ -195,12 +179,6 @@ class SocketsAsRoot{
 			return "";
 				
 		}
-
-		if($uri=="system.php?restart-ldap=yes"){
-			shell_exec("/etc/init.d/artica-postfix restart ldap >/dev/null 2>&1");
-			die("DIE " .__FILE__." Line: ".__LINE__);
-		}
-		
 		if($uri=="cmd.php?ifconfig-all-ips=yes"){
 			if(!isset($GLOBALS["ifconfig_all_ips"])){
 			$GLOBALS["ifconfig_all_ips"]=base64_encode(serialize($unix->ifconfig_all_ips()));

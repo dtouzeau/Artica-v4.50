@@ -28,7 +28,7 @@ function white16(){
 	$unix=new unix();
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.rbldnsd-whitecdir.php --cdir16 \"{$_GET["white16"]}\" >/dev/null 2>&1 &";
+	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.rbldnsd-whitecdir.php --cdir16 ".escapeshellarg($_GET["white16"])." >/dev/null 2>&1 &";
 	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 	

@@ -24,7 +24,7 @@ function execute_debug(){
 	$php=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
 	$su=$unix->find_program("su");
-	$cmd=trim("$nohup $php /usr/share/artica-postfix/exec.fetchmail.php --single-debug {$_GET["debug-rule"]} >/dev/null 2>&1 &");
+	$cmd=trim("$nohup $php /usr/share/artica-postfix/exec.fetchmail.php --single-debug ".escapeshellarg($_GET["debug-rule"])." >/dev/null 2>&1 &");
 	shell_exec($cmd);
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	

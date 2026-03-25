@@ -864,7 +864,7 @@ function conf_save(){
 	$servername=$_GET["replic-conf"];
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
-	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.single.php \"$servername\" --replic-conf >/dev/null 2>&1 &");
+	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.single.php ".escapeshellarg($servername)." --replic-conf >/dev/null 2>&1 &");
 	
 	writelogs_framework("$nginx -c /etc/nginx/nginx.conf -t 2>&1",__FUNCTION__,__FILE__,__LINE__);
 	exec("$nginx -c /etc/nginx/nginx.conf -t 2>&1",$results);
@@ -939,7 +939,7 @@ function delete_cache(){
 	if($unix->IsProtectedDirectory($directory,true)){return;}
 	$rm=$unix->find_program("rm");
 	$nohup=$unix->find_program("nohup");
-	shell_exec("$nohup $rm -rf \"$directory\" >/dev/null 2>&1 &");
+	shell_exec("$nohup $rm -rf ".escapeshellarg($directory)." >/dev/null 2>&1 &");
 }
 function www_events(){
 	$servername=$_GET["servername"];
@@ -1000,11 +1000,12 @@ function reconfigure_single(){
 	$php5=$unix->LOCATE_PHP5_BIN();
 	$nohup=$unix->find_program("nohup");
 	$servername=$_GET["servername"];
-	$cachefile="/usr/share/artica-postfix/ressources/logs/web/nginx-$servername.log";
+	$sn_base=preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $servername);
+	$cachefile="/usr/share/artica-postfix/ressources/logs/web/nginx-$sn_base.log";
 	@unlink($cachefile);
 	@file_put_contents($cachefile, "Starting......: ".date("H:i:s")." [INIT]: Nginx[".__LINE__."](".basename(__FILE__).") **** RECONFIGURING $servername ****\n");
 	@chmod($cachefile, 0777);
-	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.php --reconfigure \"$servername\" >>$cachefile 2>&1 &");
+	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.php --reconfigure ".escapeshellarg($servername)." >>$cachefile 2>&1 &");
 }
 
 function clean_websites(){

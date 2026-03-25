@@ -119,16 +119,12 @@ function new_member(){
 	$form[]=$tpl->field_text("email", "{email}", null,true);
 	$form[]=$tpl->field_text("login", "{uid}", null,true);
 	$form[]=$tpl->field_password2("password", "{password}", null,true);
-	
-	
-	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/create-user.progress";
-	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/create-user.progress.txt";
-	$ARRAY["CMD"]="system.php?create-user-progress=yes";
-	$ARRAY["TITLE"]="{please_wait_creating_member}";
-	$ARRAY["AFTER"]="dialogInstance1.close();TableLoaderMyMemberearch()";
-	
-	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=create-user-progress')";
+
+    $jsrestart=$tpl->framework_buildjs("/system/create-user-queue",
+        "create-user.progress",
+        "create-user.progress.txt",
+        "create-user-progress",
+        "dialogInstance1.close();TableLoaderMyMemberearch()");
 	
 	
 	echo $tpl->form_outside("{new_member} &raquo; {$_SESSION["ADD_USER_OU"]} &raquo; {$hash_groups[$gpid]}", @implode("\n", $form),null,"{add}",

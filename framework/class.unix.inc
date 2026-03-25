@@ -13,7 +13,6 @@ if(!isset($GLOBALS["SCHEDULE_ID"])){$GLOBALS["SCHEDULE_ID"]=0;}
 if(!isset($GLOBALS["OUTPUT"])){$GLOBALS["OUTPUT"]=false;}
 if(!isset($GLOBALS["MAINCD"])){if(isset($argv)){if(is_array($argv)){$GLOBALS["MAINCMD"]=@implode(" ",$argv);}}}
 include_once(dirname(__FILE__).'/class.ini-frame.inc');
-include_once(dirname(__FILE__).'/class.cgroups.inc');
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(!isset($GLOBALS["ARTICALOGDIR"])){$GLOBALS["ARTICALOGDIR"]=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaLogDir");}
@@ -53,12 +52,6 @@ function xcgroups($pid=0){
             include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
         }
             $GLOBALS["CLASS_SOCKETS"]=new sockets();
-    }
-
-    $cgroupsPHPNonPtime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("cgroupsPHPNonPtime"));
-
-    if($cgroupsPHPNonPtime==1){
-        if(!$unix->IsProductionTime()){return false;}
     }
     shell_exec("/usr/bin/cgclassify -g cpu,cpuset,blkio:php $pid");
     return true;
@@ -1357,7 +1350,7 @@ class unix {
 
     }
     public function GetMyHostId(){
-        return $this->GetUniqueID();
+        return $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID");
 
     }
     public function IsSquidTaskCanBeExecuted(){
@@ -5250,6 +5243,7 @@ class unix {
     }
 
     public function remove_service($INITD_PATH):bool{
+        $INITD_PATH=escapeshellarg($INITD_PATH);
         if( strpos(" $INITD_PATH","/")==0 ){
             $INITD_PATH="/etc/init.d/$INITD_PATH";
         }
@@ -8356,38 +8350,7 @@ class unix {
 
     }
 
-    public function BLKID_ALL():array{
-        $cachefile=PROGRESS_DIR."/blkid.db";
-        $array=array();
-        $unix=new unix();
-        if(!$GLOBALS["VERBOSE"]){
-            if(is_file($cachefile)){
-                if($unix->file_time_min($cachefile)<3){
-                    $data=unserialize(@file_get_contents($cachefile));
-                    if(!is_array($data)){return array();}
-                    return $data;
-                }
-            }
-        }
-        $blkid=$unix->find_program("blkid");
-        exec("$blkid 2>&1",$results);
-        $label=null;
-        foreach ($results as $ligne){
-            $ligne=trim($ligne);
-            $uuid="";$dev="";
-            if(preg_match("#^(.+?):#", $ligne,$re)){$dev=$re[1];}
-            if(preg_match("#UUID=\"(.+?)\"#", $ligne,$re)){$uuid=$re[1];}
-            if(preg_match("#LABEL=\"(.+?)\"#", $ligne,$re)){$label=$re[1];}
-            if($GLOBALS["VERBOSE"]){echo "$ligne uuid=$uuid; label=$label;\n";}
-            $array[$dev]["UUID"]=$uuid;
-            $array[$dev]["LABEL"]=$label;
-        }
 
-        @file_put_contents(PROGRESS_DIR."/blkid.db", serialize($array));
-        @chmod($cachefile,0755);
-        return $array;
-
-    }
 
     public function is_a_partition($directorypath):bool{
 

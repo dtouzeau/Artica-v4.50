@@ -489,7 +489,6 @@ function fix_systemd(){
     $f[]="avahi-daemon";
     $f[]="cyrus-imapd";
     $f[]="lighttpd";
-    $f[]="mosquitto";
     $f[]="opendkim";
     $f[]="prads";
     $f[]="remote-fs.target";
@@ -556,7 +555,6 @@ function fix_systemd(){
     $f[]="open-iscsi";
     $f[]="quotarpc";
     $f[]="umountnfs";
-    $f[]="mosquitto";
     $f[]="lighttpd";
     $f[]="ModemManager";
     $f[]="motd";

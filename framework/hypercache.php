@@ -198,7 +198,7 @@ function purge(){
 	@chmod($GLOBALS["CACHEFILE"],0777);
 	@chmod($GLOBALS["LOGSFILES"],0777);
 
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.hypercache-server.php --purge {$_GET["purge"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &");
+	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.hypercache-server.php --purge ".escapeshellarg($_GET["purge"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &");
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 
@@ -219,7 +219,7 @@ function delete(){
 	@chmod($GLOBALS["CACHEFILE"],0777);
 	@chmod($GLOBALS["LOGSFILES"],0777);
 	
-	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.hypercache-server.php --delete {$_GET["delete"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &");
+	$cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.hypercache-server.php --delete ".escapeshellarg($_GET["delete"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &");
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 	

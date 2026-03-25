@@ -572,7 +572,7 @@ function recategorize_day(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");
     $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.stats.recategorize.missed.php {$_GET["recategorize-day"]} >/dev/null 2>&1 &");
+    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.stats.recategorize.missed.php ".escapeshellarg($_GET["recategorize-day"])." >/dev/null 2>&1 &");
     shell_exec($cmd);
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 
@@ -644,7 +644,7 @@ function run_schedules(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");
     $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.php --run-schedules {$_GET["run-scheduled-task"]} >/dev/null 2>&1 &");
+    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.php --run-schedules ".escapeshellarg($_GET["run-scheduled-task"])." >/dev/null 2>&1 &");
     shell_exec($cmd);
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 }
@@ -658,7 +658,7 @@ function recategorize_week(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");
     $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.stats.php --re-categorize-week {$_GET["recategorize-week"]} >/dev/null 2>&1 &");
+    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.stats.php --re-categorize-week ".escapeshellarg($_GET["recategorize-week"])." >/dev/null 2>&1 &");
     shell_exec($cmd);
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 
@@ -701,7 +701,7 @@ function community_reprocess_category(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");
     $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.blacklists.php --reprocess-database  {$_GET["reprocess-database"]} >/dev/null 2>&1 &");
+    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.blacklists.php --reprocess-database ".escapeshellarg($_GET["reprocess-database"])." >/dev/null 2>&1 &");
     shell_exec($cmd);
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 }
@@ -1353,7 +1353,7 @@ function build_default_tpls(){
 function build_templates(){
     $unix=new unix();
     $params="--tpl-save";
-    if(isset($_GET["zmd5"])){$params="--tpl-unique {$_GET["zmd5"]}";}
+    if(isset($_GET["zmd5"])){$params="--tpl-unique ".escapeshellarg($_GET["zmd5"]);}
     $nohup=$unix->find_program("nohup");
     $php5=$unix->LOCATE_PHP5_BIN();
     $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.php $params >/dev/null &");
@@ -1638,7 +1638,7 @@ function ScanThumbnails(){
 function rethumbnail(){
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$php5 /usr/share/artica-postfix/exec.squid.stats.php --thumbs \"{$_GET["rethumbnail"]}\" --force >/dev/null 2>&1");
+    $cmd=trim("$php5 /usr/share/artica-postfix/exec.squid.stats.php --thumbs ".escapeshellarg($_GET["rethumbnail"])." --force >/dev/null 2>&1");
     shell_exec($cmd);
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 }
@@ -1665,7 +1665,7 @@ function remove_cache(){
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
     $nohup=$unix->find_program("nohup");
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.php --remove-cache \"{$_POST["remove-cache"]}\" >/dev/null 2>&1 &");
+    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squid.php --remove-cache ".escapeshellarg($_POST["remove-cache"])." >/dev/null 2>&1 &");
     shell_exec($cmd);
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 }
@@ -1864,7 +1864,7 @@ function stats_members_generic(){
 function summarize_day(){
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$php5 /usr/share/artica-postfix/exec.squid.stats.php --summarize-daysingle {$_GET["summarize-day"]} {$_GET["tablename"]} --verbose");
+    $cmd=trim("$php5 /usr/share/artica-postfix/exec.squid.stats.php --summarize-daysingle ".escapeshellarg($_GET["summarize-day"])." ".escapeshellarg($_GET["tablename"])." --verbose");
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
     exec("$cmd",$results);
     echo "<articadatascgi>".base64_encode(serialize($results))."</articadatascgi>";
@@ -1911,7 +1911,7 @@ function watchdog_logs(){
     if($_GET["search"]<>null){
         $grep=$unix->find_program("grep");
         $_GET["search"]=base64_decode($_GET["search"]);
-        $cmdline="$grep --binary-files=text -i -E '{$_GET["search"]}' /var/log/squid.watchdog.log|$tail -n $rp";
+        $cmdline="$grep --binary-files=text -i -E ".escapeshellarg($_GET["search"])." /var/log/squid.watchdog.log|$tail -n $rp";
     }
 
     writelogs_framework("$cmdline",__FUNCTION__,__FILE__,__LINE__);
@@ -1922,7 +1922,8 @@ function watchdog_auth(){
     $unix=new unix();
     $tail=$unix->find_program("tail");
     if(!isset($_GET["rp"])){$rp=50;}else{$rp=intval($_GET["rp"]);}
-    $file="/var/log/squid/externalAcl{$_GET["ID"]}Auth.log";
+    $aclID=intval($_GET["ID"]);
+    $file="/var/log/squid/externalAcl{$aclID}Auth.log";
     writelogs_framework("$tail -n $rp $file",__FUNCTION__,__FILE__,__LINE__);
     exec("$tail -n $rp $file 2>&1",$results);
     echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
@@ -2745,7 +2746,7 @@ function cache_center_empty(){
     @file_put_contents($file, serialize($ARRAY));
     @chmod($file,0755);
 
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.squid.rebuild.caches.php --empty {$_GET["cache-center-empty"]} >/usr/share/artica-postfix/ressources/logs/squid.cache.center.empty.txt 2>&1 &";
+    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.squid.rebuild.caches.php --empty ".escapeshellarg($_GET["cache-center-empty"])." >/usr/share/artica-postfix/ressources/logs/squid.cache.center.empty.txt 2>&1 &";
     shell_exec($cmd);
 }
 
@@ -2990,7 +2991,7 @@ function sizetail_real(){
     $grep=$unix->find_program("grep");
     $rp=intval($_GET["rp"]);
     $query=$_GET["query"];
-    $cmd="$tail -n $rp $sourceLog >$targetfile 2>&1";
+    $cmd="$tail -n $rp ".escapeshellarg($sourceLog)." >$targetfile 2>&1";
 
     if($query<>null){
         if(preg_match("#regex:(.*)#", $query,$re)){$pattern=$re[1];}else{
@@ -3031,14 +3032,14 @@ function category_tail(){
     $grep=$unix->find_program("grep");
 
 
-    $cmd="$tail -n $rp $sourceLog >$targetfile 2>&1";
+    $cmd="$tail -n $rp ".escapeshellarg($sourceLog)." >$targetfile 2>&1";
 
     if($query2<>null){
         $pattern2=str_replace(".", "\.", $query2);
         $pattern2=str_replace("*", ".*?", $pattern2);
         $pattern2=str_replace("/", "\/", $pattern2);
-        $cmd2="$grep --binary-files=text -Ei \"$pattern2\"| ";
-        $cmd3="$grep --binary-files=text -Ei \"$pattern2\"";
+        $cmd2="$grep --binary-files=text -Ei ".escapeshellarg($pattern2)."| ";
+        $cmd3="$grep --binary-files=text -Ei ".escapeshellarg($pattern2);
     }
 
     if($query<>null){
@@ -3050,10 +3051,10 @@ function category_tail(){
     }
     if($pattern<>null){
 
-        $cmd="$grep --binary-files=text -Ei \"$pattern\" $sourceLog|$cmd2$tail -n $rp  >$targetfile 2>&1";
+        $cmd="$grep --binary-files=text -Ei ".escapeshellarg($pattern)." ".escapeshellarg($sourceLog)."|$cmd2$tail -n $rp  >$targetfile 2>&1";
     }else{
         if($cmd3<>null){
-            $cmd="$cmd3 $sourceLog|$cmd2 $tail -n $rp  >$targetfile 2>&1";
+            $cmd="$cmd3 ".escapeshellarg($sourceLog)."|$cmd2 $tail -n $rp  >$targetfile 2>&1";
         }
 
     }
@@ -3085,14 +3086,14 @@ function squidtail_real(){
     $grep=$unix->find_program("grep");
 
 
-    $cmd="$tail -n $rp $sourceLog >$targetfile 2>&1";
+    $cmd="$tail -n $rp ".escapeshellarg($sourceLog)." >$targetfile 2>&1";
 
     if($query2<>null){
         $pattern2=str_replace(".", "\.", $query2);
         $pattern2=str_replace("*", ".*?", $pattern2);
         $pattern2=str_replace("/", "\/", $pattern2);
-        $cmd2="$grep --binary-files=text -Ei \"$pattern2\"| ";
-        $cmd3="$grep --binary-files=text -Ei \"$pattern2\"";
+        $cmd2="$grep --binary-files=text -Ei ".escapeshellarg($pattern2)."| ";
+        $cmd3="$grep --binary-files=text -Ei ".escapeshellarg($pattern2);
     }
 
     if($query<>null){
@@ -3104,10 +3105,10 @@ function squidtail_real(){
     }
     if($pattern<>null){
 
-        $cmd="$grep --binary-files=text -Ei \"$pattern\" $sourceLog|$cmd2$tail -n $rp  >$targetfile 2>&1";
+        $cmd="$grep --binary-files=text -Ei ".escapeshellarg($pattern)." ".escapeshellarg($sourceLog)."|$cmd2$tail -n $rp  >$targetfile 2>&1";
     }else{
         if($cmd3<>null){
-            $cmd="$cmd3 $sourceLog|$cmd2 $tail -n $rp  >$targetfile 2>&1";
+            $cmd="$cmd3 ".escapeshellarg($sourceLog)."|$cmd2 $tail -n $rp  >$targetfile 2>&1";
         }
 
     }
@@ -3131,8 +3132,9 @@ function cluster_real(){
         $targetfile="/usr/share/artica-postfix/ressources/logs/ViaMaster.log.tmp";
     }
     if($_GET["FinderList"]<>null){
-        $filename_compressed="/usr/share/artica-postfix/ressources/logs/web/logsfinder/{$_GET["FinderList"]}.gz";
-        $filename_logs="/usr/share/artica-postfix/ressources/logs/web/logsfinder/{$_GET["FinderList"]}.log";
+        $finderBase=basename($_GET["FinderList"]);
+        $filename_compressed="/usr/share/artica-postfix/ressources/logs/web/logsfinder/{$finderBase}.gz";
+        $filename_logs="/usr/share/artica-postfix/ressources/logs/web/logsfinder/{$finderBase}.log";
         if(is_file($filename_compressed)){
             if(!is_file($filename_logs)){
                 $unix->uncompress($filename_compressed, $filename_logs);
@@ -3158,14 +3160,14 @@ function cluster_real(){
     $grep=$unix->find_program("grep");
 
 
-    $cmd="$tail -n $rp $sourceLog >$targetfile 2>&1";
+    $cmd="$tail -n $rp ".escapeshellarg($sourceLog)." >$targetfile 2>&1";
 
     if($query2<>null){
         $pattern2=str_replace(".", "\.", $query2);
         $pattern2=str_replace("*", ".*?", $pattern2);
         $pattern2=str_replace("/", "\/", $pattern2);
-        $cmd2="$grep --binary-files=text -Ei \"$pattern2\"| ";
-        $cmd3="$grep --binary-files=text -Ei \"$pattern2\"";
+        $cmd2="$grep --binary-files=text -Ei ".escapeshellarg($pattern2)."| ";
+        $cmd3="$grep --binary-files=text -Ei ".escapeshellarg($pattern2);
     }
 
     if($query<>null){
@@ -3177,10 +3179,10 @@ function cluster_real(){
     }
     if($pattern<>null){
 
-        $cmd="$grep --binary-files=text -Ei \"$pattern\" $sourceLog|$cmd2$tail -n $rp  >$targetfile 2>&1";
+        $cmd="$grep --binary-files=text -Ei ".escapeshellarg($pattern)." ".escapeshellarg($sourceLog)."|$cmd2$tail -n $rp  >$targetfile 2>&1";
     }else{
         if($cmd3<>null){
-            $cmd="$cmd3 $sourceLog|$cmd2 $tail -n $rp  >$targetfile 2>&1";
+            $cmd="$cmd3 ".escapeshellarg($sourceLog)."|$cmd2 $tail -n $rp  >$targetfile 2>&1";
         }
 
     }
@@ -3205,7 +3207,8 @@ function access_real(){
     $query2     = null;
     $sourceLog  = "/var/log/squid/access.log";
     if(isset($_GET["logfile"])){
-        if($_GET["logfile"]<>null){$sourceLog="/var/log/squid/{$_GET["logfile"]}";}
+        $logbase=basename($_GET["logfile"]);
+        if($logbase<>null){$sourceLog="/var/log/squid/$logbase";}
     }
 
 
@@ -3218,8 +3221,9 @@ function access_real(){
     }
 
     if($_GET["FinderList"]<>null){
-        $filename_compressed="/usr/share/artica-postfix/ressources/logs/web/logsfinder/{$_GET["FinderList"]}.gz";
-        $filename_logs="/usr/share/artica-postfix/ressources/logs/web/logsfinder/{$_GET["FinderList"]}.log";
+        $finderBase=basename($_GET["FinderList"]);
+        $filename_compressed="/usr/share/artica-postfix/ressources/logs/web/logsfinder/{$finderBase}.gz";
+        $filename_logs="/usr/share/artica-postfix/ressources/logs/web/logsfinder/{$finderBase}.log";
         if(is_file($filename_compressed)){
             if(!is_file($filename_logs)){
                 $unix->uncompress($filename_compressed, $filename_logs);
@@ -3245,14 +3249,14 @@ function access_real(){
     $grep=$unix->find_program("grep");
 
 
-    $cmd="$tail -n $rp $sourceLog >$targetfile 2>&1";
+    $cmd="$tail -n $rp ".escapeshellarg($sourceLog)." >$targetfile 2>&1";
 
     if($query2<>null){
         $pattern2=str_replace(".", "\.", $query2);
         $pattern2=str_replace("*", ".*?", $pattern2);
         $pattern2=str_replace("/", "\/", $pattern2);
-        $cmd2="$grep --binary-files=text -Ei \"$pattern2\"| ";
-        $cmd3="$grep --binary-files=text -Ei \"$pattern2\"";
+        $cmd2="$grep --binary-files=text -Ei ".escapeshellarg($pattern2)."| ";
+        $cmd3="$grep --binary-files=text -Ei ".escapeshellarg($pattern2);
     }
 
     if($query<>null){
@@ -3264,10 +3268,10 @@ function access_real(){
     }
     if($pattern<>null){
 
-        $cmd="$grep --binary-files=text -Ei \"$pattern\" $sourceLog|$cmd2$tail -n $rp  >$targetfile 2>&1";
+        $cmd="$grep --binary-files=text -Ei ".escapeshellarg($pattern)." ".escapeshellarg($sourceLog)."|$cmd2$tail -n $rp  >$targetfile 2>&1";
     }else{
         if($cmd3<>null){
-            $cmd="$cmd3 $sourceLog|$cmd2 $tail -n $rp  >$targetfile 2>&1";
+            $cmd="$cmd3 ".escapeshellarg($sourceLog)."|$cmd2 $tail -n $rp  >$targetfile 2>&1";
         }
 
     }

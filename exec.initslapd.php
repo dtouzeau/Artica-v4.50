@@ -247,63 +247,7 @@ function random_str($length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzAB
 
 
 
-function restart_ldap(){
-    $unix=new unix();
-    $MYPID_FILE="/etc/artica-postfix/pids/restart_ldap.pid";
-    $pid=$unix->get_pid_from_file($MYPID_FILE);
 
-    if(!is_file("/etc/artica-postfix/settings/Daemons/EnableOpenLDAP")){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableOpenLDAP", 1);
-        @chmod("/etc/artica-postfix/settings/Daemons/EnableOpenLDAP",0755);
-    }
-
-
-    $EnableOpenLDAP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenLDAP"));
-    $mypid=getmypid();
-    if($unix->process_exists($pid,basename(__FILE__))){
-        echo "slapd: [INFO] Artica task already running pid $pid, my pid is $mypid\n";
-        restart_ldap_progress("{failed}  [".__LINE__."]",110);
-        exit();
-    }
-
-
-
-    if($GLOBALS["MONIT"]){
-        $unix->ToSyslog("Monit (Watchdog) Ask to restart OpenLDAP service...",false,true);
-        squid_admin_mysql(0, "Monit (Watchdog) Ask to restart OpenLDAP service...", null,__FILE__,__LINE__);
-    }
-
-    if(!$GLOBALS["FORCE"]){
-        $lastexecution=$unix->file_time_min($MYPID_FILE);
-        if($lastexecution==0){
-            $unix->ToSyslog("Restarting the OpenLDAP by `{$GLOBALS["BY_FRAMEWORK"]}` aborted this command must be executed minimal each 1mn",false,"slapd");
-            echo "slapd: [INFO] this command must be executed minimal each 1mn\n";
-            exit();
-        }
-    }
-    @unlink($MYPID_FILE);
-    restart_ldap_progress("{build_init_script}",5);
-    $INITD_PATH=$unix->SLAPD_INITD_PATH();
-    echo "Script: $INITD_PATH\n";
-    buildscript();
-    if(!is_file($INITD_PATH)){
-        restart_ldap_progress("{build_init_script} {failed}",110);
-        return;
-    }
-
-    @file_put_contents($MYPID_FILE, getmypid());
-    $unix->ToSyslog("Restarting the OpenLDAP daemon by `{$GLOBALS["BY_FRAMEWORK"]}`",false,basename(__FILE__));
-    restart_ldap_progress("{stopping_service}",10);
-
-    stop_ldap(true);
-    if($EnableOpenLDAP==1){
-        shell_exec("/usr/bin/monit -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload");
-        restart_ldap_progress("{starting_service}",40);
-        start_ldap(true);
-    }else{
-        restart_ldap_progress("{stopping_service} {success}",100);
-    }
-}
 
 
 function ldap_client(){

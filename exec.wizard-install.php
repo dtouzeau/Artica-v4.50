@@ -321,9 +321,8 @@ function automation(){
     if(isset($WizardSavedSettings["ManagerAccount"])){
         if($WizardSavedSettings["ManagerAccount"]<>null){
             if($WizardSavedSettings["ManagerPassword"]<>null){
-                @mkdir("/etc/artica-postfix/ldap_settings",0755,true);
-                @file_put_contents("/etc/artica-postfix/ldap_settings/admin", $WizardSavedSettings["ManagerAccount"]);
-                @file_put_contents("/etc/artica-postfix/ldap_settings/password", $WizardSavedSettings["ManagerPassword"]);
+                $GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/system/manager",
+                    array("admin" => $WizardSavedSettings["ManagerAccount"],"password"=>$WizardSavedSettings["ManagerPassword"]));
             }
         }
 
