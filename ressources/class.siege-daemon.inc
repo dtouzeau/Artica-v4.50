@@ -870,7 +870,7 @@ class SiegeDaemon
      * Example:
      *   $result = $siege->createKeytabWithKtutil(
      *       'Administrateur',
-     *       'P@$$word180872',
+     *       '***********',
      *       'ARTICATECH.NUX',
      *       '/etc/siege-daemon/user.keytab'
      *   );
