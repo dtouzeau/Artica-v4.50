@@ -64,8 +64,8 @@ If a message exists on one mailbox but not the other, and it is an "old" message
 <displayName>Wy%C5%9Bwietlana nazwa</displayName>
 <DnsMXLength>MX Lenght</DnsMXLength>
 <DnsType>DNS Record Host type</DnsType>
-<dnstypea>host address</dnstypea>
-<DnsZoneName>DNS Zone name</DnsZoneName>
+<dnstypea>Adres hosta</dnstypea>
+<DnsZoneName>Nazwa strefy DNS</DnsZoneName>
 <DotClearUserEnabled>Enable DotClear</DotClearUserEnabled>
 <DotClearUserEnabledText>If DotClear is installed,this user can hav this own DotClear web site by turn to green this option</DotClearUserEnabledText>
 <duplicate_mailto>Duplicate mails to</duplicate_mailto>

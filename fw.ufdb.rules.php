@@ -20,19 +20,20 @@ function delete_js():bool{
     return $tpl->js_confirm_delete($_GET["rule"], "delete", $_GET["delete-js"],$js);
 
 }
-function delete_rule(){
+function delete_rule():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
     $ID=$_POST["delete"];
     $q->QUERY_SQL("DELETE FROM webfilter_assoc_groups WHERE webfilter_id='$ID'");
-    if(!$q->ok){echo $q->mysql_error;return;}
+    if(!$q->ok){echo $q->mysql_error;return false;}
     $q->QUERY_SQL("DELETE FROM webfilter_blklnk WHERE webfilter_ruleid='$ID'");
-    if(!$q->ok){echo $q->mysql_error;return;}
+    if(!$q->ok){echo $q->mysql_error;return false;}
     $q->QUERY_SQL("DELETE FROM webfilter_blks WHERE webfilter_id='$ID'");
-    if(!$q->ok){echo $q->mysql_error;return;}
+    if(!$q->ok){echo $q->mysql_error;return false;}
     $q->QUERY_SQL("DELETE FROM webfilter_rules WHERE ID='$ID'");
-    if(!$q->ok){echo $q->mysql_error;return;}
+    if(!$q->ok){echo $q->mysql_error;return false;}
     $q->QUERY_SQL("DELETE FROM ufdb_page_rules WHERE webruleid='$ID'");
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
+    return admin_tracks("Removing Web-filter rule #$ID");
 }
 
 function page(){
@@ -69,7 +70,7 @@ function table():bool{
 
     if($EnableUfdbGuard==0){
 
-        $restart=$tpl->framework_buildjs("squid.php?ufdbguard_enable_progress=yes",
+        $restart=$tpl->framework_buildjs("/ufdb/install",
             "ufdb.enable.progress",
             "ufdb.enable.progress.log",
             "progress-ufdbrules-restart",
@@ -94,8 +95,8 @@ function table():bool{
 
 
 
-    $SquidUrgency=intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/SquidUrgency"));
-    $SquidUFDBUrgency=intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/SquidUFDBUrgency"));
+    $SquidUrgency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidUrgency"));
+    $SquidUFDBUrgency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidUFDBUrgency"));
     if($SquidUrgency==1) {
         echo $tpl->FATAL_ERROR_SHOW_128("{proxy_in_emergency_mode}","Loadjs('fw.proxy.emergency.remove.php');");
     }
@@ -133,10 +134,7 @@ function table():bool{
 
     $topbuttons[] = array("$jsrestart", ico_save, "{build_web_filtering_rules}");
     $topbuttons[] = array("Loadjs('fw.ufdb.categories.groups.php')", "fas fa-folder-tree", "{categories_groups}");
-
-
     $topbuttons[] = array("Loadjs('fw.ufdb.verify.rules.php')", "fas fa-check", "{verify_rules}");
-
     $topbuttons[] = array("Loadjs('fw.ufdb.used.databases.php')", "fas fas fa-database", "{used_databases}");
     $topbuttons[] = array($jsUpdate, ico_download, "{update_databases}");
 

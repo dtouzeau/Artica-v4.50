@@ -16,7 +16,7 @@ page();
 function Save(){
     $tpl                    = new template_admin();
     $tpl->SAVE_POSTs();
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?reload-squid-cache=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/nohup/reload");
 }
 
 function limit_countries_js(){
@@ -57,7 +57,7 @@ function limit_countries_deny_all(){
     header("content-type: application/x-javascript");
     echo "LoadAjax('limit-countries-table','$page?limit-countries-table=yes');\n";
     echo "document.getElementById('dashboard-ProxyDeny-countries').innerHTML='$scount';";
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?reload-squid-cache=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/nohup/reload");
 }
 function limit_countries_single(){
 
@@ -73,7 +73,7 @@ function limit_countries_single(){
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ProxyDenyCountries",$ProxyDenyCountries_enc);
     header("content-type: application/x-javascript");
     echo "document.getElementById('dashboard-ProxyDeny-countries').innerHTML='$scount';";
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?reload-squid-cache=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/nohup/reload");
 }
 function limit_countries_allow_all(){
     $page=CurrentPageName();
@@ -82,7 +82,7 @@ function limit_countries_allow_all(){
     header("content-type: application/x-javascript");
     echo "LoadAjax('limit-countries-table','$page?limit-countries-table=yes');\n";
     echo "document.getElementById('dashboard-ProxyDeny-countries').innerHTML='0';";
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?reload-squid-cache=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/nohup/reload");
     
     
 }

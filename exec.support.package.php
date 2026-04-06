@@ -45,13 +45,6 @@ function build(){
     progress("{APP_UFDBGUARD}",$i++);
     $EnableUfdbGuard=intval($sock->EnableUfdbGuard());
 
-    if($EnableUfdbGuard==1){
-        $ufdbguardd=$unix->find_program("ufdbguardd");
-        if(is_file($ufdbguardd)){
-            shell_exec("$php /usr/share/artica-postfix/exec.squidguard.php --build --force --verbose >/usr/share/artica-postfix/ressources/support/build-ufdbguard.log 2>&1");
-        }
-    }
-
     $i=30;
     progress("{get_all_logs}",$i++);
     $i=support_step2($i);

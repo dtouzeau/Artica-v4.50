@@ -28,37 +28,13 @@ if(isset($_GET["block-this"])){blockthis();exit;}
 if(isset($_GET["cybercrime-install"])){cybercrime_install();exit;}
 if(isset($_GET["cybercrime-uninstall"])){cybercrime_uninstall();exit;}
 if(isset($_GET["action-trusted"])){action_trusted();exit;}
-if(isset($_GET["articapcap-install"])){articapcap_install();exit;}
-if(isset($_GET["articapcap-uninstall"])){articapcap_uninstall();exit;}
-if(isset($_GET["articapcap-status"])){articapcap_status();exit;}
-if(isset($_GET["articapcap-restart"])){articapcap_restart();exit;}
-if(isset($_GET["articapcap-events"])){articapcap_events();exit;}
 
 
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
 die("DIE " .__FILE__." Line: ".__LINE__);
 
-function articapcap_install():bool{
-    $unix=new unix();
-    $unix->framework_execute("exec.articapcap.php --install","articapcap.progress", "articapcap.log");
-    return true;
-}
-function articapcap_status():bool{
-    $unix=new unix();
-    $unix->framework_exec("exec.status.php --articapcap");
-    return true;
-}
-function articapcap_restart():bool{
-    $unix=new unix();
-    $unix->framework_execute("exec.articapcap.php --restart","articapcap.restart", "articapcap.restart.log");
-    return true;
-}
-function articapcap_uninstall():bool{
-    $unix=new unix();
-    $unix->framework_execute("exec.articapcap.php --uninstall","articapcap.progress", "articapcap.log");
-    return true;
-}
+
 function action_trusted():bool{
     $unix=new unix();
     $unix->framework_exec("exec.firehol.php --action-trusted");
@@ -316,43 +292,7 @@ function reconfigure_progress(){
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 	shell_exec($cmd);
 }
-function articapcap_events():bool{
-    $unix=new unix();
-    $grep=$unix->find_program("grep");
-    $tail=$unix->find_program("tail");
-    $target=PROGRESS_DIR."/articapcap.search";
-    $src="/var/log/articapsniffer-service.log";
-    $MAIN=unserialize(base64_decode($_GET["articapcap-events"]));
 
-
-    foreach ($MAIN as $val=>$key){
-        $MAIN[$val]=str_replace(".", "\.", $MAIN[$val]);
-        $MAIN[$val]=str_replace("*", ".*?", $MAIN[$val]);
-
-    }
-    $TERM=null;
-    $max=intval($MAIN["MAX"]);
-    if($max>1500){$max=1500;}
-     if(isset($MAIN["TERM"])) {
-        if ($MAIN["TERM"] <> null) {
-            $TERM = ".*?{$MAIN["TERM"]}";
-        }
-    }
-
-    if($TERM<>null) {
-        $search = "$TERM";
-        $search = str_replace(".*?.*?", ".*?", $search);
-        $cmd = "$grep --binary-files=text -i -E '$search' $src |$tail -n $max >$target 2>&1";
-        writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-        shell_exec($cmd);
-        return true;
-    }
-    $cmd = "$tail $src -n $max >$target 2>&1";
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-    return true;
-
-}
 function searchInSyslog(){
 	$unix=new unix();
 	$grep=$unix->find_program("grep");

@@ -89,8 +89,19 @@ class socksngix{
 	}
 
     public function SET_MULTI($vals=array()):bool{
+        if(count($vals)==0){return true;}
+
+        // Route writes through Go REST API for the main nginx.db to prevent
+        // concurrent-writer corruption (Go handles transactions + WAL properly).
+        // HARMPID databases are per-tenant and have lower contention, so they
+        // keep the direct-write path.
+        if(!$this->isHarmpID()){
+            return $this->SET_MULTI_API($vals);
+        }
+
         $q=new lib_sqlite($this->NginxGetDB());
         foreach($vals as $key=>$value){
+            $value=$q->sqlite_escape_string2($value);
             $this->GET_INFO($key);
             if($this->localid>0){
                 $q->QUERY_SQL("UPDATE `service_parameters` SET `zvalue`='$value' WHERE ID=$this->localid");
@@ -105,9 +116,33 @@ class socksngix{
         return true;
     }
 
+    private function SET_MULTI_API($vals=array()):bool{
+        $data=array("params"=>array());
+        foreach($vals as $key=>$value){
+            $data["params"][strval($key)]=strval($value);
+        }
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON(
+            "/site/$this->serviceid/params", $data
+        );
+        $json=json_decode($resp,true);
+        if(!isset($json["Status"]) || !$json["Status"]){
+            $err=isset($json["Error"]) ? $json["Error"] : "unknown error";
+            writelogs("SET_MULTI_API error: $err",__FUNCTION__,__FILE__,__LINE__);
+            return false;
+        }
+        $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($this->serviceid);
+        return true;
+    }
+
 	public function SET_INFO($key,$value):bool{
-		
+
 		if($key==null){return false;}
+
+        // Route writes through Go REST API for the main nginx.db
+        if(!$this->isHarmpID()){
+            return $this->SET_MULTI_API(array($key=>$value));
+        }
+
 		$this->GET_INFO($key);
 		$q=new lib_sqlite($this->NginxGetDB());
         $value=$q->sqlite_escape_string2($value);

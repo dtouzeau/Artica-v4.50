@@ -10,7 +10,7 @@
 <EnableDHCPServer>Enable DHCP service</EnableDHCPServer>
 <EnablePXEDHCP>Enable DHCP Preboot Execution Environment</EnablePXEDHCP>
 <fixedHosts>Fixed hosts</fixedHosts>
-<max_lease_time>Max Lease Time</max_lease_time>
+<max_lease_time>Tempo m%C3¡ximo de concess%C3£o</max_lease_time>
 <max_lease_time_text>Time should be the maximum length in seconds that will be assigned to a lease.[br]
 The only exception to this is that Dynamic BOOTP lease lengths,  which  are not specified by the client, are not limited by this maximum.</max_lease_time_text>
 <PXE>Ambiente de execuç%C3£o préâ%80%91boot</PXE>

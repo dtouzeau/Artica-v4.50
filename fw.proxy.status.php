@@ -697,7 +697,7 @@ function  widget_latency():string{
     $button["css"]="minheight:150px";
     $button["name"]="{statistics}";
     $button["ico"]=ico_statistics;
-    $button["js"]="Loadjs('fw.rrd.php?img=squidlatency')";
+    $button["js"]="Loadjs('fw.proxy.status.latencies.php?js=yes')";
 
     return $tpl->widget_h("$color",ico_speed,"$SQUID_LATEST_LATENCY{$unit}","{response_time}",
         $button);
@@ -956,7 +956,7 @@ function widget_members():string{
         $button["css"]="minheight:150px";
         $button["name"]="{statistics}";
         $button["ico"]=ico_statistics;
-        $button["js"]="Loadjs('fw.rrd.php?img=proxyusers')";
+        $button["js"]="Loadjs('fw.proxy.status.ipmembers.php?js=yes')";
 
         return $tpl->widget_h("green", ico_users, "$METRICS_PROXY_CLIENTS_NUMBER/$METRICS_MAX_PROXY_CLIENTS_NUMBER", "{members}/Max",$button);
     }

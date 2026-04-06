@@ -170,7 +170,6 @@ function RemoveServices():bool{
 	$servicesINIT[]="hotspot-web";
 	$servicesINIT[]="SquidRouterMode";
 	$servicesINIT[]="proxy-wccp";
-	$servicesINIT[]="privoxy";
     $servicesINIT[]="squid-dns";
 
 
@@ -756,9 +755,7 @@ function ufdbguardd(){
 			shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.ufdb.queue.release.php --check >/dev/null 2>&1 &");
 		}
 	
-		if($GLOBALS["CLASS_UNIX"]->file_time_min("/etc/artica-postfix/pids/exec.squidguard.smtp.php.ufdb_all_smtp.time")>15){
-			shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.squidguard.smtp.php --smtp >/dev/null 2>&1 &");
-		}
+
 		
 
 		

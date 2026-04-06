@@ -61,7 +61,7 @@ For example if a client with an internal IP is 192.168.12.* establish a connecti
  <no_acl_arp>No ACL ARP</no_acl_arp>
  <no_acl_arp_text>SQUID is not compiled with arp support, banned and whitelisted computers will not support MAC address filter</no_acl_arp_text>
  <yes_acl_arp>banned and whitelisted notice</yes_acl_arp>
- <yes_acl_arp_text>Squid can only determine the MAC address for clients that are on the same subnet.[br]If the client is on a different subnet, then Squid cannot find out its MAC address.</yes_acl_arp_text>
+ <yes_acl_arp_text>The Proxy can only determine the MAC address for clients that are on the same subnet.[br]If the client is on a different subnet, then the proxy cannot find out its MAC address.</yes_acl_arp_text>
  <context>context</context>
  <MAILBOXES_MIGRATION>Mailboxes migration</MAILBOXES_MIGRATION>
  <MAILBOXES_MIGRATION_TEXT>Transfert in mass operation all users and mailbox to this server</MAILBOXES_MIGRATION>

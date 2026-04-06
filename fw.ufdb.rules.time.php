@@ -317,7 +317,7 @@ function rule_time_main_save(){
 		$TimeSpaceNew=base64_encode(serialize($TimeSpace));
 		$ligne["TimeSpace"]=$TimeSpaceNew;
 		$sock->SaveConfigFile(base64_encode(serialize($ligne)), "DansGuardianDefaultMainRule");
-		$sock->getFrameWork("squid.php?rebuild-filters=yes");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/compile");
 		return;
 	}
 
@@ -332,8 +332,7 @@ function rule_time_main_save(){
 	$sql="UPDATE webfilter_rules SET TimeSpace='$TimeSpaceNew' WHERE ID=$ID";
 	$q->QUERY_SQL($sql);
 	if(!$q->ok){echo $q->mysql_error;return;}
-	$sock=new sockets();
-	$sock->getFrameWork("squid.php?rebuild-filters=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/compile");
 }
 function period_save(){
 	include_once('ressources/class.cron.inc');

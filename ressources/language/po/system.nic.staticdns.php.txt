@@ -10,5 +10,5 @@ If you refer to another server just by its name without the domain added on, DNS
 to each domain in this list and do an DNS lookup on each to get the remote servers IP address.&lt;br&gt;
 This is a handy time saving feature to have so that you can refer to servers in the same domain by only their servername without having to specify the domain.
 &lt;br&gt;&lt;strong&gt;The first domain listed must be the home domain of your network and The search list is currently limited to six domains with a total of 256 characters.</nic_dns_search_text>
-<nic_nameserver_text>IP addresses of your DNS name servers.[br]The resolver library queries them in the order listed</nic_nameserver_text>
+<nic_nameserver_text>Endereços IP dos seus servidores DNS.[br]A biblioteca de resoluç%C3£o os consulta na ordem listada</nic_nameserver_text>
 <nic_static_dns_text>If your ISP provides you with a fixed or static IP DNS address server, and you want to host your own mail server</nic_static_dns_text>

@@ -498,7 +498,7 @@ In this case, this server will be able to all users datas in order to force remo
 <button_i_confirm_nic>Confirmo los par%C3¡metros de esta tarjeta de red</button_i_confirm_nic>
 <byday>By day</byday>
 <bypassFor>Bypass for</bypassFor>
-<BypassSecretKey>Bypass Secret Key</BypassSecretKey>
+<BypassSecretKey>Aggirare la chiave segreta</BypassSecretKey>
 <BypassSecretKeyExplain>
 Specify a Bypass Secret Key.[br]It must be more than 8 characters.[br]
 example: "Mary had a little lamb" or "76b42abc1cd0fdcaf6e943dcbc93b826"
@@ -696,7 +696,7 @@ If the client does not match the list, then it is serviced
 <cured>Cured</cured>
 <current>Actual</current>
 <Current_Pending_Sector>Current Pending Sector Count</Current_Pending_Sector>
-<Current_Pending_Sector_text>Current quantity of unstable sectors (waiting for remapping)</Current_Pending_Sector_text>
+<Current_Pending_Sector_text>Cantidad actual de sectores inestables (pendientes de reasignaci%C3%B3n)</Current_Pending_Sector_text>
 <CYRUS_DB_CONFIG_TEXT>Tune and define parameters for the Cyrus Imap databases</CYRUS_DB_CONFIG_TEXT>
 <dansguardian2_addedit_members_explain>You can add here items that will represent your users, it should be IP addresses or Ip ranges or accounts.</dansguardian2_addedit_members_explain>
 <dansguardian2_blacklist_explain>This section ban users browsing websites stored in selected categories.</dansguardian2_blacklist_explain>
@@ -1131,7 +1131,7 @@ El nombre del archivo debe ser un nombre de archivo reconocible para cualquier p
 <files_and_folders_permissions>Files and folders permissions</files_and_folders_permissions>
 <files_extension>Files extension</files_extension>
 <FILE_DIRECTORY_PATH>File directory path</FILE_DIRECTORY_PATH>
-<file_sharing_behavior>File sharing behavior</file_sharing_behavior>
+<file_sharing_behavior>Comportamiento del uso compartido de archivos</file_sharing_behavior>
 <filtered>filtered</filtered>
 <filterwin2k_text>Makes dnsmasq ignore certain DNS requests which are made by Windows boxen every few minutes</filterwin2k_text>
 <find_features_and_options>Search features and options</find_features_and_options>
@@ -1320,7 +1320,7 @@ You can finish the setup or access to the Web Administration interface by clicki
 <ID_FS_LABEL_ENC>Etiqueta</ID_FS_LABEL_ENC>
 <ID_FS_LABEL_SAFE>label save</ID_FS_LABEL_SAFE>
 <ID_FS_TYPE>Sistema de archivos</ID_FS_TYPE>
-<ID_FS_USAGE>usage</ID_FS_USAGE>
+<ID_FS_USAGE>Uso</ID_FS_USAGE>
 <ID_FS_UUID>uuid</ID_FS_UUID>
 <ID_FS_UUID_ENC>uuid</ID_FS_UUID_ENC>
 <ID_FS_VERSION>Versi%C3%B3n del sistema de archivos</ID_FS_VERSION>
@@ -1658,7 +1658,7 @@ Por el contrario, si defines un valor menor para el tama%C3%B1o m%C3¡ximo, algu
 <MinSpareServers>Min Spare servers</MinSpareServers>
 <missing_imap_sync_text>IMAPSync is missing, feature disabled</missing_imap_sync_text>
 <missing_module>The following modules are missing</missing_module>
-<MISSING_PARAMETER>Missing parameters</MISSING_PARAMETER>
+<MISSING_PARAMETER>Par%C3¡metros faltantes</MISSING_PARAMETER>
 <MISSING_PARAMETER_TEXT>A parameter is missing, the service should not running proprely</MISSING_PARAMETER_TEXT>
 <ModPagespeedFileCacheCleanIntervalMs>Interval (in ms) for cleaning the file cache</ModPagespeedFileCacheCleanIntervalMs>
 <ModPagespeedFileCacheSizeKb>Target size (in kilobytes) for file cache</ModPagespeedFileCacheSizeKb>
@@ -1686,7 +1686,7 @@ Los webmasters y desarrolladores web pueden utilizar esta funci%C3%B3n para mejo
 <multiple_entries>multiple entries</multiple_entries>
 <multiple_instances>M%C3%BAltiples instancias</multiple_instances>
 <multiple_webmail>Multiple WebMails</multiple_webmail>
-<Multi_Zone_Error_Rate>Write Error Rate</Multi_Zone_Error_Rate>
+<Multi_Zone_Error_Rate>Tasa de error de escritura</Multi_Zone_Error_Rate>
 <Multi_Zone_Error_Rate_text>Frequency of errors appearance while recording data into disk (Western Digital: Multi Zone Error Rate)</Multi_Zone_Error_Rate_text>
 <must_choose_ipaddr>You must choose an IP address</must_choose_ipaddr>
 <mxrecords>Mail eXchanger records (MX)</mxrecords>
@@ -1743,7 +1743,7 @@ In this case, reboot your server.
 <new_item>Nuevo elemento</new_item>
 <NEW_SMTP_INSTANCE>Nuevo servicio SMTP</NEW_SMTP_INSTANCE>
 <new_time_rule>Nueva regla de tiempo</new_time_rule>
-<next-server>Next server</next-server>
+<next-server>Servidor siguiente</next-server>
 <nics>Tarjetas de interfaz de red</nics>
 <NIC_UNCONFIGURED_ERROR>Parece que sus tarjetas de interfaz de red principales a%C3%BAn no est%C3¡n configuradas, debe configurar primero la tarjeta de interfaz principal</NIC_UNCONFIGURED_ERROR>
 <NoDryReboot>No reboot when detecting disk problems</NoDryReboot>
@@ -2167,7 +2167,7 @@ The path is formatted as a character string consisting of characters from the NV
 <quota_soft>Quota Soft</quota_soft>
 <random>Aleatorio</random>
 <ratio>Ratio</ratio>
-<Raw_Read_Error_Rate>Raw Read Error Rate</Raw_Read_Error_Rate>
+<Raw_Read_Error_Rate>Tasa bruta de errores de lectura</Raw_Read_Error_Rate>
 <Raw_Read_Error_Rate_text>Frequency of errors appearance while reading RAW data from a disk</Raw_Read_Error_Rate_text>
 <rbl>RBL</rbl>
 <RBLCheckFrequency>Check RBL servers each</RBLCheckFrequency>
@@ -2179,7 +2179,7 @@ The path is formatted as a character string consisting of characters from the NV
 <Reallocated_Event_Count>Reallocated Event Count</Reallocated_Event_Count>
 <Reallocated_Event_Count_text>Quantity of remapping operations</Reallocated_Event_Count_text>
 <Reallocated_Sector_Ct>Reallocated Sector Count</Reallocated_Sector_Ct>
-<Reallocated_Sector_Ct_text>Quantity of remapped sectors</Reallocated_Sector_Ct_text>
+<Reallocated_Sector_Ct_text>Cantidad de sectores remapeados</Reallocated_Sector_Ct_text>
 <reboot>reboot</reboot>
 <RebootAfterArticaUpgrade>Reboot system after Artica upgrade</RebootAfterArticaUpgrade>
 <reboot_computer_to_take_effects>Hay que reiniciar el servidor para aplicar los par%C3¡metros</reboot_computer_to_take_effects>
@@ -2682,7 +2682,7 @@ A veces es necesario ajustar estos par%C3¡metros.[br]Depende del n%C3%BAmero de
 Utilice la primera tabla para encontrar el dominio de Internet deseado[br].
 Si hace clic en el dominio, se generar%C3¡ una nueva tabla para mostrar todos los sub-sitios web almacenados por este dominio.</SQUID_SEARCH_STATS_EXPLAIN>
 <SQUID_SMP_EXPLAIN>El servicio Proxy puede ser utilizado para lanzar m%C3%BAltiples flujos de trabajo y utilizar m%C3%BAltiples n%C3%BAcleos de procesamiento[br] La intenci%C3%B3n general es hacer que m%C3%BAltiples trabajadores parezcan uno a un observador externo para asegurar el procesamiento paralelo de las solicitudes.</SQUID_SMP_EXPLAIN>
-<SQUID_STATS>Estad%C3%ADsticas web de Proxy Cache</SQUID_STATS>
+<SQUID_STATS>Estad%C3%ADsticas del proxy web</SQUID_STATS>
 <SQUID_STATS1>Estad%C3%ADsticas de los proxys</SQUID_STATS1>
 <SQUID_STATS_TEXT>Squid Statistics area is a Web frontend that provides proxy statistics with charts and graphs and categorized websites</SQUID_STATS_TEXT>
 <squid_traffic_statistics_text>Display flows passed trough your Proxy, get cache performances and display websites/categories by size</squid_traffic_statistics_text>

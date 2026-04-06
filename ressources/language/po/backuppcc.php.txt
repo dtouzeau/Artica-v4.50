@@ -14,10 +14,10 @@
 <IncrAgeMax_text>Very old incremental backups are removed after x days</IncrAgeMax_text>
 <IncrPeriod>Minimum period between incremental backups</IncrPeriod>
 <IncrPeriod_text>Minimum period between incremental backups</IncrPeriod_text>
-<MaxBackupPCNightlyJobs>Nightly Max Backups</MaxBackupPCNightlyJobs>
+<MaxBackupPCNightlyJobs>N%C3%BAmero m%C3¡ximo de backups a manter</MaxBackupPCNightlyJobs>
 <MaxBackupPCNightlyJobs_text>Each night, at the first wakeup, BackupPC is run.[br]
 Its job is to remove unneeded files in the pool, ie: files that only have one link.</MaxBackupPCNightlyJobs_text>
-<MaxBackups>Max backups</MaxBackups>
+<MaxBackups>N%C3%BAmero m%C3¡ximo de backups a manter</MaxBackups>
 <MaxBackups_text>N%C3%BAmero m%C3¡ximo de c%C3%B3pias de segurança simultâneas a executar</MaxBackups_text>
 <MaxOldLogFiles>N%C3%BAmero m%C3¡ximo de ficheiros de registo</MaxOldLogFiles>
 <MaxOldLogFiles_text>N%C3%BAmero m%C3¡ximo de ficheiros de registo que guardamos no direct%C3%B3rio de registo. Estes ficheiros s%C3£o envelhecidos durante a noite. Uma configuraç%C3£o de 14 significa que o direct%C3%B3rio de registo conter%C3¡ cerca de 2 semanas de ficheiros de registo envelhecidos</MaxOldLogFiles_text>

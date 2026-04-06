@@ -313,12 +313,12 @@ class system_tasks{
         //$this->tasks_processes[66]="exec.initslapd.php --restart-www";
         $this->tasks_processes[67]="exec.drop-caches.php";
         $this->tasks_processes[68]="exec.debian.mirror.php --schedule";
-        $this->tasks_processes[69]="exec.cyrus.backup.php --schedule";
+        //$this->tasks_processes[69]="exec.cyrus.backup.php --schedule";
         $this->tasks_processes[70]="exec.TextToLdap.php --schedule";
        //$this->tasks_processes[73]="exec.loadavg.php --dns";
         $this->tasks_processes[74]="exec.mysql.optimize.php --repair";
         $this->tasks_processes[75]="exec.backup.artica.php --snapshot";
-        $this->tasks_processes[76]="exec.imap.blacklists.php";
+        //$this->tasks_processes[76]="exec.imap.blacklists.php";
         $this->tasks_processes[77]="exec.wordpress-backup.php --exec";
         $this->tasks_processes[78]="exec.backup.artica.php --snapshot";
         $this->tasks_processes[80]="exec.backup.artica.php --snapshot --force --meta-ping";
@@ -391,6 +391,7 @@ class system_tasks{
         $this->task_disabled[72]=true;
         $this->task_disabled[73]=true;
         $this->task_disabled[75]=true;
+        $this->task_disabled[76]=true;
         $this->task_disabled[79]=true;
 
         if($EnableIntelCeleron==1){

@@ -25,7 +25,6 @@ if(isset($_GET["remove-events"])){remove_events_js();exit;}
 if(isset($_GET["empty-js"])){empty_js();exit;}
 if(isset($_POST["empty"])){empty_table();exit;}
 if(isset($_GET["smtp-js"])){smtp_js();exit;}
-if(isset($_GET["smtp-popup"])){smtp_popup();exit;}
 if(isset($_POST["ENABLED_SQUID_WATCHDOG"])){smtp_save();exit;}
 if(isset($_POST["remove-events"])){remove_events_perform();exit;}
 if(isset($_GET["sys-events"])){search_system();exit;}
@@ -375,35 +374,27 @@ function failed_logging_start(){
 function table(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
-	$eth_sql=null;
-	$token=null;
-	$class=null;
+    if(!isset($_GET["search"])){
+        $_GET["search"]="";
+    }
+    $search=$_GET["search"];
 
-	$t=$_GET["t"];
-	if(!is_numeric($t)){$t=time();}
 	$date=$tpl->_ENGINE_parse_body("{date}");
-	$title=$tpl->_ENGINE_parse_body("{IDS} {events}");
 	$events=$tpl->javascript_parse_text("{events}");
 	$daemon=$tpl->_ENGINE_parse_body("{daemon}");
     $method=$_GET["method"];
-	
+    $ADDON="";
 	if(!isset($_GET["eth"])){$_GET["eth"]=null;}
-	$nic=new networking();
-	$js="OnClick=\"javascript:LoadAjax('table-loader','$page?table=yes&eth=');\"";
-	if($_GET["eth"]==null){$class=" active";}
+    if(!isset($_GET["scriptname"])){$_GET["scriptname"]="";}
 
-	$t=time();
-	$add="Loadjs('$page?ruleid-js=0$token',true);";
-
-
-    //LoadAjaxSilent('search-block','$page?sys-events-block=yes&scriptname=$scriptname');
 
     $SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
     if($SQUIDEnable==1) {
         $js="LoadAjaxSilent('search-block','$page?sys-events-block=yes&method=squid');";
         $topbuttons[] = array($js, ico_filter, "{APP_SQUID}");
     }
+
+
 
 
 
@@ -420,10 +411,7 @@ function table(){
         $buttons_encoded=null;
     }
 
-
-
-	$html[]=$tpl->_ENGINE_parse_body("
-			<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
+	$html[]="<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
 
@@ -432,53 +420,63 @@ function table(){
 	$aliases["address"]="ipaddr";
 	$aliases["mac"]="mac";
 	$aliases["text"]="subject,function,filename";
-	if(preg_match("#(file|script|fichier|process|processus)([\s|=]+)([0-9a-z\.]+)#i", $_GET["search"],$re)){
-		$_GET["search"]=str_replace("{$re[1]}{$re[2]}{$re[3]}", "", $_GET["search"]);
+	if(preg_match("#(file|script|fichier|process|processus)([\s|=]+)([0-9a-z\.]+)#i", $search,$re)){
+        $search=str_replace("{$re[1]}{$re[2]}{$re[3]}", "", $search);
 		$_GET["scriptname"]=$re[3];
 	}
 	
 	$critic_aliases="critic|urgence|urgency|emergency|important";
-	if(preg_match("#($critic_aliases)#", $_GET["search"])){
+	if(preg_match("#($critic_aliases)#", $search)){
 		$ADDON="severity=0";
 		$tt=explode("|",$critic_aliases);
 		foreach ($tt as $word){
-			$_GET["search"]=str_replace($word, "", $_GET["search"]);
+            $search=str_replace($word, "", $search);
 		}
 	}
 	
 	$warning_aliases="warn|warning|attention";
-	if(preg_match("#($warning_aliases)#", $_GET["search"])){
+	if(preg_match("#($warning_aliases)#", $search)){
 		$ADDON="severity=1";
 		$tt=explode("|",$warning_aliases);
 		foreach ($tt as $word){
-			$_GET["search"]=str_replace($word, "", $_GET["search"]);
+            $search=str_replace($word, "", $search);
 		}
 	}
 
 	$info_aliases="info|information";
-	if(preg_match("#($info_aliases)#", $_GET["search"])){
+	if(preg_match("#($info_aliases)#", $search)){
 		$ADDON="severity=2";
 		$tt=explode("|",$info_aliases);
 		foreach ($tt as $word){
-			$_GET["search"]=str_replace($word, "", $_GET["search"]);
+			$_GET["search"]=str_replace($word, "",$search);
 		}
 	}
 	$_GET["search"]=trim($_GET["search"]);
 	$_SESSION["SYSEVS_SEARCH"]=trim(strtolower($_GET["search"]));
-	$search=$tpl->query_pattern(trim(strtolower($_GET["search"])),$aliases,$ADDON);
+	$searchArray=$tpl->query_pattern(trim(strtolower($_GET["search"])),$aliases,$ADDON);
 	
 
-	
+	if(!isset($searchArray["Q"])){
+        $searchArray["Q"]="";
+    }
 	$q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
 	@chmod("/home/artica/SQLITE/system_events.db", 0644);
 	@chown("/home/artica/SQLITE/system_events.db", "www-data");
 
-    if(intval($search["MAX"])>1500){$search["MAX"]=1500;}
-	$sql="SELECT ID,zDate,subject,severity,function,line,filename, LENGTH(content) as content  FROM squid_admin_mysql {$search["Q"]} ORDER BY zDate DESC LIMIT {$search["MAX"]}";
+    if(strlen($searchArray["Q"])<3 && strlen($_GET["search"])>3 ){
+          $search="*". $_GET["search"]."*";
+          $search=str_replace("**","*",$search);
+          $search=str_replace("**","*",$search);
+          $search=str_replace("*","%",$search);
+          $searchArray["Q"]="WHERE ( subject LIKE '$search' OR content LIKE '$search')";
+    }
+
+    if(intval($searchArray["MAX"])>1500){$searchArray["MAX"]=1500;}
+	$sql="SELECT ID,zDate,subject,severity,function,line,filename, LENGTH(content) as content  
+        FROM squid_admin_mysql {$searchArray["Q"]} ORDER BY zDate DESC LIMIT {$searchArray["MAX"]}";
 
     if($method=="squid"){
         $_GET["scriptname"]="exec.squid.disable.php,class.status.squid.inc,exec.squid.watchdog.php,squid-service,web-filtering,squid,class.squid.automatic-tasks.inc,exec.squid.php";
-
     }
 	
 	if($_GET["scriptname"]<>null){
@@ -490,15 +488,12 @@ function table(){
 		}
 		
 		$sql="SELECT * FROM (SELECT ID,zDate,subject,severity,function,line,filename, 
-		LENGTH(content) as content  FROM squid_admin_mysql $WHERE ORDER BY zDate DESC LIMIT {$search["MAX"]}) as t {$search["Q"]}";
+		LENGTH(content) as content  FROM squid_admin_mysql $WHERE ORDER BY zDate DESC LIMIT {$searchArray["MAX"]}) as t {$searchArray["Q"]}";
 	}
 	
 	
 	$results=$q->QUERY_SQL($sql);
-	
-
-	
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$date</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$date</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$events</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$daemon</th>";
 	$html[]="</tr>";

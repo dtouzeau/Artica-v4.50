@@ -13,7 +13,7 @@
 <clamav_av>ClamAV Antivirus</clamav_av>
 <clamav_av_text>Obtenha o estado do seu antiv%C3%ADrus de c%C3%B3digo aberto</clamav_av_text>
 <disable_startup>Disable automatically loading this section</disable_startup>
-<distri>Distribution</distri>
+<distri>Distribuiç%C3£o</distri>
 <domain_controler>Domain Controler</domain_controler>
 <domain_controler_text>Make this server has a domain controler in order to serve MS Windows workstations</domain_controler_text>
 <enable_kaspersky>Enable Kaspersky Plugins</enable_kaspersky>

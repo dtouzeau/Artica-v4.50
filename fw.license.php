@@ -1200,7 +1200,7 @@ function table(){
 
     }
 
-    if (file_exists('/etc/artica-postfix/settings/Daemons/NewLicServer')) {
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("NewLicServer")) {
         VERBOSE("NewLicServer START",__LINE__);
         if(!isset($LicenseInfos["max_server"])){
             $LicenseInfos["max_server"]=null;

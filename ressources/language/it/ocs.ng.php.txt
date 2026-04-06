@@ -63,7 +63,7 @@ This section helps you to generate a slef-signed certificate</ocs_certificate_ex
 <OCS_SERVER_ADDRESS>OCS server address</OCS_SERVER_ADDRESS>
 <ocs_web_params>Web server/interface</ocs_web_params>
 <ocs_web_params_text>Set parameters of the web server and the interface of OCS Inventory</ocs_web_params_text>
-<packages>Packages</packages>
+<packages>Pacchetti</packages>
 <PACKAGE_AFFECT_HOWTO>Click on the checkbox near computers in order to launch the package deployement</PACKAGE_AFFECT_HOWTO>
 <PROLOG_FREQ>Frequency connections</PROLOG_FREQ>
 <PROLOG_FREQ_HELP>Number of hours between two run of the agent (useful for the service). Therefore, the agent will contact (not necessary send an inventory if inventory is not older than

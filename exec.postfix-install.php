@@ -47,7 +47,7 @@ function install(){
 	build_progress_restart("{installing}...",31);
 	create_postfix_monit();
 	build_progress_restart("{installing}...",32);
-	create_maillog_monit();
+
 	
 	$EnableMunin=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMunin"));
 	if($EnableMunin==1){
@@ -125,17 +125,7 @@ function create_postfix_monit(){
 	shell_exec("/usr/bin/monit -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload");
 }
 
-function create_maillog_monit(){
-	$f=array();
-	$f[]="check process ARTICA_MYSQMAIL with pidfile /etc/artica-postfix/exec.maillog.php.pid";
-	$f[]="\tstart program = \"/etc/init.d/postfix-logger start\"";
-	$f[]="\tstop program = \"/etc/init.d/postfix-logger stop\"";
 
-	$f[]="";
-	@file_put_contents("/etc/monit/conf.d/ARTICA_MYSQMAIL.monitrc", @implode("\n", $f));
-	build_progress_restart("{restarting} {APP_MONIT}...",33);
-	shell_exec("/usr/bin/monit -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload");
-}
 
 
 function uninstall($noprogress=false){

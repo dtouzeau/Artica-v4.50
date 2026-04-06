@@ -943,7 +943,7 @@ function squidclamav(){
 	if(!isset($GLOBALS["CLASS_USERS"])){$GLOBALS["CLASS_USERS"]=new usersMenus();}
 	$users=$GLOBALS["CLASS_USERS"];
 	$SquidGuardIPWeb=$sock->GET_INFO("SquidGuardIPWeb");
-	if($SquidGuardIPWeb==null){$SquidGuardIPWeb="http://$users->hostname:9020/exec.squidguard.php";}
+	
 
 
 	$conf[]="squid_ip 127.0.0.1";

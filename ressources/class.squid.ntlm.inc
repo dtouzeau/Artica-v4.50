@@ -480,14 +480,11 @@ class squid_ntlm{
         if($DynamicGroupsAclsTTL==0){$DynamicGroupsAclsTTL=3600;}
 
         $cmdline="/lib/squid3/go-squid-auth";
-        $LDAPGroupKeepPHP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPGroupKeepPHP"));
         $EnableExternalACLADAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableExternalACLADAgent"));
         if ($EnableExternalACLADAgent==1){
             $cmdline="/lib/squid3/external_acls_ad_agent";
         }
-        if ($LDAPGroupKeepPHP==1){
-            $cmdline="/usr/share/artica-postfix/external_acl_squid_ldap.php";
-        }
+
         if(!isset($this->SquidClientParams["auth_param_ntlmgroup_idle"])){
             $this->SquidClientParams["auth_param_ntlmgroup_idle"]=1;
         }

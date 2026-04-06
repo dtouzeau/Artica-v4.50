@@ -270,10 +270,6 @@ if (isset($argv[1])) {
         echo pdns_stats();
         exit;
     }
-    if ($argv[1] == "--cyrus-imap") {
-        echo cyrus_imap();
-        exit;
-    }
     if ($argv[1] == "--greensql") {
         include_once("$RDIR/class.status.greensql.inc");
         echo greensql_status();
@@ -450,10 +446,7 @@ if (isset($argv[1])) {
         exit;
     }
 
-    if ($argv[1] == "--policydw") {
-        echo "\n" . policyd_weight();
-        exit;
-    }
+
     if ($argv[1] == "--ocsweb") {
         echo "\n";
         exit;
@@ -479,32 +472,14 @@ if (isset($argv[1])) {
         echo "\n" . auditd();
         exit;
     }
-    if ($argv[1] == "--squidguard-http") {
-        echo "\n" . ufdbguard_http();
-        exit;
-    }
+
     if ($argv[1] == "--opendkim") {
         echo "\n" . opendkim();
-        exit;
-    }
-    if ($argv[1] == "--ufdbguard-http") {
-        echo "\n" . ufdbguard_http();
         exit;
     }
     if ($argv[1] == "--ufdbguardd") {
         $ufdbguardd = ufdbguardd();
         echo $ufdbguardd . "\n";
-        $ufdbguard_http = ufdbguard_http();
-        echo $ufdbguard_http . "\n";
-        $ufdbguardd_tail = ufdbguardd_tail();
-        echo $ufdbguardd_tail . "\n";
-        exit;
-    }
-    if ($argv[1] == "--ufdb-tail") {
-        echo "\n" . ufdbguardd_tail();
-        exit;
-    }
-    if ($argv[1] == "--squidguard-tail") {
         exit;
     }
     if ($argv[1] == "--dkim-milter") {
@@ -553,10 +528,7 @@ if (isset($argv[1])) {
         echo "\n" . ddclient();
         exit;
     }
-    if ($argv[1] == "--cluebringer") {
-        echo "\n" . cluebringer();
-        exit;
-    }
+
 
     if ($argv[1] == "--freewebs") {
         echo "\n" . pure_ftpd() . "\n" . php_fpm() . "\n" . nginx() ;
@@ -568,10 +540,6 @@ if (isset($argv[1])) {
     }
     if ($argv[1] == "--vboxguest") {
         echo "\n" . vboxguest();
-        exit;
-    }
-    if ($argv[1] == "--sabnzbdplus") {
-        echo "\n" . sabnzbdplus();
         exit;
     }
     if ($argv[1] == "--openvpn-clients") {
@@ -685,10 +653,7 @@ if (isset($argv[1])) {
         echo adagent();
         exit();
     }
-    if ($argv[1] == "--privoxy") {
-        echo privoxy();
-        exit();
-    }
+
     if ($argv[1] == "--mailman") {
         echo mailman();
         exit();
@@ -741,19 +706,9 @@ if (isset($argv[1])) {
     if ($argv[1] == "--ufdb") {
         $ufdbguardd = ufdbguardd();
         echo $ufdbguardd . "\n";
-        $ufdbguard_http = ufdbguard_http();
-        echo $ufdbguard_http . "\n";
-        $ufdbguardd_tail = ufdbguardd_tail();
-        echo $ufdbguardd_tail . "\n";
-        exit;
+         exit;
     }
-    if ($argv[1] == "--ufdb-tail") {
-        echo ufdbguardd_tail();
-        exit;
-    }
-
-
-    if ($argv[1] == "--ucarp") {
+     if ($argv[1] == "--ucarp") {
         echo ucarp();
         exit();
     }
@@ -766,10 +721,6 @@ if (isset($argv[1])) {
 
     if ($argv[1] == "--squid-nat") {
         echo squid_nat();
-        exit();
-    }
-    if ($argv[1] == "--ntlm-monitor") {
-        echo ntlm_monitor();
         exit();
     }
     if ($argv[1] == "--ziproxy") {
@@ -897,7 +848,7 @@ if (isset($argv[1])) {
 
         include_once(dirname(__FILE__) . '/ressources/class.status.squid.inc');
 
-       $func=array("ntlm_auth_path","squid_master_status","proxypac","privoxy","squidguardweb","ufdbguardd","articadb","ftp_proxy","cntlm","cntlm_parent","ucarp","squid_nat","ziproxy","killstrangeprocesses","iptables_transparent");
+       $func=array("ntlm_auth_path","squid_master_status","proxypac","squidguardweb","ufdbguardd","articadb","ftp_proxy","cntlm","cntlm_parent","ucarp","squid_nat","ziproxy","killstrangeprocesses","iptables_transparent");
 
 
 
@@ -1192,7 +1143,7 @@ function LoadIncludes(){
     $RESSOURCES=array("class.mysql.inc","class.system.network.inc","class.os.system.inc","mysql.status.inc","class.status.manticore.inc",
         "class.status.schedules.php","class.process.inc","class.status.unifi.inc","class.status.irqbalance.inc",
         "class.status.statistics.inc","class.status.defaults.inc","class.status.cgroups.inc","class.status.bandwidthd.inc",
-        "class.status.haproxy.inc","class.status.adagent.inc","class.status.privoxy.inc","class.status.sealion.inc",
+        "class.status.haproxy.inc","class.status.adagent.inc","class.status.sealion.inc",
         "class.status.watchdog.me.inc","class.status.splunk.inc","class.status.elasticsearch.inc","class.status.prads.inc",
         "class.status.videocache.inc","class.status.squid.inc","class.status.postfix.inc","class.status.pdns.inc","class.status.defaults.inc","class.status.xapian.inc","class.status.elasticsearch.inc","class.status.wordpress.inc","class.status.dwagent.inc","class.status.quagga.inc",
         "class.status.saslauthd.inc","class.status.wanproxy.inc","class.status.fsm.inc","class.status.haexchange.inc","class.status.vasd.inc");
@@ -1582,13 +1533,6 @@ function CleanLogs()
         shell_exec2("$rm -rf /usr/share/artica-postfix/ressources/conf/*");
 
     }
-
-    if (!is_dir("/etc/artica-postfix/settings/Daemons")) {
-        mkdir_test("/etc/artica-postfix/settings/Daemons", true);
-    }
-    @chmod("/etc/artica-postfix/settings/Daemons", 0755);
-    shell_exec2("$chmod 0755 /etc/artica-postfix/settings/Daemons/* >/dev/null 2>&1");
-
     if (is_file("/var/log/php.log")) {
         $size = $GLOBALS["CLASS_UNIX"]->file_size("/var/log/php.log");
         $size = intval(round(($size / 1024)) / 1000);
@@ -1848,7 +1792,7 @@ function launch_all_status($force = false){
 
 
     events("**************** START ALL STATUS ****************");
-    $GLOBALS["CLASS_UNIX"]->chmod_func(0755, "/etc/artica-postfix/settings/Daemons/*");
+
 
 
     $functions = array("Default_values", "gam_server",  "glances", "elasticsearch",
@@ -1858,16 +1802,15 @@ function launch_all_status($force = false){
         "philesight", "cron",  "disks_monitor",    "netdata","TAILSCALE_STATUS","VASD_STATUS","ZEBRA_STATUS","OSPF_STATUS","APP_URBACKUP","rustdesk","MANTICORE_STATUS",
         "CleanLogs",   "wpa_supplicant","sqlite_dbs",
         "fetchmail", "milter_greylist", "irqbalance",
-        "framework", "pdns_server", "pdns_recursor", "cyrus_imap",  "saslauthd",   "clamscan",  "spamassassin_milter", "spamassassin",   "ksrn", "DWAGENT_STATUS","CIESCACHE_STATUS",
-        "mailman", "rpcbind",  "ntlm_auth_path", "scanned_only", "roundcube", "cups",
+        "framework", "pdns_server", "pdns_recursor",  "saslauthd",   "clamscan",  "spamassassin_milter", "spamassassin",   "ksrn", "DWAGENT_STATUS","CIESCACHE_STATUS",        "mailman", "rpcbind",  "ntlm_auth_path", "scanned_only", "roundcube", "cups",
         "gdm",  "hamachi",  "artica_notifier", "pure_ftpd",
         "ocs_agent",  "wanproxy","sshportal", "gluster", "auditd", "milter_dkim", "dropbox", "killstrangeprocesses", "dockerd",
          "tftpd",  "bandwith", "lsm", "Build_default_values",
-        "pptpd", "pptp_clients", "ddclient", "cluebringer", "proftpd_status", "splunk",
-         "openvpn", "vboxguest", "sabnzbdplus",   "SwapWatchdog", "APP_ARTICAFSMON",        "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
+        "pptpd", "pptp_clients", "ddclient",  "proftpd_status", "splunk",
+         "openvpn", "vboxguest",    "SwapWatchdog", "APP_ARTICAFSMON",        "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
         "iscsi", "netatalk", "smartd",   "greyhole_watchdog", "tomcat",
         "cgroups",  "arpd", "ps_mem", "ipsec", "openvpn", "ifconfig_network",
-        "udevd_daemon",  "arkwsd", "arkeiad", "haproxy", "hacluster", "privoxy", "ad_rest", "CleanLogs", "checksyslog", "freeradius", "maillog_watchdog", "arp_spoof","go_squid_auth",
+        "udevd_daemon",  "arkwsd", "arkeiad", "haproxy", "hacluster",  "ad_rest", "CleanLogs", "checksyslog", "freeradius", "maillog_watchdog", "arp_spoof","go_squid_auth",
          "CleanCloudCatz",   "Scheduler", "exim4", "ntopng",   "XMail",  "iptables", "wordpress",
          "vde_all", "sealion_agent", "syncthing", "killstrangeprocesses","keepalived");
 
@@ -2686,67 +2629,7 @@ function ChecksRoutes()
 
 
 //========================================================================================================================================================
-function cyrus_imap()
-{
 
-    if (intval("/etc/artica-postfix/settings/Daemons/APP_CYRUS_INSTALLED") == 0) {
-        return null;
-    }
-    $pid_path = $GLOBALS["CLASS_UNIX"]->LOCATE_CYRUS_PIDPATH();
-    $master_pid = trim(@file_get_contents($pid_path));
-    $enabled = 1;
-    $EnableCyrusImap = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableCyrusImap");
-    if (!is_numeric($EnableCyrusImap)) {
-        $EnableCyrusImap = 1;
-    }
-    $DisableMessaging = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableMessaging"));
-    if ($EnableCyrusImap == 0) {
-        $enabled = 0;
-    }
-    if ($DisableMessaging == 1) {
-        $enabled = 0;
-    }
-
-    $l[] = "[CYRUSIMAP]";
-    $l[] = "service_name=APP_CYRUS";
-    $l[] = "master_version=" . $GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_CYRUS_VERSION");
-    $l[] = "service_cmd=/etc/init.d/cyrus-imapd";
-    $l[] = "service_disabled=1";
-    $l[] = "pid_path=$pid_path";
-    $l[] = "watchdog_features=1";
-    $l[] = "family=mailbox";
-    $l[] = "service_disabled=$enabled";
-    if ($enabled == 0) {
-        return implode("\n", $l);
-        return;
-    }
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        $cmd = trim("{$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.cyrus-imapd.php --start >/dev/null 2>&1 &");
-        shell_exec2($cmd);
-        $l[] = "running=0\ninstalled=1";
-        $l[] = "";
-        return implode("\n", $l);
-
-    }
-    $l[] = "running=1";
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-    if (is_file("/var/run/saslauthd/mux")) {
-        @chmod("/var/run/saslauthd/mux", 0777);
-    }
-
-
-    $timefile = "/etc/artica-postfix/croned.1/exec.cyrus.php.DirectorySize.time";
-    $filetim = $GLOBALS["CLASS_UNIX"]->file_time_min($timefile);
-    if ($filetim > 240) {
-        shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.cyrus.php --DirectorySize >/dev/null 2>&1 &");
-    }
-
-    return implode("\n", $l);
-
-
-}
 
 function Dump2json($initext):string{
     if(!$GLOBALS["JSON"]){return $initext;}
@@ -2756,17 +2639,7 @@ function Dump2json($initext):string{
 
 }
 
-function cyrus_imap_pid()
-{
-    $pidpath = $GLOBALS["CLASS_UNIX"]->CYRUS_PID_PATH();
-    $pid = $GLOBALS["CLASS_UNIX"]->get_pid_from_file($pidpath);
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($pid)) {
-        return $GLOBALS["CLASS_UNIX"]->PIDOF($GLOBALS["CLASS_UNIX"]->CYRUS_DAEMON_BIN_PATH());
-    }
-    return $pid;
 
-
-}
 
 //========================================================================================================================
 
@@ -4022,59 +3895,10 @@ function ddclient()
 
 }
 
-function cluebringer()
-{
 
-}
 
 //========================================================================================================================================================
-function sabnzbdplus()
-{
-    $binary = $GLOBALS["CLASS_UNIX"]->find_program("sabnzbdplus");
-    if (!is_file($binary)) {
-        if ($GLOBALS["VERBOSE"]) {
-            echo __FUNCTION__ . " APP_SABNZBDPLUS_INSTALLED = FALSE\n";
-        }
-        return;
-    }
-    $EnableSabnZbdPlus = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSabnZbdPlus");
-    if ($EnableSabnZbdPlus == null) {
-        $EnableSabnZbdPlus = 0;
-    }
 
-    if ($GLOBALS["VERBOSE"]) {
-        echo __FUNCTION__ . " EnableSabnZbdPlus = $EnableSabnZbdPlus\n";
-    }
-    if (is_file("/usr/share/sabnzbdplus/SABnzbd.py")) {
-        $master_pid = $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN("SABnzbd.py");
-        $binary = "SABnzbd.py";
-    } else {
-        $binary = $GLOBALS["CLASS_UNIX"]->find_program("sabnzbdplus");
-        $master_pid = $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN($binary);
-    }
-
-    $l[] = "[APP_SABNZBDPLUS]";
-    $l[] = "service_name=APP_SABNZBDPLUS";
-    $l[] = "master_version=" . GetVersionOf("sabnzbdplus");
-    $l[] = "service_cmd=sabnzbdplus";
-    $l[] = "service_disabled=$EnableSabnZbdPlus";
-    $l[] = "pid_path=pidof $binary";
-    $l[] = "watchdog_features=1";
-    $l[] = "family=samba";
-    if ($EnableSabnZbdPlus == 0) {
-        $l[] = "";
-        return implode("\n", $l);
-    }
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        WATCHDOG("APP_SABNZBDPLUS", "sabnzbdplus");
-        $l[] = "";
-        return implode("\n", $l);
-
-    }
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-    return implode("\n", $l);
-}
 
 //========================================================================================================
 function exim4():bool{
@@ -6004,7 +5828,6 @@ function CheckCallable():bool{
     $Callables[]="/ressources/class.status.bandwidthd.inc";
     $Callables[]="/ressources/class.status.haproxy.inc";
     $Callables[]="/ressources/class.status.adagent.inc";
-    $Callables[]="/ressources/class.status.privoxy.inc";
     $Callables[]="/ressources/class.status.sealion.inc";
     $Callables[]="/ressources/class.status.openvpn.inc";
     $Callables[]="/ressources/class.status.watchdog.me.inc";
@@ -6387,12 +6210,11 @@ function Default_values(){
     }
     if (!is_file("/etc/artica-postfix/settings/Daemons/php5MemoryLimit")) {
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("php5MemoryLimit", 1024);
-        @chmod("/etc/artica-postfix/settings/Daemons/php5MemoryLimit", 0755);
+
     }
 
     if (!is_file("/etc/artica-postfix/settings/Daemons/WindowsUpdateUseLocalProxy")) {
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("WindowsUpdateUseLocalProxy", 1);
-        @chmod("/etc/artica-postfix/settings/Daemons/WindowsUpdateUseLocalProxy", 0755);
     }
     if (!is_file("/etc/artica-postfix/settings/Daemons/UnlockWebStats")) {
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnlockWebStats", 0);
@@ -6411,7 +6233,6 @@ function Default_values(){
     }
     if (!is_file("/etc/artica-postfix/settings/Daemons/DisksBenchs")) {
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisksBenchs", 6);
-        @chmod("/etc/artica-postfix/settings/Daemons/DisksBenchs", 0755);
     }
     if (!is_file("/etc/artica-postfix/settings/Daemons/SessionPathInMemory")) {
         $memoire = $GLOBALS["CLASS_UNIX"]->MEM_TOTAL_INSTALLEE();
@@ -6438,7 +6259,7 @@ function Default_values(){
             $SessionPathInMemory = 728;
         }
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SessionPathInMemory", $SessionPathInMemory);
-        @chmod("/etc/artica-postfix/settings/Daemons/SessionPathInMemory", 0755);
+
     }
 
 

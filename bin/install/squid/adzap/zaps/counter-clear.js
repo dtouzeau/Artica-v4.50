@@ -1,1 +1,0 @@
-// Counter Javascript placeholder.

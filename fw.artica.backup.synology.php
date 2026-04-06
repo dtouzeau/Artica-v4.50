@@ -192,53 +192,62 @@ function widgets():bool{
     }
     if($SynobackupError>0){$needlogin=True;}
     if(!isset($STATUS["LAST_BACKUP"])){$STATUS["LAST_BACKUP"]=null;}
+    if(!isset($STATUS["RESTORE"])){$STATUS["RESTORE"]=null;}
+
+
+
     if($STATUS["LAST_BACKUP"]=="-"){$STATUS["LAST_BACKUP"]=null;}
 
 
     if($needlogin){
         $btn["name"]="{please_sign_in}";
-        $btn["icon"]="fas fa-sign-in-alt";
+        $btn["ico"]="fas fa-sign-in-alt";
         $btn["js"] = "Loadjs('$page?signin-js=yes');";
         $needlogin_status=$tpl->widget_h("yellow","fas fa-sign-in-alt","{need_sign_in}",$error,$btn);
 
         if($SynobackupError==1){
             $error="{authentication_failed}";
-            $needlogin_status=$tpl->widget_h("red","fas fa-sign-in-alt","{need_sign_in}",$error,$btn);
+            $needlogin_status=$tpl->widget_h("red","fas fa-sign-in-alt",
+                "{need_sign_in}",$error,$btn);
         }
         if($SynobackupError==2){
             $error="{failed_to_connect}";
-            $needlogin_status=$tpl->widget_h("red","fas fa-sign-in-alt","{need_sign_in}",$error,$btn);
+            $needlogin_status=$tpl->widget_h("red","fas fa-sign-in-alt",
+                "{need_sign_in}",$error,$btn);
         }
 
 
     }else{
 
         $btn["name"]="{loggoff}";
-        $btn["icon"]="fas fa-sign-in-alt";
+        $btn["ico"]=ico_exit;
         $btn["js"] = "Loadjs('$page?loggoff=yes');";
-        $needlogin_status=$tpl->widget_h("blue","fas fa-sign-in-alt","{active_session} ","$LoginName",$btn);
+        $needlogin_status=$tpl->widget_h("blue",ico_exit,
+            "{active_session} ","$LoginName",$btn);
 
     }
 
     if($Connected==0) {
         $btn["name"]="{connect}";
-        $btn["icon"]="fas fa-link";
+        $btn["ico"]="fas fa-link";
         $btn["js"] = "Loadjs('$page?connect=yes');";
-        $Connected_status = $tpl->widget_h("grey", "fas fa-unlink", "{not_connected}", "{connection_status}",$btn);
+        $Connected_status = $tpl->widget_h("grey", ico_link,
+            "{not_connected}", "{connection_status}",$btn);
 
     }else{
         $btn["name"]="{disconnect}";
-        $btn["icon"]="fas fa-unlink";
+        $btn["ico"]=ico_exit;
         $btn["js"] = "Loadjs('$page?disconnect=yes');";
         $state=$STATUS["SERVICE_STATUS"];
         $state="<small style='color:white'>$state</small>";
-        $Connected_status= $tpl->widget_h("green", "fas fa-link", $state, "{service_status}",$btn);
+        $Connected_status= $tpl->widget_h("green", "fas fa-link", $state,
+            "{service_status}",$btn);
     }
 
     if($STATUS["LAST_BACKUP"]==null) {
         if($STATUS["RESTORE"]<>null) {
             $btn["name"] = "Restore portal";
-            $btn["icon"] = "fas fa-external-link-alt";
+            $btn["ico"] = "fas fa-external-link-alt";
             $btn["js"] = "s_PopUpFull('{$STATUS["RESTORE"]}','1024','900');";
         }
         $status_addr = $tpl->widget_h("grey", "fa-thumbs-down", "{not_used}", "{last_backup}",$btn);
@@ -246,7 +255,7 @@ function widgets():bool{
     }else{
         if($STATUS["RESTORE"]<>null) {
             $btn["name"] = "Restore portal";
-            $btn["icon"] = "fas fa-external-link-alt";
+            $btn["ico"] = ico_import;
             $btn["js"] = "s_PopUpFull('{$STATUS["RESTORE"]}','1024','900');";
         }
         $stime=strtotime($STATUS["LAST_BACKUP"]);

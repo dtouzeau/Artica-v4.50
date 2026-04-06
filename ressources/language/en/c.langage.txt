@@ -3550,7 +3550,7 @@ These metrics are stored locally to provide historical usage and consumption tre
 <APP_CATEGORIESS_EXPLAIN>Create a Central Categorization Server that allows you to distribute domain categorization from a single central point via an API (optimized for Artica Proxy or Artica DNS Firewall).</APP_CATEGORIESS_EXPLAIN>
 <compile_categories>Compile categories</compile_categories>
 <query_artica_db_unknown>Query Artica Cloud for unknown websites</query_artica_db_unknown>
-<category_dns_explain>This category is a virtual category.[br]Its records are not stored locally.[br]However, your Artica server can still use it by querying the remote categorization server at %s via DNS or API.[br]                      This category can be used in proxy ACLs, the DNS Firewall service, and through Artica Web Filtering (ICAP v2).</category_dns_explain>
+<category_dns_explain>This category is a virtual category.[br]Its records are not stored locally.[br]However, your Artica server can still use it by querying the remote categorization server at %s via DNS or API.[br]This category can be used in proxy ACLs, the DNS Firewall service, and through Artica Web Filtering (ICAP v2).</category_dns_explain>
 <category_server>Category server</category_server>
 <compile_all>Compile all</compile_all>
 <category_http_explain>This category is a virtual category.[br]Data are downloaded directly from the category server (%s).[br]You cannot change, modify, or delete it.[br]
@@ -3660,7 +3660,7 @@ Allow Artica to automatically switch to [b]vitrification[/b] mode if the web ser
 <max_latency_ms_explain>Maximum acceptable latency during latency checks before deciding to switch to vitrification mode.[br]
 If latency returns to an acceptable level, vitrification mode will be automatically disabled.</max_latency_ms_explain>
 <max_directory_size_mb_explain>Maximum storage directory size. Use the value in Mo (1024Mo = 1GB).</max_directory_size_mb_explain>
-<crawling_depth_explain>Website crawling depth expressed in number of levels.[br]By default, the value is set to 3 levels, meaning a link pointing to another link, which in turn points to a third link.[br]                        Please note that the engine does not follow links outside the primary domain defined in the site rule.</crawling_depth_explain>
+<crawling_depth_explain>Website crawling depth expressed in number of levels.[br]By default, the value is set to 3 levels, meaning a link pointing to another link, which in turn points to a third link.[br]  Please note that the engine does not follow links outside the primary domain defined in the site rule.</crawling_depth_explain>
 <website_crawling_depth>Website crawling depth</website_crawling_depth>
 <isVitrified>Is vitrified</isVitrified>
 <excludepaths_explain>Specify path prefixes or full paths.[br]Values must always begin with a forward slash "/".[br]Examples: [b]/health[/b], [b]/sitemap.xml[/b], or [b]/robots.txt[/b].</excludepaths_explain>
@@ -4025,7 +4025,7 @@ Every IPv6-enabled interface has one.</ipv6_linklocal_wizard_explain>
 <ipv6_linklocal_no_mac>Unable to derive a link-local address: the MAC address for this interface could not be read.</ipv6_linklocal_no_mac>
 <ipv6_gua_wizard_explain>Build a Global Unicast Address (GUA) for public internet connectivity.[b]Enter the prefix assigned by your ISP or RIR (typically a /48 or /56), then choose a subnet and host identifier.</ipv6_gua_wizard_explain>
 <ipv6_gua_prefix_help>Enter the prefix provided by your ISP, e.g. 2001:db8:abcd. Do not include the trailing ::</ipv6_gua_prefix_help>
-<use_this_address>Use this address</use_this_address>                                                                                                                                                   │
+<use_this_address>Use this address</use_this_address>               │
 <randomize>Randomize</randomize>
 <not_valid_ipv6_address>Not a valid IPv6 address</not_valid_ipv6_address>
 <isp_prefix>ISP Prefix</isp_prefix>
@@ -4107,3 +4107,100 @@ It will also provide the required firewall rules to properly interconnect both c
 <usage>Usage</usage>
 <destroyed>Destroyed</destroyed>
 <lifecycle>Lifecycle</lifecycle>
+<load_module>Load module</load_module>
+<not_loaded>Not loaded</not_loaded>
+<inherit>Inherit</inherit>
+<vlan_created>VLAN created</vlan_created>
+<addresses>Addresses</addresses>
+<not_applied>Not applied</not_applied>
+<applied>Applied</applied>
+<darkstats_dashboard>Network Traffic Analysis</darkstats_dashboard>
+<network_traffic_statistics>Network traffic statistics</network_traffic_statistics>
+<network_traffic>Network traffic</network_traffic>
+<top_talkers>Top talkers</top_talkers>
+<bytes>Bytes</bytes>
+<resolved>Resolved</resolved>
+<dropped>Dropped</dropped>
+<slow_storage_detected_on>Slow storage detected on</slow_storage_detected_on>
+<slow_storage_explain>The system has detected abnormal disk latency on %s.[br]
+This condition is causing high I/O wait times which directly increases the system load average, even when CPU usage is low.[br]
+[b]This is not necessarily a software problem[/b].[br]
+Before investigating application-level causes, check the underlying storage infrastructure:[br][br]
+[b]Virtual Machines (VMware, KVM, Hyper-V, Proxmox)[/b][br]
+[br]- The VM datastore may be oversubscribed — too many VMs competing for the same physical disk
+[br]- Thin-provisioned disks are slower than thick/eager-zeroed disks
+[br]- The backing storage (NFS, iSCSI, local RAID) may be degraded or saturated
+[br]- The virtual SCSI controller type matters — use paravirtual (pvscsi for VMware, virtio for KVM) instead of LSI Logic
+[br]- Live storage migration or snapshot consolidation running in the background can cause temporary I/O stalls
+[br]- Check the hypervisor host's own I/O wait — if the host is slow, all guests are slow.
+[br][br]
+[b]Physical Servers[/b]
+[br]- A RAID array may be rebuilding after a disk replacement
+[br]- A failing disk causes retries that spike latency before the disk is marked dead
+[br]- Battery-backed write cache (BBU) in learning cycle disables write-back caching temporarily
+[br]- HDD-based storage with mixed workloads (sequential + random) performs poorly — consider SSD or NVMe
+</slow_storage_explain>
+<optimizations_for_vm>Optimizations for Virtual machines</optimizations_for_vm>
+<optimizations_for_vm_exp>Artica has detected that your virtualization system can achieve better performance by applying system optimizations</optimizations_for_vm_exp>
+<optimizations_for_vm_perform>By clicking on button, Artica will:[br]
+- Eliminates double scheduling of disk operations — Both the virtual machine and the host attempt to optimize disk I/O. When done simultaneously, they interfere with each other. This optimization ensures only the host handles disk scheduling.[br]
+- Informs the system that the disk is non-rotational — Virtual disks have no physical read/write head, yet the OS may still apply HDD optimizations. This removes unnecessary read grouping and improves efficiency.[br]
+- Reduces unnecessary background overhead on disk operations — By default, every I/O contributes to the system entropy pool. On busy systems, this creates measurable overhead with no real benefit. This optimization disables that behavior.[br]
+- Optimizes write buffering behavior — Instead of allowing large write buffers to accumulate in memory, the system flushes smaller batches more frequently. This prevents sudden I/O stalls and improves responsiveness.[br]
+- Releases unused file metadata more aggressively — Systems handling many small files (e.g., databases) may accumulate inode/dentry cache. This optimization frees unused entries sooner, reducing memory pressure.[br]
+[br]
+These changes are applied immediately and persist across reboots.[br]
+[br]
+[b]When is this needed?[/b][br]
+[br]
+These optimizations are only applied when the system is detected as a virtual machine (VMware, KVM, Hyper-V, etc.). Physical servers are not affected.[br]
+[br]
+If you experience high system load, slow response times, or see a "Slow storage detected" warning in the dashboard, applying these optimizations typically resolves the issue without requiring hardware changes.
+</optimizations_for_vm_perform>
+<inspect>Inspect</inspect>
+<policy_rules>Policy rules</policy_rules>
+<hacluster_backends_metrics_explain>Real-time and historical metrics for HaCluster backends showing load distribution, response times, bandwidth, connections, health status across all backend servers</hacluster_backends_metrics_explain>
+<avg_response_time>Average response time</avg_response_time>
+<ranking>Ranking</ranking>
+<status_codes>Status codes</status_codes>
+<live>Live</live>
+<error_rate>Error rate</error_rate>
+<retry_rate>Retry rate</retry_rate>
+<avg_response_time_tcp>Average TCP connection establishment time to backend (includes SSL/TLS handshake)</avg_response_time_tcp>
+<dns_queries_over_time>DNS queries over time</dns_queries_over_time>
+<total_responses>Total responses</total_responses>
+<cache_hit_ratio>Cache hit ratio</cache_hit_ratio>
+<unanswered_ratio>Unanswered ratio</unanswered_ratio>
+<query_type_distribution>Query type distribution</query_type_distribution>
+<top_queried_domains>Top queried domains</top_queried_domains>
+<responses>Responses</responses>
+<locks>Locks</locks>
+<executing>Executing</executing>
+<incoming_breakdown>Incoming breakdown</incoming_breakdown>
+<HOTSPOT_WEB>HotSpot Web service</HOTSPOT_WEB>
+<fix_kernel_values>Fix kernel values</fix_kernel_values>
+<ad_discovered_explain>An Active Directory server (%s) has been detected on your network.[br]
+You can integrate Artica with your Active Directory to leverage your existing user directory and simplify management:[br]
+- Authenticate administrators on the Artica Web console.[br]
+- Enable transparent user identification for Web proxy and web filtering.[br]
+- Use your Active Directory to deploy and manage a HotSpot service.[br]
+- Enable SMTP user identification when using the Artica SMTP relay.[br]
+Click the button below to enable and configure Active Directory integration in Artica.
+</ad_discovered_explain>
+<ad_discovered>Active Directory server discovered</ad_discovered>
+<last_sample>Last sample</last_sample>
+<welcome_ad_wizard>Connecting Artica Proxy to your Active Directory server</welcome_ad_wizard>
+<welcome_ad_wizard1>This wizard will guide you through connecting Artica Proxy to your Active Directory server in order to identify your users.[br]
+The first step is to locate your Active Directory server.[br]
+Enter in the field below the fully qualified domain name (FQDN) of your Active Directory server.</welcome_ad_wizard1>
+<welcome_ad_wizard2>The connection can be established in two ways:[br]
+[b]Using an administrator account[/b][br]
+You must provide a domain administrator account so that Artica can create the computer object and associated service, and retrieve the authentication token.[br]
+[br]
+[b]Using a user account[/b][br]
+Use a dedicated user account, for example svc_artica_proxy, and ensure that this account password does not expire or change.[br]
+Manually create the computer object for this Artica server in your Active Directory organization.</welcome_ad_wizard2>
+<welcome_ad_wizard3>Artica uses an LDAP connection to retrieve user groups.[br]This connection can be configured in plain mode (port 389) or in secure mode (port 636).[br]
+Check the box below if you want Artica to use a secure connection.</welcome_ad_wizard3>
+<welcome_ad_wizard4>Validate the Active Directory suffix that defines the user directory realm, and specify the organizational unit (OU) that hosts or will host the Artica server.</welcome_ad_wizard4>
+

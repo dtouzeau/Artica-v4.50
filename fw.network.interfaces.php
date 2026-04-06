@@ -2571,7 +2571,9 @@ function nic_vlans():bool{
 function nic_config_tab(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
+    $iconic=ico_nic;
 	$eth=$_GET["nic-config-tab"];
+    $icospe=ico_speed;
     $md=$_GET["md"];
 	$miiJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/mii-tools/".urlencode($eth)));
 	$MIITOOLS=array();
@@ -2584,7 +2586,7 @@ function nic_config_tab(){
     if(preg_match("#^bond[0-9]+#", $eth)){
         $bonding = true;
     }
-	$array[$eth]="$page?nic-config=$eth&md=$md";
+	$array["<i class='$iconic'></i>&nbsp;$eth"]="$page?nic-config=$eth&md=$md";
     $EnableipV6=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableipV6"));
     if($EnableipV6==1){
         $array["IPv6"]="fw.network.interfaces.ipv6.php?nic=$eth&md=$md";
@@ -2618,7 +2620,7 @@ function nic_config_tab(){
 
         if (isset($MIITOOLS["{flow_control}"])) {
             if ($MIITOOLS["{flow_control}"]) {
-                $array[$eth] = "$page?mii-tools=$eth&md=$md";
+                $array["<i class='$icospe'></i>&nbsp;$eth"] = "$page?mii-tools=$eth&md=$md";
             }
         }
     }

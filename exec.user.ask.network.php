@@ -204,7 +204,6 @@ function new_uuid(){
 	if(strlen($uuid)>5){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEMID", $uuid);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEMID_CREATED", time());
-		@chmod("/etc/artica-postfix/settings/Daemons/SYSTEMID", 0777);
 		shell_exec("$chattr +i /etc/artica-postfix/settings/Daemons/SYSTEMID");
 	
 	}

@@ -1883,7 +1883,6 @@ class firehol{
 		$this->services_array["webcache"]=true;
 		$this->services_array["webmin"]=true;
 		$this->services_array["whois"]=true;
-		$this->services_array["darkstat"]=true;
 		$this->services_array["daytime"]=true;
 		$this->services_array["dcc"]=true;
 		$this->services_array["dcpp"]=true;

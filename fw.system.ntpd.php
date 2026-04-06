@@ -134,7 +134,7 @@ function config_flat():bool{
     }
 
 
-    if(!is_file("/etc/artica-postfix/settings/Daemons/NTPDRestrictToLocalNetwork")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("NTPDRestrictToLocalNetwork", 1);}
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("NTPDRestrictToLocalNetwork")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("NTPDRestrictToLocalNetwork", 1);}
 
     $NTPDUseSpecifiedServers=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDUseSpecifiedServers"));
     $NTPDRestrictToLocalNetwork=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDRestrictToLocalNetwork"));
@@ -224,7 +224,7 @@ function config_popup(){
 
     }
 
-    if(!is_file("/etc/artica-postfix/settings/Daemons/NTPDRestrictToLocalNetwork")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("NTPDRestrictToLocalNetwork", 1);}
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("NTPDRestrictToLocalNetwork")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("NTPDRestrictToLocalNetwork", 1);}
 
     $NTPDUseSpecifiedServers=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDUseSpecifiedServers"));
     $NTPDRestrictToLocalNetwork=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDRestrictToLocalNetwork"));

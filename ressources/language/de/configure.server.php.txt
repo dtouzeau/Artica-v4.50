@@ -42,7 +42,7 @@
 <messaging_text>Set your messaging system and configure your Postfix</messaging_text>
 <nfs_share>NFS Sharing folders</nfs_share>
 <nfs_share_text>Share folder using the NFS Linux (Network File System) protocol</nfs_share_text>
-<nic_settings>Network settings</nic_settings>
+<nic_settings>Netzwerkeinstellungen</nic_settings>
 <nic_settings_text>Set your IP configuration</nic_settings_text>
 <play_with_isp>Play with your ISP</play_with_isp>
 <play_with_isp_text>Use this server has a real mail server between you and your ISP  (aol,free,yahoo..)...</play_with_isp_text>

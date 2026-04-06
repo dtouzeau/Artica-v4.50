@@ -354,27 +354,15 @@ class resolv_conf{
 		return @implode("\n", $f)."\n";
 
 	}
-	
 
-	
-	
-	
-	private function DNS_LIST(){
-		
-		$f=explode("\n",@file_get_contents("/etc/resolv.conf"));
-		
-		foreach ( $f as $index=>$line ){
-			$line=trim($line);
-			if($line==null){continue;}
-			if(preg_match("#nameserver\s+(.+)#", $line,$re)){
-				if(trim($re[1])=="127.0.0.1"){continue;}
-				$DNS[]=$re[1];
-			}
-		
+	//use the API instead of read the file directory
+	private function DNS_LIST():string{
+		if(!isset($GLOBALS["CLASS_SOCKETS"])){$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+		$json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/resolvconfig"));
+		if(is_object($json)&&isset($json->dns_array)&&is_array($json->dns_array)){
+			return implode(";",$json->dns_array);
 		}
-		
-		return @implode(";", $DNS);
-		
+		return "";
 	}
 	
 	

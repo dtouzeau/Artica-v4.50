@@ -16,17 +16,15 @@ You have to be careful not to place a deny statement in the list that blocks a s
 Sie k%C3%B6nnen Proxy so konfigurieren, dass Filter f%C3%BCr verschiedene Entit%C3%A4ten und mit unterschiedlicher Granularit%C3%A4t gesetzt werden (z. B. Filter f%C3%BCr bestimmte Protokolle,
 Filter f%C3%BCr bestimmte Arten von Befehlen, Filter f%C3%BCr bestimmte Router, Filter f%C3%BCr bestimmte Dom%C3%A4nen usw.).</acls_text>
 <acl_arp>Ethernet Address (unix only)</acl_arp>
-<acl_arp_text>This option only works for clients on the same local subnet, and only for certain platforms.[br]
-Linux, Solaris, and some BSD variants are the supported operating systems for this type of ACL.[br]
-This ACL can provide a somewhat secure method of access control, because MAC addresses are usually harder to spoof than IP addresses,
-and you can guarantee that your clients are on the local network (otherwise no ARP resolution can take place).
+<acl_arp_text>Diese Option funktioniert nur f%C3%BCr Clients im selben lokalen Subnetz und wird nur von bestimmten Plattformen unterst%C3%BCtzt.[br]
+Linux, Solaris und einige BSD-Varianten unterst%C3%BCtzen diesen ACL-Typ.[br]
+Diese ACL bietet eine relativ sichere Zugriffskontrolle, da MAC-Adressen in der Regel schwerer zu f%C3%A4lschen sind als IP-Adressen.[br]
+Sie stellt au%C3%9Ferdem sicher, dass sich die Clients im lokalen Netzwerk befinden (ansonsten kann keine ARP-Aufl%C3%B6sung stattfinden).[br]
 [br]
-[b]EX:[/b][br]acl ACLARP arp 11:12:13:14:15:16[br]
-ACLARP refers MACADDRESS of the ethernet 11:12:13:14:15:16[br]
-[br][b]Note[/b]
-[br][i]Squid can only determine the MAC address for clients that are on the same subnet. If the client is on a different subnet, then Squid
-cannot find out its MAC address.[/i]
-</acl_arp_text>
+[b]Beispiel:[/b][br]acl ACLARP arp 11:12:13:14:15:16[br]
+ACLARP verweist auf die MAC-Adresse der Ethernet-Schnittstelle 11:12:13:14:15:16[br]
+[br][b]Hinweis[/b]
+[br][i]Der Proxy kann die MAC-Adresse nur f%C3%BCr Clients im selben Subnetz ermitteln. Befindet sich ein Client in einem anderen Subnetz, kann der Proxy dessen MAC-Adresse nicht bestimmen.[/i]</acl_arp_text>
 <acl_arp_title>Ethernet (MAC) address matching</acl_arp_title>
 <acl_browser>Browser matching</acl_browser>
 <acl_browser_text>Ein regul%C3%A4rer Ausdruck, der den Browsertyp des Clients auf der Grundlage des User-Agent-Headers abgleicht[br]
@@ -62,9 +60,9 @@ cache_peer_access mycache_mydomain.net deny all[/b]
 </acl_dst_as_text>
 <acl_dst_as_title>Destination Autonomous System Number is the AS number of the server being queried</acl_dst_as_title>
 <acl_dst_text>[ul]
-[li]172.16.1.0/24 - refers to the whole Network with address 172.16.1.0[/li]
-[li]172.16.1.25/32 - refers to a single source[/li]
-[li]172.16.1.25-172.16.1.35/32 - refers range of IP Addresses from 172.16.1.25-172.16.1.35[/li]
+[li]172.16.1.0/24 â%80%94 bezieht sich auf das gesamte Netzwerk 172.16.1.0[/li]
+[li]172.16.1.25/32 â%80%94 bezieht sich auf einen einzelnen Host[/li]
+[li]172.16.1.25-172.16.1.35 â%80%94 bezieht sich auf einen Bereich von IP-Adressen von 172.16.1.25 bis 172.16.1.35[/li]
 [/ul]</acl_dst_text>
 <acl_dst_title>Same as "Client Address" but looks for destination IP Address</acl_dst_title>
 <acl_external>External Program</acl_external>

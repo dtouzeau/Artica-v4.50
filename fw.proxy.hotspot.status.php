@@ -62,9 +62,6 @@ function is_authExists(){
 function table(){
     $page=CurrentPageName();
 	$tpl=new template_admin();
-	$sock=new sockets();
-	$users=new usersMenus();
-    $EnableSquidMicroHotSpot = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidMicroHotSpot"));
 	$HotSpotRedirectUI=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotRedirectUI"));
     $Go_Shield_Server_Enable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Enable"));
 
@@ -160,10 +157,22 @@ function table(){
     $html[]="<tr>";
     $html[]="<td style='width:100%;vertical-align: top'>";
 
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork('hotspot.php?status=yes');
-    $ini=new Bs_IniHandler(PROGRESS_DIR."/APP_HOTSPOT.status");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API('/hotspot/status'));
 
-    if($ini->_params["APP_HOTSPOT"]["running"]==0){
+    if(!isset($json->Status)){
+        $json->Status=false;
+        $json->Info="";
+    }
+
+    if(!$json->Status){
+        $json->Info="";
+    }
+
+    $ini=new Bs_IniHandler();
+    $ini->loadString($json->Info);
+
+
+    if($ini->_params["HOTSPOT_WEB"]["running"]==0){
         $html[] = $tpl->_ENGINE_parse_body($tpl->widget_h("red", "far fa-globe-europe", "{stopped}","{APP_HOTSPOT} {web_service}"));
     }else{
         $html[] = $tpl->_ENGINE_parse_body($tpl->widget_h("green", "far fa-globe-europe", "{running}","{APP_HOTSPOT} {web_service}"));
@@ -199,26 +208,41 @@ function table(){
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
+    $status=$tpl->RefreshInterval_js("hotspot-web-status",$page,"hotspot-web-status=yes");
+
     echo "<script>
         $jstiny
-        LoadAjax('hotspot-web-status','$page?hotspot-web-status=yes');
+        $status
         </script>";
 	return false;
 	
 
 }
-function status(){
+function status():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork('hotspot.php?status=yes');
-    $ini=new Bs_IniHandler(PROGRESS_DIR."/APP_HOTSPOT.status");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API('/hotspot/status'));
 
-    $jrestart=$tpl->framework_buildjs("hotspot.php?restart=yes",
-        "hotspot.progress","hotspot.log","progress-hotspot-restart",
+    if(!isset($json->Status)){
+        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge("{protocol_error}","{error}"));
+        return false;
+    }
+
+    if(!$json->Status){
+        echo $tpl->_ENGINE_parse_body($tpl->widget_rouge($json->Error,"{error}"));
+        return false;
+    }
+
+    $ini=new Bs_IniHandler();
+    $ini->loadString($json->Info);
+
+    $jrestart=$tpl->framework_buildjs("/hotspot/restart",
+        "hotspot-web.progress","hotspot.log","progress-hotspot-restart",
         "LoadAjax('hotspot-web-status','$page?hotspot-web-status=yes');",
         "LoadAjax('hotspot-web-status','$page?hotspot-web-status=yes');");
 
-   echo $tpl->SERVICE_STATUS($ini, "APP_HOTSPOT",$jrestart);
+   echo $tpl->SERVICE_STATUS($ini, "HOTSPOT_WEB",$jrestart);
+   return true;
 }
 function Save(){
 	$tpl=new template_admin();

@@ -1,6 +1,6 @@
 <add_local_domain_form>Give the local domain you want to store on this server</add_local_domain_form>
 <add_local_domain_text>Local domains are stored on this computer and must be deliver in it`s mailbox server.</add_local_domain_text>
-<add_relay_domain>Add a new relayed domain</add_relay_domain>
+<add_relay_domain>Aggiungere un nuovo dominio inoltrato</add_relay_domain>
 <add_relay_domain_text>All emails for a "relay domain" will be forwarded to an other dedicated server.</add_relay_domain_text>
 <autoaliases>Auto-aliase</autoaliases>
 <autoaliases_text>If you enable this feature, each user will have automatically a new aliase with this domain when you update it on create a new one</autoaliases_text>

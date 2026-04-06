@@ -22,21 +22,23 @@ Les ordinateurs qui support uniquement le protocole netbios ne pourront alors vi
 <domain logons_text>Si actif, le serveru Samba va fournir the service de connexion pour les Windows 9.x ins&eacute;r&eacute;s dans le domaine.[br]
 Ceci va tranformer le serveur Samba en un contr&ocirc;leur de domaine de style NT.</domain logons_text>
 <domain master>Ma&icirc;tre du domaine</domain master>
-<domain master_text>Dites à samba d'activer la collation de la liste de navigation à l'échelle du WAN.[br]
-La définition de cette option permet au serveur de revendiquer un nom NetBIOS spécifique au domaine qui l'identifie comme un navigateur maître du domaine pour son groupe de travail donné.[br]
-Les navigateurs maîtres locaux du même groupe de travail sur des sous-réseaux isolés par diffusion donneront à ce serveur leurs listes de navigation locales, puis demanderont au serveur partagé une copie complète de la liste de navigation.
-une copie complète de la liste de navigation pour l'ensemble du réseau étendu.
-[Les clients navigateurs contacteront alors leur navigateur maître local et recevront la liste de navigation de l'ensemble du domaine, au lieu de la seule liste de leur sous-réseau isolé par diffusion[br].
-Notez que les contrôleurs de domaine primaires Windows NT s'attendent à pouvoir revendiquer ce nom NetBIOS spécial spécifique au groupe de travail qui les identifie en tant que navigateurs maîtres du domaine pour ce groupe.
-qu'ils sont les navigateurs maîtres du domaine pour ce groupe de travail par défaut (c'est-à-dire qu'il n'existe aucun moyen d'empêcher un PDC Windows NT de tenter de le faire).[br]
-Cela signifie que si ce paramètre est défini et que ce serveur revendique le nom spécial pour un groupe de travail avant qu'un PDC Windows NT ne soit en mesure de le faire, la navigation inter-sous-réseaux
-se comportera bizarrement et pourra échouer.[br]
-Si domain logons = yes, le comportement par défaut consiste à activer le paramètre domain master.[br]
-Si domain logons n'est pas activé (le paramètre par défaut), alors domain master ne sera pas non plus activé par défaut.[br]
-Lorsque domain logons = Yes, le paramètre par défaut est Yes, avec pour conséquence que Samba sera un PDC.[br]
-Si domain master = Non, Samba fonctionnera comme un BDC.[br]
-En général, ce paramètre doit être défini sur â€â%84%A2Noâ€â%84%A2 uniquement sur un BDC. [br]
-Défaut : domain master = auto</domain master_text>
+<domain master_text>Activez le moteur de partage de fichiers afin dâ%80%99effectuer la consolidation des listes de navigation à lâ%80%99échelle du WAN.[br]
+Lorsque cette option est activée, le serveur revendique un nom NetBIOS spécial spécifique au groupe de travail, le désignant comme Domain Master Browser pour ce groupe de travail.[br]
+Les navigateurs maîtres locaux situés sur des sous-réseaux isolés par broadcast au sein du même groupe de travail transmettront leurs listes de navigation locales à ce serveur. En retour, ils demanderont une liste consolidée représentant lâ%80%99ensemble du réseau étendu (WAN).[br]
+Les postes clients continueront de contacter leur navigateur maître local, mais recevront une liste de navigation à lâ%80%99échelle du domaine au lieu dâ%80%99une liste limitée à leur sous-réseau.[br]
+[b]Points importants :[/b][br]
+Les contrôleurs de domaine principal Windows NT (PDC) tentent automatiquement de revendiquer le nom NetBIOS spécial les identifiant comme Domain Master Browser pour leur groupe de travail. Ce comportement ne peut pas être désactivé.[br]
+Si ce serveur revendique le rôle de Domain Master Browser avant un PDC Windows NT, la navigation inter-sous-réseaux peut devenir imprévisible ou échouer.[br]
+Résumé du comportement :[br]
+
+Si activé, le serveur active par défaut le paramètre domain master.[br]
+
+Si lâ%80%99option domain logons nâ%80%99est pas activée (paramètre par défaut), le rôle de domain master ne sera pas activé automatiquement.[br]
+
+Lorsquâ%80%99il est actif, le moteur de partage de fichiers fonctionne comme un Primary Domain Controller (PDC).[br]
+
+Lorsquâ%80%99il est inactif, le moteur de partage de fichiers fonctionne comme un Backup Domain Controller (BDC).[br]
+En général, ce paramètre ne doit être désactivé que sur un BDC.</domain master_text>
 <domain_admin>Droits Administrateur du Domaine</domain_admin>
 <domain_admin_text>Mettez &agrave; jour le compte Administrator qui autorise le raccrochement des ordinateurs au domaine et permet les op&eacute;rations administrateur dans le r&eacute;seau.</domain_admin_text>
 <enable_disable_samba>Activer ou D&eacute;sactiver le service partage</enable_disable_samba>

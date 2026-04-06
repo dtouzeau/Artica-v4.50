@@ -7494,7 +7494,6 @@ class unix {
 
     function CREATE_NEW_UUID(){
         if(is_file("/etc/artica-postfix/settings/Daemons/SYSTEMID_CREATED")){
-            @chmod("/etc/artica-postfix/settings/Daemons/SYSTEMID", 0755);
             $value=trim(@file_get_contents("/etc/artica-postfix/settings/Daemons/SYSTEMID"));
             if($value<>null){return $value;}
         }
@@ -7506,7 +7505,6 @@ class unix {
         if(strlen($uuid)>5){
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEMID", $uuid);
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEMID_CREATED", time());
-            @chmod("/etc/artica-postfix/settings/Daemons/SYSTEMID", 0755);
             shell_exec("$chattr +i /etc/artica-postfix/settings/Daemons/SYSTEMID");
 
             if(is_file("/etc/init.d/squid")) {
@@ -10228,7 +10226,7 @@ function writeFrameOtherlogs($file,$text=null){
     }
     $logFile=str_replace("//","/",$logFile);
     $f = @fopen($logFile, 'a');
-
+    if($f === false){return;}
     @fwrite($f, "$text\n");
     @fclose($f);
 }

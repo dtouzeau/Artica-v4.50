@@ -63,17 +63,24 @@ function page(){
 }
 
 function search(){
-	$time=null;
+
 	$sock=new sockets();
 	$tpl=new template_admin();
-	$max=0;$date=null;$c=0;
-	
 	$MAIN=$tpl->format_search_protocol($_GET["search"]);
-	
-	$line=base64_encode(serialize($MAIN));
-	$sock->getFrameWork("hacluster.php?syslog=$line");
-	$filename=PROGRESS_DIR."/hacluster.syslog";
-	$date_text=$tpl->_ENGINE_parse_body("{date}");
+    $rp=intval($MAIN["MAX"]);
+    $search=trim($MAIN["TERM"]);
+    if(strlen($search)<3){$search="NONE";}
+
+    $data=$sock->REST_API("/hacluster/server/events/$rp/$search");
+
+    $json=json_decode($data);
+    if (json_last_error()> JSON_ERROR_NONE) {
+        echo $tpl->div_error("{error}<hr>".json_last_error_msg());
+    }
+    if(!$json->Status){
+        echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
+    }
+    $date_text=$tpl->_ENGINE_parse_body("{date}");
 	$events=$tpl->_ENGINE_parse_body("{events}");
 	$html[]="
 <table class=\"table table-hover\">
@@ -100,18 +107,14 @@ function search(){
     }
 
 
-    $data=explode("\n",@file_get_contents($filename));
-	if(count($data)>3){$_SESSION["HACLUSTER_SEARCH"]=$_GET["search"];}
-	krsort($data);
+
+	if(count($json->Logs)>3){$_SESSION["HACLUSTER_SEARCH"]=$_GET["search"];}
 
 
-	
-	foreach ($data as $line){
+
+
+    foreach ($json->Logs as $line){
 		$line=trim($line);
-		$ruleid=0;
-		$rulename=null;
-		$ACTION=null;
-		$FF=false;
 		if(!preg_match("#^([A-Za-z]+)\s+([0-9]+)\s+([0-9:]+)\s+(.+?)\s+.*?\[([0-9]+)\]:(.+)#", $line,$re)){
 			if($GLOBALS["VERBOSE"]) {
                 echo "<strong style='color:red'>$line</strong><br>";

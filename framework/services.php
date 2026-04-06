@@ -60,10 +60,7 @@ if(isset($_GET["DeleteFiles"])){DeleteFiles();exit;}
 if(isset($_GET["port-list"])){ports_list();exit;}
 if(isset($_GET["CleanCacheMem"])){CleanCacheMem();exit;}
 if(isset($_GET["files-descriptors"])){file_descriptors_get();exit;}
-
-if(isset($_GET["ufdbguard-reload"])){ufdbguard_reload();exit;}
 if(isset($_GET["ssh-test"])){SSH_TEST_CONNECTION();exit;}
-
 if(isset($_GET["greensql-status"])){greensql_status();exit;}
 if(isset($_GET["greensql-reload"])){greensql_reload();exit;}
 if(isset($_GET["greensql-logs"])){greensql_logs();exit;}
@@ -99,7 +96,6 @@ if(isset($_GET["start-cicap"])){start_cicap();exit;}
 if(isset($_GET["restart-cicap"])){restart_cicap();exit;}
 if(isset($_GET["cicap-events"])){events_cicap();exit;}
 if(isset($_GET["admin-events"])){admin_events();exit;}
-if(isset($_GET["total-memory"])){total_memory();exit;}
 if(isset($_GET["mysql-ssl-keys"])){mysql_ssl_key();exit;}
 if(isset($_GET["mysqld-perso"])){mysqld_perso();exit;}
 if(isset($_GET["mysqld-perso-save"])){mysqld_perso_save();exit;}
@@ -111,7 +107,6 @@ if(isset($_GET["kerbauth-progress"])){kerbauth_progress();exit;}
 
 if(isset($_GET["reload-pure-ftpd"])){pureftpd_reload();exit;}
 if(isset($_GET["restart-ftp"])){pureftpd_restart();exit;}
-if(isset($_GET["dmicode"])){dmicode();exit;}
 if(isset($_GET["mysql-events"])){mysql_events();exit;}
 if(isset($_GET["AdCacheMysql"])){AdCacheMysql();exit;}
 if(isset($_GET["change-ldap-suffix"])){change_ldap_suffix();exit;}
@@ -264,41 +259,6 @@ function restart_cicap(){
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 
 }
-
-function dmicode():bool{
-    $curfile=PROGRESS_DIR."/dmicode.array";
-    if(is_file("/etc/artica-postfix/dmidecode.cache")){
-        if(is_file($curfile)) {
-            @unlink($curfile);
-        }
-        @copy("/etc/artica-postfix/dmidecode.cache",$curfile);
-        return true;
-    }
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$php5 /usr/share/artica-postfix/exec.dmidecode.php >/dev/null 2>&1");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-    if(is_file($curfile)) {
-        @unlink($curfile);
-    }
-    @copy("/etc/artica-postfix/dmidecode.cache",$curfile);
-    return true;
-
-}
-
-
-function total_memory(){
-    $unix=new unix();
-    $mem=$unix->TOTAL_MEMORY_MB();
-    writelogs_framework("TOTAL_MEMORY_MB: $mem",__FUNCTION__,__FILE__,__LINE__);
-    echo "<articadatascgi>$mem</articadatascgi>";
-}
-
-
-
-
-
 function chmod_rrd(){
     $unix=new unix();
     $chmod=$unix->find_program("chmod");
@@ -586,15 +546,7 @@ function greensql_reload(){
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 }
 
-function mysql_ssl_key(){
-    $instance_id=$_GET["instance-id"];
-    if(!is_numeric($instance_id)){$instance_id=0;}
-    $cmd=trim("/usr/share/artica-postfix/bin/artica-install --mysql-certificate $instance_id 2>&1");
-    exec($cmd,$results);
-    writelogs_framework("$cmd " .count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
-    foreach ($results as $num=>$line){writelogs_framework("$line",__FUNCTION__,__FILE__,__LINE__);}
 
-}
 
 function time_capsule_status(){
     exec(LOCATE_PHP5_BIN2()." /usr/share/artica-postfix/exec.status.php --time-capsule --nowachdog",$results);
@@ -655,109 +607,6 @@ function openemm_restart(){
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 }
 
-
-function pureftpd_reload(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $cmd=trim("$nohup /usr/share/artica-postfix/bin/artica-install --pure-ftp-reload >/dev/null 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
-function pureftpd_restart(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $cmd=trim("$nohup /etc/init.d/artica-postfix restart ftp >/dev/null 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
-
-function mysqld_perso(){
-    $datas=base64_encode(@file_get_contents("/etc/artica-postfix/my.cnf.mysqld"));
-    echo "<articadatascgi>$datas</articadatascgi>";
-}
-function mysqld_perso_save(){
-    $datas=base64_decode($_GET["mysqld-perso-save"]);
-    @file_put_contents("/etc/artica-postfix/my.cnf.mysqld", trim($datas));
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    squid_admin_mysql(1,"Restarting MySQL service...", null,__FILE__,__LINE__);
-    $cmd=trim("$nohup /etc/init.d/mysql restart --framework=".__FILE__." >/dev/null 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
-}
-
-
-function AdCacheMysql(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $cmd=trim("$nohup ".$unix->LOCATE_PHP5_BIN(). " /usr/share/artica-postfix/exec.activedirectory-import.php >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-
-}
-
-function mysql_events(){
-    $instance_id=$_GET["instance-id"];
-    if(!is_numeric($instance_id)){$instance_id=0;}
-    $file="/var/run/mysqld/mysqld.err";
-    if($instance_id>0){
-        $ini=new iniFrameWork();
-        $ini->loadFile("/etc/mysql-multi.cnf");
-        $file=$ini->get("mysqld$instance_id","log_error");
-    }
-
-    $unix=new unix();
-    $tail=$unix->find_program("tail");
-    $results=array();
-
-    if($instance_id==0){
-        if(is_file("/var/lib/mysql/mysqld.err")){
-            $cmd="$tail -n 300 /var/lib/mysql/mysqld.err 2>&1";
-            writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-            exec($cmd,$results);
-        }
-
-
-        if(is_file("/var/run/mysqld/mysqld.err")){
-            $cmd="$tail -n 300 /var/run/mysqld/mysqld.err 2>&1";
-            writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-            exec($cmd,$results);
-        }
-
-    }else{
-        if(is_file($file)){
-            $cmd="$tail -n 300 /var/run/mysqld/mysqld.err 2>&1";
-            writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-            exec($cmd,$results);
-        }
-
-    }
-
-
-
-    if(count($results)==0){
-        $datas=base64_encode(serialize(array("{error_no_datas}")));
-        echo "<articadatascgi>$datas</articadatascgi>";
-        return;
-    }
-
-    $datas=base64_encode(serialize($results));
-    echo "<articadatascgi>$datas</articadatascgi>";
-
-
-}
-
-
-
-
-function phpldapadmin(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $cmd=trim("$nohup ".$unix->LOCATE_PHP5_BIN(). " /usr/share/artica-postfix/exec.phpldapadmin.php --build >/dev/null 2>&1");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
 function reload_dkim(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");
@@ -997,14 +846,7 @@ function reload_adagent(){
     shell_exec($cmd);
 
 }
-function ufdbguard_reload(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    squid_admin_mysql(1, "Reloading Web-Filtering service", null,__FILE__,__LINE__);
-    $cmd=trim($nohup." ".$unix->LOCATE_PHP5_BIN(). " /usr/share/artica-postfix/exec.squidguard.php --reload --force >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
+
 
 
 function SSH_TEST_CONNECTION(){

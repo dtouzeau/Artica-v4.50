@@ -64,9 +64,7 @@ function ufdb_on(){
 	$unix=new unix();
 	build_progress("Stamp emerency to on",20);
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidUFDBUrgency", 1);
-	@chmod("/etc/artica-postfix/settings/Daemons/SquidUFDBUrgency",0755);
-	
-	
+
 	build_progress("{reconfiguring}",30);
 	$php=$unix->LOCATE_PHP5_BIN();
 	system("$php /usr/share/artica-postfix/exec.squid.php --build");
@@ -86,7 +84,6 @@ function ufdb_off(){
 	build_progress("Stamp emerency to OFF",20);
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidUFDBUrgency", 0);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UfdbGuardDisabledRedirectors", 0);
-	@chmod("/etc/artica-postfix/settings/Daemons/SquidUFDBUrgency",0755);
 	build_progress("{reconfiguring} {please_wait}",30);
 	$php=$unix->LOCATE_PHP5_BIN();
 	system("$php /usr/share/artica-postfix/exec.squid.php --build");
@@ -95,7 +92,7 @@ function ufdb_off(){
 	
 	if($users->CORP_LICENSE){
 		build_progress("{recompiling_personal_databases} {please_wait}",40);
-		system("$php /usr/share/artica-postfix/exec.squidguard.php --compile-all-categories");
+
 	}
 	
 	build_progress("{starting} {webfiltering}",60);
@@ -113,7 +110,6 @@ function xstart_ssl(){
 	$unix=new unix();
 	build_progress("Stamp emergency to off",20);
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidSSLUrgency", 0);
-	@chmod("/etc/artica-postfix/settings/Daemons/SquidUrgency",0755);
 	build_progress("{reconfiguring}",30);
 	$php=$unix->LOCATE_PHP5_BIN();
 	system("$php /usr/share/artica-postfix/exec.squid.global.access.php --ports");	
@@ -198,7 +194,7 @@ function xstart(){
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidHotSpotUrgency", 0);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KSRNEmergency", 0);
 
-	@chmod("/etc/artica-postfix/settings/Daemons/SquidUrgency",0755);
+
 	@file_put_contents("/etc/artica-postfix/pids/basicauthenticator.helpers.crashing.count", 0);
 	@file_put_contents("/etc/artica-postfix/pids/ntlmauthenticator.helpers.crashing.count", 0);
     @file_put_contents("/etc/squid3/non_ntlm.acl","# Disabled by Web console\n");

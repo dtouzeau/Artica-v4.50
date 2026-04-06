@@ -27,7 +27,7 @@ function optimize(){
 		$ARRAY["swappiness"]=0;
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("kernel_values", serialize($ARRAY));
 		build_progress("Build Kernel values....",35);
-		system("$php /usr/share/artica-postfix/exec.sysctl.php --restart");
+		system("/usr/sbin/artica-phpfpm-service -sysctl");
 		build_progress("Optimize system disk partitions",50);
 		system("$php /usr/share/artica-postfix/exec.patch.fstab.php");
 		build_progress("{done}",100);
@@ -70,7 +70,7 @@ function optimize(){
 		$ARRAY["swappiness"]=60;
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("kernel_values", serialize($ARRAY));
 		build_progress("Build Kernel values....",35);
-		system("$php /usr/share/artica-postfix/exec.sysctl.php --restart");
+		system("/usr/sbin/artica-phpfpm-service -sysctl");
 		build_progress("Optimize system disk partitions",50);
 		system("$php /usr/share/artica-postfix/exec.patch.fstab.php");
 		if(is_file("/etc/modprobe.d/performance.conf")){

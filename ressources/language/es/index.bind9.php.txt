@@ -54,13 +54,12 @@ if you want to query all computers in all DNS Zones, type your pattern and "all"
 Example : PC-10* all
 </search_explain>
 <slave>slave</slave>
-<slave_text>A slave zone is a replica of a master zone.[br]
-The masters list specifies one or more IP addresses of master servers that the slave contacts to update its copy of the zone.[br]
-By default, transfers are made from port 53 on the servers;[br]
-this can be changed for all servers by specifying a port number before the list of IP addresses, or on a per-server basis after the IP address.[br]
-Authentication to the master can also be done with per-server TSIG keys.[br]
-If a file is specified, then the replica will be written to this file whenever the zone is changed, and reloaded from this file on a server restart.[br]
-</slave_text>
+<slave_text>Una zona esclava es una réplica de solo lectura de una zona maestra.[br]
+La lista masters define una o m%C3¡s direcciones IP de servidores maestros que la zona esclava contacta para actualizar su copia.[br]
+Por defecto, las transferencias se realizan por el puerto 53;[br]
+esto puede modificarse globalmente especificando un puerto antes de la lista de direcciones IP, o por servidor indicando el puerto después de la direcci%C3%B3n IP.[br]
+La autenticaci%C3%B3n con los servidores maestros puede configurarse mediante claves TSIG por servidor.[br]
+Si se especifica un archivo, la réplica se guarda en este archivo cada vez que la zona cambia y se recarga desde él al reiniciar el servidor.[br]</slave_text>
 <stub>stub</stub>
 <stub_text>Una zona stub es similar a una zona esclava, salvo que replica s%C3%B3lo los registros NS de una zona maestra en lugar de toda la zona[br].
 Las zonas stub no son una parte est%C3¡ndar del DNS;[br]

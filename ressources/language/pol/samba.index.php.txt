@@ -30,23 +30,23 @@ This  will also  cause  the Samba server to act as a domain controller for NT4 s
 For more details on setting up this feature see the Domain Control chapter of the Samba HOWTO Collection.
 </domain logons_text>
 <domain master>domain master</domain master>
-<domain master_text>
-Tell samba to enable WAN-wide browse list collation.[br]
-Setting this option causes server to claim a special domain specific NetBIOS name that  identifies it as a domain master browser for its given workgroup.[br]
-Local master browsers in the same workgroup on broadcast-isolated subnets will give this server their local browse lists, and then ask shared server
-for a complete copy of the browse list for the  whole wide area network.
-[br]Browser clients will then contact their local master browser, and will receive the domain-wide browse list, instead of just the list for their broadcast-isolated subnet.[br]
-Note that Windows NT Primary Domain Controllers expect to be able to claim this workgroup specific special NetBIOS name that identifies
-them as domain master browsers for that workgroup by default (i.e. there is no way to prevent a Windows NT PDC from attempting to do this).[br]
-This means that if this parameter is set and this server claims the special name for a workgroup before a Windows NT PDC is able to do so then cross subnet browsing
-will behave strangely and may fail.[br]
-If  domain  logons  =  yes,  then  the default behavior is to enable the domain master parameter.[br]
-If domain logons is not enabled (the default setting), then neither will domain master be enabled by default.[br]
-When domain logons = Yes the default setting for this parameter is Yes, with the result that Samba will be a PDC.[br]
-If domain  master  = No, Samba will function as a BDC.[br]
-In general, this parameter should be set to â€™Noâ€™ only on a BDC. [br]
-Default: domain master = auto
-</domain master_text>
+<domain master_text>W%C5%82%C4%85cz mechanizm udost%C4%99pniania plik%C3%B3w, aby umo%C5%BCliwi%C4%87 konsolidacj%C4%99 list przegl%C4%85dania w skali WAN.[br]
+Po w%C5%82%C4%85czeniu tej opcji serwer przejmuje specjaln%C4%85 nazw%C4%99 NetBIOS specyficzn%C4%85 dla grupy roboczej, kt%C3%B3ra identyfikuje go jako Domain Master Browser dla tej grupy.[br]
+Lokalne przegl%C4%85darki g%C5%82%C3%B3wne w podsieciach izolowanych przez broadcast w obr%C4%99bie tej samej grupy roboczej przeka%C5%BC%C4%85 swoje lokalne listy przegl%C4%85dania do tego serwera. W zamian otrzymaj%C4%85 skonsolidowan%C4%85 list%C4%99 obejmuj%C4%85c%C4%85 ca%C5%82%C4%85 sie%C4%87 WAN.[br]
+Systemy klienckie nadal b%C4%99d%C4%85 kontaktowa%C4%87 si%C4%99 ze swoim lokalnym przegl%C4%85dark%C4%85 g%C5%82%C3%B3wn%C4%85, lecz otrzymaj%C4%85 list%C4%99 na poziomie domeny zamiast listy ograniczonej do podsieci.[br]
+[b]Wa%C5%BCne informacje:[/b][br]
+Kontrolery domeny podstawowej Windows NT (PDC) automatycznie pr%C3%B3buj%C4%85 przej%C4%85%C4%87 specjaln%C4%85 nazw%C4%99 NetBIOS identyfikuj%C4%85c%C4%85 je jako Domain Master Browser dla grupy roboczej. Tego zachowania nie mo%C5%BCna wy%C5%82%C4%85czy%C4%87.[br]
+Je%C5%9Bli ten serwer przejmie rol%C4%99 Domain Master Browser przed PDC Windows NT, przegl%C4%85danie mi%C4%99dzy podsieciami mo%C5%BCe dzia%C5%82a%C4%87 nieprzewidywalnie lub zako%C5%84czy%C4%87 si%C4%99 niepowodzeniem.[br]
+Podsumowanie dzia%C5%82ania:[br]
+
+Je%C5%9Bli w%C5%82%C4%85czone, serwer domy%C5%9Blnie aktywuje parametr domain master.[br]
+
+Je%C5%9Bli domain logons nie jest w%C5%82%C4%85czone (ustawienie domy%C5%9Blne), rola domain master nie zostanie automatycznie aktywowana.[br]
+
+Gdy aktywne, udost%C4%99pnianie plik%C3%B3w dzia%C5%82a jako Primary Domain Controller (PDC).[br]
+
+Gdy nieaktywne, dzia%C5%82a jako Backup Domain Controller (BDC).[br]
+Zasadniczo parametr ten powinien by%C4%87 wy%C5%82%C4%85czony wy%C5%82%C4%85cznie na BDC.</domain master_text>
 <domain_admin>Domain Administrator privileges</domain_admin>
 <domain_admin_text>Update the Administrator Account that allow to link computers to your Primary Domain Controler and be able to perform administration operations.</domain_admin_text>
 <enable_disable_samba>Enable or disable service</enable_disable_samba>

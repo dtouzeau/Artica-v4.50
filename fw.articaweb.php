@@ -1420,7 +1420,7 @@ function status(){
     <script>LoadAjaxSilent('client-certificate-status','fw.articaweb.status.php?status=yes');</script>";
 
     if($WebConsoleGoogle2FA==0){
-        $uuid=base64_decode( $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?system-unique-id=yes"));
+        $uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
         $local_img=dirname(__FILE__)."/img/2FA$uuid.png";
         if(is_file($local_img)){@unlink($local_img);}
         echo $tpl->widget_grey("{2fa}", "{disabled}");
@@ -1440,7 +1440,7 @@ function status(){
 }
 
 function Get2faimg():string{
-    $uuid=base64_decode( $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?system-unique-id=yes"));
+    $uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
     $local_img=dirname(__FILE__)."/img/2FA$uuid.png";
     if(is_file($local_img)){return "/img/2FA$uuid.png?t=".time();}
     include_once(dirname(__FILE__)."/ressources/externals/PHPGangsta/google2fa.inc");

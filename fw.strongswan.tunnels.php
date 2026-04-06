@@ -3498,18 +3498,18 @@ function search()
 
 
         $tunnel_time_file= file_get_contents("/etc/artica-postfix/settings/Daemons/ipsec_status_time_{$ligne['conn_name']}");
-        if (!file_exists("/etc/artica-postfix/settings/Daemons/ipsec_status_time_{$ligne['conn_name']}")) {
+        if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("ipsec_status_time_{$ligne['conn_name']}")) {
             $tunnel_time='---';
         } elseif (empty($tunnel_time_file)) {
             $tunnel_time='---';
         } else {
             $tunnel_time=$tunnel_time_file;
         }
+        //if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("
 
 
-
-        $status_tunnel = file_get_contents("/etc/artica-postfix/settings/Daemons/ipsec_status_{$ligne['conn_name']}");
-        if (!file_exists("/etc/artica-postfix/settings/Daemons/ipsec_status_{$ligne['conn_name']}")) {
+        $status_tunnel = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("ipsec_status_{$ligne['conn_name']}");
+        if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("ipsec_status_{$ligne['conn_name']}")) {
             $status_tunnel_result="0";
         } elseif (empty($status_tunnel)) {
             $status_tunnel_result="0";

@@ -106,7 +106,6 @@ if(count($argv)>0){
 	if($argv[1]=="--version"){exit;}
 	if($argv[1]=="--dump-adrules"){dump_adrules($argv[2]);exit;}
 	if($argv[1]=="--dbmem"){ufdbdatabases_in_mem();exit;}
-	if($argv[1]=="--artica-db-status"){ufdguard_artica_db_status();exit;}
     if($argv[1]=="--json-flat"){json_to_flat($argv[2]);exit;}
 	
 	
@@ -123,8 +122,6 @@ if(count($argv)>0){
 	if($argv[1]=="--cron-compile"){cron_compile();exit;}
 	if($argv[1]=="--compile-category"){UFDBGUARD_COMPILE_CATEGORY($argv[2]);exit;}
 	if($argv[1]=="--compile-all-categories"){UFDBGUARD_COMPILE_ALL_CATEGORIES();exit;}
-	if($argv[1]=="--ufdbguard-recompile-dbs"){echo UFDBGUARD_COMPILE_ALL_CATEGORIES();exit;}
-	if($argv[1]=="--phraselists"){echo CompileCategoryWords();exit;}
 	if($argv[1]=="--fix1"){exit;}
 	if($argv[1]=="--bads"){echo remove_bad_files();exit;}
 	if($argv[1]=="--reload131"){exit;}
@@ -295,14 +292,14 @@ function build_ufdbguard_smooth(){
 
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_UFDBGUARD_INSTALLED", 1);
 	@chmod($ufdbguardd_path,0755);
-	system("$php /usr/share/artica-postfix/exec.ufdbconfig.php");
+
 
 	if(function_exists('WriteToSyslogMail')){WriteToSyslogMail("build_ufdbguard_smooth() -> reconfigure UfdbGuardd", basename(__FILE__));}
 	
 
 	
 
-	system("$php /usr/share/artica-postfix/exec.ufdb.enable.php --ufdb");
+	system("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/install");
 	$squidbin=$unix->LOCATE_SQUID_BIN();
 	
 	echo "Starting......: ".date("H:i:s")." Webfiltering service ". date("Y-m-d H:i:s")."\n";
@@ -353,13 +350,13 @@ function build_ufdbguard_HUP(){
 	if(isset($GLOBALS["build_ufdbguard_HUP_EXECUTED"])){return;}
 	$GLOBALS["build_ufdbguard_HUP_EXECUTED"]=true;
 	$unix=new unix();
-	$sock=new sockets();$forceTXT=null;
+	$forceTXT=null;
 	$ufdbguardReloadTTL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ufdbguardReloadTTL"));
 	if($ufdbguardReloadTTL<1){$ufdbguardReloadTTL=10;}
-	$php5=$unix->LOCATE_PHP5_BIN();
+
 	$rm=$unix->find_program("rm");
 	
-	shell_exec("$php5 /usr/share/artica-postfix/exec.ufdbclient.reload.php");
+
 	shell_exec("$rm /home/squid/error_page_cache/*");
 	
 	if(function_exists("debug_backtrace")){
@@ -1897,23 +1894,7 @@ function stop_ufdbguard($aspid=false){
 
 }
 
-function ufdguard_artica_db_status(){
-	$unix=new unix();
-	$mainpath="/var/lib/ufdbartica";
-	
-	
-	$mainpath_size=$unix->DIRSIZE_BYTES($mainpath);
-	
-	$array["SIZE"]=$mainpath_size;
-	if(is_file("$mainpath/category_porn/domains.ufdb")){
-		$date=filemtime("$mainpath/category_porn/domains.ufdb");
-		$array["DATE"]=$date;
-	}else{
-		$array["DATE"]=0;
-	}
-	@file_put_contents("/etc/artica-postfix/ARTICA_WEBFILTER_DB_STATUS", serialize($array));
-	
-}
+
 
 
 

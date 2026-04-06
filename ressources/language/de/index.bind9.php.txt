@@ -10,7 +10,7 @@ if you set "domain.tld", your computer "computer" will be "computer.domain.tld"
 <add_new_zone_tex>Add a new net domain zone in order to query in DNS your computer has "computer.*.*"</add_new_zone_tex>
 <computers>computers</computers>
 <config>Konfigurationsdatei</config>
-<dns_zones>DNS Zones</dns_zones>
+<dns_zones>DNS-Zonen</dns_zones>
 <expire_time_text>Tiempo que esperan los servidores DNS antes de rechazar los datos de las zonas si el servidor primario ya no est%C3¡ disponible</expire_time_text>
 <forward>forward zone</forward>
 <forwarders>Public DNS</forwarders>
@@ -54,13 +54,12 @@ if you want to query all computers in all DNS Zones, type your pattern and "all"
 Example : PC-10* all
 </search_explain>
 <slave>slave</slave>
-<slave_text>A slave zone is a replica of a master zone.[br]
-The masters list specifies one or more IP addresses of master servers that the slave contacts to update its copy of the zone.[br]
-By default, transfers are made from port 53 on the servers;[br]
-this can be changed for all servers by specifying a port number before the list of IP addresses, or on a per-server basis after the IP address.[br]
-Authentication to the master can also be done with per-server TSIG keys.[br]
-If a file is specified, then the replica will be written to this file whenever the zone is changed, and reloaded from this file on a server restart.[br]
-</slave_text>
+<slave_text>Eine Slave-Zone ist eine schreibgesch%C3%BCtzte Replik einer Master-Zone.[br]
+Die Liste masters definiert eine oder mehrere IP-Adressen von Master-Servern, die der Slave kontaktiert, um seine Zonenkopie zu aktualisieren.[br]
+Standardm%C3%A4%C3%9Fig erfolgen Zonentransfers %C3%BCber Port 53;[br]
+dies kann global durch Angabe eines Ports vor der IP-Liste oder pro Server durch Angabe des Ports nach der IP-Adresse ge%C3%A4ndert werden.[br]
+Die Authentifizierung gegen%C3%BCber den Master-Servern kann mit serverbezogenen TSIG-Schl%C3%BCsseln erfolgen.[br]
+Wenn eine Datei angegeben ist, wird die Replik bei jeder Zonen%C3%A4nderung in diese Datei geschrieben und beim Neustart des Servers daraus neu geladen.[br]</slave_text>
 <stub>stub</stub>
 <stub_text>A stub zone is similar to a slave zone, except that it replicates only the NS records of a master zone instead of the entire zone.[br]
 Stub zones are not a standard part of the DNS;[br]

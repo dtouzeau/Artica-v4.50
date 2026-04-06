@@ -127,9 +127,14 @@ function notifs(){
     $UnboundEnabled = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
     $SQUIDEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
 
-      if(is_file("/etc/artica-postfix/ARTICA_REVERSE_PROXY_APPLIANCE")){
-            $REVERSE_APPLIANCE=true;
-      }
+    if(is_file("/etc/artica-postfix/ARTICA_REVERSE_PROXY_APPLIANCE")){$REVERSE_APPLIANCE=true;}
+
+    $VM_DISK_SLOW=VM_DISK_SLOW();
+    if($VM_DISK_SLOW<>null){$ERR[]=$VM_DISK_SLOW;}
+    $FOUND_AD_SERVER=FOUND_AD_SERVER();
+    if($FOUND_AD_SERVER<>null){$ERR[]=$FOUND_AD_SERVER;}
+
+
     $errorFile="/usr/share/artica-postfix/ressources/logs/NFQueue/error.txt";
     if(is_file($errorFile)) {
         $ERR[]=@file_get_contents($errorFile);
@@ -382,6 +387,8 @@ function notifs(){
             $ERR[]=$NGINX_NOTE;
         }
     }
+
+
 
     $NOTIF_AUTOFS=NOTIF_AUTOFS($UPDATES_ARRAY);
     if($NOTIF_AUTOFS<>null){$ERR[]=$NOTIF_AUTOFS;}
@@ -730,8 +737,10 @@ function notifs(){
 	}
 
     if(!$users->AsDockerWeb) {
-        if (!is_file("/etc/artica-postfix/settings/Daemons/ArticaAutoUpateOfficial")) {
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ArticaAutoUpateOfficial", 1);
+        if (method_exists($GLOBALS["CLASS_SOCKETS"], 'INFO_EXISTS')) {
+            if (!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("ArticaAutoUpateOfficial")) {
+                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ArticaAutoUpateOfficial", 1);
+            }
         }
         $ArticaAutoUpateOfficial = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaAutoUpateOfficial"));
         $ArticaAutoUpateNightly = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaAutoUpateNightly"));
@@ -2207,15 +2216,34 @@ function  NOTIF_X_TABLES_PACKAGE_INSTALLED($UPDATES_ARRAY):array{
     $HideToken = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
     if($HideToken==1){return $ERR;}
     VERBOSE("Kernel Version = $KERNEL",__LINE__);
+    if(preg_match("#([0-9\.]+)\+deb([0-9]+)([\+0-9]+)-amd64#",$KERNEL,$re)){
+        $KERNEL="$re[1]+deb$re[2]-amd64";
+    }
 
-    if(is_file("/lib/modules/$KERNEL/extra/xt_ndpi.ko")){return $ERR;}
-    VERBOSE("/lib/modules/$KERNEL/extra/xt_ndpi.ko... Is there a new one ?",__LINE__);
+    if(is_file("/lib/modules/$KERNEL/extra/xt_ndpi.ko") OR (is_file("/lib/modules/$KERNEL/updates/xt_ndpi.ko.xz"))){return $ERR;}
+    VERBOSE("/lib/modules/$KERNEL/extra/xt_ndpi.ko... Is there a new one --> NO?",__LINE__);
     if(!isset($UPDATES_ARRAY["APP_XTABLES"])){
         VERBOSE("UPDATES_ARRAY[APP_XTABLES]) not set.",__LINE__);
         return $ERR;
     }
 
+
+    $KERNEL = str_replace( "+deb13", "",$KERNEL);
+    $KERNEL = str_replace("+deb14", "",$KERNEL);
+    $KERNEL = str_replace("+deb15", "",$KERNEL);
+    $KERNEL = str_replace( "+deb16", "",$KERNEL);
+    $KERNEL = str_replace( "+deb17", "",$KERNEL);
+    $KERNEL = str_replace( "+deb18", "",$KERNEL);
+    $KERNEL = str_replace( "+deb19", "",$KERNEL);
+    $KERNEL = str_replace( "+deb20", "",$KERNEL);
     $KERNEL=str_replace("-amd64","",$KERNEL);
+    if(preg_match("#^([0-9\.]+)#",$KERNEL,$re)){
+        $KERNEL=$re[1];
+    }
+
+
+
+    VERBOSE("KERNEL=$KERNEL",__LINE__);
     foreach ($UPDATES_ARRAY["APP_XTABLES"] as $index=>$main){
         $VERSION=$main["VERSION"];
         VERBOSE("$VERSION <> $KERNEL ?",__LINE__);
@@ -2328,9 +2356,51 @@ function deb10_js():bool{
     return $tpl->js_dialog1("{info_end_of_support}","$page?deb10-popup=yes");
 }
 function deb10_popup():bool{
-    $page=currentPageName();
     $tpl=new template_admin();
     $html[]=$tpl->div_success("Linux Debian 10||<p style='font-size:14px'>{info_end_of_support_debian10}</p>");
     echo $tpl->_ENGINE_parse_body($html);
     return true;
+}
+function FOUND_AD_SERVER():string{
+    $DisableAdDiscover=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableAdDiscover"));
+    if($DisableAdDiscover==1){
+        return "";
+    }
+    $EnableActiveDirectoryFeature=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableActiveDirectoryFeature"));
+    if($EnableActiveDirectoryFeature==1){
+        return "";
+    }
+    $DiscoveredAD=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DiscoveredAD"));
+    VERBOSE("DiscoveredAD=$DiscoveredAD",__LINE__);
+    if(strlen($DiscoveredAD)<4){
+        return "";
+    }
+    $page=CurrentPageName();
+    return  "{ad_discovered}||{ad_discovered}: <strong>$DiscoveredAD</strong>||MOREINFO||js:Loadjs('fw.activedirectory.discovered.php?js=yes');||js:Loadjs('$page?SetToken=DisableAdDiscover');";
+}
+
+function VM_DISK_SLOW():string{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $VM_DISK_SLOW=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VM_DISK_SLOW"));
+    if($VM_DISK_SLOW==0){return VM_DISK_TWEAK();}
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableSlowStorage"))==1){return VM_DISK_TWEAK();}
+    $VM_DISK_SLOW_DEVICE=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("VM_DISK_SLOW_DEVICE");
+    $VM_DISK_SLOW_MESSAGE=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("VM_DISK_SLOW_MESSAGE");
+    $Token="DisableSlowStorage";
+    $STEXT=$tpl->_ENGINE_parse_body("{slow_storage_detected_on} $VM_DISK_SLOW_DEVICE");
+    $ERR = "$STEXT||$VM_DISK_SLOW_MESSAGE||DANGER||js:Loadjs('fw.slow.storage.php')||js:Loadjs('$page?SetToken=$Token');";
+    return $ERR;
+}
+function VM_DISK_TWEAK():string{
+    $ERR="";
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $Token="DisableVMDiskOptimize";
+    $DiskVMMustOptimize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DiskVMMustOptimize"));
+    if($DiskVMMustOptimize==0){return $ERR;}
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableVMDiskOptimize"))==1){return $ERR;}
+    $optimizations_for_vm=$tpl->_ENGINE_parse_body("{optimizations_for_vm}");
+    $ERR = "$optimizations_for_vm||{optimizations_for_vm_exp}||WARN||js:Loadjs('fw.slow.storage.php')||js:Loadjs('$page?SetToken=$Token');";
+    return $ERR;
 }

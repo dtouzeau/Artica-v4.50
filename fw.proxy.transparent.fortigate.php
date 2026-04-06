@@ -38,7 +38,7 @@ function parameters_flat(){
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-    $FortigateTproxyEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FortigateTproxyEnabled"));
+    $FortigateTproxyEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TProxyFortiEnable"));
 
 
     if($FortigateTproxyEnabled==0){
@@ -50,7 +50,7 @@ function parameters_flat(){
         );
     }else {
 
-        $after = $tpl->framework_buildjs("/proxy/fortigate/install",
+        $after = $tpl->framework_buildjs("/proxy/fortigate/uninstall",
             "squid.fortigate.progress",
             "squid.fortigate.log",
             "progress-squid-ports-restart", "LoadAjaxSilent('tproxy-params','$page?parameters-flat=yes');");

@@ -641,7 +641,7 @@ function cybercrime_install():bool{
     cybercrime_progress("{installing}",50);
 
 
-    $unix->framework_exec("exec.articapcap.php --restart");
+
 
     cybercrime_progress("{success}",100);
     return true;
@@ -651,7 +651,7 @@ function cybercrime_uninstall():bool{
     $php    = $unix->LOCATE_PHP5_BIN();
     cybercrime_progress("{uninstalling}",20);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableFireholIPSets",0);
-    $unix->framework_exec("exec.articapcap.php --reload");
+
 
     cybercrime_progress("{uninstalling}",50);
     $q=new postgres_sql();

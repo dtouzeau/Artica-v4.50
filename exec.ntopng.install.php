@@ -52,7 +52,6 @@ function xinstall(){
 	$unix=new unix();
 	$php=$unix->LOCATE_PHP5_BIN();
 	build_progress_idb("{installing} {APP_NTOPNG}",10);
-	system("$php /usr/share/artica-postfix/exec.darkstat.php --uninstall");
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("Enablentopng", 1);
 	build_progress_idb("{installing} {APP_NTOPNG}",20);
 	if(!is_file("/etc/init.d/redis-server")){

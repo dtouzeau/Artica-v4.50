@@ -465,7 +465,7 @@ return '/etc/mail/greylist.conf';
 
 function parse_multi_databases(){
 		$sock=new sockets();
-		$uuid=base64_decode($sock->getFrameWork("cmd.php?system-unique-id=yes"));	
+		$uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
 	
 	$sql="SELECT ValueTEXT,ip_address,ou FROM postfix_multi WHERE `key`='PluginsEnabled' AND uuid='$uuid'";
 	if($GLOBALS["DEBUG"]){echo "$sql\n";}
@@ -517,7 +517,7 @@ function MultiplesInstances($hostname=null,$ou=null){
 
 function MultiplesInstancesGetmyhostname($ip_address){
 		$sock=new sockets();
-		$uuid=base64_decode($sock->getFrameWork("cmd.php?system-unique-id=yes"));	
+		$uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
 		$sql="SELECT `value` FROM postfix_multi WHERE `key`='myhostname' AND uuid='$uuid' AND ip_address='$ip_address'";
 		if($GLOBALS["DEBUG"]){echo "$sql\n";}
 		$q=new mysql();
@@ -558,7 +558,7 @@ function MultiplesInstancesFound($pid=false,$onlystart=false){
 	}
 	
 	$sock=new sockets();
-	$uuid=base64_decode($sock->getFrameWork("cmd.php?system-unique-id=yes"));	
+	$uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
 	
 	$sql="SELECT ValueTEXT,ip_address,ou FROM postfix_multi WHERE `key`='PluginsEnabled' AND uuid='$uuid'";
 	if($GLOBALS["DEBUG"]){echo "$sql\n";}

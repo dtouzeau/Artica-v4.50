@@ -189,8 +189,8 @@ function app_status():string{
 	$q=new lib_sqlite("/home/artica/SQLITE/caches.db");
 	$sql="SELECT * FROM squid_caches_center";
 	$results = $q->QUERY_SQL($sql);
-	$cachefile="/etc/artica-postfix/settings/Daemons/squid_get_cache_infos.db";
-	$MAIN_CACHES=unserialize(@file_get_contents($cachefile));
+    //
+	$MAIN_CACHES=unserialize(@file_get_contents($GLOBALS["CLASS_SOCKETS"]->GET_INFO("squid_get_cache_infos.db")));
 
 	$SquidRockPath=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRockPath"));
 	$EnableRockCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRockCache"));

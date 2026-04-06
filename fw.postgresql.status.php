@@ -40,6 +40,7 @@ function tabs(){
     $array["{tables}"]="fw.postgresql.tables.php";
     $array["{backup}"]="fw.postgresql.backup.php";
     $array["{events}"]="fw.postgresql.events.php";
+    $array["{metrics}"]="fw.postgresql.metrics.php?main-view=yes&range=1h";
     echo $tpl->tabs_default($array);
 
 }

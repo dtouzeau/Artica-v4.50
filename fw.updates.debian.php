@@ -63,16 +63,18 @@ function upgrade_system_js(){
     $tpl=new template_admin();
     $tpl->js_confirm_execute("{pkg_upgrade_system}", "toto", 1,"Loadjs('$page?upgrade-system-js2=yes')");
 }
-function update_system_js2(){
+function update_system_js2():bool{
 	$page=CurrentPageName();
     $tpl=new template_admin();
     echo $tpl->framework_buildjs("/system/debian/upgrade","upgrade.progress","upgrade.log","debian-system-updates","LoadAjaxSilent('debian-system-updates','$page?table-main=yes');LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');");
+    return true;
 }
 
 function upgrade_system_js2():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    return $tpl->framework_buildjs("/system/debian/distupgrade","upgrade.progress","upgrade.log","debian-system-updates","LoadAjaxSilent('debian-system-updates','$page?table-main=yes');LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');");
+    echo $tpl->framework_buildjs("/system/debian/distupgrade","upgrade.progress","upgrade.log","debian-system-updates","LoadAjaxSilent('debian-system-updates','$page?table-main=yes');LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');");
+    return true;
 }
 /*
  * sudo apt-get update

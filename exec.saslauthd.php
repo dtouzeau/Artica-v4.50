@@ -291,11 +291,7 @@ function start($aspid=false){
 		$moinsr='-r ';
 	}
 	
-	if($CyrusToAD==1){
-		$mech='pam';
-		if($GLOBALS["OUTPUT"]){echo "Starting......: ".date("H:i:s")." [INIT]: {$GLOBALS["TITLENAME"]} saslauthd enable pam authentifications\n";}
-		shell_exec($unix->LOCATE_PHP5_BIN()+' /usr/share/artica-postfix/exec.cyrus.php --kinit >/dev/null 2>&1');
-	}
+
 	
 	if(!$SaslAuthdConfigured){build();$sock->SET_INFO("SaslAuthdConfigured",1);}
 	

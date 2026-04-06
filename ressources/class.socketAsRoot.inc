@@ -36,17 +36,7 @@ class SocketsAsRoot{
 		}
 		
 // *************************************************************************************************************************
-		if($uri=="system.php?debian_version=yes"){
-			if(!is_file("/etc/debian_version")){return false;}
-			$ver=trim(@file_get_contents("/etc/debian_version"));
-			preg_match("#^([0-9]+)\.#",$ver,$re);
-			if(preg_match("#squeeze\/sid#",$ver)){return 6;}
-			$Major=$re[1];
-			if(!is_numeric($Major)){return false;}
-			$this->Runned=true;
-			return $Major;
-			
-		}
+
 		
 		
 		

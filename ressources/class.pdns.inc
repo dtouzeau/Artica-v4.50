@@ -3,7 +3,6 @@ include_once(dirname(__FILE__) . '/logs.inc');
 include_once(dirname(__FILE__) . '/class.templates.inc');
 include_once(dirname(__FILE__) . '/class.ldap.inc');
 include_once(dirname(__FILE__) . '/class.mysql.inc');
-include_once(dirname(__FILE__) . '/class.dnsmasq.inc');
 include_once(dirname(__FILE__) . '/class.tcpip.inc');
 class pdns{
 	var $domainname=null;

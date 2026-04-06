@@ -269,8 +269,8 @@ class squid_ports{
             if($EnableipV6==0){
                 echo "Activate ipv6 configuration...\n";
                 $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableipV6",1);
-                shell_exec("$php /usr/share/artica-postfix/exec.sysctl.php --build");
-                shell_exec("$php /usr/share/artica-postfix/exec.sysctl.php --start");
+                shell_exec("/usr/sbin/artica-phpfpm-service -sysctl");
+
             }
 
 

@@ -69,10 +69,22 @@ function search():bool{
 	$max=0;$date=null;$c=0;
 	
 	$MAIN=$tpl->format_search_protocol($_GET["search"]);
-	
-	$line=base64_encode(serialize($MAIN));
-	$sock->getFrameWork("hacluster.php?syslog-backends=$line");
-	$filename=PROGRESS_DIR."/hacluster-clients.syslog";
+    $rp=intval($MAIN["MAX"]);
+    $search=trim($MAIN["TERM"]);
+    if(strlen($search)<3){$search="NONE";}
+
+    $data=$sock->REST_API("/hacluster/clients/events/$rp/$search");
+
+    $json=json_decode($data);
+    if (json_last_error()> JSON_ERROR_NONE) {
+        echo $tpl->div_error("{error}<hr>".json_last_error_msg());
+        return false;
+    }
+    if(!$json->Status){
+        echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
+        return false;
+    }
+
 	$date_text=$tpl->_ENGINE_parse_body("{date}");
 	$events=$tpl->_ENGINE_parse_body("{events}");
 	$html[]="
@@ -87,18 +99,14 @@ function search():bool{
   	</thead>
 	<tbody>
 ";
-	
-	$data=explode("\n",@file_get_contents($filename));
-	if(count($data)>3){$_SESSION["HACLUSTER_BACKENDS_SEARCH"]=$_GET["search"];}
-	krsort($data);
+	var_dump($json);
+
+	if(count($json->Logs)>3){$_SESSION["HACLUSTER_BACKENDS_SEARCH"]=$_GET["search"];}
+
     $tpl=new template_admin();
-	
-	foreach ($data as $line){
+
+    foreach ($json->Logs as $line){
 		$line=trim($line);
-		$ruleid=0;
-		$rulename=null;
-		$ACTION=null;
-		$FF=false;
 		if(!preg_match("#^([A-Za-z]+)\s+([0-9]+)\s+([0-9:]+)\s+(.+?)\s+hacluster-client\[([0-9]+)\]:(.+)#", $line,$re)){
 			echo "<strong style='color:red'>$line</strong><br>";
 			continue;}

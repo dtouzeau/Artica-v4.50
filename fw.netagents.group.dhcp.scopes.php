@@ -139,11 +139,11 @@ function gscope_form(): void {
     $h[] = "  <div class='ibox-content'><div class='row'>";
     $h[] = "    <div class='col-md-4'>";
     $h[] = "      <label>{default_lease} <small class='text-muted'>(s)</small></label>";
-    $h[] = "      <input type='number' id='gscope-ldef-$id' class='form-control' value='3600' min='60'>";
+    $h[] = "      <input type='number' id='gscope-ldef-$id' class='form-control' value='28800' min='60'>";
     $h[] = "    </div>";
     $h[] = "    <div class='col-md-4'>";
     $h[] = "      <label>{max_lease} <small class='text-muted'>(s)</small></label>";
-    $h[] = "      <input type='number' id='gscope-lmax-$id' class='form-control' value='7200' min='60'>";
+    $h[] = "      <input type='number' id='gscope-lmax-$id' class='form-control' value='28800' min='60'>";
     $h[] = "    </div>";
     $h[] = "  </div></div></div>";
 
@@ -352,8 +352,8 @@ function gscope_push(): void {
         "netmask"       => trim($_POST["netmask"]     ?? ''),
         "authoritative" => !empty($_POST["authoritative"]),
         "lease"         => [
-            "default" => max(60, intval($_POST["lease_default"] ?? 3600)),
-            "max"     => max(60, intval($_POST["lease_max"]     ?? 7200)),
+            "default" => max(60, intval($_POST["lease_default"] ?? 28800)),
+            "max"     => max(60, intval($_POST["lease_max"]     ?? 28800)),
         ],
         "options"       => $options,
         "flags"         => $flags,

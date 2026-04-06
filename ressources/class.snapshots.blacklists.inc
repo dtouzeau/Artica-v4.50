@@ -66,15 +66,12 @@ function artica_settings_blacklists($asCluster=false){
     }
     $BLACKLIST["Migration"]=true;
     $BLACKLIST["TokenRequest"]=true;
-    $BLACKLIST["LicenseInfos"]=true;
-    $BLACKLIST["LicenseWasRequested"]=true;
     $BLACKLIST["NewLicServer"]=true;
     $BLACKLIST["CLUSTER_DONE"]=true;
     $BLACKLIST["NGINX_COMPILE_PARAMS"]=true;
     $BLACKLIST["NGINX_COMPILE_PARAMS_TIME"]=true;
     $BLACKLIST["PowerDNSClusterClientMD5"]=true;
     $BLACKLIST["x86info_mhz"]=true;
-    $BLACKLIST["WizardSavedSettings"]=true;
     $BLACKLIST["KerberosTicketInfo"]=true;
     $BLACKLIST["WifiCardOk"]=true;
     $BLACKLIST["SystemCpuNumber"]=true;
@@ -96,9 +93,6 @@ function artica_settings_blacklists($asCluster=false){
     $BLACKLIST["HyperCacheStoreIDLicense"]=true;
     $BLACKLIST["HyperCacheLicStatus"]=true;
     $BLACKLIST["UpgradeTov10"]=true;
-    $BLACKLIST["LinuxDistributionFullName"]=true;
-    $BLACKLIST["EnableIntelCeleron"]=true;
-    $BLACKLIST["ProxyUseArticaDB"]=true;
     $BLACKLIST["KerbAuthInfos"]=true;
     $BLACKLIST["ActiveDirectorySquidHTTPHostname"]=true;
     $BLACKLIST["EnableKerbAuth"]=true;
@@ -117,7 +111,6 @@ function artica_settings_blacklists($asCluster=false){
     $BLACKLIST["AsHapProxyAppliance"]=True;
     $BLACKLIST["HaproxyVersion"]=True;
     $BLACKLIST["HAPROXY_VERSION"]=True;
-    $BLACKLIST["HAPROXY_INSTALLED"]=True;
     $BLACKLIST["EnablePowerDNSInTopMenu"]=True;
     $BLACKLIST["SquidUFDBUrgency"]=True;
     $BLACKLIST["HAMACHI_INSTALLED"]=True;
@@ -137,7 +130,6 @@ function artica_settings_blacklists($asCluster=false){
     $BLACKLIST["SquidClientutilization"]=True;
     $BLACKLIST["eCAPClamavEmergency"]=True;
     $BLACKLIST["CurrentTLSEDbCloud"]=True;
-    $BLACKLIST["APP_SABNZBDPLUS_INSTALLED"]=True;
     $BLACKLIST["SambaNetBiosName"]=True;
     $BLACKLIST["OpenVPNInstalled"]=True;
     $BLACKLIST["ProFTPDVersion"]=True;
@@ -371,44 +363,4 @@ function artica_backup_blacklists(){
     return $ARRAY;
 }
 
-function squidlogs_blacklists(){
 
-    $BLACKLIST["uris_malwares"]=true;
-    $BLACKLIST["uris_phishing"]=true;
-    $BLACKLIST["tables_day"]=true;
-    $BLACKLIST["quotachecked"]=true;
-    $BLACKLIST["cached_total"]=true;
-    $BLACKLIST["MySQLStats"]=true;
-    $BLACKLIST["phraselists_weigthed"]=true;
-    $BLACKLIST["squid_reports"]=true;
-    $BLACKLIST["stats_appliance_events"]=true;
-    $BLACKLIST["webfilter_catprivslogs"]=true;
-    $BLACKLIST["webfilters_backupeddbs"]=true;
-    $BLACKLIST["webfilters_bigcatzlogs"]=true;
-    $BLACKLIST["FamilyCondensed"]=true;
-    $BLACKLIST["catztemp"]=true;
-    $BLACKLIST["hotspot_sessions"]=true;
-    $BLACKLIST["instant_updates"]=true;
-    $BLACKLIST["macscan"]=true;
-    $BLACKLIST["members_uid"]=true;
-    $BLACKLIST["members_macip"]=true;
-    $BLACKLIST["members_mac"]=true;
-    $BLACKLIST["webfilters_categories_caches"]=true;
-    $BLACKLIST["webfilters_thumbnails"]=true;
-    $BLACKLIST["wpad_events"]=true;
-    $BLACKLIST["phishtankdb"]=true;
-    $BLACKLIST["squid_storelogs"]=true;
-    $BLACKLIST["dns_servers"]=true;
-    $BLACKLIST["dashboard_volume_day"]=true;
-    $BLACKLIST["reports_cache"]=true;
-    $BLACKLIST["licenses_users_time"]=true;
-    $BLACKLIST["uris_phishing"]=true;
-    $BLACKLIST["uris_malwares"]=true;
-    $BLACKLIST["categoryuris_"]=true;
-    $BLACKLIST["modsecurity_reports"]=true;
-    $BLACKLIST["modsecurity_linked_tags"]=true;
-    $BLACKLIST["modsecurity_events"]=true;
-    $BLACKLIST["smokeping"]=true;
-    return $BLACKLIST;
-
-}

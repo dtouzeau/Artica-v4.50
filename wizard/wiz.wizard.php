@@ -2,7 +2,7 @@
 include_once(dirname(__FILE__)."/ressources/class.wizard.inc");
 
 if(is_file("/etc/artica-postfix/WIZARD_INSTALL_EXECUTED")){
-    echo header('location:/fw.login.php');
+    header('location:/fw.login.php');
     exit;
 }
 
@@ -149,8 +149,13 @@ function step_network():bool{
             $BROADCAST = $MAIN["BROADCAST"];
         }
 
-        $KEEPNET = $MAIN["KEEPNET"];
-        $VPS_COMPATIBLE = $MAIN["VPS_COMPATIBLE"];
+        if(isset($MAIN["KEEPNET"])) {
+            $KEEPNET = $MAIN["KEEPNET"];
+        }
+        if(isset($MAIN["VPS_COMPATIBLE"])) {
+            $VPS_COMPATIBLE = $MAIN["VPS_COMPATIBLE"];
+        }
+
         $system_nic=new system_nic($nic);
         if($IPADDR==null){$IPADDR=$system_nic->IPADDR;}
         if($NETMASK==null){$NETMASK=$system_nic->NETMASK;}

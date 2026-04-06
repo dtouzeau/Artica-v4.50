@@ -6,6 +6,42 @@ Es un conmutador de software multicapa que soporta interfaces y protocolos de ge
 <squid_cache_rock>Multiple CPUs aware cache<//your_registered_account_explain>
 <2fa>Autenticaci%C3%B3n de dos factores</2fa>
 <2faask>Your verification code</2faask>
+<aaa_agent>Agente</aaa_agent>
+<aaa_cache_auth_ttl>TTL de autenticaci%C3%B3n</aaa_cache_auth_ttl>
+<aaa_cache_auth_ttl_desc>Tiempo en minutos para almacenar en caché los resultados de autenticaciones exitosas.[br]
+Solo los métodos de autenticaci%C3%B3n [b]Basic[/b] y [b]Negotiate[/b] son elegibles para el almacenamiento en caché.</aaa_cache_auth_ttl_desc>
+<aaa_cache_groups_ttl>TTL de grupos</aaa_cache_groups_ttl>
+<aaa_cache_groups_ttl_desc>Tiempo en minutos para almacenar en caché los resultados de pertenencia a grupos.</aaa_cache_groups_ttl_desc>
+<aaa_cache_negative_ttl>TTL negativo</aaa_cache_negative_ttl>
+<aaa_cache_negative_ttl_desc>Tiempo en segundos para almacenar en caché los intentos de autenticaci%C3%B3n fallidos.</aaa_cache_negative_ttl_desc>
+<aaa_cache_section>Controla el almacenamiento en caché de los resultados de autenticaci%C3%B3n y de b%C3%BAsqueda de grupos</aaa_cache_section>
+<aaa_distribution>Distribuci%C3%B3n</aaa_distribution>
+<aaa_distribution_desc>Método para distribuir las solicitudes entre varios agentes.[br]
+[b]Single[/b] Se establece autom%C3¡ticamente cuando solo hay un agente configurado.[br]
+[b]Failover[/b] Utiliza el agente con mayor prioridad. Este es el método predeterminado cuando hay 2 o m%C3¡s agentes configurados.[br]
+[b]Load-balance[/b] Distribuye las solicitudes entre todos los agentes disponibles seg%C3%BAn su peso.</aaa_distribution_desc>
+<aaa_emergency_section>Garantiza que el acceso a la red contin%C3%BAe cuando todos los agentes de autenticaci%C3%B3n no estén disponibles.[br]
+Sin esta opci%C3%B3n, los usuarios pierden completamente el acceso a Internet durante las ca%C3%ADdas de los agentes.</aaa_emergency_section>
+<aaa_emergency_timeout_desc>Tiempo de espera en segundos antes de declarar el fallo del agente</aaa_emergency_timeout_desc>
+<aaa_failure_threshold>Umbral de fallo</aaa_failure_threshold>
+<aaa_failure_threshold_desc>N%C3%BAmero de fallos consecutivos antes de marcar el agente como inactivo</aaa_failure_threshold_desc>
+<aaa_healthcheck_desc>Supervisi%C3%B3n del estado de los agentes</aaa_healthcheck_desc>
+<aaa_health_check_interval_desc>Intervalo en segundos entre las comprobaciones de estado</aaa_health_check_interval_desc>
+<aaa_health_check_timeout_desc>Tiempo m%C3¡ximo en segundos para esperar una respuesta a la comprobaci%C3%B3n de estado</aaa_health_check_timeout_desc>
+<aaa_logging_section>Nivel de verbosidad de los registros (p. ej.: debug, info, warn, error).</aaa_logging_section>
+<aaa_step1>Siga estos pasos para configurar la conexi%C3%B3n con su Active Directory.</aaa_step1>
+<aaa_step11>Durante la instalaci%C3%B3n, preste atenci%C3%B3n a la cuenta de usuario utilizada. Aseg%C3%BArese de que se configure una cuenta adecuada.</aaa_step11>
+<aaa_step3>Exportar el certificado en formato ZIP haciendo clic derecho en el icono junto al reloj.</aaa_step3>
+<aaa_step4>Importe el certificado obtenido desde el cliente de Windows en el centro de certificados de Artica.</aaa_step4>
+<aaa_step5>Active esta funci%C3%B3n en su Artica Proxy.</aaa_step5>
+<aaa_step6>Conecte su Artica Proxy al Artica Authentication Agent previamente instalado en el equipo Windows.</aaa_step6>
+<aaa_step_install>Est%C3¡ a punto de instalar la funci%C3%B3n Artica Authentication Agent.[br]
+%C2%BFHa completado todos los pasos anteriores?</aaa_step_install>
+<aaa_success_threshold>Umbral de éxito</aaa_success_threshold>
+<aaa_success_threshold_desc>N%C3%BAmero de éxitos consecutivos antes de marcar el agente como operativo nuevamente</aaa_success_threshold_desc>
+<aaa_timeout>Tiempo m%C3¡ximo en segundos para esperar una respuesta RPC del agente</aaa_timeout>
+<aaa_total_auth_requests>Total solicitudes auth.</aaa_total_auth_requests>
+<aaa_total_group_requests>Total req. grupos</aaa_total_group_requests>
 <abandoned>Abandoned</abandoned>
 <aborted>Aborted</aborted>
 <about_arpscanner>Se ha a%C3%B1adido un servicio pasivo ARP Scanner con esta nueva versi%C3%B3n[br].
@@ -16,6 +52,7 @@ Su servicio de seguimiento de la navegaci%C3%B3n de los usuarios de sus clientes
 <about_nginx_services>Esta secci%C3%B3n te permite crear servicios Web.[br] Un servicio Web puede ser una [b]redirecci%C3%B3n[/b] a un servidor remoto por seguridad y caché (reverse-proxy), o para proporcionar un [b]sitio local de Internet[/b].</about_nginx_services>
 <accept_only_encrypted_sessions>Aceptar s%C3%B3lo sesiones cifradas</accept_only_encrypted_sessions>
 <accept_routes>Accept routes</accept_routes>
+<accessible_all_networks>Accesible desde todas las redes</accessible_all_networks>
 <accessrule_simple_about>Se refiere a una regla de acceso simplificada que etiqueta la sesi%C3%B3n cuando la solicitud coincide.</accessrule_simple_about>
 <access_control>Control de acceso</access_control>
 <access_control_dns_explain>Controla quién puede consultar su servidor DNS.[br]Permita sus redes de confianza y bloquee al resto â%80%94 esfuerzo m%C3%ADnimo para una protecci%C3%B3n m%C3¡xima.</access_control_dns_explain>
@@ -33,6 +70,10 @@ https://my.doh:4443/dns-query[192.168.1.3][br]
 https://192.168.1.3:5899/dns-query[</acls_doh_uri_explain>
 <acls_objects_found>Gracias a su b%C3%BAsqueda, se han encontrado %s objetos en las ACLs</acls_objects_found>
 <acls_webfilter_explain>Este objeto obliga al servicio a preguntar al servicio de filtrado de Internet si la direcci%C3%B3n IP o el par de dominios deben ser bloqueados o no.</acls_webfilter_explain>
+<acl_action>Acci%C3%B3n</acl_action>
+<acl_cidr>CIDR de red</acl_cidr>
+<acl_disabled_note>Cuando el control de acceso est%C3¡ deshabilitado, el servicio acepta consultas desde cualquier origen.[br]
+Act%C3%ADvelo para restringir qué redes pueden consultar este resolvedor.</acl_disabled_note>
 <acl_envfrom_explain>Corresponde a una expresi%C3%B3n regular o simplificada de la direcci%C3%B3n de correo electr%C3%B3nico del remitente[br].
 Los valores pueden ser, por ejemplo[br]
 @dominio.tld[br]
@@ -51,9 +92,13 @@ Si no se rellena el campo de valor, el motor s%C3%B3lo detectar%C3¡ la presenci
 El campo de valor puede contener una b%C3%BAsqueda simple utilizando el car%C3¡cter estrella o una expresi%C3%B3n regular</acl_item_header_explain>
 <acl_netbiosname>Nombre de host sin sufijo</acl_netbiosname>
 <acl_object>Objeto ACL</acl_object>
+<acl_order_note>Las reglas se eval%C3%BAan de arriba hacia abajo.[br]
+Se aplica la primera regla coincidente.[br]
+Los prefijos CIDR m%C3¡s espec%C3%ADficos tienen prioridad sobre los m%C3¡s amplios.</acl_order_note>
 <acl_reputation>Comprueba la reputaci%C3%B3n de las direcciones IP de los clientes que se conectan a su servicio mediante los métodos RBL/DNSBL/API.</acl_reputation>
 <acl_rgexdst_text>Corresponde a cualquier destino como direcciones IP, dominios o urls como 10.100.0.*, 1.2.3.4,1.2.3.0/24, dominio.com o http://domain.com/test</acl_rgexdst_text>
 <acl_rgexsrc_text>Corresponde a direcciones de origen utilizando expresiones regulares como 10.100.0.*</acl_rgexsrc_text>
+<acl_rule_deleted>Eliminar esta regla ACL</acl_rule_deleted>
 <acl_smtp_header_explain>Detecta la presencia o un valor en un campo de las cabeceras SMTP</acl_smtp_header_explain>
 <acl_ssl_error>Este objeto se utiliza para hacer coincidir un error espec%C3%ADfico de validaci%C3%B3n de certificados SSL.[br]
 Se aplica al error de validaci%C3%B3n individual que se est%C3¡ evaluando con la directiva asociada.[br]
@@ -72,12 +117,13 @@ Puede utilizar un certificado ya existente en el centro de certificados o crear 
 <activedirectory_offloadingexp>El término &quot;Active Directory Offloading&quot; se refiere, en el caso de DNS, a enviar s%C3%B3lo lo necesario de vuelta al servidor de Active Directory.[br]El almacenamiento en caché de los resultados también ahorra energ%C3%ADa en el servidor AD.[br].
 El resto de peticiones se reenviar%C3¡n a las otras reglas.</activedirectory_offloadingexp>
 <active_categories>Categor%C3%ADas activas</active_categories>
-<active_checks>Active checks</active_checks>
+<active_checks>Comprobaciones activas</active_checks>
 <active_directory_connection_issue>Problema de conexi%C3%B3n a Active Directory</active_directory_connection_issue>
 <active_directory_groups>Grupos del Active Directory</active_directory_groups>
 <ACTIVE_DIRECTORY_LINK>Estado del enlace de Active Directory</ACTIVE_DIRECTORY_LINK>
 <active_directory_postfix_auth>Esta secci%C3%B3n le permite forzar a los usuarios a identificarse a través de una base de datos de Active Directory antes de enviar los mensajes.[br]
 [b]Nota:[/b] S%C3%B3lo las direcciones de red que no figuren en la secci%C3%B3n [b]{mynetworks_title}[/b] recibir%C3%C2¡n un mensaje para enviar sus credenciales.</active_directory_postfix_auth>
+<active_ports>Puertos activos</active_ports>
 <active_session>Active Session</active_session>
 <active_websites>Sitios web activos</active_websites>
 <act_as_acl_module>Act as ACL module</act_as_acl_module>
@@ -88,25 +134,38 @@ El resto de peticiones se reenviar%C3¡n a las otras reglas.</activedirectory_of
 <additional_spns_explain>Crear un ticket Kerberos con m%C3%BAltiples Nombres Principales de Servicio (SPN) para ser compartido entre varios servidores Artica.</additional_spns_explain>
 <addomainns_error_resolv>No se puede encontrar el servidor maestro para el dominio %s, compruebe el dominio del nombre de host de su servidor Artica o la configuraci%C3%B3n DNS.</addomainns_error_resolv>
 <addomain_ns_fwdrule>Est%C3¡ utilizando el servicio DNS Cache, es una buena idea crear una regla de dominio para pedir al servicio DNS que consulte a su servidor DNS para el dominio %s.[br] Haga clic aqu%C3%AD para crear esta regla</addomain_ns_fwdrule>
+<addresses>Direcciones</addresses>
+<add_acl_rule>Nuova regola ACL</add_acl_rule>
 <add_agent>A%C3%B1adir agente</add_agent>
 <add_all_categories_explain>%C2%BFA%C3%B1adir todas las categor%C3%ADas existentes?[br]
 %C2%BFLas categor%C3%ADas oficiales de Artica y sus categor%C3%ADas personales?</add_all_categories_explain>
 <add_and_compile>A%C3%B1adir y compilar</add_and_compile>
+<add_forward_zone>Nueva zona de reenv%C3%ADo</add_forward_zone>
 <add_hotfix>A%C3%B1adir un hotfix</add_hotfix>
 <add_package_later>Su paquete se ha a%C3%B1adido correctamente.[br]El servidor est%C3¡ reconstruyendo sus %C3%ADndices y estar%C3¡ disponible en breve (aproximadamente 30 segundos).</add_package_later>
+<add_pool>A%C3%B1adir un rango de direcciones</add_pool>
 <add_provider>Nuevo proveedor</add_provider>
+<add_record>Nuevo registro</add_record>
+<add_relay>Nuevo relé</add_relay>
+<add_reservation>Nueva reserva DHCP</add_reservation>
+<add_scope>Nuevo %C3¡mbito DHCP</add_scope>
 <Admin.rules>Estas son las reglas creadas por los administradores de la plataforma Artica. Estas reglas se actualizan cada vez que se compilan las ACL dedicadas desde la interfaz web.</Admin.rules>
 <administrator_account>Cuenta del administrador</administrator_account>
 <administrator_account_wizard_explain>La cuenta de administrador tendr%C3¡ todos los privilegios en la interfaz de administraci%C3%B3n web.[br]Después del asistente, podr%C3¡ crear otros usuarios con derechos restringidos a través de una base de datos local, Active Directory o LDAP.</administrator_account_wizard_explain>
+<admin_clients>Clientes Admin</admin_clients>
+<admin_clients_explain>Un cliente Admin es una aplicaci%C3%B3n Microsoft Windows que permite a un administrador gestionar y controlar la configuraci%C3%B3n en Artica.[br]
+Mediante un certificado mTLS, el cliente Windows se autentica de forma silenciosa en su espacio de trabajo a través de un puerto de escucha espec%C3%ADfico y seguro.</admin_clients_explain>
 <AdNotResolvDC>Do not try to resolve the PDC attribute</AdNotResolvDC>
 <advanced_access_rules>Reglas de acceso avanzadas</advanced_access_rules>
 <ad_full_hostname_resolve_issue>Unable to resolve your domain controller %s.[br]Please check this FAQ: https://wiki.articatech.com/active-directory/unable-to-resolve</ad_full_hostname_resolve_issue>
 <ad_groups>Grupos del Active Directory</ad_groups>
 <after_reboot>Después de reiniciar el servidor</after_reboot>
 <after_rebooting>Después de reiniciar</after_rebooting>
+<agent>Agente</agent>
 <agents_group>Grupos de agentes</agents_group>
 <agents_list>Lista de agentes</agents_list>
 <agent_added_token>Agente a%C3%B1adido correctamente.[br]Token de inscripci%C3%B3n generado.</agent_added_token>
+<agent_flush>Borra la caché de estado [b]Recupera un estado actualizado[/b]</agent_flush>
 <agent_groups>Grupos de agentes</agent_groups>
 <agent_groups_explain>Los grupos de agentes permiten operar sobre un conjunto de agentes.[br]
 Cada agente solo puede estar asociado a un %C3%BAnico grupo.[br]
@@ -146,6 +205,7 @@ Activar esta opci%C3%B3n le permite no aceptar s%C3%B3lo TLS 1.3 y establecer qu
 <allow_an_IP_address>Permitir una direcci%C3%B3n IP</allow_an_IP_address>
 <allow_create_ticket>Permitir la creaci%C3%B3n de un ticket</allow_create_ticket>
 <allow_create_ticket2>Permitir la creaci%C3%B3n de un ticket con confirmaci%C3%B3n</allow_create_ticket2>
+<allow_ddns_update>Permitir actualizaciones DNS din%C3¡micas</allow_ddns_update>
 <allow_execute_scripts>Permitir la ejecuci%C3%B3n de scripts</allow_execute_scripts>
 <allow_incoming_connections>Allow incoming connections</allow_incoming_connections>
 <allow_query_dns>Permitir la recepci%C3%B3n de consultas DNS</allow_query_dns>
@@ -159,9 +219,12 @@ Si esta direcci%C3%B3n ya est%C3¡ marcada como red de confianza, esta opci%C3%B
 <AllwaysBrodcast_explain>Fuerza al servidor a difundir siempre sus respuestas a los clientes, independientemente del indicador de difusi%C3%B3n (broadcast flag) presente en los mensajes del cliente.[br]
 Esta opci%C3%B3n es especialmente %C3%BAtil para clientes que no establecen correctamente el indicador de difusi%C3%B3n en los mensajes DHCPDISCOVER o DHCPREQUEST, lo que de otro modo puede impedir la recepci%C3%B3n de las respuestas del servidor.</AllwaysBrodcast_explain>
 <all_ad_groups>All Active Directory groups</all_ad_groups>
+<all_groups>Todos los grupos</all_groups>
+<all_types>Todos los tipos</all_types>
 <already_a_part_of>Already a part of</already_a_part_of>
 <already_compiled>Ya compilado</already_compiled>
 <already_masqueraded>Ya est%C3¡ definida una regla para MASQUERADE</already_masqueraded>
+<already_server_key>Ya tengo una clave para mi servidor.</already_server_key>
 <also_add_www>A%C3%B1ada también el prefijo www. a los dominios</also_add_www>
 <amount>Amount</amount>
 <amountr>Amount required</amountr>
@@ -179,8 +242,15 @@ Esta opci%C3%B3n es especialmente %C3%BAtil para clientes que no establecen corr
 <append_domain>A%C3%B1adir el dominio</append_domain>
 <ApplicationLayerProtocol>Protocolo de capa de aplicaci%C3%B3n</ApplicationLayerProtocol>
 <application_state>Estado de la aplicaci%C3%B3n</application_state>
+<applied>Aplicado</applied>
+<apply_central_config>Aplicar la configuraci%C3%B3n central</apply_central_config>
+<apply_central_to_all_agents>Aplicar a todos los agentes</apply_central_to_all_agents>
 <apply_configuration_ports>Aplicar la configuraci%C3%B3n de los puertos de escucha</apply_configuration_ports>
+<apply_config_on_all_agents>Aplicar la configuraci%C3%B3n en todos los agentes</apply_config_on_all_agents>
+<apply_dhcp_explain>Validar, realizar copia de seguridad y luego recargar el servicio DHCP con la nueva configuraci%C3%B3n</apply_dhcp_explain>
+<apply_now>Aplicar ahora</apply_now>
 <apply_routes_to_the_system>Aplicar rutas al sistema</apply_routes_to_the_system>
+<apply_successful>Aplicaci%C3%B3n exitosa</apply_successful>
 <apply_the_following_rules>Aplique las siguientes reglas</apply_the_following_rules>
 <APP_ACTIVE_DIRECTORY_REST>REST API Service</APP_ACTIVE_DIRECTORY_REST>
 <APP_APT_MIRROR_WEB>Servicio web de APT</APP_APT_MIRROR_WEB>
@@ -222,6 +292,10 @@ El prop%C3%B3sito de este servicio es almacenar en caché la informaci%C3%B3n de
 <APP_DNSFILTER_CLOUD>DNS Filter Cloud</APP_DNSFILTER_CLOUD>
 <APP_DNSFILTER_CLOUD_EXPLAIN>DNS Filter Cloud es capaz de utilizar servicios de categor%C3%ADas y servicios de categor%C3%ADas de ArticaTech Cloud.[br]
 Puede crear un servicio de filtrado DNS pero sin ninguna base de datos local.[br]Utiliza menos memoria que el servicio de filtrado DNS est%C3¡ndar.</APP_DNSFILTER_CLOUD_EXPLAIN>
+<APP_DNS_CACHE_HOTSPOT>Para permitir que los navegadores soliciten la autenticaci%C3%B3n de los usuarios en el sistema Hotspot, instale el servicio de caché DNS.[br]
+Este servicio intercepta las respuestas DNS para indicar la presencia de un portal de autenticaci%C3%B3n a los navegadores cliente.[br]
+También debe configurar el servicio DHCP para anunciar el proxy Hotspot como servidor DNS.</APP_DNS_CACHE_HOTSPOT>
+<APP_DNS_CACHE_NOT_INSTALLED>El servicio de caché DNS no est%C3¡ instalado</APP_DNS_CACHE_NOT_INSTALLED>
 <APP_DNS_COLLECTOR>Colector DNS</APP_DNS_COLLECTOR>
 <APP_DNS_COLLECTOR_EXPLAIN>El recolector de eventos DNS recupera eventos para su almacenamiento y visualizaci%C3%B3n[br].
 También se puede utilizar para centralizar eventos de varios servidores DNS.</APP_DNS_COLLECTOR_EXPLAIN>
@@ -350,6 +424,8 @@ Tiene varias ventajas sobre RIP.[br]Por ejemplo, cada router conoce la topolog%C
 La respuesta a los cambios en la red es m%C3¡s r%C3¡pida. Adem%C3¡s, se mejora la detecci%C3%B3n de fallos.</APP_OSPF_EXPLAIN>
 <APP_PACTESTER_NOT_INSTALLED>The required [b]PAC Tester[/b] package is not installed, please check your missing packages in order to install it on this server</APP_PACTESTER_NOT_INSTALLED>
 <APP_PARENTLB>Balanceador de carga</APP_PARENTLB>
+<APP_PARENT_LB_EXPLAIN1>Esta secci%C3%B3n permite validar toda la ruta de la solicitud conect%C3¡ndose directamente al puerto del balanceador de carga.</APP_PARENT_LB_EXPLAIN1>
+<APP_PARENT_LB_EXPLAIN2>Esta secci%C3%B3n define los par%C3¡metros de verificaci%C3%B3n de estado utilizados por el balanceador de carga para supervisar los nodos backend.</APP_PARENT_LB_EXPLAIN2>
 <APP_PBBOUNCER>PostgreSQL Bouncer</APP_PBBOUNCER>
 <APP_PFRING_AVX>Biblioteca PF_RING (sin AVX)</APP_PFRING_AVX>
 <APP_PGBOUNCER>PostgreSQL Bouncer</APP_PGBOUNCER>
@@ -453,6 +529,8 @@ El agente wazhu instalado en su servidor Artica le permite proporcionar servicio
 <APP_XKERNEL>Kernel modules</APP_XKERNEL>
 <APP_YACHT>Gesti%C3%B3n de contenedores Yacht</APP_YACHT>
 <APP_ZEBRA>Routing Manager</APP_ZEBRA>
+<apt_output>Resultados de la tarea de actualizaci%C3%B3n</apt_output>
+<apt_packages>Paquetes del sistema</apt_packages>
 <area>Area</area>
 <areas>Areas</areas>
 <ARGS_MODSEC>[b]Argumentos[/b]: es una colecci%C3%B3n y puede usarse sola (significa todos los argumentos incluyendo la carga %C3%BAtil POST), con un par%C3¡metro est%C3¡tico (coincide con los argumentos con ese nombre), o con una expresi%C3%B3n regular (coincide con todos los argumentos con nombre que coincida con la expresi%C3%B3n regular).</ARGS_MODSEC>
@@ -470,8 +548,15 @@ Si activa esta opci%C3%B3n, Artica no se actualizar%C3¡ autom%C3¡ticamente, si
 Ahora escuchar%C3¡ en una interfaz de red TCP y ser%C3¡ accesible desde cualquier lugar.</articaweb_to_tcp>
 <articaweb_to_unix>Est%C3¡ a punto de cambiar el método de comunicaci%C3%B3n de la consola Web a Unix.[br]
 Ahora escuchar%C3¡ en un socket Unix y solo ser%C3¡ accesible desde este servidor.</articaweb_to_unix>
+<ARTICA_AAA_AUTH_AGENT>Asistente de autenticaci%C3%B3n</ARTICA_AAA_AUTH_AGENT>
+<ARTICA_AAA_GROUPS_AGENT>Asistente de grupos</ARTICA_AAA_GROUPS_AGENT>
 <artica_agent_dns_explain>Artica Agent es un agente que debe instalarse en su servidor Windows para recuperar los registros DNS y/o DHCP de su servicio Windows con el fin de poblar la base de datos local de Artica.</artica_agent_dns_explain>
 <artica_agent_explain>and/or DHCP records from your Windows service in order to populate local Artica database</artica_agent_explain>
+<artica_auth_agent>Agente de autenticaci%C3%B3n Artica</artica_auth_agent>
+<artica_auth_agent_short>Agente de auten Artica</artica_auth_agent_short>
+<artica_auth_workers>N%C3%BAmero de hilos concurrentes que procesan las solicitudes de autenticaci%C3%B3n del proxy.[br]
+La concurrencia solo se utiliza con la [b]autenticaci%C3%B3n Basic[/b].[br]
+Para los controladores [b]NTLM[/b] y [b]Negotiate[/b], los workers se limitan autom%C3¡ticamente a 1, ya que estos protocolos utilizan sesiones con estado por conexi%C3%B3n que requieren procesamiento secuencial.[br]</artica_auth_workers>
 <artica_captcha_allow>[b]Autorizar huella digital[/b][br]
 El navegador con la huella digital est%C3¡ autorizado a conectarse al sistema.</artica_captcha_allow>
 <artica_captcha_delete>[b]Eliminar esta huella digital[/b][br] Elimina los eventos de acceso y la configuraci%C3%B3n vinculados a esta huella digital.</artica_captcha_delete>
@@ -492,6 +577,7 @@ Con este m%C3%B3dulo, puede crear reglas avanzadas de filtrado de correo.</artic
 <artica_repositories_explain>Esta secci%C3%B3n le permite crear un espejo de los repositorios oficiales de Artica.[br]
 Esto permite implementar las actualizaciones de Artica de forma centralizada a través de este servidor.[br]
 Los servidores Artica equipados con el agente de red recibir%C3¡n estas actualizaciones autom%C3¡ticamente.</artica_repositories_explain>
+<artica_snapshots>Instant%C3¡neas Artica</artica_snapshots>
 <artica_update>Actualizaci%C3%B3n del n%C3%BAcleo de la versi%C3%B3n Artica</artica_update>
 <artmem_status>Caché en memoria</artmem_status>
 <artwatch>Artica Web API watchdog</artwatch>
@@ -504,6 +590,8 @@ Los servidores Artica equipados con el agente de red recibir%C3¡n estas actuali
 <AsWebSecurity>Gestor de seguridad de los servicios web</AsWebSecurity>
 <atomoccorp_explain>Atomi Rules es un potente conjunto de reglas de Web Application Firewall (WAF) que contiene miles de controles de seguridad dise%C3%B1ados para proteger sus aplicaciones web, APIs y servidores.[br]
 Le permite defender su arquitectura web contra el robo de credenciales, la inyecci%C3%B3n de c%C3%B3digo, los ataques de fuerza bruta, SQLi, XSS, CSRF, malware, ransomware, DoS y otras técnicas.</atomoccorp_explain>
+<attempts_by_port>Intentos por puerto</attempts_by_port>
+<attempts_explain>N%C3%BAmero de reintentos por servidor de nombres</attempts_explain>
 <attempt_again>Inténtalo de nuevo</attempt_again>
 <audio device>Audio device</audio device>
 <audited_artica_cloud>Auditado por Artica Cloud</audited_artica_cloud>
@@ -542,6 +630,7 @@ Por defecto, cuando los certificados caducan antes de 15 d%C3%ADas, Artica inten
 Puede reducir o aumentar este l%C3%ADmite. [br]
 Artica comprueba los certificados almacenados en el centro de certificados cada 4 horas.</autorenew_letsencrypt>
 <autorenew_ticket>Renovaci%C3%B3n autom%C3¡tica del ticket</autorenew_ticket>
+<auto_generated_if_empty>Generado autom%C3¡ticamente si est%C3¡ vac%C3%ADo</auto_generated_if_empty>
 <auto_renewal>Renovaci%C3%B3n auto.</auto_renewal>
 <auto_renewal_status>Estado de renovaci%C3%B3n autom%C3¡tica</auto_renewal_status>
 <auto_switch>Conmutaci%C3%B3n autom%C3¡tica</auto_switch>
@@ -551,6 +640,8 @@ Artica comprueba los certificados almacenados en el centro de certificados cada 
 - La latencia debe permanecer por debajo del umbral definido en la configuraci%C3%B3n.</auto_switch_vitrification>
 <availability>Availability</availability>
 <avexlusion_explain>Esta secci%C3%B3n permite excluir direcciones IP/MAC o dominios del an%C3¡lisis antivirus.</avexlusion_explain>
+<avg_response_time>Tiempo medio de respuesta</avg_response_time>
+<avg_response_time_tcp>Tiempo medio de establecimiento de conexi%C3%B3n TCP hacia el backend (incluyendo handshake SSL/TLS)</avg_response_time_tcp>
 <av_exclusions>Exclusiones antivirus</av_exclusions>
 <a_direct_connection_to_internet_proxy>A direct connection to Internet without using a proxy</a_direct_connection_to_internet_proxy>
 <BackEndsKeepAlive>[b]Activa la caché de conexiones a servidores upstream.[/b]
@@ -573,10 +664,14 @@ El par%C3¡metro connections define el n%C3%BAmero m%C3¡ximo de conexiones keep
 <based_on>Basado en</based_on>
 <based_on_certificate>Basado en el certificado</based_on_certificate>
 <begins_with>Comenzar par</begins_with>
+<behavior>Comportamiento</behavior>
+<behavior_flags>Indicadores de comportamiento</behavior_flags>
+<benchmarks>Benchmarks</benchmarks>
 <between>Entre</between>
 <blacklist_this_address>Blacklist this address</blacklist_this_address>
 <blks_dns_malware>Bloqueo del tr%C3¡fico DNS malicioso</blks_dns_malware>
 <blocked_by_categories>Bloqueados por categor%C3%ADas</blocked_by_categories>
+<block_by_meta>Este servidor est%C3¡ gestionado por un centro de control Artica Meta centralizado.[br]Por lo tanto, no puede modificar directamente estos ajustes o esta funcionalidad.[br]P%C3%B3ngase en contacto con su administrador central para realizar los cambios necesarios.</block_by_meta>
 <block_pages_behavior>Comportamiento de las p%C3¡ginas en bloque</block_pages_behavior>
 <block_pages_behavior_explain>Esta secci%C3%B3n le permite personalizar la p%C3¡gina web de destino cuando se deniega el acceso a un sitio web.[br]Puede modificar su plantilla y ofrecer funciones de notificaci%C3%B3n a sus usuarios.</block_pages_behavior_explain>
 <bootrescuewithoutpassword>Arranque en modo de emergencia sin contrase%C3%B1a</bootrescuewithoutpassword>
@@ -614,6 +709,7 @@ O bien, si utiliza un certificado autofirmado, compruebe que el certificado ra%C
 <bypass_proxy_internal>Omitir el proxy para las solicitudes web dirigidas a redes internas como [b]10.0.0.0/8, 172.16.0.0/12 y 192.168.0.0/16[/b]</bypass_proxy_internal>
 <bypass_webfilter_explain>Indica al proxy que no solicite el motor de filtrado para [b]%s[/b].</bypass_webfilter_explain>
 <bypass_webfilter_row>Para acceder a Internet a [b]%s sitios web[/b], omita el filtrado web y aplique las dem%C3¡s reglas de proxy.</bypass_webfilter_row>
+<bytes>Bytes</bytes>
 <by_default_set_proxy_parameters>Finally, set proxy settings using</by_default_set_proxy_parameters>
 <CABundleProvider>Proveedor Paquete CA</CABundleProvider>
 <cache size>Tama%C3%B1o de la caché</cache size>
@@ -626,6 +722,7 @@ O bien, si utiliza un certificado autofirmado, compruebe que el certificado ra%C
 <calculate_compensation>Calcular la indemnizaci%C3%B3n</calculate_compensation>
 <calculate_system_disk_bandwidth>C%C3¡lculo del ancho de banda del disco del sistema</calculate_system_disk_bandwidth>
 <cancelled>Cancelado</cancelled>
+<candidate_config>Configuraci%C3%B3n pendiente</candidate_config>
 <can_be_analyzed_explain>Permite que Artica ejecute an%C3¡lisis de puertos y vulnerabilidades en esta direcci%C3%B3n de red (si la funci%C3%B3n de escaneo de red est%C3¡ instalada y habilitada).</can_be_analyzed_explain>
 <captcha_validation_required_text>Por motivos de seguridad, necesitamos comprobar que no eres un robot. [br]
 Parece que tu dispositivo no es de confianza. Para continuar, por favor, rellena el CAPTCHA que aparece a continuaci%C3%B3n.[br]
@@ -695,7 +792,14 @@ Después de cambiar los par%C3¡metros, tienes que compilar tu categor%C3%ADa pa
 <CCENCRYPT_NOT_INSTALLED>La aplicaci%C3%B3n de encriptaci%C3%B3n no est%C3¡ instalada en su sistema.[br]
 No se puede realizar la funci%C3%B3n de encriptaci%C3%B3n y desencriptaci%C3%B3n.</CCENCRYPT_NOT_INSTALLED>
 <CentralizedBackendsSettings>Configuraci%C3%B3n centralizada de los backends</CentralizedBackendsSettings>
+<central_apply_confirm_text>Toda la configuraci%C3%B3n existente en cada agente ser%C3¡ reemplazada. Esta operaci%C3%B3n es irreversible.</central_apply_confirm_text>
+<central_apply_step1>Eliminar todos los %C3¡mbitos DHCP, relay y reservas existentes en cada agente</central_apply_step1>
+<central_apply_step2>Recrearlos a partir de la configuraci%C3%B3n central</central_apply_step2>
+<central_apply_step3>Validar y recargar el servicio DHCP en cada agente</central_apply_step3>
+<central_apply_warning>Esta acci%C3%B3n reemplazar%C3¡ toda la configuraci%C3%B3n DHCP en cada agente del grupo con la configuraci%C3%B3n central.</central_apply_warning>
 <central_configuration>Configuraci%C3%B3n central</central_configuration>
+<central_config_dhcp_empty>A%C3%BAn no se ha configurado ning%C3%BAn %C3¡mbito, relay o reserva DHCP.</central_config_dhcp_empty>
+<central_config_summary>Resumen de la configuraci%C3%B3n central</central_config_summary>
 <CertificateName>Nombre del certificado</CertificateName>
 <certificates_expiring_within>Certificados que expiran en</certificates_expiring_within>
 <certificates_with_provider>Certificados con proveedor</certificates_with_provider>
@@ -724,6 +828,7 @@ A continuaci%C3%B3n, finalice su sesi%C3%B3n en el servidor de licencias y haga 
 <CheckGroupExplain>Esta herramienta le permite verificar sus ACL en funci%C3%B3n de un grupo LDAP/Active Directory.[br]
 Especifique la cuenta de usuario (que representa la cuenta que inici%C3%B3 sesi%C3%B3n en el proxy) y el grupo al que deber%C3%ADa pertenecer.[br]
 La herramienta comprobar%C3¡ la coherencia de su configuraci%C3%B3n de Active Directory y verificar%C3¡ la pertenencia del usuario al grupo.</CheckGroupExplain>
+<check_agent_version_explain>Verifique la versi%C3%B3n del agente.[br]En algunos casos, el agente puede no estar actualizado y, por lo tanto, no reconocer o admitir el comando especificado.</check_agent_version_explain>
 <check_all_agents>Verificar todos los agentes</check_all_agents>
 <check_client_certificate>Verifica el certificado del cliente</check_client_certificate>
 <check_code>Check Code</check_code>
@@ -744,6 +849,7 @@ La herramienta comprobar%C3¡ la coherencia de su configuraci%C3%B3n de Active D
 <choose_a_source>Elija una fuente</choose_a_source>
 <chrome_error1>Un proceso impidi%C3%B3 la carga de la p%C3¡gina con un intersticial.[br]Aseg%C3%BArate de probar la URL correcta y de que el servidor responda adecuadamente a todas las solicitudes.</chrome_error1>
 <chrome_error2>El proceso no pudo cargar de forma fiable la p%C3¡gina solicitada.[br]Aseg%C3%BArate de probar la URL correcta y de que el servidor responda adecuadamente a todas las solicitudes.</chrome_error2>
+<circuit_id>ID del circuito</circuit_id>
 <cisco_asa_address>Identificador de router</cisco_asa_address>
 <cisco_asa_Iaddr>CICSCO ASA Interface</cisco_asa_Iaddr>
 <clamavupd_failed>Fallo en la actualizaci%C3%B3n de las bases de datos oficiales de ClamaV</clamavupd_failed>
@@ -781,18 +887,22 @@ Sube este contenedor zip usando el bot%C3%B3n de abajo.</CLAMAV_UPLOAD_EXPLAIN>
 <cluster_replication_freezed>Freezed Cluster replication</cluster_replication_freezed>
 <collecting_data>Collecting data</collecting_data>
 <collections>Colecciones</collections>
+<collector>Colector</collector>
+<collect_now>Recopilar ahora</collect_now>
 <command>Command</command>
 <commands_count>N%C3%BAmero de comandos</commands_count>
 <comma_separated>Separado por comas</comma_separated>
 <comment_spammer>Comentarios Spammer</comment_spammer>
 <communication controller>Controlador de comunicaciones</communication controller>
 <communication_error_server>Communication Error with remote service</communication_error_server>
+<compact_view>Vista compacta</compact_view>
 <compiled_items>Elementos recopilados</compiled_items>
 <compile_all>Compile all</compile_all>
 <compile_categories>Compilar categor%C3%ADas</compile_categories>
 <completed_at>Completado a las</completed_at>
 <CompressAndDownloadUPD>Compress and download updates</CompressAndDownloadUPD>
 <compress_directory>Compress directory</compress_directory>
+<computer_name_db_explain>El nombre de la m%C3¡quina utilizado en la base de datos local.</computer_name_db_explain>
 <concurrency>Concurrency</concurrency>
 <ConcurrentDatabaseReload>Recarga de bases de datos no bloqueantes</ConcurrentDatabaseReload>
 <ConcurrentDatabaseReload_text>Permite recargas de bases de datos no bloqueantes (multihilo/concurrentes).[br]Esta funci%C3%B3n carga temporalmente un segundo motor de escaneado mientras el escaneado contin%C3%BAa con el primer motor.[br]Una vez cargado, el nuevo motor toma el control.[br]Esta funci%C3%B3n requiere m%C3¡s memoria RAM, por lo que esta opci%C3%B3n se proporciona en caso de que los usuarios estén dispuestos a detener las exploraciones durante la recarga a cambio de reducir los requisitos de memoria del sistema.</ConcurrentDatabaseReload_text>
@@ -802,15 +912,29 @@ Sube este contenedor zip usando el bot%C3%B3n de abajo.</CLAMAV_UPLOAD_EXPLAIN>
 <configured_log_files>Archivos de registro configurados</configured_log_files>
 <configure_dns_provider>Configurar el proveedor DNS</configure_dns_provider>
 <configure_dns_provider_first>Configure primero el proveedor DNS</configure_dns_provider_first>
+<config_diff>Cambios de configuraci%C3%B3n</config_diff>
+<config_has_pending_changes>La configuraci%C3%B3n candidata contiene cambios no confirmados</config_has_pending_changes>
+<config_invalid>Configuraci%C3%B3n no v%C3¡lida</config_invalid>
+<config_up_to_date>La configuraci%C3%B3n est%C3¡ actualizada</config_up_to_date>
+<config_valid>La configuraci%C3%B3n es v%C3¡lida</config_valid>
 <confirm_and_get_certificate>Confirmar y obtener el certificado</confirm_and_get_certificate>
 <confirm_delete_provider>%C2%BFEliminar este proveedor?</confirm_delete_provider>
+<confirm_delete_snapshot>Confirmar la eliminaci%C3%B3n de esta instant%C3¡nea</confirm_delete_snapshot>
+<confirm_dist_upgrade>%C2%BFEjecutar una actualizaci%C3%B3n completa en este agente?[br]
+Se instalar%C3¡n nuevos paquetes de dependencias.[br]
+Esta operaci%C3%B3n no puede interrumpirse una vez iniciada.</confirm_dist_upgrade>
 <confirm_dns>Confirmar DNS</confirm_dns>
 <confirm_dns_created>Confirmar DNS creado</confirm_dns_created>
+<confirm_import_dhcpd_conf>Confirmar la importaci%C3%B3n de la configuraci%C3%B3n DHCP</confirm_import_dhcpd_conf>
+<confirm_install_package>Confirmar la instalaci%C3%B3n del paquete</confirm_install_package>
+<confirm_restart_dhcp>Confirmar el reinicio del servicio DHCP</confirm_restart_dhcp>
+<confirm_restore>Confirmar la operaci%C3%B3n de restauraci%C3%B3n del snapshot</confirm_restore>
 <CONFIRM_TICKET_BT_TEXT>Confirmo, creo el billete</CONFIRM_TICKET_BT_TEXT>
 <CONFIRM_TICKET_PG_TEXT>Al hacer clic en el bot%C3%B3n de confirmaci%C3%B3n, se enviar%C3¡ un mensaje al equipo de asistencia técnica.[br]]El equipo de asistencia técnica podr%C3¡ aprobar su solicitud.</CONFIRM_TICKET_PG_TEXT>
 <confirm_upgrade_all_packages>Confirmar la actualizaci%C3%B3n de todos los paquetes</confirm_upgrade_all_packages>
 <connected2>Conectado</connected2>
 <connecting_to_server>Connecting to the server</connecting_to_server>
+<connections>Conexiones</connections>
 <connection_status>Estado de la conexi%C3%B3n</connection_status>
 <connection_test_failed>Fallo en la prueba de conexi%C3%B3n</connection_test_failed>
 <connection_test_successful>Prueba de conexi%C3%B3n realizada con éxito</connection_test_successful>
@@ -913,14 +1037,19 @@ Para obtener mejores resultados, usa fuentes que se actualicen con frecuencia y 
 <daily_volume>Daily volume</daily_volume>
 <dangerous_categories>Categor%C3%ADas peligrosas</dangerous_categories>
 <dangerous_categories_explain>Las categor%C3%ADas peligrosas como spyware, malware, etc. incluyen sitios que potencialmente pueden da%C3%B1ar a sus usuarios.</dangerous_categories_explain>
+<darkstats_dashboard>An%C3¡lisis del tr%C3¡fico de red</darkstats_dashboard>
 <data>Datos</data>
 <database_options>Opciones de la base</database_options>
 <data_size>Data volume</data_size>
 <days_left>D%C3%ADas restantes</days_left>
 <days_until_expiry>D%C3%ADas hasta la expiraci%C3%B3n</days_until_expiry>
+<db_size>Tama%C3%B1o de la BD</db_size>
 <dcerpc_suricata_eve>Registra las operaciones de llamada a procedimiento remoto de Windows DCERPC</dcerpc_suricata_eve>
 <dcs_list_explain>En relaci%C3%B3n con el dominio de su servidor, los controladores principales son los siguientes: %v</dcs_list_explain>
 <dcs_no_list>No se ha encontrado ning%C3%BAn controlador de dominio con el dominio de su servidor</dcs_no_list>
+<ddns-domainname>Nombre de dominio DDNS</ddns-domainname>
+<ddns-domainname-explain>Zona DNS utilizada para el registro autom%C3¡tico de nombres de host (DDNS).[br]
+Ejemplo: lan.example.com</ddns-domainname-explain>
 <debug_firewall_module>Depurar el m%C3%B3dulo Firewall</debug_firewall_module>
 <decisionIPAbout>DecisionIP es un servicio ofrecido por Lemnia.[br]La infraestructura de Lemnia agrega de forma inteligente flujos de reputaci%C3%B3n relacionados con direcciones IP maliciosas.[br]Al activar este servicio, su cortafuegos (o el de este servidor Artica) se alimentar%C3¡ autom%C3¡ticamente con estos flujos de inteligencia de amenazas.[br]Esto refuerza la protecci%C3%B3n, el rendimiento de los servicios y mejora la experiencia del usuario.</decisionIPAbout>
 <DecisionIPAbout2>DecisionIP es un servicio en la nube impulsado por la empresa Lemnia.[br]
@@ -930,6 +1059,9 @@ Este enfoque mejora el rendimiento del reverse proxy al bloquear una parte signi
 <decisionIPAboutErr1>Para activar la recuperaci%C3%B3n de los flujos, primero debe registrarse.[br]Haga clic en el bot%C3%B3n para abrir el formulario de registro.</decisionIPAboutErr1>
 <DecisionIPCheck>Participar en la red DecisionIP</DecisionIPCheck>
 <DecisionIPExplain>DecisionIP puede recibir las detecciones de ataques sufridos por tu servidor y emplearlas para mejorar la protecci%C3%B3n de todos los servidores ARTICA Reverse Proxy. [br]Esto permite conformar una gran red de sondas y crear una lista de bloqueo que contenga las amenazas emergentes.[br] Al activar también la funcionalidad [b]CyberCrime IP Feeds[/b] en tu servidor, se beneficiar%C3¡ de una protecci%C3%B3n adicional gracias a nuestras listas de reputaci%C3%B3n IP integradas en el firewall.</DecisionIPExplain>
+<decisionIPHoneypotAbout>Honeypot es una funcionalidad de seguridad dise%C3%B1ada para simular puertos en escucha en protocolos com%C3%BAnmente atacados, dentro de un entorno de seguridad controlado.[br]
+Estos puertos no est%C3¡n asociados a ninguna aplicaci%C3%B3n real; sin embargo, supervisan activamente los intentos de conexi%C3%B3n y generan eventos cuando un host remoto inicia comunicaci%C3%B3n con servicios intencionadamente no utilizados.[br]
+Cualquier nodo que muestre un comportamiento sospechoso o exploratorio (â%80%9Cdemasiado curiosoâ%80%9D) ser%C3¡ autom%C3¡ticamente incluido en una lista negra durante tres horas, y la telemetr%C3%ADa del incidente se enviar%C3¡ de inmediato al motor central de inteligencia DecisionIP para su correlaci%C3%B3n y an%C3¡lisis de reputaci%C3%B3n.</decisionIPHoneypotAbout>
 <DecisionIP_sent_events_explain>Estas estad%C3%ADsticas permiten visualizar las amenazas enviadas al servicio Cloud DecisionIP para su an%C3¡lisis, lo que ayuda a mejorar la precisi%C3%B3n y eficacia de la detecci%C3%B3n de reputaci%C3%B3n en su servidor.</DecisionIP_sent_events_explain>
 <DecisionIP_statistics_explain>Esta secci%C3%B3n le permite supervisar en tiempo real las estad%C3%ADsticas de las direcciones IP de origen bloqueadas por las categor%C3%ADas DecisionIP que haya activado.</DecisionIP_statistics_explain>
 <decrypt>Decrypt</decrypt>
@@ -938,6 +1070,7 @@ Este enfoque mejora el rendimiento del reverse proxy al bloquear una parte signi
 <default getway ip>Direcci%C3%B3n de la pasarela por defecto</default getway ip>
 <default_action>Default action</default_action>
 <default_destination>Destino predeterminado</default_destination>
+<default_lease>Concesi%C3%B3n predeterminada</default_lease>
 <default_or_null>Valor por defecto o nulo</default_or_null>
 <DEFAULT_SERVER_BLOCK>[b]Bloqueo de servidor predeterminado[/b][br]
 Deniega las peticiones realizadas directamente a la direcci%C3%B3n IP o dominios desconocidos[br].
@@ -945,25 +1078,31 @@ Esto es especialmente %C3%BAtil si desea asegurarse de que s%C3%B3lo se accede a
 <default_service>Default service</default_service>
 <default_template>Modelo por defecto</default_template>
 <defined_in_the_interface_option>Definido en los par%C3¡metros de la interfaz de red</defined_in_the_interface_option>
+<degraded>Degradado</degraded>
 <delayed_startup>Inicio diferido</delayed_startup>
 <delayed_startup_network>La configuraci%C3%B3n de la red se ejecuta en la %C3%BAltima posici%C3%B3n durante el arranque del servidor</delayed_startup_network>
 <delayed_startup_service_explain>Esta opci%C3%B3n solo se aplica durante el arranque del servidor.[br]En algunos casos, el servicio debe iniciarse %C3%BAnicamente cuando el entorno esté totalmente operativo; de lo contrario, puede tardar m%C3¡s y ralentizar el arranque general.[br]Con esta opci%C3%B3n, el servicio se iniciar%C3¡ solo cuando el servidor lleve X segundos en funcionamiento, permitiendo completar la inicializaci%C3%B3n correctamente.</delayed_startup_service_explain>
 <delay_between_requests>Retraso entre solicitudes</delay_between_requests>
 <deleted_at>Deleted at</deleted_at>
 <delete_all_backups_ask>%C2%BFEliminar todos los conjuntos de copias de seguridad?</delete_all_backups_ask>
+<delete_all_scopes>Eliminar todos los %C3¡mbitos</delete_all_scopes>
 <delete_all_swap_partitions>Eliminar todas las particiones SWAP</delete_all_swap_partitions>
 <DenyHaproxyConfExpl>Si esta opci%C3%B3n est%C3¡ activa, Artica no modificar%C3¡ la configuraci%C3%B3n.[br]Esta opci%C3%B3n es %C3%BAtil si desea conservar su propia configuraci%C3%B3n personalizada sin que Artica la sobrescriba.</DenyHaproxyConfExpl>
+<deny_from_updates>Rechazar actualizaciones</deny_from_updates>
 <deny_uploads>Prohibir la carga de</deny_uploads>
 <deny_usb>Denegar los dispositivos USB</deny_usb>
 <depends>Depends</depends>
 <deploy_agent>Desplegar el agente</deploy_agent>
 <deploy_agent_ssh_explain>Esta operaci%C3%B3n desplegar%C3¡ el agente Debian de forma remota en un servidor de destino mediante SSH.[br]
 Especifique la cuenta root (o una cuenta con privilegios administrativos suficientes) para realizar la instalaci%C3%B3n remota del agente.</deploy_agent_ssh_explain>
+<deploy_artica_software>Desplegar el software Artica</deploy_artica_software>
 <deploy_artica_updates>Desplegar las actualizaciones de Artica</deploy_artica_updates>
 <deploy_artica_updates_explain>Si est%C3¡ habilitado, permites que este servidor central despliegue las actualizaciones de Artica en los nodos secundarios.</deploy_artica_updates_explain>
 <deselect_all>Deseleccionar todo</deselect_all>
 <destination>Destino</destination>
 <destination_domains>Dominios de destino</destination_domains>
+<destroyed>Destruido</destroyed>
+<detail>Detalle</detail>
 <detailed>Detailed</detailed>
 <DETECTED_THREATS>Amenazas detectadas</DETECTED_THREATS>
 <DETECTED_THREATS_10MN>Las amenazas detectadas se escanean cada 10mn en modo de fondo.[br]Si necesita informar de nuevas amenazas ahora, haga clic en el bot%C3%B3n de sincronizaci%C3%B3n.</DETECTED_THREATS_10MN>
@@ -975,15 +1114,47 @@ Especifique la cuenta root (o una cuenta con privilegios administrativos suficie
 <device_role>Funci%C3%B3n del dispositivo</device_role>
 <device_type>Tipo de dispositivo</device_type>
 <device_type_explain>En NetBox, un &quot;Tipo de Dispositivo&quot; es un concepto fundamental utilizado para definir las caracter%C3%ADsticas de dispositivos de red, servidores u otro hardware que puedas gestionar dentro de tu infraestructura. [br]Act%C3%BAa como una plantilla para crear dispositivos individuales y estandariza la informaci%C3%B3n en piezas de hardware similares.</device_type_explain>
+<dhcpd_reloaded>El servicio DHCP ha sido recargado</dhcpd_reloaded>
+<dhcpd_syntax_ok>La configuraci%C3%B3n DHCP est%C3¡ lista para producci%C3%B3n</dhcpd_syntax_ok>
+<dhcp_cluster_mode>Modo cl%C3%BAster DHCP</dhcp_cluster_mode>
+<dhcp_cluster_mode_explain>Cuando est%C3¡ habilitado, los %C3¡mbitos DHCP, los relay y las reservas se gestionan de forma centralizada en este servidor y se env%C3%ADan a todos los agentes del grupo al mismo tiempo.[br]Cuando est%C3¡ deshabilitado, cada agente se configura de forma individual.</dhcp_cluster_mode_explain>
+<dhcp_events>Eventos DHCP</dhcp_events>
 <dhcp_ipam_explain>Instala una infraestructura de gesti%C3%B3n de direcciones IP con DHCP, DNS, NTP y el servicio Netbox para la gesti%C3%B3n.</dhcp_ipam_explain>
 <dhcp_leases_explain>Esta secci%C3%B3n le permite ver los contratos de arrendamiento DHCP que han sido asignados por el servicio DHCP.</dhcp_leases_explain>
+<dhcp_management>Gesti%C3%B3n DHCP</dhcp_management>
+<dhcp_options>Opciones DHCP</dhcp_options>
+<dhcp_relays>Relés DHCP</dhcp_relays>
 <dhcp_requests_explain>Esta secci%C3%B3n muestra las solicitudes de direcciones de red de las estaciones de trabajo y las direcciones IP suministradas por su servicio DHCP.</dhcp_requests_explain>
 <dhcp_reservations_explain>Para reservar direcciones en el servicio DHCP, es decir, si deseas que dispositivos espec%C3%ADficos reciban siempre la misma direcci%C3%B3n IP cuando se conectan a la red, puedes utilizar reservas.[br]Las reservas aseguran que una direcci%C3%B3n MAC espec%C3%ADfica o un identificador de cliente siempre obtenga la misma direcci%C3%B3n IP.</dhcp_reservations_explain>
+<dhcp_restarted_successfully>Servicio DHCP reiniciado correctamente</dhcp_restarted_successfully>
+<dhcp_scopes>%C3%81mbitos DHCP</dhcp_scopes>
 <DHCP_SECTION_DEFAULT_EXPLAIN>You cannot modify this section because these DHCP parameters are defined in the default section</DHCP_SECTION_DEFAULT_EXPLAIN>
 <DHCP_SERVERS>DHCP Servers</DHCP_SERVERS>
 <DHCP_SERVERS_EXPLAIN>Set here a list of available DHCP servers separated by a carriage return.</DHCP_SERVERS_EXPLAIN>
+<dhcp_status_per_agent>Estado del servicio DHCP por nodo</dhcp_status_per_agent>
 <dhcp_suricata_eve>Registra las transacciones DHCP y las asignaciones de direcciones IP</dhcp_suricata_eve>
 <dh_parameters>Grupo Diffieâ%80%93Hellman para el intercambio de claves</dh_parameters>
+<didb_activeattacks>Amenazas activas</didb_activeattacks>
+<didb_activeattacks_explain>Contiene direcciones IP activamente maliciosas en tiempo real, identificadas mediante una correlaci%C3%B3n continua de inteligencia global de amenazas.[br]
+Impulsada por redes distribuidas de honeypots y flujos de telemetr%C3%ADa en vivo, la lista refleja las campa%C3%B1as de ataque en curso a medida que ocurren.[br]
+Bloquea hasta el 95 % del tr%C3¡fico malicioso antes de que alcance la capa de aplicaci%C3%B3n.</didb_activeattacks_explain>
+<didb_anonymousrelays>Relés an%C3%B3nimos</didb_anonymousrelays>
+<didb_anonymousrelays-novpn>Relés an%C3%B3nimos sin VPN</didb_anonymousrelays-novpn>
+<didb_anonymousrelays-novpn_explain>Se refiere a infraestructuras de red que anonimizar el tr%C3¡fico pero que no son puntos finales de VPN comerciales tradicionales.</didb_anonymousrelays-novpn_explain>
+<didb_anonymousrelays_explain>Contiene direcciones IP asociadas a infraestructuras de relés an%C3%B3nimos como proxies abiertos, nodos de salida Tor, puertas de enlace VPN y servicios de anonimizaci%C3%B3n.[br]
+Actualizada continuamente mediante fuentes globales de inteligencia y an%C3¡lisis de red, la lista refleja en tiempo real los puntos finales de anonimizaci%C3%B3n activos.</didb_anonymousrelays_explain>
+<didb_datashield>Data-Shield</didb_datashield>
+<didb_honeypot>Honeypot</didb_honeypot>
+<didb_shadow_fortress>Shadow Fortress</didb_shadow_fortress>
+<didb_shadow_fortress_explain>Esta lista es un agregador de listas negras IP de @Grujowmi.[br]
+Consolida m%C3%BAltiples fuentes p%C3%BAblicas de listas de bloqueo con el fin de identificar las direcciones IP m%C3¡s redundantes â%80%94 es decir, aquellas que aparecen en numerosas listas de bloqueo.[br]
+El objetivo es proporcionar una lista optimizada, limitada a un m%C3¡ximo de 100.000 direcciones IP, que represente las amenazas m%C3¡s com%C3%BAnmente observadas.</didb_shadow_fortress_explain>
+<didb_unethicalbots>Bots no éticos</didb_unethicalbots>
+<didb_unethicalbots_explain>Los bots no éticos se refieren a sistemas automatizados que interact%C3%BAan con sitios web en violaci%C3%B3n de las pol%C3%ADticas de uso aceptable, los términos de servicio o los marcos legales vigentes.[br]
+Estos bots suelen estar dise%C3%B1ados para extraer valor, manipular servicios o causar interrupciones, en lugar de proporcionar una funcionalidad leg%C3%ADtima.</didb_unethicalbots_explain>
+<didb_whitelist>Redes de confianza</didb_whitelist>
+<didb_whitelist_explain>Se refiere a una lista predefinida de direcciones IP, redes o entidades de confianza autorizadas expl%C3%ADcitamente a acceder a un servicio sin estar sujetas a las restricciones de seguridad est%C3¡ndar.[br]
+Las entradas incluidas en una lista blanca omiten ciertos mecanismos de filtrado como la limitaci%C3%B3n de velocidad, las comprobaciones de reputaci%C3%B3n, el bloqueo por ASN o las reglas de detecci%C3%B3n de bots.</didb_whitelist_explain>
 <didyouknow_sshportal>Con Artica puede proporcionar un servicio de proxy SSH inverso para asegurar y controlar las conexiones SSH.[br]Haga clic aqu%C3%AD para ver el v%C3%ADdeo.</didyouknow_sshportal>
 <did_not_respond>Did not respond</did_not_respond>
 <did_you_know_ids>Puede activar una funcionalidad de Artica para convertirlo en una [b]sonda de detecci%C3%B3n de intrusiones (IDS)[/b]. Si Artica act%C3%BAa como pasarela, podr%C3¡ detectar anomal%C3%ADas y desviaciones en la red.[br]
@@ -1002,6 +1173,7 @@ Esto te permite determinar si la latencia es causada por el servicio proxy o por
 <DisableSSHConfig>Si habilita esta funci%C3%B3n, impedir%C3¡ que Artica modifique el archivo de configuraci%C3%B3n del servicio SSH.[br]
 En ese caso, tendr%C3¡ que modificar y mantener la configuraci%C3%B3n manualmente.[br]
 Sin embargo, se mantienen las operaciones ajenas a la configuraci%C3%B3n, como la supervisi%C3%B3n y el control del servicio.</DisableSSHConfig>
+<disable_access_control>Desactivar el control de acceso</disable_access_control>
 <disable_all_nginx>Desactivar todos los sitios de la lista pero no eliminarlos</disable_all_nginx>
 <disable_all_web_firewall>Desactivar el cortafuegos de aplicaciones en todos los sitios</disable_all_web_firewall>
 <disable_all_web_firewall_explain>Poner el cortafuegos de aplicaciones en posici%C3%B3n de apagado en todos los sitios de la lista</disable_all_web_firewall_explain>
@@ -1025,8 +1197,10 @@ Esto significa que todos los servicios TCP como Firewall, proxy transparente no 
 <displayed_hostname>Nombre de host mostrado</displayed_hostname>
 <display_generated_configuration_file_ssh>Puede visualizar y editar el archivo de configuraci%C3%B3n del servicio SSH generado por Artica.</display_generated_configuration_file_ssh>
 <display_update_events>Mostrar los eventos de actualizaci%C3%B3n</display_update_events>
-<distribution>Distribution</distribution>
+<distribution>Distribuci%C3%B3n</distribution>
 <distribution_errors>Errores de distribuci%C3%B3n</distribution_errors>
+<dist_upgrade>Actualizaci%C3%B3n completa</dist_upgrade>
+<dist_upgrade2>Realizar una actualizaci%C3%B3n completa del sistema (paquetes de software, kernel y versi%C3%B3n principal)</dist_upgrade2>
 <DN>Nombre absoluto (DN)</DN>
 <dnat_explain>Destination NAT (DNAT) es una técnica utilizada en la traducci%C3%B3n de direcciones de red para cambiar la direcci%C3%B3n de destino de los paquetes a medida que pasan a través de su servidor Artica.[br]DNAT se utiliza normalmente para redirigir el tr%C3¡fico entrante destinado a una direcci%C3%B3n IP a otra direcci%C3%B3n IP, a menudo dentro de una red privada.[br] Esto se utiliza com%C3%BAnmente para escenarios como el reenv%C3%ADo de puertos, donde el tr%C3¡fico destinado a una IP p%C3%BAblica espec%C3%ADfica y el puerto se redirige a una IP privada y el puerto.</dnat_explain>
 <dnot_proxy_office365>No utilice proxies para Office 365</dnot_proxy_office365>
@@ -1061,6 +1235,9 @@ Ver https://wiki.articatech.com/filtering-service/the-shields/install</dnsdist_t
 Ver https://wiki.articatech.com/filtering-service/the-shields/install</dnsdist_theshields_not_license>
 <dnsdist_webfilter_not_enabled>Para utilizar este objeto, debe instalar el Servicio de Filtrado Web, que permite crear reglas por categor%C3%ADa.[br]
 Ver https://wiki.articatech.com/en/filtering-service/web-filtering</dnsdist_webfilter_not_enabled>
+<dnsdynamic>DNS din%C3¡mico</dnsdynamic>
+<dnsdynamic_explain>Obtenga direcciones IP directamente desde DNS.[br]
+Utilice transferencias de zona DNS (AXFR) como fuente de verdad, permitiendo que DNS funcione como una base de datos distribuida y cacheable de direcciones IP.</dnsdynamic_explain>
 <dnsfw_explain_theshields>Cuando se utilizan servicios de reputaci%C3%B3n como escudos, filtrado web o servicios externos, se responde con</dnsfw_explain_theshields>
 <dnsfw_forge_domain_explain>Especifique aqu%C3%AD los dominios de destino (separados por una coma) que estar%C3¡n sujetos a esta regla.
 Tenga en cuenta que también puede asociar un objeto ACL de dominio de destino con esta regla.</dnsfw_forge_domain_explain>
@@ -1100,6 +1277,7 @@ Cada configuraci%C3%B3n de proveedor puede asignarse a certificados, lo que perm
 Cree una configuraci%C3%B3n de proveedor utilizando las credenciales de la API DNS y selecci%C3%B3nela al solicitar nuevos certificados.[br]
 Si su proveedor DNS no ofrece una API, utilice el pseudo-proveedor [b]Manual[/b].[br]
 En este caso, deber%C3¡ crear o actualizar manualmente el registro DNS cada vez que se renueve el certificado.</dns_providers_explain>
+<dns_records>Registros DNS</dns_records>
 <dns_record_instructions>Instrucciones para el registro DNS</dns_record_instructions>
 <dns_request>Solicitud DNS</dns_request>
 <dns_request_created>Solicitud DNS creada</dns_request_created>
@@ -1130,26 +1308,36 @@ Asigne derechos de administraci%C3%B3n de Docker a su cuenta.</docker_no_privs>
 <docker_upload_image_explain>Suba aqu%C3%AD una imagen docker comprimida (extensi%C3%B3n *.gz,*.tar.gz) o una imagen docker estructurada (extensi%C3%B3n *.tar)</docker_upload_image_explain>
 <does_not_exists>No existe</does_not_exists>
 <DOH_ENABLE>Habilitar la funci%C3%B3n DNS-sobre-Https</DOH_ENABLE>
+<doh_settings>Configuraci%C3%B3n DoH</doh_settings>
 <doh_simulation>Simulaci%C3%B3n del DOH</doh_simulation>
 <domainGroups>Grupos de dominios</domainGroups>
 <domain_errors>Dominios con errores</domain_errors>
+<domain_explain>Establecer el dominio local</domain_explain>
+<domain_saved>Dominio guardado</domain_saved>
 <DONT_EXPIRE_PASSWORD>Represents the password, which should never expire on the account.</DONT_EXPIRE_PASSWORD>
 <DONT_REQ_PREAUTH>Doesn't require Kerberos pre-authentication </DONT_REQ_PREAUTH>
 <dos_protection>Protecci%C3%B3n DoS</dos_protection>
 <double_quotes_not_supported>No se admiten las comillas dobles</double_quotes_not_supported>
 <downgrade>Downgrade</downgrade>
+<download_all_versions>Descargar todas las versiones</download_all_versions>
 <download_documentation_text>[b]Descargue la documentaci%C3%B3n en formato PDF[/b]</download_documentation_text>
+<download_only_latest_versions>Descargar solo las versiones m%C3¡s recientes</download_only_latest_versions>
+<download_only_latest_versions_explain>Si est%C3¡ habilitada, el servidor Meta almacenar%C3¡ %C3%BAnicamente las versiones m%C3¡s recientes disponibles.[br] Esta opci%C3%B3n reduce significativamente el uso del almacenamiento.[br] Sin embargo, impedir%C3¡ volver a una versi%C3%B3n anterior del software.</download_only_latest_versions_explain>
 <download_powershell_script>Descargar el script de PowerShell</download_powershell_script>
 <download_powershell_script_exp>Este script de PowerShell permite generar el [b]ticket Kerberos[/b] (keytab) en su Active Directory.[br]Una vez creado el keytab, podr%C3¡ cargarlo en esta secci%C3%B3n para unir este servidor a su dominio de Active Directory.</download_powershell_script_exp>
 <download_powershell_script_explain>Descargue el script de PowerShell con el bot%C3%B3n de abajo y ejec%C3%BAtelo como administrador en su Active Directory.</download_powershell_script_explain>
 <download_the_license_documentation>Descargar la documentaci%C3%B3n de la licencia</download_the_license_documentation>
+<download_the_windows_client>Descargar el cliente de Windows</download_the_windows_client>
 <downstream_network_interfaces>Interfaces de red descendentes</downstream_network_interfaces>
 <do_nothing_but_logs>No hacer nada y registrar</do_nothing_but_logs>
 <do_not_limit_bandwidth>Does not restrict bandwidth usage</do_not_limit_bandwidth>
 <do_not_reboot>No reiniciar el sistema</do_not_reboot>
 <do_not_use>No utilizar</do_not_use>
 <do_reput_block>Bloqueo basado en la reputaci%C3%B3n de la IP</do_reput_block>
+<drag_to_reorder>Arrastrar para reordenar</drag_to_reorder>
 <dropdown>Lista desplegable</dropdown>
+<dropped>Dropped</dropped>
+<drops>Paquetes descartados</drops>
 <drop_suricata_eve>Registra los paquetes descartados y el tr%C3¡fico bloqueado con razones</drop_suricata_eve>
 <dstproxy>Proxy de destino</dstproxy>
 <dstproxy_explain>[b]Fuerza[/b] el uso de una lista de servidores proxy.[br]Este objeto se utiliza en la secci%C3%B3n [b]Force[/b] de esta regla.</dstproxy_explain>
@@ -1164,6 +1352,12 @@ Asigne derechos de administraci%C3%B3n de Docker a su cuenta.</docker_no_privs>
 <edit_bgcolor>Field background color</edit_bgcolor>
 <edit_fgcolor>Field text color</edit_fgcolor>
 <edit_focus_color>Field border color</edit_focus_color>
+<edit_forward_zone>Editar zona de reenv%C3%ADo</edit_forward_zone>
+<edit_scope>Editar el %C3¡mbito</edit_scope>
+<edns0_explain>DNS extendido (UDP de mayor tama%C3%B1o)</edns0_explain>
+<edns_client_subnet>Subred de cliente EDNS (ECS)</edns_client_subnet>
+<edns_client_subnet_expl>Permite al servidor DNS incluir parte de la direcci%C3%B3n IP del cliente en las consultas DNS.</edns_client_subnet_expl>
+<edns_networks>Redes EDNS</edns_networks>
 <eDNS_support>Soporte eDNS</eDNS_support>
 <eDNS_support_dnsdist>Permitir recibir el subred de cliente EDNS (ECS) y reenviarlo a los servidores DNS upstream</eDNS_support_dnsdist>
 <ElasticsearchAuthenticate>Authenticate connection to the database</ElasticsearchAuthenticate>
@@ -1218,6 +1412,7 @@ Supervisa el canal de control TCP/1723 y reescribe los Call ID utilizados por PP
 Esto permite que el cortafuegos identifique correctamente y haga NAT de los paquetes de datos GRE (protocolo 47).[br]
 Sin este m%C3%B3dulo, los t%C3%BAneles PPTP suelen fallar o romperse justo después de la autenticaci%C3%B3n.[br]
 Se necesita principalmente para servidores PPTP antiguos y hoy en d%C3%ADa se considera obsoleto.</EnableVPNPPTCompliance_explain>
+<enable_access_control>Activar el control de acceso</enable_access_control>
 <enable_all_web_firewall>Activar el cortafuegos de aplicaciones en todos los sitios</enable_all_web_firewall>
 <enable_all_web_firewall_explain>Coloca el cortafuegos de aplicaciones en todos los sitios de la lista</enable_all_web_firewall_explain>
 <ENABLE_APP_EACCELERATOR2>Utilizar la caché ampliada de OpCode (OpCache)</ENABLE_APP_EACCELERATOR2>
@@ -1261,6 +1456,7 @@ https://1.2.3.4[monsite.net][br]</enforce_fetch_uri_explain>
 <enforce_https>Forzar HTTP</enforce_https>
 <enforce_user_dns_ttl>Forzar TTL m%C3%ADnimo (visible para el cliente)</enforce_user_dns_ttl>
 <enforce_user_dns_ttl_explain>Garantiza que toda respuesta DNS enviada a los clientes tenga un TTL de al menos [b]3600 segundos[/b], sin importar el TTL del origen ni lo almacenado en caché.[br]Cuando est%C3¡ habilitado, el servicio DNS reescribe al vuelo los TTL bajos (tanto respuestas normales como aciertos de caché) para que los clientes conserven los resultados al menos una hora.[br][b]Notas:[/b][br]Esto solo cambia el [i]TTL presentado a los clientes[/i]; no prolonga la retenci%C3%B3n en la caché interna salvo que su pol%C3%ADtica de caché lo permita.[br]Si el upstream usa TTL muy cortos para cambios/rotaci%C3%B3n r%C3¡pidos, el â%80%9Cclampingâ%80%9D puede retrasar la visibilidad de esos cambios en el lado del cliente.</enforce_user_dns_ttl_explain>
+<enroll>Registrar el agente</enroll>
 <enrollment_token>Token de inscripci%C3%B3n</enrollment_token>
 <enrollment_token_explain>Token obtenido desde la consola Unix del agente remoto o desde la consola Web de Artica cuando el agente est%C3¡ habilitado en un servidor Artica remoto.</enrollment_token_explain>
 <ensure_redirects>Garantizar redireccionamientos</ensure_redirects>
@@ -1308,6 +1504,7 @@ Use el Centro de software para instalar el servicio y crear al menos un conmutad
 <error_old_debian_version>Soporte limitado del sistema operativo</error_old_debian_version>
 <error_opensslv>Parece que est%C3¡ utilizando una versi%C3%B3n antigua de OpenSSL (%s) que no deber%C3%ADa habilitar todas las caracter%C3%ADsticas de SSL como (TLSv 1.3...).</error_opensslv>
 <error_pass8>Tu contrase%C3%B1a debe contener al menos 8 caracteres.</error_pass8>
+<error_rate>Tasa de error</error_rate>
 <error_saving_provider>Error al guardar el proveedor</error_saving_provider>
 <error_server_listen_loopback>Su servidor est%C3¡ escuchando la direcci%C3%B3n de red interna 127.0.0.1[br]
 No da servicio a la red externa. [br]
@@ -1346,6 +1543,7 @@ Ejemplos: [b]/health[/b], [b]/sitemap.xml[/b] o [b]/robots.txt[/b].</excludepath
 <exclude_brodcasts>Excluir los broadcasts</exclude_brodcasts>
 <exclude_cache>Exclusiones de la caché</exclude_cache>
 <exclude_multicasts>Excluir los multicasts</exclude_multicasts>
+<existing_kerberos_ntlm_connections>Existing a Kerberos/NTLM connection</existing_kerberos_ntlm_connections>
 <exitcode>C%C3%B3digo de salida</exitcode>
 <exited>Sali%C3%B3 de</exited>
 <exit_fullscreen>Salir de pantalla completa</exit_fullscreen>
@@ -1378,8 +1576,10 @@ Esto requiere una entrada espec%C3%ADfica de WPAD o la configuraci%C3%B3n de los
 <export_rules>Reglas de exportaci%C3%B3n</export_rules>
 <export_rules_nginx_explain>Esta operaci%C3%B3n le permite exportar toda la base de datos que almacena la configuraci%C3%B3n de sus reglas de proxy inverso.</export_rules_nginx_explain>
 <export_statistics_database_ask>Esta operaci%C3%B3n exportar%C3¡ la base de datos de estad%C3%ADsticas.[br]%C2%BFDesea realizar esta operaci%C3%B3n?</export_statistics_database_ask>
+<exposed_service>Servicio expuesto</exposed_service>
 <extended>Extendido</extended>
 <extended_burst>Extended burst</extended_burst>
+<extended_view>Vista extendida</extended_view>
 <extend_part>Extend partition</extend_part>
 <extend_part_to>Extend this partition to</extend_part_to>
 <extension_missing_upgrade>El motor principal no tiene la extensi%C3%B3n necesaria para proporcionar la funcionalidad.[br]
@@ -1393,12 +1593,15 @@ Sin embargo, puede obligar a Artica a realizar estas b%C3%BAsquedas recursivas a
 <extract_domains>Extraer dominios</extract_domains>
 <extract_domains_nginx_explain>Esta operaci%C3%B3n le permite extraer todos los dominios de Internet de todas sus reglas de proxy inverso.</extract_domains_nginx_explain>
 <failedloginattempts>Intentos fallidos de inicio de sesi%C3%B3n</failedloginattempts>
+<failed_to_contact_agent>No se pudo contactar con el agente</failed_to_contact_agent>
 <failed_to_fetch_certificates>Error al obtener los certificados</failed_to_fetch_certificates>
 <families>Familias</families>
 <family>Family</family>
 <fast>Fast</fast>
 <fbeat_idx_expl>De forma predeterminada, el %C3%ADndice utilizado es [b]artica-%{[fileset.name]}-%{+yyyy}[/b].[br]
 Si esta opci%C3%B3n est%C3¡ activada, el %C3%ADndice se simplificar%C3¡ a [b]artica-%{[fileset.name]}[/b].</fbeat_idx_expl>
+<feature_artica_auth_agent_explain>El Artica Authentication Agent permite una autenticaci%C3%B3n transparente de los usuarios de Artica Proxy mediante Active Directory.[br]
+Soporta los métodos de autenticaci%C3%B3n Basic, NTLM y Negotiate (Kerberos) a través de un agente dedicado en Windows que se comunica de forma segura con los helpers del proxy mediante gRPC sobre TLS.</feature_artica_auth_agent_explain>
 <feature_only_squid5>Esta funci%C3%B3n s%C3%B3lo se incluye en la versi%C3%B3n 5.1 o superior del proxy[br].
 Debes actualizar tu motor proxy para poder utilizarla</feature_only_squid5>
 <feature_still_visible>Esta funcionalidad est%C3¡ actualmente deshabilitada.
@@ -1427,6 +1630,8 @@ Multiple values are allowed separated by a comma:[br]
 Si es necesario, Artica reinicia el servicio.</FiledescriptorsProxyAfterReboot_explain>
 <filedesc_warning>More than %s filedescriptors reached, please increase it.</filedesc_warning>
 <FileServers>File servers</FileServers>
+<filesystem_usage>Uso del sistema de archivos</filesystem_usage>
+<files_extracted>Archivos extra%C3%ADdos</files_extracted>
 <FILES_MODSEC>Contiene una colecci%C3%B3n de nombres de [b]archivos originales[/b] (tal y como se llamaban en el sistema de archivos del usuario remoto).[br]Disponible s%C3%B3lo en peticiones multipart/form-data inspeccionadas.</FILES_MODSEC>
 <files_not_found>Archivos no encontrados</files_not_found>
 <files_suricata_eve>Registra las transferencias de archivos con metadatos, hashes y tipos MIME</files_suricata_eve>
@@ -1464,6 +1669,7 @@ Cuando un nodo se conecta al servidor, las reglas del cortafuegos se personaliza
 <firewall_rulenginx>Para las interfaces de red %if, acepta conexiones al servicio local de proxy inverso en los puertos %ifports.</firewall_rulenginx>
 <firewall_service_is_stopped>Firewall service is stopped</firewall_service_is_stopped>
 <FIREWALL_SERVICE_OPENVPN>Firewall service for VPN</FIREWALL_SERVICE_OPENVPN>
+<firmware>Firmware</firmware>
 <firstAvailable>Primera disponible</firstAvailable>
 <first_index>First Index</first_index>
 <fix_language_explain>Artica detecta el idioma autom%C3¡ticamente. Cuando cambia el idioma en esta secci%C3%B3n, se a%C3%B1ade una cookie con sus preferencias para aplicar el idioma seleccionado.[br]
@@ -1471,6 +1677,7 @@ As%C3%AD, cada cuenta de sesi%C3%B3n tiene sus propias preferencias.[br]
 Esta casilla, si est%C3¡ activada, congelar%C3¡ el idioma seleccionado para todos, todo el tiempo.</fix_language_explain>
 <fix_language_perference>Bloqueo de la elecci%C3%B3n de idioma</fix_language_perference>
 <flat_files>Archivos planos</flat_files>
+<flat_view>Vista plana</flat_view>
 <flood_block_asn_add_explain>Un ASN (Autonomous System Number) identifica a un operador de red (ISP, proveedor de hosting, servicio en la nubeâ%80%A6).[br]
 Cuando un ASN se agrega a la lista de bloqueo, todas las direcciones IP pertenecientes a esa red se bloquear%C3¡n autom%C3¡ticamente cuando activen una respuesta 444 por flood.[br]
 Puede introducir uno o varios n%C3%BAmeros ASN separados por comas o utilizar la tabla de tr%C3¡fico en tiempo real a continuaci%C3%B3n para identificar y a%C3%B1adir ASN sospechosos con un solo clic.</flood_block_asn_add_explain>
@@ -1496,6 +1703,26 @@ En consecuencia, algunas modificaciones est%C3¡n restringidas y deben realizars
 Si elige &quot;Responder a la solicitud&quot;, se utilizar%C3¡ el campo &quot;Respuesta&quot; (utilice una coma para m%C3%BAltiples valores).[br]
 Otras acciones no enviar%C3¡n una respuesta asociada a un registro.</form_dnsfirewalr_explain>
 <fortigate_explain_events>Utilizar un sumidero de logs con Fortigate tiene varios beneficios, especialmente para las organizaciones que requieren una gesti%C3%B3n, monitoreo y an%C3¡lisis robustos de la seguridad de la red.[br]Un sumidero de logs es esencialmente un repositorio centralizado donde los logs de m%C3%BAltiples fuentes son recolectados, procesados y almacenados.</fortigate_explain_events>
+<fortigate_rules>Reglas de firewall FortiGate</fortigate_rules>
+<fortigate_subtitle0>Permite flujos de tr%C3¡fico asimétricos y evita la pérdida de paquetes en entornos de proxy y enrutamiento basado en pol%C3%ADticas.</fortigate_subtitle0>
+<fortigate_subtitle1>Definici%C3%B3n de direcciones: este ejemplo est%C3¡ destinado a probar la regla de redirecci%C3%B3n en un conjunto limitado de hosts. En producci%C3%B3n, utilice rangos de red completos como 192.168.1.0 255.255.255.0.</fortigate_subtitle1>
+<fortigate_subtitle2>Cree un grupo que agrupe la lista de direcciones a las que se aplicar%C3¡ la regla de redirecci%C3%B3n.</fortigate_subtitle2>
+<fortigate_subtitle3>Utilice este grupo en su ruta de pol%C3%ADtica y reenv%C3%ADe el tr%C3¡fico al proxy estableciéndolo como puerta de enlace.</fortigate_subtitle3>
+<fortigate_subtitle4>Permitir el tr%C3¡fico de loopback del proxy a través del firewall.</fortigate_subtitle4>
+<fortigate_subtitle5>Si Artica Proxy est%C3¡ desplegado en la misma red que los clientes, esta regla evita bucles de enrutamiento forzando el tr%C3¡fico a utilizar la puerta de enlace real. Reemplace 10.10.1.254 por su puerta de enlace a Internet.</fortigate_subtitle5>
+<fortigate_tproxy>Integraci%C3%B3n de FortiGate en modo transparente</fortigate_tproxy>
+<fortigate_tproxy_explain>Configure el proxy para recibir de forma transparente el tr%C3¡fico de Internet directamente desde su FortiGate, permitiendo la interceptaci%C3%B3n y el procesamiento en tiempo real de las solicitudes web.[br]
+Este despliegue totalmente transparente no requiere cambios en la configuraci%C3%B3n del navegador ni en los equipos cliente, garantizando una integraci%C3%B3n fluida y no intrusiva.[br]
+Para obtener una gu%C3%ADa paso a paso sobre FortiGate y las mejores pr%C3¡cticas, consulte la documentaci%C3%B3n oficial.</fortigate_tproxy_explain>
+<fortigate_use>%C2%BFUtiliza FortiGate?</fortigate_use>
+<fortigate_use_tproxy>Utilice Artica Proxy junto a su FortiGate en modo proxy transparente para interceptar y controlar de forma fluida el tr%C3¡fico web directamente desde su firewall.</fortigate_use_tproxy>
+<fortigate_use_tproxy2>Este asistente le gu%C3%ADa en la preparaci%C3%B3n de su servidor Artica para recibir el tr%C3¡fico web desde su firewall y reenviarlo tras su procesamiento.[br]
+También proporciona las reglas de firewall necesarias para interconectar correctamente ambos componentes.</fortigate_use_tproxy2>
+<fortigate_use_tproxy3>Seleccione la interfaz de red que recibir%C3¡ el tr%C3¡fico web desde su firewall.[br]
+Si el sistema solo dispone de una interfaz de red, seleccione la %C3%BAnica disponible.</fortigate_use_tproxy3>
+<fortigate_use_tproxy4>Seleccione la interfaz de red que se utilizar%C3¡ para reenviar el tr%C3¡fico web hacia Internet (normalmente la que utiliza su firewall como puerta de enlace de salida).[br]
+Si el sistema solo dispone de una interfaz de red, seleccione la %C3%BAnica disponible.</fortigate_use_tproxy4>
+<fortiget_tproxy_enable>Habilitar la compatibilidad con FortiGate en el motor proxy</fortiget_tproxy_enable>
 <ForwardCredentials>Reenviar credenciales</ForwardCredentials>
 <ForwardCredentials_explain>Transfiere las credenciales directamente al servidor solicitado.[br]
 Este método no oculta las credenciales al servidor TSE.[br]	
@@ -1503,6 +1730,9 @@ Esto significa que Artica no comprobar%C3¡ la cuenta de usuario en las reglas d
 <forward_rules_dns_explain>Modifique el comportamiento de su proxy con reglas de reenv%C3%ADo de DNS.[br]
 En esta secci%C3%B3n puede utilizar servidores DNS espec%C3%ADficos basados en una lista de dominios.</forward_rules_dns_explain>
 <forward_to_proxy>Forward to proxy</forward_to_proxy>
+<forward_zone_name>Nombre de la zona de reenv%C3%ADo</forward_zone_name>
+<forward_zone_servers>Servidores DNS ascendentes</forward_zone_servers>
+<forward_zone_tls>Usar DNS over TLS</forward_zone_tls>
 <for_part_website>Para partes del sitio web</for_part_website>
 <for_the_entire_website>Para todo el sitio web</for_the_entire_website>
 <framerate>Frame rate (image per second)</framerate>
@@ -1522,7 +1752,10 @@ Si se resta este tiempo del tiempo de respuesta del servidor back-end se obtiene
 <ftp_suricata_eve>Registra los comandos FTP, las respuestas y la actividad de transferencia de archivos</ftp_suricata_eve>
 <full2>Lleno</full2>
 <fullscreen>Pantalla completa</fullscreen>
+<full_forwarder_note>Una zona de reenv%C3%ADo &quot;.&quot; env%C3%ADa todas las consultas DNS a los servidores upstream en lugar de resolverlas de forma recursiva.</full_forwarder_note>
+<fw.artic>Métricas de red</fw.artic>
 <f_transactions>Failed transactions</f_transactions>
+<gateways>Puertas de enlace</gateways>
 <gcc version>GCC Version</gcc version>
 <general_parameters>Configuraci%C3%B3n global</general_parameters>
 <generated_rule>Regla generada</generated_rule>
@@ -1572,10 +1805,22 @@ Varios servidores Proxy o servicios DNS remotos pueden consultarlo</GO_SERVER_EX
 <grace_period>Per%C3%ADodo de gracia</grace_period>
 <graph_number_of_connections>N%C3%BAmero de conexiones utilizadas por el servicio</graph_number_of_connections>
 <graph_number_of_requests_seconds>N%C3%BAmero de solicitudes por segundo</graph_number_of_requests_seconds>
+<grouped>Agrupado</grouped>
+<group_apply_config>Aplicar la configuraci%C3%B3n al grupo</group_apply_config>
+<group_apply_explain>Cada agente validar%C3¡, realizar%C3¡ una copia de seguridad y aplicar%C3¡ su propia configuraci%C3%B3n candidata. El servicio DHCP se recargar%C3¡ si la operaci%C3%B3n tiene éxito.</group_apply_explain>
+<group_apply_explain_409>Si la configuraci%C3%B3n candidata es idéntica a la configuraci%C3%B3n en ejecuci%C3%B3n, el agente omitir%C3¡ la aplicaci%C3%B3n.</group_apply_explain_409>
+<group_apply_explain_backup>A backup of the running configuration is created automatically.</group_apply_explain_backup>
+<group_apply_explain_reload>El servicio DHCP se recarga después de una aplicaci%C3%B3n exitosa.</group_apply_explain_reload>
+<group_apply_explain_validate>La configuraci%C3%B3n candidata se valida antes de aplicarse.</group_apply_explain_validate>
+<group_apply_individual_note>Cada agente aplica su propia configuraci%C3%B3n candidata de forma independiente. Consulte el estado de cada agente para m%C3¡s detalles.</group_apply_individual_note>
+<group_apply_warning>Esta acci%C3%B3n aplicar%C3¡ la configuraci%C3%B3n candidata en todos los agentes del grupo.</group_apply_warning>
+<group_dns_explain>La configuraci%C3%B3n siguiente se aplicar%C3¡ a todos los agentes habilitados de este grupo.[br]Los cambios de nombre de host no est%C3¡n admitidos en operaciones de grupo.</group_dns_explain>
 <group_name>Nombre del grupo</group_name>
 <group_of_objects>Grupo de objetos</group_of_objects>
 <group_of_rules>Grupo de reglas</group_of_rules>
 <group_of_rules_delete_ask>Todas las reglas dentro de este grupo de reglas ser%C3¡n eliminadas ?</group_of_rules_delete_ask>
+<group_reservation_push_explain>Env%C3%ADe esta reserva a todos los agentes del grupo.[br][b]Cada agente crear%C3¡ o actualizar%C3¡ autom%C3¡ticamente la entrada de reserva correspondiente en su configuraci%C3%B3n candidata para garantizar la coherencia de la configuraci%C3%B3n en todos los nodos.[/b]</group_reservation_push_explain>
+<group_scope_push_explain>Env%C3%ADe esta configuraci%C3%B3n de %C3¡mbito a todos los agentes del grupo seleccionado.[br]Cada agente crear%C3¡ o actualizar%C3¡ autom%C3¡ticamente el %C3¡mbito correspondiente en su configuraci%C3%B3n candidata para garantizar un despliegue coherente en toda la infraestructura.</group_scope_push_explain>
 <GRUBPC_DEVICE_ERROR>Parece que el gestor de arranque no encontr%C3%B3 el ID del disco de arranque, por favor revise este art%C3%ADculo de la wiki de Artica Tech</GRUBPC_DEVICE_ERROR>
 <guest_network>Red de invitados</guest_network>
 <gzip_compression>Compresi%C3%B3n Gzip</gzip_compression>
@@ -1585,6 +1830,12 @@ Sin embargo, dado que la compresi%C3%B3n se produce en tiempo de ejecuci%C3%B3n,
 <HaClusterDoNotUseAD>Esta operaci%C3%B3n desactivar%C3¡ el uso de Microsoft Active Directory en su granja de servidores.[br]
 Los backends ser%C3¡n notificados para transmitir las solicitudes de Internet sin solicitar a los usuarios que se identifiquen.</HaClusterDoNotUseAD>
 <HACLUSTER_AGENT>Agente HaCluster</HACLUSTER_AGENT>
+<hacluster_backends_metrics_explain>Métricas en tiempo real e hist%C3%B3ricas para los backends de HaCluster, proporcionando visibilidad sobre la distribuci%C3%B3n de carga, tiempos de respuesta, uso de ancho de banda, conexiones activas y estado de salud de todos los servidores backend</hacluster_backends_metrics_explain>
+<hacluster_deploy_explain>Esta secci%C3%B3n permite enviar un comando a través de la consola Artica a un nodo remoto, indic%C3¡ndole que se conecte a este servicio de balanceo de carga.[br]
+Aseg%C3%BArese de que la consola web de Artica del nodo remoto sea accesible desde este servidor HaCluster.</hacluster_deploy_explain>
+<hacluster_deploy_explain2>Esta secci%C3%B3n permite a un nodo remoto autenticarse en este servidor y registrarse autom%C3¡ticamente.[br]
+Utilice el asistente web o la consola Unix para proporcionar este token de autenticaci%C3%B3n y autorizar el registro del servidor.[br]
+Este token se renueva cada 24 horas.</hacluster_deploy_explain2>
 <hacluster_explain>HaCluster es un servicio balanceador que le permite crear f%C3¡cilmente una granja de proxies HTTP y le permite gestionar y monitorizar sus nodos proxy a través de un %C3%BAnico punto.</hacluster_explain>
 <hacluster_lb_dns>Crear un servicio DNS utilizando la granja</hacluster_lb_dns>
 <hacluster_local_dns_service_explain>Los servidores backend usar%C3¡n su propio servicio DNS. El servicio de caché DNS local se instalar%C3¡ si a%C3%BAn no existe.</hacluster_local_dns_service_explain>
@@ -1628,8 +1879,14 @@ Puede ver en la lista de respuestas HTTP que si se invoca un servidor de tiempo 
 <hard disk total space>Hard Disk total space</hard disk total space>
 <hardwares>Hardwares</hardwares>
 <hardware_attribution>Hardware attribution</hardware_attribution>
+<hardware_disks>Discos de hardware</hardware_disks>
 <harvester>Cosechadora</harvester>
 <header_remove_rules>Reglas de eliminaci%C3%B3n de cabeceras</header_remove_rules>
+<healthcheck>Comprobaci%C3%B3n de estado</healthcheck>
+<healthcheck_section>Realiza pings peri%C3%B3dicos a cada agente para detectar fallos y recuperaciones.[br]
+Se activa autom%C3¡ticamente cuando hay varios agentes configurados.[br]
+Es utilizado por el pool de clientes para dirigir las solicitudes solo a los agentes disponibles.</healthcheck_section>
+<healthy>Saludable</healthy>
 <HideVirtualizationVersion>Ocultar la informaci%C3%B3n de Virtualizaci%C3%B3n</HideVirtualizationVersion>
 <history_days_to_backup>Days history to archive</history_days_to_backup>
 <hits>Hits</hits>
@@ -1646,10 +1903,12 @@ Los valores pueden ser una IP %C3%BAnica (p. ej., 192.168.1.42) o una red en for
 <HostKeyAlgorithms>Algoritmos de clave del host</HostKeyAlgorithms>
 <hostnamepath>Ruta al archivo de nombres de host</hostnamepath>
 <hostname_and_ip_required>El nombre de host y la direcci%C3%B3n IP son obligatorios.</hostname_and_ip_required>
+<hostname_explain>Nombre de host completo del equipo (incluye el dominio)</hostname_explain>
 <hostname_to_resolve>Hostname to resolve</hostname_to_resolve>
 <hostspath>Ruta al archivo hosts</hostspath>
 <hosts_groups>Grupos de servidores</hosts_groups>
 <hostuuid>Identificador %C3%BAnico universal</hostuuid>
+<host_address>Direcci%C3%B3n del host</host_address>
 <host_forgery>Host forgery</host_forgery>
 <hotfix>Correcci%C3%B3n r%C3¡pida</hotfix>
 <hotfixes>Correcciones</hotfixes>
@@ -1661,6 +1920,12 @@ Un Hotfix puede ser un parche para versiones oficiales o Nightly y tiene por obj
 <hotspotwizard>Asistente de instalaci%C3%B3n del servicio Hotspot</hotspotwizard>
 <hotspot_ad_explain>Si tiene conexiones de Active Directory, puede especificar aqu%C3%AD qué grupos de usuarios pueden iniciar sesi%C3%B3n y pasar la barrera de HotSpot.[br]Por defecto, se permite a todos los usuarios de la base de datos de Active Directory.</hotspot_ad_explain>
 <hotspot_custom_form_explain>Esta secci%C3%B3n le permite personalizar el formulario de registro en la p%C3¡gina HotSpot.</hotspot_custom_form_explain>
+<hotspot_ident_1>Asocia la sesi%C3%B3n de proxy identificada con la direcci%C3%B3n IP del equipo que se conecta al proxy.[br]
+Este método debe utilizarse con precauci%C3%B3n, ya que si la duraci%C3%B3n de los arrendamientos DHCP es menor que la duraci%C3%B3n de las sesiones HotSpot, los usuarios pueden autenticarse aleatoriamente con la cuenta de otro usuario.[br]
+Si los usuarios est%C3¡n detr%C3¡s de un NAT, el proxy solo ver%C3¡ una %C3%BAnica direcci%C3%B3n IP (la del firewall) y no ser%C3¡ posible asignar correctamente la identificaci%C3%B3n del usuario.</hotspot_ident_1>
+<hotspot_ident_2>Asocia la sesi%C3%B3n de proxy identificada con la direcci%C3%B3n MAC del equipo que se conecta al proxy.[br]
+Este método debe utilizarse con precauci%C3%B3n, ya que si los clientes utilizan VLAN diferentes, el protocolo ARP que transmite la direcci%C3%B3n MAC se ve interrumpido. En este caso, la direcci%C3%B3n MAC aparece como 00:00:00:00:00:00, lo que hace imposible asociar la sesi%C3%B3n con las credenciales del usuario.[br]
+Si la identificaci%C3%B3n basada en la direcci%C3%B3n IP est%C3¡ habilitada, se realizar%C3¡ autom%C3¡ticamente un cambio a la asociaci%C3%B3n por direcci%C3%B3n IP.</hotspot_ident_2>
 <hotspot_network_explain>Esta secci%C3%B3n le permite definir las redes que ser%C3¡n redirigidas a la p%C3¡gina web de autenticaci%C3%B3n.[br]En un proxy mixto que autentique tanto usuarios de Active Directory como usuarios invitados, debe separar los clientes que deben utilizar el modo de autenticaci%C3%B3n de dominio y los que utilizar%C3¡n el formulario web de autenticaci%C3%B3n.[br]
 [b]Precauci%C3%B3n:[/b] Aunque no utilices un sistema de autenticaci%C3%B3n, esta lista sigue activa y act%C3%BAa como una lista blanca por origen de direcci%C3%B3n.</hotspot_network_explain>
 <hotspot_notification_service_warning>Para asegurar una secuencia adecuada de auto-registro, debe activar y configurar el servicio de notificaciones.[br]
@@ -1699,6 +1964,7 @@ El servidor env%C3%ADa una cabecera Upgrade con esta respuesta para indicar los 
 <http_error_code_502>Error 502 â%80%93 Bad Gateway:[br][i]HTTP 502 significa que un servidor que act%C3%BAa como gateway o reverse proxy recibi%C3%B3 una respuesta no v%C3¡lida o inesperada de un servidor ascendente.[/i]</http_error_code_502>
 <http_error_code_503>Error 503 â%80%93 Servicio no disponible:[br][i]HTTP 503 significa que el servidor no puede manejar la solicitud temporalmente, a menudo por sobrecarga o mantenimiento.[/i]</http_error_code_503>
 <http_error_code_504>Error 504 â%80%93 Tiempo de espera agotado en la pasarela:[br][i]HTTP 504 significa que un servidor que act%C3%BAa como gateway o reverse proxy no recibi%C3%B3 una respuesta a tiempo del servidor ascendente.[/i]</http_error_code_504>
+<http_max_streams>N%C3%BAmero m%C3¡ximo de flujos concurrentes HTTP/2</http_max_streams>
 <http_query>Solicitud HTTP</http_query>
 <http_request>Solicitud HTTP</http_request>
 <http_suricata_eve>Registra las transacciones HTTP incluyendo URLs, métodos y encabezados</http_suricata_eve>
@@ -1758,6 +2024,8 @@ Username,Password,EmailAddress,Group,Title,GivenName,Surname,StreetAddress,City,
 Simplemente desc%C3¡rguelo usando el bot%C3%B3n de abajo.</import_certificates_from_cyberdef360_explain>
 <import_certificate_file>Import certificate file</import_certificate_file>
 <import_client_certificate_cluster>Cargue aqu%C3%AD el certificado de cliente en formato PFX que se ha generado desde el Cl%C3%BAster Maestro, el servicio HaCluster o la consola Meta.</import_client_certificate_cluster>
+<import_dhcpd_conf>Importar la configuraci%C3%B3n del servidor</import_dhcpd_conf>
+<import_dhcp_explain>Recargar la configuraci%C3%B3n local de este nodo en el sistema central</import_dhcp_explain>
 <import_key>Importar una llave</import_key>
 <import_rules_nginx_explain>Esta operaci%C3%B3n le permite importar un conjunto completo de reglas de proxy inverso.[br]Advertencia: sobrescribir%C3¡ todas las reglas actuales.</import_rules_nginx_explain>
 <import_server_certificate_explain>Un Certificado de Servidor es un certificado que representa a su Autoridad de Confianza (CA), que usted utiliza en su red.[br]
@@ -1783,14 +2051,24 @@ El aumento de los umbrales de puntuaci%C3%B3n de anomal%C3%ADas hace que el cort
 <incoming_criteria>Criterios entrantes</incoming_criteria>
 <incompatible_file_retry>Este tipo de archivo no es compatible, inténtelo de nuevo.</incompatible_file_retry>
 <incorrect_package>Paquete incorrecto</incorrect_package>
+<inet6_explain>Preferir los registros AAAA en lugar de los registros A</inet6_explain>
 <informational>Informational</informational>
 <inform_from>Inform from</inform_from>
 <info_apt_running>Un proceso de actualizaci%C3%B3n del sistema lleva ejecut%C3¡ndose desde hace %s minutos</info_apt_running>
+<info_end_of_support>Informaci%C3%B3n de fin de soporte</info_end_of_support>
+<info_end_of_support_debian10>La versi%C3%B3n 10 de Debian Linux alcanz%C3%B3 el fin de soporte el 30 de junio de 2024.[br]
+Desde esa fecha, los componentes del sistema operativo ya no se mantienen ni se actualizan.[br]
+Sin embargo, Artica Tech contin%C3%BAa dando soporte al software principal y lo mantendr%C3¡ hasta el [b]1 de enero de 2027[/b].[br]
+Recomendamos preparar una migraci%C3%B3n hacia un sistema m%C3¡s reciente.[br]
+Podr%C3¡ desplegar una nueva appliance Artica basada en Debian 12 o Debian 13.</info_end_of_support_debian10>
+<info_end_of_support_months>Su sistema operativo alcanzar%C3¡ el fin del soporte en unos meses.</info_end_of_support_months>
+<inherit>Heredar</inherit>
 <initialize>Inicializaci%C3%B3n</initialize>
 <inlude_rest_api>Incluir el servicio de API REST</inlude_rest_api>
 <inlude_rest_api_explain>Esta funci%C3%B3n te permite usar el propio motor de la Consola Web para acceder al servicio API sin abrir un puerto adicional.[b]Introduce aqu%C3%AD la ruta relativa que debe utilizar la consola para comunicarse con la API.[br]Especifica el segmento de URL â%80%94 sin barra inclinada al principio ni al final</inlude_rest_api_explain>
 <insecure>Sin garant%C3%ADa</insecure>
 <insert_token>Clave del servidor privado</insert_token>
+<inspect>Inspeccionar</inspect>
 <inspection>Inspecci%C3%B3n</inspection>
 <install_date>Fecha de instalaci%C3%B3n</install_date>
 <install_file>Archivo de instalaci%C3%B3n</install_file>
@@ -1799,6 +2077,7 @@ El aumento de los umbrales de puntuaci%C3%B3n de anomal%C3%ADas hace que el cort
 <install_logsink_ask>Esto convertir%C3¡ su servidor Syslog en un Log Well para almacenar los eventos de su parque de forma segura.[br]
 %C2%BFDesea continuar?</install_logsink_ask>
 <install_the_feature>Activar</install_the_feature>
+<install_the_windows_client>Instalar el cliente de Windows</install_the_windows_client>
 <install_this_prog_kernel>Estamos buscando el paquete para el kernel %kernelver (%kernelbin).[br]
 Si no lo encuentras, aseg%C3%BArate de tener actualizado el %C3%ADndice de paquetes.[br]
 Tras la actualizaci%C3%B3n, si sigue sin aparecer, abre un ticket de soporte desde la interfaz de Artica %support</install_this_prog_kernel>
@@ -1814,13 +2093,17 @@ Como resultado, las versiones del Service Pack que puede desplegar est%C3¡n lim
 <INTERDOMAIN_TRUST_ACCOUNT>Permitir confiar en una cuenta para un dominio del sistema que conf%C3%ADa en otros dominios</INTERDOMAIN_TRUST_ACCOUNT>
 <interface_automatic>Interfaz autom%C3¡tica</interface_automatic>
 <interface_automatic_unbound>Escucha en todas las direcciones de todas las interfaces (actuales y futuras), detecta la interfaz de origen en las consultas UDP y las copia en las respuestas.[br]Esto es muy parecido a ip-transparent, pero esta opci%C3%B3n da servicio a todas las interfaces mientras que con ip-transparent se puede seleccionar en qué interfaces (futuras) da servicio el servicio DNS.</interface_automatic_unbound>
+<interface_required>Interfaz requerida</interface_required>
 <internal>Interno</internal>
 <internal_debian_mirror_addr>Direcci%C3%B3n del servidor réplica de Debian</internal_debian_mirror_addr>
+<internet_users>Usuarios de Internet</internet_users>
 <invalid_certificate>Invalid certificate</invalid_certificate>
 <invalid_domain_name>Nombre de dominio no v%C3¡lido</invalid_domain_name>
+<invalid_mac_address>Direcci%C3%B3n MAC no v%C3¡lida</invalid_mac_address>
 <invite_token>Invite Token</invite_token>
 <io_metrics_title>Métricas de E/S</io_metrics_title>
 <io_mon_explain>Supervisi%C3%B3n de la actividad de E/S de disco por proceso</io_mon_explain>
+<io_stats>Estad%C3%ADsticas de E/S</io_stats>
 <IPAUDIT_EXPLAIN>El sintetizador de tr%C3¡fico IP te ayuda a vigilar tu red rastreando qué dispositivos se comunican entre s%C3%AD, qué protocolos est%C3¡n usando y qué puertos utilizan.[br]
 Observa el tr%C3¡fico de red escuchando tu interfaz en un modo especial que le permite ver todo.[br]
 Cada vez que dos dispositivos se comunican, el sintetizador de tr%C3¡fico IP registra los detalles, como sus direcciones IP, el tipo de conexi%C3%B3n (como TCP o UDP) y los puertos utilizados.[br]
@@ -1828,10 +2111,21 @@ Esta herramienta es excelente para entender lo que ocurre en tu red.[br]
 Puedes usarla para detectar actividades inusuales, ver quién consume m%C3¡s ancho de banda o identificar ataques o problemas en la red.</IPAUDIT_EXPLAIN>
 <iplisted_in_reputation>Direcci%C3%B3n en bases de datos de reputaci%C3%B3n</iplisted_in_reputation>
 <ipv4_comma>Introduce aqu%C3%AD la direcci%C3%B3n IPv4. Puedes especificar varias direcciones separ%C3¡ndolas con comas.</ipv4_comma>
+<ipv6_gua_prefix_help>Introduzca el prefijo proporcionado por su ISP, por ejemplo 2001:db8:abcd. No incluya el :: final.</ipv6_gua_prefix_help>
+<ipv6_gua_wizard_explain>Cree una direcci%C3%B3n Global Unicast Address (GUA) para la conectividad p%C3%BAblica a Internet.[br]
+Introduzca el prefijo asignado por su ISP o RIR (normalmente /48 o /56), luego elija un identificador de subred y de host.</ipv6_gua_wizard_explain>
+<ipv6_linklocal_no_mac>No se puede derivar una direcci%C3%B3n link-local: no se pudo leer la direcci%C3%B3n MAC de esta interfaz.</ipv6_linklocal_no_mac>
+<ipv6_linklocal_wizard_explain>Las direcciones link-local se derivan autom%C3¡ticamente de la direcci%C3%B3n MAC de la interfaz utilizando el algoritmo EUI-64.[br]
+Est%C3¡n limitadas a un solo segmento de red y no pueden ser enrutadas.[br]
+Cada interfaz habilitada para IPv6 tiene una autom%C3¡ticamente.</ipv6_linklocal_wizard_explain>
+<ipv6_ula_wizard_explain>Cree una direcci%C3%B3n local %C3%BAnica (ULA) para redes privadas.[br]
+Las direcciones ULA utilizan el prefijo fd00::/8 y no son enrutables en Internet, de forma similar a 10.x.x.x o 192.168.x.x en IPv4.[br]
+El ID global debe ser %C3%BAnico para cada sitio.</ipv6_ula_wizard_explain>
 <ip_aliasing>Alias de IP</ip_aliasing>
 <isa bridge>ISA Bridge</isa bridge>
 <isMemberOf>Es miembro de</isMemberOf>
 <isp>Proveedor de servicios de Internet</isp>
+<isp_prefix>Prefijo del ISP</isp_prefix>
 <issue>Problema</issue>
 <issuer>Issuer</issuer>
 <issues_in_acls>Problemas en las ACL</issues_in_acls>
@@ -1842,6 +2136,7 @@ If the user is not authenticated, the proxy will ask user to logon and return fa
 <itcharts_clusters>In cluster configuration, in order to avoid ask the second time the IT Charters, IT Charts sessions can be replicated from a master server.[br]Set here the master server address here (by default, the communication port is 6123).</itcharts_clusters>
 <itype>Tipo de mensaje ICMPv4</itype>
 <itype_explain>Detecta operaciones ICMP espec%C3%ADficas como pings, errores, redirecciones o paquetes con TTL expirado</itype_explain>
+<i_am_not_interested>No estoy interesado</i_am_not_interested>
 <ja3_fingerprints.rules>Utiliza las huellas JA3 y JA3S para identificar el software de cliente y servidor en los handshakes TLS/SSL (cifrados).[br]
 JA3 crea una huella %C3%BAnica del lado del cliente a partir de los par%C3¡metros criptogr%C3¡ficos predeterminados del Client Hello de TLS (versi%C3%B3n de TLS, conjuntos de cifrado, extensiones, etc.).[br]
 Incluye reglas que comparan contra una lista negra de hashes JA3 maliciosos conocidos.</ja3_fingerprints.rules>
@@ -1926,17 +2221,21 @@ Se recomienda establecer este valor de acuerdo con el tama%C3%B1o de la memoria 
 <last_backup>Last backup</last_backup>
 <last_changed>%C3%9Altima modificaci%C3%B3n</last_changed>
 <last_config>%C3%9Altima configuraci%C3%B3n</last_config>
+<last_day>%C3%9Altimo d%C3%ADa</last_day>
 <last_month>El mes pasado</last_month>
 <last_monthly_report>%C3%9Altimo informe mensual</last_monthly_report>
+<last_quarter>%C3%9Altimo trimestre</last_quarter>
 <last_save>Last save</last_save>
 <last_seen>%C3%9Altima actividad</last_seen>
+<last_updated>%C3%9Altima actualizaci%C3%B3n</last_updated>
+<last_upgrade>%C3%9Altima actualizaci%C3%B3n</last_upgrade>
 <last_weekly_report>%C3%9Altimo informe semanal</last_weekly_report>
 <latency>Latencia</latency>
 <Latency_events>Eventos de latencia</Latency_events>
 <Latency_events_reverse>Esta opci%C3%B3n permite que Artica escriba un archivo de trazas dedicado cuando la latencia del reverse-proxy o del backend supera un umbral definido en milisegundos.[br]
 Si el valor se establece en 0, la funci%C3%B3n de trazado queda desactivada.[br]
 Ver%C3¡s un men%C3%BA desplegable espec%C3%ADfico para esto en la vista de eventos en tiempo real.</Latency_events_reverse>
-<launch_install>Start the installation</launch_install>
+<launch_install>Iniciar la instalaci%C3%B3n</launch_install>
 <launch_searchs>Iniciar b%C3%BAsquedas</launch_searchs>
 <launch_the_search>Launch the search</launch_the_search>
 <laurentMinneIDS>Laurent Minne es ingeniero de ciberseguridad defensiva, CISO del grupo Acensi y autor de [b]Data-Shield IPv4 Blocklist[/b].[br]
@@ -1954,6 +2253,7 @@ Por eso las donaciones son importantes: para mantener el proyecto de Laurent Min
 If you not define any group, Artica will create groups from your text file.[br]
 Please, refer to the PDF documentation how to build the text file for importation</LDAP_MEMBER_IMPOURT_GROUP_EXP>
 <leases_explain>Los arrendamientos son la asignaci%C3%B3n temporal y limitada en el tiempo de direcciones IP (y, a menudo, de otros par%C3¡metros de configuraci%C3%B3n) a dispositivos cliente. [br] En lugar de asignar direcciones permanentes, los servidores DHCP â%80%9Carriendanâ%80%9D direcciones por un per%C3%ADodo especificado, asegurando un uso eficiente del grupo de direcciones y simplificando la administraci%C3%B3n de la red.</leases_explain>
+<lease_times>Tiempos de concesi%C3%B3n</lease_times>
 <legal_logs_longterm>Almacena eventos de larga duraci%C3%B3n</legal_logs_longterm>
 <legal_log_external_explain>Por defecto, los eventos se almacenan en este servidor.[br]
 Le aconsejamos encarecidamente que utilice un sistema de almacenamiento externo para no llenar el disco duro de trabajo y garantizar la durabilidad del almacenamiento en caso de fallo de hardware de este servidor.[br]
@@ -1997,6 +2297,7 @@ Copie y pegue la clave privada en este campo y haga clic en el bot%C3%B3n [b]Ini
 <license_server>Servidor de licencias</license_server>
 <license_server_error>Error en el servidor de licencias</license_server_error>
 <license_server_inacc>Servidor de licencias inaccesible, haz clic para m%C3¡s informaci%C3%B3n.</license_server_inacc>
+<lifecycle>Ciclo de vida</lifecycle>
 <limited>Limitado</limited>
 <limit_background_processes_consumption>Limit background processes consumption</limit_background_processes_consumption>
 <limit_compile_before>Prohibir la compilaci%C3%B3n antes de</limit_compile_before>
@@ -2009,8 +2310,11 @@ Copie y pegue la clave privada en este campo y haga clic en el bot%C3%B3n [b]Ini
 <link_this_server_account_explain>Para obtener una licencia, primero tiene que registrar su cuenta en nuestro servidor de licencias.[br]Después de registrarse, haga clic en el bot%C3%B3n [b]Obtener su clave privada[/b] para generar una clave privada para su servidor.[br]
 [b]Una clave privada es una clave que vincula su servidor a su cuenta en el servidor de licencias.[/b][br]
 Copie/pegue la clave privada en este campo y haga clic en el bot%C3%B3n Siguiente.</link_this_server_account_explain>
+<listening_interfaces>Interfaces de escucha</listening_interfaces>
 <listening_port_not_available>El puerto de escucha no est%C3¡ disponible</listening_port_not_available>
 <listen_port_explain>Introduzca un n%C3%BAmero de puerto entre 1 y 65535 en el que escuchar%C3¡ el servicio.</listen_port_explain>
+<live>En tiempo real</live>
+<live_updates>Actualizaciones en tiempo real</live_updates>
 <loaded>Cargado</loaded>
 <loaded_kernel_modules>Loaded modules</loaded_kernel_modules>
 <load_average>Carga media</load_average>
@@ -2018,6 +2322,7 @@ Copie/pegue la clave privada en este campo y haga clic en el bot%C3%B3n Siguient
 <load_balance_dns_action>Balancear las solicitudes de DNS a</load_balance_dns_action>
 <load_balance_dns_action_explain>Permite retransmitir las solicitudes de resoluci%C3%B3n DNS a uno o m%C3¡s servidores DNS utilizando el método de equilibrio de carga.</load_balance_dns_action_explain>
 <load_databases_manually>Cargar las bases de datos manualmente</load_databases_manually>
+<load_module>Cargar el m%C3%B3dulo</load_module>
 <localvolumes>Vol%C3%BAmenes locales</localvolumes>
 <LOCAL_CACHE_DNS_INTERFACE>Este servicio DNS est%C3¡ dise%C3%B1ado para soportar %C3%BAnicamente consultas DNS locales desde este servidor Artica.[br]
 Sin embargo, puedes modificar su comportamiento para que también pueda servir consultas desde tus endpoints.[br]
@@ -2040,10 +2345,9 @@ Si desea volver a autorizar a Artica a crear la configuraci%C3%B3n local, haga c
 <logsearch_count>Su b%C3%BAsqueda se realizar%C3¡ en %s archivos de registro</logsearch_count>
 <logsearch_err_date>No hay archivos de registro que coincidan con su b%C3%BAsqueda, ampl%C3%ADe el intervalo de fechas.</logsearch_err_date>
 <logs_retention_parameters>Retenci%C3%B3n de registros y eventos</logs_retention_parameters>
-<logs_retention_parameters_explain>This section defines the lifetime of log files based on their maximum size.[br]
-Log files concerned by this section are not subject to legal constraints, they are used for monitoring purposes.[br]
-They can be deleted safely
-</logs_retention_parameters_explain>
+<logs_retention_parameters_explain>Esta secci%C3%B3n define el per%C3%ADodo de retenci%C3%B3n de los archivos de registro seg%C3%BAn su tama%C3%B1o m%C3¡ximo.[br]
+Los archivos de registro incluidos en esta secci%C3%B3n no est%C3¡n sujetos a obligaciones legales; se utilizan con fines de supervisi%C3%B3n y diagn%C3%B3stico.[br]
+Pueden eliminarse de forma segura.</logs_retention_parameters_explain>
 <logs_sink>Pozos de registro</logs_sink>
 <log_administrators_operations>Feature that save to events table all operations made by administrators.[br]Also events can be saved trough Syslog</log_administrators_operations>
 <log_failed_answers>Log de respuestas fallidas</log_failed_answers>
@@ -2104,6 +2408,7 @@ Nota: Esta opci%C3%B3n no se especifica por defecto, por lo que la profundidad e
 <max_feeds>N%C3%BAmero m%C3¡ximo de feeds</max_feeds>
 <max_latency_ms_explain>Latencia m%C3¡xima aceptable durante las comprobaciones antes de decidir el cambio al modo vitrificaci%C3%B3n.[br]
 Si la latencia vuelve a un nivel aceptable, el modo vitrificaci%C3%B3n se desactivar%C3¡ autom%C3¡ticamente.</max_latency_ms_explain>
+<max_lease>Tiempo m%C3¡ximo de concesi%C3%B3n</max_lease>
 <max_log_filesize>Tama%C3%B1o m%C3¡ximo del archivo de registro</max_log_filesize>
 <max_log_filesize_explain>Para no saturar el disco del sistema, si el archivo de registro supera este valor (en MB), se borrar%C3¡ permanentemente.[br]Ajuste este valor para evitar la pérdida de datos de rastreo antes de la rotaci%C3%B3n del registro legal del sistema.</max_log_filesize_explain>
 <max_log_file_size>Tama%C3%B1o m%C3¡ximo de los archivos de registro</max_log_file_size>
@@ -2122,8 +2427,11 @@ Si la latencia vuelve a un nivel aceptable, el modo vitrificaci%C3%B3n se desact
 <MetaAddress>Host o IP de este servidor Meta</MetaAddress>
 <metadata_suricata_eve>Registra metadatos de eventos adicionales e informaci%C3%B3n contextual</metadata_suricata_eve>
 <meta_no_ca>El certificado del servidor no ha sido creado; como resultado, no es posible crear una configuraci%C3%B3n de cliente.</meta_no_ca>
+<meta_wait_parameters>Los ajustes han sido actualizados.[br]Espere unos momentos mientras se contacta al nodo, aplica la nueva configuraci%C3%B3n y devuelve los par%C3¡metros actualizados.</meta_wait_parameters>
 <methods>Métodos</methods>
 <metrics>Métricas</metrics>
+<microstats_explain>La funci%C3%B3n de estad%C3%ADsticas m%C3%ADnimas est%C3¡ habilitada, lo que le permite supervisar las métricas del tr%C3¡fico web que pasa a través de su proxy.[br]
+Para an%C3¡lisis avanzados, puede implementar un servidor de estad%C3%ADsticas dedicado.</microstats_explain>
 <midday>Mediod%C3%ADa</midday>
 <midnight>Medianoche</midnight>
 <minimalist_gateway>Pasarela minimalista</minimalist_gateway>
@@ -2136,6 +2444,7 @@ Por favor, haga clic en este bot%C3%B3n</miscategory_explain>
 <missing_feature>Funcionalidad ausente</missing_feature>
 <missing_image>Falta imagen</missing_image>
 <missing_module>M%C3%B3dulo que falta</missing_module>
+<missing_parameter>Par%C3¡metro faltante</missing_parameter>
 <missing_php_modules>Faltan m%C3%B3dulos PHP</missing_php_modules>
 <missing_php_modules_explain>Faltan funciones/m%C3%B3dulos PHP que hacen que algunas funciones no estén disponibles.[br]
 En muchos casos, reiniciar la consola web resolver%C3¡ estos problemas.</missing_php_modules_explain>
@@ -2145,6 +2454,8 @@ En muchos casos, reiniciar la consola web resolver%C3¡ estos problemas.</missin
 <MNS_LOGON_ACCOUNT>MNS logon account</MNS_LOGON_ACCOUNT>
 <mobile_phone_expression>Mobile Phone expression</mobile_phone_expression>
 <modbus_suricata_eve>Registra las comunicaciones del protocolo de automatizaci%C3%B3n industrial Modbus</modbus_suricata_eve>
+<mode_debug_warn>Su servicio se encuentra actualmente en modo detallado (verbose).[br]
+Evite dejar esta configuraci%C3%B3n activada durante demasiado tiempo para prevenir la saturaci%C3%B3n de los archivos de registro.</mode_debug_warn>
 <ModSecurityExplain>Esta funci%C3%B3n inspecciona el tr%C3¡fico HTTP cuando llega al servidor.[br]
 Cuando una petici%C3%B3n HTTP llega al servidor, es primero enrutada a través de un m%C3%B3dulo dedicado antes de ser enrutada a la aplicaci%C3%B3n de destino.[br]ModSecurity compara la petici%C3%B3n HTTP entrante con una lista de reglas.[br]
 Estas reglas definen la forma de una petici%C3%B3n maliciosa o da%C3%B1ina, por lo que si la petici%C3%B3n entrante coincide con una regla, ModSecurity bloquea la petici%C3%B3n para que no llegue a la aplicaci%C3%B3n de destino donde puede causar da%C3%B1o.</ModSecurityExplain>
@@ -2164,7 +2475,9 @@ Dependiendo de la configuraci%C3%B3n de retenci%C3%B3n del informe, se perder%C3
 <monitor_cpu_usage>Supervisar el uso de la CPU</monitor_cpu_usage>
 <monit_logs_explain>Los eventos enumerados en esta secci%C3%B3n son generados por el watchdog del sistema.[br]El watchdog supervisa continuamente el estado de los servicios y reinicia autom%C3¡ticamente cualquier servicio que no esté operativo para mantener la estabilidad y disponibilidad del sistema.</monit_logs_explain>
 <months>Meses</months>
+<more_information>M%C3¡s informaci%C3%B3n</more_information>
 <mounts>Conjuntos</mounts>
+<move_to_agent>Mover el snapshot al agente</move_to_agent>
 <move_to_hd>This operation will move some system directories to this disk, this operation should take time</move_to_hd>
 <moving_files_to_new_folder>Mover los archivos al nuevo directorio</moving_files_to_new_folder>
 <mqtt_suricata_eve>Registra la actividad de publicaci%C3%B3n/suscripci%C3%B3n del protocolo de mensajer%C3%ADa IoT MQTT</mqtt_suricata_eve>
@@ -2182,12 +2495,21 @@ Artica intent%C3%B3 conectarse en modo directo para validar este error y pudo co
 <mysql version>MySQL Version</mysql version>
 <my_folders>Mis directorios</my_folders>
 <names>Nombres</names>
+<nameservers>Servidores de nombres</nameservers>
 <namespace>Espacio de nombres</namespace>
+<namespaces>Espacios de nombres de red</namespaces>
+<namespace_name_explain>Una etiqueta descriptiva para identificar este namespace en la consola.</namespace_name_explain>
+<namespace_nat_explain>Esta opci%C3%B3n permite que el tr%C3¡fico originado desde el namespace aislado alcance Internet (u otras redes) a través de la interfaz de salida del host.[br]
+Sin esta opci%C3%B3n, el namespace solo puede comunicarse con el host a través del par de interfaces y no puede acceder a redes externas.</namespace_nat_explain>
 <native_client>Conector nativo</native_client>
 <nat_explain_addr>Ingresa la direcci%C3%B3n de red que los nodos de la granja de servidores deben usar para conectarse al servidor central. Es posible que el servidor central se encuentre en un entorno NAT y que la direcci%C3%B3n propia del servidor no sea la utilizada para acceder a él.[br]
 Por otra parte, el servidor central podr%C3%ADa contar con m%C3%BAltiples interfaces de red.[br]
 Esta informaci%C3%B3n es obligatoria.</nat_explain_addr>
 <nbproc>Number of workers</nbproc>
+<nb_agents>N%C3%BAmero de agentes</nb_agents>
+<nb_agents_to_upgrade>Tiene agentes que necesitan ser actualizados</nb_agents_to_upgrade>
+<nb_deb_pkgs>N%C3%BAmero de paquetes Debian nativos para actualizar</nb_deb_pkgs>
+<ndots_explain>Umbral de puntos para una resoluci%C3%B3n absoluta</ndots_explain>
 <nDPIEmergency>The nDPI is turned into emergency mode.[br]Install again the {APP_NDPI} package in order to fix this issue</nDPIEmergency>
 <need_postgresql_1>El servicio PostgreSQL no est%C3¡ instalado como caracter%C3%ADstica[br].
  Esto significa que la gesti%C3%B3n de clientes no est%C3¡ disponible[br].
@@ -2222,7 +2544,13 @@ Si el cliente responde, el servidor utiliza el MTU informado por el cliente.</Ne
 <networkmode>Modo red</networkmode>
 <network_agents>Agentes de red</network_agents>
 <network_agents_explain>Gestionar agentes de red remotos para permitir una supervisi%C3%B3n distribuida y una administraci%C3%B3n centralizada.</network_agents_explain>
+<network_metrics>Métricas de red</network_metrics>
+<network_namespaces>Espacios de nombres de red</network_namespaces>
+<network_namespaces_explain>Administre entornos de red aislados.[br]
+Cada namespace proporciona una pila de red independiente con sus propias interfaces, direcciones IP, tablas de enrutamiento y reglas de firewall.</network_namespaces_explain>
+<network_traffic>Tr%C3¡fico de red</network_traffic>
 <network_traffic_from>Tr%C3¡fico procedente de</network_traffic_from>
+<network_traffic_statistics>Estad%C3%ADsticas del tr%C3¡fico de red</network_traffic_statistics>
 <new_acls_rule_auth_schemes_explain>Especifique en esta regla el tipo de autenticaci%C3%B3n prioritaria que se servir%C3¡ cuando los objetos de esta regla coincidan.[br]
 La primera regla que coincide determina el orden de los esquemas para la transacci%C3%B3n actual de autenticaci%C3%B3n requerida.[br]
 Tenga en cuenta que la futura respuesta a%C3%BAn no est%C3¡ disponible durante la evaluaci%C3%B3n.[br]
@@ -2338,19 +2666,24 @@ En lugar de procesar un entero o un flotante a la vez, AVX puede procesar 8, 16 
 <notify_categories>Notificar categor%C3%ADas</notify_categories>
 <notif_netchange>La configuraci%C3%B3n de la red ha sido modificada, debe aplicar los ajustes de la red.</notif_netchange>
 <not_after>No después de</not_after>
+<not_applied>No aplicado</not_applied>
 <not_before>No antes de</not_before>
 <not_connected>Not connected</not_connected>
 <NOT_DELEGATED>Security context of the user isn't delegated</NOT_DELEGATED>
 <not_enough_space>Not enough space</not_enough_space>
 <not_in_production>No en producci%C3%B3n</not_in_production>
+<not_loaded>No cargado</not_loaded>
+<not_monitored>No supervisado</not_monitored>
 <not_paid_license>Licencia no pagada</not_paid_license>
 <not_resolved>No resuelto</not_resolved>
 <not_running>No est%C3¡ en ejecuci%C3%B3n</not_running>
 <not_use_icap_engines>No utilizar los motores ICAP</not_use_icap_engines>
+<not_valid_ipv6_address>Direcci%C3%B3n IPv6 no v%C3¡lida</not_valid_ipv6_address>
 <not_watchdog_internet>No compruebe el acceso a Internet</not_watchdog_internet>
 <not_watchdog_internet_explain>Artica comprueba peri%C3%B3dicamente el acceso a Internet.[br]
 Para ello, comprobar%C3¡ el acceso a msftconnecttest.com, msftncsi.com, appleiphonecell.com, itools.info, ibook.info y thinkdifferent.us.[br]
 Si no puede realizar una petici%C3%B3n web a estos sitios, se emitir%C3¡ una notificaci%C3%B3n cr%C3%ADtica.</not_watchdog_internet_explain>
+<no_active_leases>No hay concesiones DHCP activas</no_active_leases>
 <no_agents_configured>Ning%C3%BAn agente configurado</no_agents_configured>
 <no_agent_explain>Para administrar servidores remotos, debe desplegar un servicio llamado Agente Debian, capaz de recibir y ejecutar las %C3%B3rdenes enviadas por su servidor Meta.[br]
 Consulte la documentaci%C3%B3n (haga clic en el bot%C3%B3n) para ver los diferentes métodos de despliegue remoto.</no_agent_explain>
@@ -2364,17 +2697,20 @@ Consulte la documentaci%C3%B3n (haga clic en el bot%C3%B3n) para ver los diferen
 <no_certificates_with_provider_explain>Actualmente no hay certificados configurados con un proveedor DNS.[br]
 Para habilitar la renovaci%C3%B3n autom%C3¡tica, asigne un proveedor DNS a sus certificados Letâ%80%99s Encrypt en la configuraci%C3%B3n de certificados.[br]
 Una vez que un certificado tenga asignado un proveedor DNS, se renovar%C3¡ autom%C3¡ticamente antes de su vencimiento.</no_certificates_with_provider_explain>
+<no_check_names_explain>Omitir la verificaci%C3%B3n de nombres de host no v%C3¡lidos</no_check_names_explain>
 <no_computer_in_ad>No se ha encontrado el objeto de equipo %v en el %C3¡rbol de Active Directory.</no_computer_in_ad>
 <no_connector>Sin conector</no_connector>
 <no_data_available>No hay datos disponibles</no_data_available>
 <no_defined_optimization>Sin optimizaci%C3%B3n definida</no_defined_optimization>
 <no_destination_as_been_defined>No se ha definido ning%C3%BAn destino</no_destination_as_been_defined>
+<no_domains_defined>No hay dominios definidos</no_domains_defined>
 <no_domain_valid>No se encontraron dominios elegibles.[br]Revise su lista de dominios e inténtelo de nuevo.</no_domain_valid>
 <no_events>No se han registrado eventos.</no_events>
 <no_expiring_certificates>Ning%C3%BAn certificado a punto de expirar</no_expiring_certificates>
 <no_files_configured_explain>Actualmente no hay archivos de registro configurados para el tailing.[br]
 El sistema detecta autom%C3¡ticamente los archivos de registro disponibles al iniciarse.[br]
 Si no aparece ning%C3%BAn archivo, verifique que los archivos de registro existan y tengan permisos de lectura.</no_files_configured_explain>
+<no_forward_zones_defined>No hay zonas de reenv%C3%ADo definidas</no_forward_zones_defined>
 <no_fs_instances>Este directorio no est%C3¡ asociado a ninguna instancia del servidor de archivos.[br]No estar%C3¡ disponible en la red.</no_fs_instances>
 <no_http_even_lb>El uso del modo HTTP no es recomendable ya que este protocolo ya no se mantiene.[br]
 Incluso si utiliza un proxy inverso o un balanceador de carga, se recomienda utilizar HTTPS.</no_http_even_lb>
@@ -2382,8 +2718,12 @@ Incluso si utiliza un proxy inverso o un balanceador de carga, se recomienda uti
 <no_internet_explain>Artica recupera elementos (actualizaciones y licencias) y realiza comprobaciones peri%C3%B3dicas en Internet.[br]
 Si este servidor no tiene acceso a Internet, desmarque esta casilla.[br]
 Esto le permitir%C3¡ eliminar m%C3%B3dulos que no pueden funcionar sin acceso a Internet y evitar%C3¡ generar conexiones innecesarias.</no_internet_explain>
+<no_lan_router_addr>La direcci%C3%B3n LAN de su router no est%C3¡ definida.</no_lan_router_addr>
+<no_leases>No se encontraron leases activos</no_leases>
 <no_listen_interfaces_defined>No ha especificado ninguna interfaz de red de escucha.[br]Le recomendamos encarecidamente que elija las interfaces de red que el servicio debe escuchar</no_listen_interfaces_defined>
 <no_mainsoft>No se ha elegido ning%C3%BAn software principal para este servidor.[br]Elija entre las siguientes opciones</no_mainsoft>
+<no_network_prod>Actualmente no hay ninguna red en producci%C3%B3n.</no_network_prod>
+<no_packages_available>No hay paquetes disponibles</no_packages_available>
 <no_pending_tasks>No hay tareas pendientes</no_pending_tasks>
 <no_providers_configured>Ning%C3%BAn proveedor configurado</no_providers_configured>
 <no_provider_configured>Ning%C3%BAn proveedor configurado</no_provider_configured>
@@ -2391,16 +2731,28 @@ Esto le permitir%C3¡ eliminar m%C3%B3dulos que no pueden funcionar sin acceso a
 Si a%C3%BAn no dispone de un proveedor DNS, no hay problema: cree un proveedor [b]Manual[/b].[br]
 Esto le permitir%C3¡ asociar el registro de verificaci%C3%B3n de forma [b]manual[/b].[br]
 Utilice la pesta%C3%B1a [b]Proveedores DNS[/b] para a%C3%B1adir uno o m%C3¡s proveedores que utilice (incluido el proveedor manual).</no_provider_explain_error>
+<no_proxy_configured>No hay proxy configurado</no_proxy_configured>
 <no_push_operations>Sin operaciones</no_push_operations>
+<no_records_defined>No hay registros definidos</no_records_defined>
+<no_relays_defined>No hay relés DHCP definidos</no_relays_defined>
+<no_reload_explain>Desactivar la recarga autom%C3¡tica de la configuraci%C3%B3n</no_reload_explain>
 <no_renewal_results>No hay resultados de renovaci%C3%B3n</no_renewal_results>
+<no_reports_available>No hay informes disponibles</no_reports_available>
 <no_reput_rules>No hay reglas de reputaci%C3%B3n, tienes que ir a DNS &amp;raquo; Reputaciones para crear reglas para que pueda elegir aqu%C3%AD.</no_reput_rules>
+<no_reservations>No hay reservas</no_reservations>
+<no_reservations_defined>No hay reservas</no_reservations_defined>
+<no_revisions_available>No hay revisiones disponibles</no_revisions_available>
+<no_scopes_configured>Ning%C3%BAn %C3¡mbito DHCP configurado</no_scopes_configured>
+<no_scopes_defined>No hay %C3¡mbitos DHCP definidos</no_scopes_defined>
 <no_service_pack4>Problema de memoria</no_service_pack4>
+<no_snapshots_available>No hay snapshots disponibles</no_snapshots_available>
 <no_subdirectories>No se encontraron subdirectorios</no_subdirectories>
 <no_traffic_shaping_rules>Error, you did not have any traffic shaping firewall rule enabled.</no_traffic_shaping_rules>
 <no_update_artica>No se ha previsto ninguna tarea de actualizaci%C3%B3n autom%C3¡tica del software Artica en el programador</no_update_artica>
 <no_valid_certificate2>La URL que has proporcionado no tiene un certificado de seguridad v%C3¡lido.</no_valid_certificate2>
 <nrds_cat>Dominios recién registrados</nrds_cat>
 <nrds_cat_explain>Lista de sitios web registrados hace menos de 7 d%C3%ADas</nrds_cat_explain>
+<ns-edit-host>La direcci%C3%B3n IP asignada al extremo del host del par veth (vethxx), en notaci%C3%B3n CIDR (por ejemplo 192.168.210.1/30).</ns-edit-host>
 <ntlm_authentication>NTLM Authentication</ntlm_authentication>
 <ntlm_watchdog_explain>El proceso de monitorizaci%C3%B3n de NTLM realiza pruebas de conexi%C3%B3n de red y de validez del enlace entre su servidor de Artica y su servidor de Active Directory.[br]
 En caso de problema, es capaz de notificar sus resultados y entrar en modo de emergencia.</ntlm_watchdog_explain>
@@ -2416,12 +2768,14 @@ Tiene un bajo nivel de seguridad, pero una vez conectado al dominio, s%C3%B3lo t
 Esta funci%C3%B3n sobrescribir%C3¡ las categor%C3%ADas existentes de Artica Tech.</official_categories_explain>
 <offline>Fuera de l%C3%ADnea</offline>
 <one_direction_only>Solo en una direcci%C3%B3n</one_direction_only>
+<one_per_line>Una entrada por l%C3%ADnea</one_per_line>
 <online>En l%C3%ADnea</online>
 <online_help>Ayuda en l%C3%ADnea</online_help>
 <OnlyAfter>Solo a partir de</OnlyAfter>
 <only_during_non_production_time>Only during non-production time (22h - 6h)</only_during_non_production_time>
 <only_during_production_time>Only during production time (6h - 22h)</only_during_production_time>
 <only_new_tcp>Only new TCP connections</only_new_tcp>
+<only_tgz>Solo se aceptan archivos .tar.gz, .tgz o .gz.</only_tgz>
 <on_unsupported_protocol>Accept unsupported protocols</on_unsupported_protocol>
 <on_unsupported_protocol_text>Permitir el reenv%C3%ADo de conexiones cuando se encuentran solicitudes extra%C3%B1as al principio de una conexi%C3%B3n TCP aceptada o al principio de un t%C3%BAnel CONNECT bacheado.</on_unsupported_protocol_text>
 <opendns>OpenDNS</opendns>
@@ -2435,9 +2789,28 @@ Artica will backup your current database and try top migrate data but it is a ri
 <open_internet_access_for>Acceso abierto a Internet para</open_internet_access_for>
 <operation_details>Detalles de la operaci%C3%B3n</operation_details>
 <operation_summary>Resumen de la operaci%C3%B3n</operation_summary>
+<optimizations_for_vm>Optimizaciones para m%C3¡quinas virtuales</optimizations_for_vm>
+<optimizations_for_vm_exp>Artica ha detectado que su entorno de virtualizaci%C3%B3n puede lograr un mejor rendimiento mediante optimizaciones del sistema espec%C3%ADficas</optimizations_for_vm_exp>
+<optimizations_for_vm_perform>Al hacer clic en el bot%C3%B3n, Artica realizar%C3¡:[br]
+
+Eliminar la doble planificaci%C3%B3n de operaciones de disco â%80%94 La m%C3¡quina virtual y el host intentan optimizar el I/O al mismo tiempo, interfiriendo entre s%C3%AD. Solo el host gestionar%C3¡ la planificaci%C3%B3n.[br]
+Indicar al sistema que el disco no es rotacional â%80%94 Los discos virtuales no tienen cabezal f%C3%ADsico, pero el sistema puede aplicar optimizaciones de HDD innecesarias. Esto elimina ese comportamiento.[br]
+Reducir la sobrecarga innecesaria en segundo plano â%80%94 Cada operaci%C3%B3n I/O alimenta el pool de entrop%C3%ADa, lo que genera overhead sin beneficio en sistemas ocupados. Esta optimizaci%C3%B3n lo desactiva.[br]
+Optimizar el buffering de escritura â%80%94 Se escriben bloques m%C3¡s peque%C3%B1os con mayor frecuencia, evitando bloqueos repentinos.[br]
+Liberar metadatos no utilizados de forma m%C3¡s agresiva â%80%94 Sistemas con muchos archivos peque%C3%B1os acumulan cache inode/dentry; esta optimizaci%C3%B3n libera memoria antes.[br]
+[br]
+Estos cambios se aplican inmediatamente y persisten tras reinicio.[br]
+[br]
+[b]%C2%BFCu%C3¡ndo es necesario?[/b][br]
+[br]
+Solo se aplica cuando el sistema es una m%C3¡quina virtual (VMware, KVM, Hyper-V, etc.). No afecta a servidores f%C3%ADsicos.[br]
+[br]
+Si experimenta carga alta, lentitud o el aviso &quot;Slow storage detected&quot;, estas optimizaciones suelen resolver el problema sin cambios de hardware.</optimizations_for_vm_perform>
 <optimize_for_large_files>Optimizaci%C3%B3n para servir archivos grandes</optimize_for_large_files>
 <optimize_images>Optimizaci%C3%B3n de im%C3¡genes</optimize_images>
 <optimize_proxy_service>Optimizar para el servicio proxy</optimize_proxy_service>
+<option82_relay_classes>Defina clases de agentes relay DHCP basadas en las subopciones de la Opci%C3%B3n 82 (circuit-id / remote-id) para permitir una clasificaci%C3%B3n granular de los clientes.[br]
+Esto permite asignar rangos de direcciones IP espec%C3%ADficos u opciones de concesi%C3%B3n personalizadas seg%C3%BAn el agente relay o el puerto del switch que reenvi%C3%B3 la solicitud del cliente, garantizando una segmentaci%C3%B3n de red precisa y la aplicaci%C3%B3n de pol%C3%ADticas.</option82_relay_classes>
 <optional>Opcional</optional>
 <or_default>O por defecto</or_default>
 <ospf_network_explain>Esta secci%C3%B3n es una forma de asignar una interfaz a un %C3¡rea determinada.[br]
@@ -2460,6 +2833,7 @@ Estas métricas se almacenan localmente para mostrar el historial de uso y las t
 <Overcommiting_Memory_behavior>Comportamiento de la memoria en exceso</Overcommiting_Memory_behavior>
 <overlay_network>Red distribuida</overlay_network>
 <overwrite_template>Sobrescribir la plantilla</overwrite_template>
+<packages2>Paquetes</packages2>
 <packages_center>Centro de paquetes</packages_center>
 <packets>Packets</packets>
 <pac_notresolve_explain>If the host %host cannot be resolved, then [b]do not use any proxy[/b]</pac_notresolve_explain>
@@ -2468,12 +2842,13 @@ Estas métricas se almacenan localmente para mostrar el historial de uso y las t
 <page_for_disabled_sites_explain>When a Wordpress Website is disabled, queries will be redirected to a unique web page</page_for_disabled_sites_explain>
 <paid_license>Paid license</paid_license>
 <PAM_GOOGLE_AUTHENTICATOR>Autenticaci%C3%B3n de dos factores de Google</PAM_GOOGLE_AUTHENTICATOR>
+<params_saved>Par%C3¡metros guardados</params_saved>
 <parprouted_about>Proxy ARP es un servicio de puente proxy ARP de IP transparente (capa 3)[br].
 Esto es %C3%BAtil para la creaci%C3%B3n de cortafuegos transparentes y la creaci%C3%B3n de puentes en redes con diferentes protocolos MAC[br].
 Adem%C3¡s, a diferencia del bridging est%C3¡ndar, el proxy ARP bridging permite puentear redes Ethernet detr%C3¡s de nodos inal%C3¡mbricos sin usar WDS o bridging de capa 2.</parprouted_about>
 <PARTIAL_SECRETS_ACCOUNT>Read-only domain controller (RODC)</PARTIAL_SECRETS_ACCOUNT>
 <part_logs_exceed>La partici%C3%B3n del log supera</part_logs_exceed>
-<passive_checks>Passive checks</passive_checks>
+<passive_checks>Comprobaciones pasivas</passive_checks>
 <passive_detection>Passive detection</passive_detection>
 <PASSWD_CANT_CHANGE>The user can't change the password</PASSWD_CANT_CHANGE>
 <PASSWD_NOTREQD>No password is required</PASSWD_NOTREQD>
@@ -2484,6 +2859,7 @@ Adem%C3¡s, a diferencia del bridging est%C3¡ndar, el proxy ARP bridging permit
 <pci bridge>PCI Bridge</pci bridge>
 <PDNSStatsRetentionTime>Retenci%C3%B3n de estad%C3%ADsticas DNS</PDNSStatsRetentionTime>
 <PDNSStatsRetentionTime_explain>Define the storage duration time in day of DNS queries data ( if enabled/installed ) in SQL database</PDNSStatsRetentionTime_explain>
+<peak>Pico</peak>
 <pending>Pendiente</pending>
 <pending_tasks>Tareas pendientes</pending_tasks>
 <perimeter>Per%C3%ADmetro</perimeter>
@@ -2498,6 +2874,7 @@ Esto puede ser crucial en entornos donde se necesitan nombres de interfaz de red
 <php version>Versi%C3%B3n del PHP</php version>
 <php8.2>PHP command-line</php8.2>
 <physical memory>Memoria f%C3%ADsica</physical memory>
+<physical_hostname_text>El nombre de la m%C3¡quina f%C3%ADsica utilizado por el sistema.</physical_hostname_text>
 <physical_network_interface>Interfaz de red f%C3%ADsica</physical_network_interface>
 <pictures>Im%C3¡genes</pictures>
 <pkg_upgrade_system>Actualice su sistema</pkg_upgrade_system>
@@ -2512,8 +2889,11 @@ Esto puede ser crucial en entornos donde se necesitan nombres de interfaz de red
 <please_wait_working>Por favor espere, Artica est%C3¡ preparando los archivos necesarios para llevar el servicio a producci%C3%B3n.</please_wait_working>
 <pmetrics>Métricas de rendimiento</pmetrics>
 <POLICIES_ZONES>Estrategias de %C3¡rea</POLICIES_ZONES>
+<policy_rules>Reglas de pol%C3%ADticas</policy_rules>
 <pollution_categories>Categor%C3%ADas de contaminaci%C3%B3n</pollution_categories>
 <pollution_categories_explain>Las categor%C3%ADas de contaminaci%C3%B3n incluyen sitios que aumentan innecesariamente el tr%C3¡fico, como los de publicidad y los rastreadores.</pollution_categories_explain>
+<pool_explain>Define el rango de asignaci%C3%B3n din%C3¡mica dentro de este %C3¡mbito DHCP desde el cual el servidor asigna direcciones IP a los clientes elegibles.[br]
+Las reservas de direcciones est%C3¡n expl%C3%ADcitamente excluidas de este rango y siempre tienen prioridad sobre las asignaciones din%C3¡micas, garantizando una asignaci%C3%B3n determinista para los hosts reservados.</pool_explain>
 <pool_name>Pool name</pool_name>
 <ports_allow>Puertos permitidos</ports_allow>
 <ports_deny>Puertos denegados</ports_deny>
@@ -2525,10 +2905,12 @@ El filtro se solicita para los mensajes entrantes, pero no puede indicarle si el
 <postprocessing>Tratamiento posterior</postprocessing>
 <posts_count>N%C3%BAmero de publicaciones</posts_count>
 <POTENTIALLY_HARMFUL_APPLICATION>Potentially harmful application threat</POTENTIALLY_HARMFUL_APPLICATION>
+<power_on_hours>Horas de funcionamiento</power_on_hours>
 <prefer_performance>Preferir rendimiento</prefer_performance>
 <preparing_your_server>Preparaci%C3%B3n del servidor Artica</preparing_your_server>
 <primary_group>Grupo primario</primary_group>
 <privacy_shield_explain>Cada vez que navegas, las empresas utilizan tu [b]huella digital[/b] para seguir tus actividades.[br]El Escudo de Privacidad detiene el rastreo y tiene capacidad para bloquear la [b]publicidad en l%C3%ADnea[/b] y te da algo de privacidad real.</privacy_shield_explain>
+<private>Privado</private>
 <private_host_key>Clave privada del host</private_host_key>
 <privileges_list>Lista de privilegios</privileges_list>
 <privileges_list_explain>Esta secci%C3%B3n enumera los grupos que tienen privilegios para la Consola Web Artica</privileges_list_explain>
@@ -2551,6 +2933,7 @@ Con m%C3¡s de 25 millones de direcciones IP, garantiza la legitimidad de cada I
 <proxy-pac>Artica Proxy PAC service</proxy-pac>
 <proxypac_explain>Esta b%C3%BAsqueda permite ver los eventos del sistema relacionados con el servicio responsable de generar y entregar el script de autoconfiguraci%C3%B3n del proxy</proxypac_explain>
 <proxyproxy_explain>Send the resolved authentication to the parent.[br]This require that the Proxy parent port have the Proxy-to-Proxy option enabled in order to understand the authentication token.</proxyproxy_explain>
+<proxy_address_explain>Direcci%C3%B3n IP o nombre de host del servidor proxy</proxy_address_explain>
 <proxy_cache_revalidate>Revalidaci%C3%B3n de la caché de art%C3%ADculos caducados</proxy_cache_revalidate>
 <proxy_cache_revalidate_explain>Indica al proxy inverso que utilice solicitudes GET condicionales al actualizar el contenido de los servidores de origen.[br]
 Si un navegador solicita un elemento que est%C3¡ almacenado en caché pero ha caducado seg%C3%BAn lo definido por las cabeceras de control de caché, el proxy inverso a%C3%B1ade el campo (If-Modified-Since) a la cabecera de la solicitud (GET) que env%C3%ADa al servidor de origen.[br] Esto ahorra ancho de banda, ya que el servidor s%C3%B3lo reenv%C3%ADa el elemento completo si ha sido modificado desde la hora registrada en la cabecera (Last-Modified) cuando el proxy inverso lo almacen%C3%B3 originalmente en caché.</proxy_cache_revalidate_explain>
@@ -2567,6 +2950,7 @@ Para solucionar este problema, recomendamos reconfigurar la configuraci%C3%B3n d
 <proxy_memory>Memoria proxy</proxy_memory>
 <proxy_no_cache_explain>No hay ninguna caché a%C3%B1adida a su servicio proxy.[br]
 Utilice el Centro de Caché para a%C3%B1adir una nueva caché al disco duro de este servidor.</proxy_no_cache_explain>
+<proxy_port_explain>Puerto TCP en el que el servidor proxy est%C3¡ escuchando</proxy_port_explain>
 <proxy_ssl_server_name_explain>Especifique el nombre de dominio exacto que se usar%C3¡ para la verificaci%C3%B3n del nombre de host en el certificado.[br]
 Esta opci%C3%B3n se aplica cuando el reverse-proxy se conecta al backend mediante SSL/TLS.[br]
 Es especialmente %C3%BAtil cuando se conecta al backend por direcci%C3%B3n IP o por un nombre de host que no coincide con el CN/SAN del certificado.</proxy_ssl_server_name_explain>
@@ -2591,6 +2975,11 @@ En esta configuraci%C3%B3n, los dominios p%C3%BAblicos se resuelven mediante un 
 <publish_in_vpn_network_explain>Permite que el servidor VPN enrute paquetes de red hacia esta direcci%C3%B3n.[br]Los clientes VPN también recibir%C3¡n una ruta a esta red en su tabla de enrutamiento.</publish_in_vpn_network_explain>
 <purging>Purgar</purging>
 <purposes>Purposes</purposes>
+<push_mode>Modo Push</push_mode>
+<push_relay_to_group>Enviar el relay al grupo</push_relay_to_group>
+<push_reservation_to_group>Enviar la reserva al grupo</push_reservation_to_group>
+<push_scope_to_group>Enviar el %C3¡mbito al grupo</push_scope_to_group>
+<push_to_all_agents>Enviar a todos los agentes</push_to_all_agents>
 <push_update>Enviar actualizaci%C3%B3n</push_update>
 <pwdlastset>Last change password</pwdlastset>
 <pw_it_should_take_time>Por favor, espere, esta operaci%C3%B3n puede tardar un poco.</pw_it_should_take_time>
@@ -2603,7 +2992,9 @@ En esta configuraci%C3%B3n, los dominios p%C3%BAblicos se resuelven mediante un 
 <queued>Queued</queued>
 <queue_path>Ruta del directorio de cola</queue_path>
 <queue_size>Tama%C3%B1o de la cola</queue_size>
+<randomize>Aleatorizar</randomize>
 <randomized_list>Lista aleatoria</randomized_list>
+<ranking>Clasificaci%C3%B3n</ranking>
 <raw_format>Formato bruto</raw_format>
 <rbl_answers>Respuestas RBL</rbl_answers>
 <RDPHandshakeTimeout>Tiempo de espera agotado durante la inicializaci%C3%B3n de la conexi%C3%B3n RDP</RDPHandshakeTimeout>
@@ -2621,6 +3012,7 @@ If enabled, the gateway will reject the connection without displaying the error 
 </RDPRejectErrors_explain>
 <rdp_suricata_eve>Registra las conexiones y detalles de sesi%C3%B3n del protocolo de escritorio remoto</rdp_suricata_eve>
 <read_ahead>Lectura anticipada</read_ahead>
+<reallocated_sectors>Sectores reasignados</reallocated_sectors>
 <realtime_blocked_events>Eventos bloqueados en tiempo real</realtime_blocked_events>
 <realtime_requests_explain>Esta secci%C3%B3n le permite ver el acceso en tiempo real a Internet a través del servicio proxy.</realtime_requests_explain>
 <rebooting>Reiniciando</rebooting>
@@ -2635,6 +3027,7 @@ Atenci%C3%B3n, esta operaci%C3%B3n consume muchos recursos del sistema.</rebuild
 <recent_renewal_results>Resultados recientes de renovaci%C3%B3n</recent_renewal_results>
 <recommended>Recomendado</recommended>
 <recommend_xGB>Recomendamos una partici%C3%B3n de al menos xxGB de espacio</recommend_xGB>
+<reconcile>Reconciliar</reconcile>
 <reconfigure_all_sites_warn>Depends of the number of websites, reconfigure all websites should take time and performance</reconfigure_all_sites_warn>
 <reconfigure_auth_method>Reconfigure the authentication method</reconfigure_auth_method>
 <reconfigure_proxy_ports_restart>Reconfigurar los puertos y reiniciar el servicio</reconfigure_proxy_ports_restart>
@@ -2651,6 +3044,7 @@ Por defecto, el valor es de 10.000 direcciones.[br]
 El valor m%C3¡ximo permitido es de 100.000 direcciones.</records_per_db_decision_ip>
 <record_lifetime>Duraci%C3%B3n de la grabaci%C3%B3n</record_lifetime>
 <record_name>Nombre del registro</record_name>
+<record_saved>Registro guardado</record_saved>
 <record_type>Tipo de registro</record_type>
 <record_value>Valor del registro</record_value>
 <redirects>Redirecciones</redirects>
@@ -2658,6 +3052,8 @@ El valor m%C3¡ximo permitido es de 100.000 direcciones.</records_per_db_decisio
 <redirect_error_page>Redirige las conexiones al servicio de la p%C3¡gina de errores.</redirect_error_page>
 <redirect_no_opts>Todas las solicitudes a este sitio web se redirigen a otro dominio, por lo que no es necesario mostrar opciones adicionales.</redirect_no_opts>
 <redis-server>Memory key-pair service</redis-server>
+<redis_cache>Caché Redis</redis_cache>
+<redis_ttl>Tiempo m%C3¡ximo en caché (segundos)</redis_ttl>
 <redis_unbound_explain>Los DNS de caché utilizan una base de datos en memoria (Redis) para almacenar y recuperar los datos de la caché[br].
 Se puede utilizar como backend de caché persistente y/o compartido.[br]
 Hay que tener en cuenta que el servicio de Caché DNS [b]nunca elimina los datos almacenados[/b] en el servidor Redis, aunque algunos datos hayan caducado en términos de TTL DNS o el servidor Redis haya almacenado demasiados datos en caché;[br].
@@ -2670,6 +3066,7 @@ Comprobando la referencia, la nueva p%C3¡gina web puede ver d%C3%B3nde se origi
 Se puede configurar para que el navegador no informe al sitio de destino de ninguna informaci%C3%B3n de la URL.[br]
 Si se activa, el navegador siempre establecer%C3¡ la cabecera de referencia al origen desde el que se realiz%C3%B3 la solicitud y no permitir%C3¡ que se env%C3%ADe el origen seguro en una solicitud HTTP, s%C3%B3lo HTTPS.[br]Esto eliminar%C3¡ cualquier informaci%C3%B3n de la ruta de la informaci%C3%B3n de referencia.</ReferrerPolicy_explain>
 <refreshing>Refreshing</refreshing>
+<refresh_every>Actualizar cada</refresh_every>
 <REFUSED>Negarse a responder</REFUSED>
 <refuse_dns_root>Rechazar las solicitudes a los servidores ra%C3%ADz del DNS</refuse_dns_root>
 <refuse_to_resolve>Negarse a resolver o remitir la solicitud</refuse_to_resolve>
@@ -2682,6 +3079,10 @@ Si se activa, el navegador siempre establecer%C3¡ la cabecera de referencia al 
 <regular_expression>Expresi%C3%B3n regular</regular_expression>
 <reinstall_instance>Esta operaci%C3%B3n desinstalar%C3¡ e instalar%C3¡ esta instancia[br]%C2%BFDesea realizar esta operaci%C3%B3n?</reinstall_instance>
 <reject_firewall_temp>Rechaza el mensaje, pero también registra temporalmente la direcci%C3%B3n IP remitente en el cortafuegos para impedir cualquier otra comunicaci%C3%B3n en un periodo de tiempo determinado.</reject_firewall_temp>
+<relay_added>Relay a%C3%B1adido</relay_added>
+<relay_class>Clase del relay</relay_class>
+<relay_class_id>Clase de relay</relay_class_id>
+<relay_id_must_exist_on_each_agent>El ID del relay debe existir en cada agente</relay_id_must_exist_on_each_agent>
 <reloading_proxy_service>Recarga del servicio proxy</reloading_proxy_service>
 <Reloading_Service_after>Servicio de Recarga después de</Reloading_Service_after>
 <ReloadProxyAfterReboot>30 segundos después de la fase de reinicio del servidor, Artica reconfigurar%C3¡ el servicio proxy y los servicios asociados para garantizar la coherencia de la configuraci%C3%B3n.</ReloadProxyAfterReboot>
@@ -2694,6 +3095,7 @@ Solo se replican los nombres de las categor%C3%ADas, para poder usarlos en las A
 <remote_folders>Remote folders</remote_folders>
 <remote_hosts>Remote Hosts</remote_hosts>
 <remote_http_service_unavailable>El servicio HTTP remoto no est%C3¡ disponibl</remote_http_service_unavailable>
+<remote_id>ID remoto</remote_id>
 <remote_logging>Registro remoto</remote_logging>
 <remote_server_use_ssl>El backend usa SSL</remote_server_use_ssl>
 <remote_services>Servicios a distancia</remote_services>
@@ -2704,6 +3106,7 @@ Solo se replican los nombres de las categor%C3%ADas, para poder usarlos en las A
 <remove_http_header>Remove HTTP header</remove_http_header>
 <remove_ids_menu>Esta operaci%C3%B3n quitar%C3¡ el men%C3%BA IDS de la interfaz.[br]Si m%C3¡s adelante desea volver a usar el sistema de detecci%C3%B3n de intrusiones, vaya a la secci%C3%B3n â%80%9Cfuncionalidadesâ%80%9D.</remove_ids_menu>
 <remove_if_files_exceed>Eliminar el fichero es su tama%C3%B1o excede</remove_if_files_exceed>
+<remove_proxy>Eliminar el proxy</remove_proxy>
 <remove_task>Eliminar tarea</remove_task>
 <remove_this_section>Eliminar esta funci%C3%B3n</remove_this_section>
 <remove_user_ask>Est%C3¡s a punto de eliminar este usuario de forma permanente.[br]Confirma esta acci%C3%B3n.</remove_user_ask>
@@ -2715,6 +3118,7 @@ Solo se replican los nombres de las categor%C3%ADas, para poder usarlos en las A
 <renew_now>Renovar ahora</renew_now>
 <reports_storage>Almacenamiento de informes</reports_storage>
 <report_category>Report category</report_category>
+<report_details>Detalles del informe</report_details>
 <report_storage_level>Cuando el motor detecta un evento, Artica almacena un informe completo en la base de datos.[br]
 Guardar los informes permite un an%C3¡lisis avanzado de la detecci%C3%B3n, pero aumenta el espacio de disco utilizado en la base de datos SQL.[br]
 Indique aqu%C3%AD el nivel de alerta que permitir%C3¡ guardar el informe.</report_storage_level>
@@ -2742,17 +3146,26 @@ Indique aqu%C3%AD el nivel de alerta que permitir%C3¡ guardar el informe.</repo
 <rescan_objects>Reescanea objetos</rescan_objects>
 <resent_activation_code>Reenviar el mensaje de confirmaci%C3%B3n</resent_activation_code>
 <reservations>Reservas</reservations>
+<reservation_details>Detalles de la reserva DHCP</reservation_details>
+<reservation_id_explain>Identificador %C3%BAnico para esta reserva. Utilizado internamente para referenciar la entrada</reservation_id_explain>
+<reservation_saved>Reserva DHCP guardada</reservation_saved>
 <reset_artica_ask>Esto eliminar%C3¡ todas sus configuraciones para devolver su servidor a un estado limpio.[br]
 Al final de esta operaci%C3%B3n, ser%C3¡ redirigido al asistente de instalaci%C3%B3n inicial.[br]
 %C2%BFRealmente desea continuar?</reset_artica_ask>
 <reset_records>Restablecer los registros</reset_records>
 <reset_the_license>Restablecer la licencia actual</reset_the_license>
 <resolvconfpath>Ruta a resolv.conf</resolvconfpath>
+<resolved>Resuelto</resolved>
+<resolver>Resolutor</resolver>
 <response>Respuesta</response>
 <response_body>Cuerpo de la respuesta</response_body>
 <response_headers>Encabezados de respuesta</response_headers>
+<restarting_dhcp>Reiniciando el servicio DHCP</restarting_dhcp>
 <restarting_proxy_service>Reinicio del servicio proxy</restarting_proxy_service>
 <Restarting_Syslog_after_a_rotation>Reinicio del servicio syslog después de la rotaci%C3%B3n de los registros</Restarting_Syslog_after_a_rotation>
+<restart_already_in_progress>Ya hay una tarea de reinicio en curso</restart_already_in_progress>
+<restart_dhcp>Reiniciar el servicio DHCP</restart_dhcp>
+<restart_failed>Error al reiniciar el servicio DHCP</restart_failed>
 <restart_icap_service>Restart local ICAP service</restart_icap_service>
 <restart_icap_service_explain>Stop and start the Local Antivirus ICAP service</restart_icap_service_explain>
 <restart_if_needed>Reiniciar si es necesario</restart_if_needed>
@@ -2761,6 +3174,7 @@ Al final de esta operaci%C3%B3n, ser%C3¡ redirigido al asistente de instalaci%C
 Esta operaci%C3%B3n har%C3¡ que todos sus sitios web sean inaccesibles durante unos segundos.[br]
 %C2%BFDesea realizar esta operaci%C3%B3n?</restart_needed_explain>
 <restart_policy>Pol%C3%ADtica de reinicio</restart_policy>
+<restore>Restaurar</restore>
 <RestoreSnapshotProxyAfterReboot>Restaurar la %C3%BAltima instant%C3¡nea de configuraci%C3%B3n tras el reinicio</RestoreSnapshotProxyAfterReboot>
 <RestoreSnapshotProxyAfterReboot_explain>Para asegurar el conjunto de configuraciones, Artica restaura el %C3%BAltimo conjunto guardado cuando se inicia el servicio proxy.
 [br]El conjunto de copias de seguridad corresponde a la %C3%BAltima configuraci%C3%B3n realizada con éxito.</RestoreSnapshotProxyAfterReboot_explain>
@@ -2778,12 +3192,17 @@ Haga clic en el bot%C3%B3n de carga para guardar el statscom.gz en su Artica App
 <retentions_explain>Esta secci%C3%B3n permite configurar la duraci%C3%B3n de los archivos de rastreo y de los eventos en las bases de datos SQL en funci%C3%B3n del tama%C3%B1o m%C3¡ximo y/o del tiempo de retenci%C3%B3n.[br]Esta secci%C3%B3n influye en la investigaci%C3%B3n del historial y en el an%C3¡lisis de las estad%C3%ADsticas.</retentions_explain>
 <retreive_informations>Recuperar informaci%C3%B3n</retreive_informations>
 <retry_interval>Intervalo de reintento</retry_interval>
+<retry_rate>Tasa de reintentos</retry_rate>
 <reverse_bad_backend_perfs>Es el tiempo en segundos que tarda el servidor remoto en responder a tu proxy inverso.[br]
 Considera que m%C3¡s de un segundo es mucho tiempo.</reverse_bad_backend_perfs>
 <revision>Revision</revision>
+<revision_history>Historial de revisiones</revision_history>
 <rfb_suricata_eve>Registra el acceso al escritorio remoto RFB/VNC y las sesiones de control</rfb_suricata_eve>
+<rfc3442-classless-static-routes>Rutas est%C3¡ticas sin clase</rfc3442-classless-static-routes>
 <rm_unused_vols>Eliminar todos los vol%C3%BAmenes locales no utilizados</rm_unused_vols>
+<rollback>Reversi%C3%B3n</rollback>
 <rootdse_failed_advsuff>Unable to find the LDAP suffix. Please, use the advanced mode to define the LDAP suffix</rootdse_failed_advsuff>
+<rotate_explain>Rotaci%C3%B3n de servidores de nombres en round-robin</rotate_explain>
 <router_address>Direcci%C3%B3n del router</router_address>
 <route_to>Route packets to a node</route_to>
 <row>Row</row>
@@ -2826,6 +3245,7 @@ Permite a Artica recuperar un archivo rpz de un recurso http/https y guardarlo l
 <run_vitrification>Ejecutar la operaci%C3%B3n de vitrificaci%C3%B3n</run_vitrification>
 <rustdesk_change_key>El cambio de la clave p%C3%BAblica desconectar%C3¡ todas las estaciones de trabajo, y tendr%C3¡s que proporcionar la nueva clave a los usuarios para restablecer las comunicaciones.</rustdesk_change_key>
 <SAMBA_BTRFS_SHARES>Esta secci%C3%B3n le permite ver las carpetas compartidas disponibles en la red.[br]Cada carpeta puede compartirse entre varias instancias de servidores de archivos.</SAMBA_BTRFS_SHARES>
+<samples>Muestras</samples>
 <sandbox_connector>Conector SandBox</sandbox_connector>
 <sandbox_server_address>Direcci%C3%B3n del servidor SandBox</sandbox_server_address>
 <SASLAUTHD>Demonio de autenticaci%C3%B3n SASL</SASLAUTHD>
@@ -2837,11 +3257,23 @@ Permite a Artica recuperar un archivo rpz de un recurso http/https y guardarlo l
 <scan_av_on_uploads>Interceptar la carga de archivos maliciosos</scan_av_on_uploads>
 <SCAN_URL_INSTEAD_DOMAIN>Scan the entire URL instead domain only</SCAN_URL_INSTEAD_DOMAIN>
 <scheduled_monitoring>Seguimiento planificado</scheduled_monitoring>
+<scopes>%C3%81mbitos DHCP</scopes>
+<scope_explain>Un %C3¡mbito DHCP define el rango de direcciones IP que el servidor DHCP puede asignar a los clientes en una red espec%C3%ADfica.[br]
+[br]Un %C3¡mbito especifica la direcci%C3%B3n de red y la m%C3¡scara de subred del segmento DHCP.[br]
+Define el conjunto de direcciones IP (rango) que pueden asignarse din%C3¡micamente a los clientes.[br]
+También incluye par%C3¡metros de red como la puerta de enlace predeterminada, servidores DNS, nombre de dominio y tiempo de concesi%C3%B3n.[br]
+El %C3¡mbito se aplica %C3%BAnicamente a los clientes dentro de esa subred.</scope_explain>
+<scope_identity>Identificador del %C3¡mbito</scope_identity>
 <scsi storage controller>SCSI storage controller</scsi storage controller>
 <search_ad_group>Search an Active Directory Group</search_ad_group>
 <search_audit>B%C3%BAsqueda de %l detectados por %r con el nivel de urgencia %c originados desde %i a sitios web %w y rutas %p durante el periodo %t.</search_audit>
+<search_by_hostname>Buscar por nombre de host</search_by_hostname>
+<search_by_ip>Buscar por IP</search_by_ip>
+<search_domains>Dominios de b%C3%BAsqueda</search_domains>
+<search_domains_explain>Dominios de b%C3%BAsqueda separados por espacios</search_domains_explain>
 <search_ldap_members>Buscar usuarios y grupos en la base de datos del servidor OpenLDAP</search_ldap_members>
 <secondary_certificates>Certificados de secundaria</secondary_certificates>
+<sectors>Sectores</sectors>
 <secure_proxy>Secure Web Proxy</secure_proxy>
 <secure_proxy_explain>El proxy web seguro proporciona un tr%C3¡fico cifrado entre el navegador y el proxy[br].
 Cuando se utiliza un proxy est%C3¡ndar, las transacciones entre los navegadores y el proxy no est%C3¡n cifradas, especialmente cuando se utiliza la autentificaci%C3%B3n (NTLM/Kerberos/Basic).[br]
@@ -2849,6 +3281,7 @@ El proxy web seguro garantiza una comunicaci%C3%B3n cifrada entre los navegadore
 [b]Esta caracter%C3%ADstica no est%C3¡ relacionada con el Proxy SSL que se encarga de desencriptar el protocolo SSL[/b]</secure_proxy_explain>
 <seen>Seen</seen>
 <seen_computers>Seen computers</seen_computers>
+<see_doc>Ver la documentaci%C3%B3n</see_doc>
 <see_list_fixes>Ver la lista de correcciones</see_list_fixes>
 <see_report>See report</see_report>
 <see_wiki>Consulta el wiki para configurar esta opci%C3%B3n.</see_wiki>
@@ -2859,8 +3292,12 @@ El proxy web seguro garantiza una comunicaci%C3%B3n cifrada entre los navegadore
 <selector_selected_bgcolor>Selector (selected) background color</selector_selected_bgcolor>
 <selector_selected_fgcolor>Selector (selected) text color</selector_selected_fgcolor>
 <select_agents>Seleccionar agentes</select_agents>
+<select_a_file>Seleccione primero un archivo.</select_a_file>
 <select_country_alert>You must select a Country</select_country_alert>
 <select_database>Seleccionar base</select_database>
+<select_destination_agent>Seleccionar el agente de destino</select_destination_agent>
+<select_groups>Seleccionar grupos</select_groups>
+<select_interface>Seleccionar la interfaz</select_interface>
 <select_provider_below>Seleccione el proveedor a continuaci%C3%B3n</select_provider_below>
 <select_www_requests_search>Indique el servicio web para visualizar las consultas en tiempo real, haga clic en el bot%C3%B3n para acceder a los par%C3¡metros de b%C3%BAsqueda.</select_www_requests_search>
 <SELF_ROOT_CERT>Certificado ra%C3%ADz autofirmado</SELF_ROOT_CERT>
@@ -2871,6 +3308,10 @@ Generalmente usado para crear certificados de VPN y/o certificados de proxy segu
 <send_syslog_articastats>Transmitir los eventos en tiempo real de este servicio a un dispositivo de estad%C3%ADsticas de Artica mediante syslog</send_syslog_articastats>
 <separator_color>Separator color</separator_color>
 <serial attached scsi controller>Serial attached SCSI controller</serial attached scsi controller>
+<serverkey>Clave del servidor</serverkey>
+<serverkey_missing_explain>No se pudo asignar la clave del servidor.[br]
+Probablemente debido a un problema de red que impidi%C3%B3 que el servidor se identificara ante el Cloud.[br]
+Haga clic en el bot%C3%B3n a continuaci%C3%B3n para volver a intentar la operaci%C3%B3n.</serverkey_missing_explain>
 <server_certificate>Certificado del servidor</server_certificate>
 <server_cert_fingerprint>Huella digital del certificado SSL</server_cert_fingerprint>
 <server_cert_fingerprint_explain>La huella digital es el algoritmo de compendio SHA1 de todo el certificado.
@@ -2921,13 +3362,35 @@ Tenga en cuenta que el servicio DNS no generar%C3¡ una respuesta una vez que la
 <simulate_authentication_explain>This form allows you to test if an account is able to access to the Artica Web console and provide verbose logs</simulate_authentication_explain>
 <simulate_the_active_directory>Simular Active Directory</simulate_the_active_directory>
 <simulate_the_active_directory_explain>Por defecto, los proxies backend se conectan directamente a su servidor de Active Directory.[br]Si activa esta opci%C3%B3n, el balanceador fingir%C3¡ ser el servidor de Active Directory.[br] Esto le permite autorizar s%C3%B3lo al servicio balanceador a conectarse a su Active Directory.</simulate_the_active_directory_explain>
+<single_request_explain>Desactivar consultas paralelas A + AAAA</single_request_explain>
 <sip_suricata_eve>Registra las llamadas del protocolo SIP VoIP y el inicio de sesi%C3%B3n</sip_suricata_eve>
 <site>Sitio</site>
 <sites_caching>Almacenamiento en caché de sitios</sites_caching>
 <size_patterns_delivered>Size of delivered patterns</size_patterns_delivered>
 <size_up_to>Size up to</size_up_to>
 <slapd>OpenLDAP Service</slapd>
+<slow_storage_detected_on>Almacenamiento lento detectado en este sistema</slow_storage_detected_on>
+<slow_storage_explain>El sistema ha detectado una latencia de disco anormal en %s.[br]
+Esta condici%C3%B3n provoca tiempos elevados de espera de I/O, aumentando directamente la carga del sistema incluso con bajo uso de CPU.[br]
+[b]No necesariamente es un problema de software[/b].[br]
+Antes de investigar causas a nivel de aplicaci%C3%B3n, verifique la infraestructura de almacenamiento:[br][br]
+
+[b]M%C3¡quinas virtuales (VMware, KVM, Hyper-V, Proxmox)[/b][br]
+[br]- El datastore puede estar sobrecargado
+[br]- Los discos thin-provisioned son m%C3¡s lentos que los thick
+[br]- El almacenamiento subyacente puede estar degradado o saturado
+[br]- Use controladores paravirtuales (pvscsi, virtio)
+[br]- Migraciones o snapshots pueden causar latencias temporales
+[br]- Verifique el I/O wait del host
+
+[br][br]
+[b]Servidores f%C3%ADsicos[/b][br]
+[br]- RAID en reconstrucci%C3%B3n
+[br]- Disco defectuoso aumentando latencia
+[br]- Cache BBU desactivando write-back
+[br]- HDD con carga mixta â%86%92 usar SSD/NVMe</slow_storage_explain>
 <SMARTCARD_REQUIRED>Log on by using a smart card</SMARTCARD_REQUIRED>
+<smart_status>Estado S.M.A.R.T</smart_status>
 <smbus>SMBus</smbus>
 <smb_suricata_eve>Registra el uso compartido de archivos SMB/CIFS y las operaciones de red de Windows</smb_suricata_eve>
 <smtpd_tls_exclude_ciphers>Lista de cifrados a excluir</smtpd_tls_exclude_ciphers>
@@ -2938,7 +3401,12 @@ It means your settings did not allow Artica to send messages.[br]Please check yo
 </SMTPNotifEmergency_explain>
 <smtp_simulation>Simulaci%C3%B3n SMTP</smtp_simulation>
 <smtp_suricata_eve>Registra las transacciones SMTP y los detalles de los mensajes de correo</smtp_suricata_eve>
+<snapshot_build_started>Creaci%C3%B3n del snapshot iniciada</snapshot_build_started>
+<snapshot_filename>Nombre del archivo snapshot</snapshot_filename>
+<snapshot_move_title>Copiar el snapshot a otro agente</snapshot_move_title>
 <snapshot_restored_info>Se ha restaurado una instant%C3¡nea %s.[br]Los par%C3¡metros de Artica han sido modificados por esta instant%C3¡nea.</snapshot_restored_info>
+<snapshot_restore_note>La restauraci%C3%B3n de un snapshot reemplazar%C3¡ la configuraci%C3%B3n actual y reiniciar%C3¡ el servicio.[br]Esta acci%C3%B3n es irreversible.[br]Cualquier cambio realizado después de la creaci%C3%B3n del snapshot se perder%C3¡ definitivamente.</snapshot_restore_note>
+<snapshot_restore_warning>Esta operaci%C3%B3n transferir%C3¡ el archivo snapshot al agente de destino.[br]Aseg%C3%BArese de que el agente de destino esté en l%C3%ADnea y accesible.</snapshot_restore_warning>
 <snifilter>Filtro de indicaci%C3%B3n de nombre de servidor (SNI)</snifilter>
 <snih2>Indicaci%C3%B3n de nombre de servidor (SNI)</snih2>
 <snih2_explain>El SNI (Server Name Indication) es una extensi%C3%B3n TLS que permite al cliente especificar el nombre de host al que intenta conectarse durante el saludo TLS.[br]
@@ -2948,7 +3416,9 @@ Sin SNI, el servidor solo puede servir un %C3%BAnico certificado.</snih2_explain
 <snmp_suricata_eve>Registra las operaciones del protocolo de gesti%C3%B3n de red SNMP</snmp_suricata_eve>
 <SOCIAL_ENGINEERING>Social engineering threat</SOCIAL_ENGINEERING>
 <socket_queue_size>Maximum number of queued connections</socket_queue_size>
+<softwares_updates>Actualizaciones de software</softwares_updates>
 <SOFT_NO_LONGER_SUPPORT>La versi%C3%B3n actual de su sistema ya no admite nuevas actualizaciones para %p.[br] Para obtener la versi%C3%B3n m%C3¡s reciente de %p, debe migrar a %deb.</SOFT_NO_LONGER_SUPPORT>
+<sortlist_explain>Preferenza di ordinamento degli indirizzi</sortlist_explain>
 <source_domain>Dominio de origen</source_domain>
 <spamc>Conector Spamassassin</spamc>
 <spamc_explain>Establezca el umbral para SpamAssassin. Las puntuaciones iguales o superiores al definido ser%C3¡n rechazadas.</spamc_explain>
@@ -3074,12 +3544,15 @@ Defina el n%C3%BAmero de l%C3%ADneas que desea visualizar y escriba las palabras
 <stats_no_syslog_receiever>Las estad%C3%ADsticas del proxy est%C3¡n habilitadas, pero el servicio syslog no est%C3¡ configurado para recibir datos.[br]
 Para asegurar la recopilaci%C3%B3n correcta de estad%C3%ADsticas, ve a la configuraci%C3%B3n del servicio [b]syslog[/b] y activa el modo servidor.</stats_no_syslog_receiever>
 <stats_suricata_eve>Registra las estad%C3%ADsticas de rendimiento de Suricata y el uso de recursos</stats_suricata_eve>
+<status_codes>C%C3%B3digos de estado</status_codes>
+<status_leases>Estado de las concesiones DHCP</status_leases>
 <stopped_at>Stopped at</stopped_at>
 <store_queue_ondisk>Usar el disco para almacenar la cola</store_queue_ondisk>
 <store_rdl>Stores reverse dns lookups</store_rdl>
 <su>Cambiar de usuario</su>
 <subjectAltName>Nombre alternativo del sujeto</subjectAltName>
 <subsystem>Subsystem</subsystem>
+<success_orders_to_nodes>Los comandos se han enviado correctamente a los nodos de destino.[br]La aplicaci%C3%B3n de los cambios puede tardar unos segundos.</success_orders_to_nodes>
 <success_reachable>Success, the specified resource is reachable</success_reachable>
 <suffix2>Sufijo</suffix2>
 <suggest_to_restart_proxy_service>Sugerimos reiniciar el servicio Proxy</suggest_to_restart_proxy_service>
@@ -3092,6 +3565,8 @@ Artica integra el motor IDS Suricata directamente en su servidor, ofreciendo det
 Supervise cada paquete en tiempo real, detecte amenazas avanzadas y visualice patrones de tr%C3¡fico malicioso â%80%94 todo desde la consola de Artica.[br]
 Ya sea malware, tr%C3¡fico C2 o intentos de explotaci%C3%B3n de d%C3%ADa cero, Suricata inspecciona y correlaciona flujos continuamente para mantener su red un paso por delante.[br]
 [b]Combinado con la automatizaci%C3%B3n y los informes de Artica, obtiene una potente inteligencia de red preparada para IA que convierte paquetes en informaci%C3%B3n de seguridad accionable.[/b]</suricata_market_explain>
+<suricata_rules_db_warn>A%C3%BAn no se han descargado ni importado reglas IDS.[br]
+Esta secci%C3%B3n estar%C3¡ disponible después de actualizar e importar las reglas IDS.</suricata_rules_db_warn>
 <SURINDPI>M%C3¡s all%C3¡ de la detecci%C3%B3n basada en puertos â%80%94 donde los sistemas IDS tradicionales dependen de n%C3%BAmeros de puerto fijos (por ejemplo, puerto 80 = HTTP) â%80%94 la inspecci%C3%B3n profunda de paquetes (DPI) analiza el contenido real de los paquetes para identificar protocolos sin importar el puerto utilizado.[br]
 Puede detectar aplicaciones ocultas dentro de otros protocolos (por ejemplo, t%C3%BAneles SSH, tr%C3¡fico VPN, Tor) y reconocer protocolos cifrados (TLS/SSL, SSH, VPN).[br]
 En algunos casos, puede incluso determinar la aplicaci%C3%B3n que genera el tr%C3¡fico sin necesidad de descifrarlo.</SURINDPI>
@@ -3128,11 +3603,14 @@ Si se producen conflictos, Syncthing crea una copia de conflicto.[br]
 <SystemNetworkOptimize_enable_explain>This operation will modify network kernel values in order to boost Kernel TCP/IP stack.[br]In some cases these optimizations can lead to the opposite effect.If it is the case, just disable this feature</SystemNetworkOptimize_enable_explain>
 <system_console_password>System console password</system_console_password>
 <system_safe>Su sistema parece seguro</system_safe>
+<system_shell>Shell del sistema</system_shell>
+<system_upgrade>Actualizaci%C3%B3n del sistema</system_upgrade>
 <system_users_explain>Esta secci%C3%B3n te permite gestionar las cuentas de usuario del sistema de tu servidor.[br]
 Utiliza estas cuentas para el acceso SSH o los servicios de compartici%C3%B3n de archivos.[br]
 Si el paquete sudo est%C3¡ instalado, también puedes configurar los privilegios sudo de cada usuario.</system_users_explain>
 <sys_drop_caches>Libera la caché de p%C3¡ginas y/o las cachés de inodos y dentries</sys_drop_caches>
 <s_transactions>Successful transactions</s_transactions>
+<tabs>Pesta%C3%B1as</tabs>
 <tags>Tags</tags>
 <tail>Tail command line</tail>
 <tailer_first_use_tip>Utilice la barra lateral izquierda para filtrar los registros por host o proceso.[br]
@@ -3148,6 +3626,7 @@ El visor se reconectar%C3¡ autom%C3¡ticamente si la conexi%C3%B3n se interrump
 El tailing de varios archivos de registro grandes puede aumentar el uso de CPU y memoria.[br]
 Cierre esta p%C3¡gina cuando no esté en uso para liberar recursos.</tailer_running_warning>
 <TargetRemotePath>Ruta ra%C3%ADz remota de destino</TargetRemotePath>
+<target_port>Puerto de destino</target_port>
 <target_server>Target server</target_server>
 <task_details>Detalles de la tarea</task_details>
 <tcp_check>Comprobaci%C3%B3n TCP</tcp_check>
@@ -3165,6 +3644,7 @@ Cierre esta p%C3¡gina cuando no esté en uso para liberar recursos.</tailer_run
 <terms_services_alert>Please accept our %1uriTerms & Contions%1urioff and our  %2uriPrivacy Policys%2urioff</terms_services_alert>
 <tested_domains>Dominios verificados</tested_domains>
 <tests_mode>Modo de prueba</tests_mode>
+<test_connectivity>Probar la conectividad</test_connectivity>
 <test_mode>Modo de prueba</test_mode>
 <test_your_rules>Pruebe sus reglas</test_your_rules>
 <text_to_add_in_the_event>Texto que se a%C3%B1adir%C3¡ al evento</text_to_add_in_the_event>
@@ -3204,17 +3684,21 @@ Detectan infraestructura C2 maliciosa conocida en funci%C3%B3n de IPs (y, en alg
 <tip>Consejo</tip>
 <tips>Consejos</tips>
 <tls_preempt_cipherlist>Utilizar la preferencia de cifrado del servidor</tls_preempt_cipherlist>
+<tls_psk_zabbix>Cifra la comunicaci%C3%B3n entre el agente y el servidor Zabbix mediante una clave precompartida.[br]Proporciona una autenticaci%C3%B3n segura sin necesidad de certificados.</tls_psk_zabbix>
 <tls_suricata_eve>Registra los handshakes TLS/SSL, certificados y detalles de cifrado</tls_suricata_eve>
 <TOP>Premios</TOP>
+<top_attackers>Principales atacantes</top_attackers>
 <top_destinations>Destinos principales</top_destinations>
 <top_exposed_websites>Sitios web m%C3¡s expuestos</top_exposed_websites>
 <top_impacted_websites_agnt>Sitios m%C3¡s afectados por bots</top_impacted_websites_agnt>
 <top_services>Premios al servicio</top_services>
 <top_sources>Fuentes principales</top_sources>
+<top_talkers>Principales generadores de tr%C3¡fico</top_talkers>
 <top_websites_by_queries>TOP Dominios por n%C3%BAmero de consultas</top_websites_by_queries>
 <total_agents>Total de agentes</total_agents>
 <Total_amount_of_memory>Total amount of memory</Total_amount_of_memory>
 <Total_amount_of_memoryr>Total amount of memory required</Total_amount_of_memoryr>
+<total_attempts>Total de intentos</total_attempts>
 <total_blocked>Total bloqueados</total_blocked>
 <total_files>Total de archivos</total_files>
 <total_hits>Total of hits</total_hits>
@@ -3249,9 +3733,13 @@ No perder%C3¡s tu configuraci%C3%B3n, y el comportamiento general del servidor<
 <TRUSTED_FOR_DELEGATION>Trusted for Kerberos delegation</TRUSTED_FOR_DELEGATION>
 <trusted_network_explain>Una red de confianza puede acceder a los servicios controlados por la red que configure en este servidor â%80%94 incluidas las reglas de firewall, los servicios DNS, la reputaci%C3%B3n IP y el acceso al proxy HTTP.</trusted_network_explain>
 <TRUSTED_TO_AUTH_FOR_DELEGATION>Account is enabled for delegation</TRUSTED_TO_AUTH_FOR_DELEGATION>
+<trust_ad_explain>Activa el bit « Authenticated Data » en las consultas salientes</trust_ad_explain>
 <trust_reverse_proxy_CA>Confiar en la CA del reverse-proxy</trust_reverse_proxy_CA>
 <trust_this_ip_ask>A%C3%B1ade esta direcci%C3%B3n %s a la lista de redes de confianza</trust_this_ip_ask>
 <trying_to_start>Intentando arrancar</trying_to_start>
+<tsig_algorithm>Algoritmo TSIG</tsig_algorithm>
+<tsig_key_name>Nombre de la clave TSIG</tsig_key_name>
+<tsig_secret>Secreto TSIG</tsig_secret>
 <TSYSTEM>Operating system</TSYSTEM>
 <turn_into_emergency_automatically>Pasa al modo de emergencia autom%C3¡ticamente</turn_into_emergency_automatically>
 <txqueuelen>Longitud de la cola de transmisi%C3%B3n</txqueuelen>
@@ -3272,6 +3760,7 @@ Piensa que puedes despellejar el error de la p%C3¡gina web seg%C3%BAn las regla
 <ufdb_localldap_3>Choose on the drop-down list the LDAP group that is located on the defined remote LDAP server</ufdb_localldap_3>
 <ufdb_native_client_explain>El cliente nativo es un conector proxy de memoria m%C3¡s ligera que est%C3¡ destinado al filtrado web.[br]
 Si est%C3¡ activo, las funciones avanzadas como la Pol%C3%ADtica de Ordenadores, el HotSpot, el bloqueo de p%C3¡ginas por reglas y las categor%C3%ADas no estar%C3¡n disponibles.</ufdb_native_client_explain>
+<unable_to_retrieve_the_settings>No se pueden recuperar los ajustes</unable_to_retrieve_the_settings>
 <unassign>Desasignar</unassign>
 <unblock>Unblock</unblock>
 <unblock_list_explain>Esta secci%C3%B3n enumera todos los sitios bloqueados y liberados por los administradores y/o usuarios a través del servicio web de la p%C3¡gina de error.</unblock_list_explain>
@@ -3289,6 +3778,7 @@ Esto evita el envenenamiento de la caché mediante el vaciado del RRSet y las ca
 <unbound_dns_records_explain>Esta secci%C3%B3n le permite crear registros DNS que obligar%C3¡n al servicio DNS a resolver primero los elementos de la lista.[br]
 Utilice Agentes DNS de Windows si desea importar registros de sus servidores DNS de Windows.</unbound_dns_records_explain>
 <UNBOUND_DOH_EXPLAIN>DNS-over-Https (DoH) permite encriptar los mensajes DNS y da a un cliente DNS la posibilidad de autenticar un resolvedor utilizando un método encriptado.[br] Como implica el nombre, esto se hace enviando los mensajes DNS sobre HTTPS</UNBOUND_DOH_EXPLAIN>
+<unbound_restarting>Reinicio del servicio de caché DNS</unbound_restarting>
 <unbound_wrong_version_text>Parece que la versi%C3%B3n actual del servicio DNS Cache (%ver) no es compatible.[br]
 Artica requiere una versi%C3%B3n m%C3%ADnima de 1.9.x.[br] Por favor, actualice su software de servicio DNS Cache.</unbound_wrong_version_text>
 <uncategorized_websites>No categorizado</uncategorized_websites>
@@ -3306,6 +3796,7 @@ Por lo tanto, esta funci%C3%B3n es in%C3%BAtil para su servidor.</uncategorized_
 <unique_ips>Direcciones IP %C3%BAnicas</unique_ips>
 <unknown_domains>Dominios desconocidos</unknown_domains>
 <unknown_error>Se ha producido un error desconocido.</unknown_error>
+<unknown_process>Proceso desconocido</unknown_process>
 <unless-stopped>Excepto parada manual</unless-stopped>
 <unloaded>Unloaded</unloaded>
 <unlock_unstable_feature_ask>Esta opci%C3%B3n desbloquear%C3¡ la ocultaci%C3%B3n de esta funci%C3%B3n, que se considera &quot;en proceso de consolidaci%C3%B3n&quot;.[br]
@@ -3323,6 +3814,7 @@ Esta operaci%C3%B3n le permitir%C3¡ instalarla y activarla.[br]
 <update_hotfix_dev>Parches de actualizaci%C3%B3n en desarrollo</update_hotfix_dev>
 <update_services_packs>Actualizar los paquetes de servicios</update_services_packs>
 <update_software_packages>Actualizar paquetes de software</update_software_packages>
+<Update_tasks_by_topic>Tareas de actualizaci%C3%B3n por tema</Update_tasks_by_topic>
 <upgradable_packages>Paquetes actualizables</upgradable_packages>
 <upgrade_all>Actualizar todo</upgrade_all>
 <upgrade_kernel1>El %C3%BAltimo kernel disponible es %s.[br]
@@ -3366,6 +3858,7 @@ Este método le permite confirmar si el acceso al sitio especificado se debe a u
 <urlsTotest>URLs que deben ser probadas</urlsTotest>
 <urlsTotestGlobal>El conjunto de URLs indica la viabilidad</urlsTotestGlobal>
 <url_source>Fuente URL</url_source>
+<usage>Uso</usage>
 <usb controller>USB controller</usb controller>
 <useClientSubnet>Subred de clientes EDNS (ECS)</useClientSubnet>
 <useClientSubnet_explain>La subred del cliente EDNS (ECS) es una opci%C3%B3n estandarizada de EDNS dise%C3%B1ada para pasar un poco de informaci%C3%B3n sobre el cliente de un resolver a los servidores autoritativos.[br]Puede ser utilizado por el Servicio DNS para enviar la IP de origen, pero s%C3%B3lo la IP de origen, a su backend:[br].
@@ -3392,6 +3885,7 @@ La documentaci%C3%B3n le guiar%C3¡ en el proceso de obtenci%C3%B3n de esta clav
 <use_backup_server>Use backup server</use_backup_server>
 <use_captcha>Utilizar la verificaci%C3%B3n captcha</use_captcha>
 <use_custom_form>Utilizar un formulario personalizado</use_custom_form>
+<use_custom_logo>Usar un logotipo personalizado</use_custom_logo>
 <use_databases_in_firewall>Utilizar bases dentro del cortafuegos</use_databases_in_firewall>
 <use_databases_in_firewall_explain>Cuando el filtro Artica PCAP est%C3¡ activo, se encarga de almacenar en su memoria bases de datos de direcciones IP de origen no solicitadas.[br]
 El filtro Artica PCAP est%C3¡ dise%C3%B1ado para informar al cortafuegos en tiempo real s%C3%B3lo si una direcci%C3%B3n IP de la lista se est%C3¡ comunicando con su servidor. [br]
@@ -3427,6 +3921,9 @@ En algunos casos, habilitar esta opci%C3%B3n puede resolver cuellos de botella d
 <use_queue_failed>Usar la cola</use_queue_failed>
 <use_reput_service>Utilizar un servicio de reputaci%C3%B3n</use_reput_service>
 <use_reverse>Usa el proxy inverso</use_reverse>
+<use_root_hints>Usar los servidores DNS ra%C3%ADz</use_root_hints>
+<use_root_hints_explain>Descarga y utiliza el archivo de servidores DNS ra%C3%ADz de la IANA para la resoluci%C3%B3n recursiva.[br]
+Cuando est%C3¡ deshabilitado, el resolvedor utiliza su lista interna de servidores ra%C3%ADz.</use_root_hints_explain>
 <use_smtp_queue>Usar la cola de SMTP</use_smtp_queue>
 <use_smtp_queue_notifs_explain>Env%C3%ADa los mensajes de forma as%C3%ADncrona (diferida).[br]Esto evita que el proceso se bloquee durante el env%C3%ADo y permite continuar con los pasos siguientes.[br]Un barrido en segundo plano vac%C3%ADa peri%C3%B3dicamente la cola.</use_smtp_queue_notifs_explain>
 <use_socks5_proxy>Utilizar el proxy Socks5 como backend</use_socks5_proxy>
@@ -3434,18 +3931,23 @@ En algunos casos, habilitar esta opci%C3%B3n puede resolver cuellos de botella d
 <use_staging_environment>Entorno de preproducci%C3%B3n</use_staging_environment>
 <use_tcp>Usar TCP</use_tcp>
 <use_the_wizard>Utilizar el asistente</use_the_wizard>
+<use_this_address>Usar esta direcci%C3%B3n</use_this_address>
+<use_vc_explain>Forzar el uso de TCP para las consultas DNS</use_vc_explain>
 <use_weberror_service>Utiliza el servicio de p%C3¡gina de error</use_weberror_service>
 <use_your_own_values>Utilice sus propios valores</use_your_own_values>
 <using_a_local_lb>Using a local load-balancer</using_a_local_lb>
 <us_google_dns_gdmains>Utilizar los DNS p%C3%BAblicos de Google para los dominios de Google</us_google_dns_gdmains>
 <us_google_dns_gdmains_explain>La resoluci%C3%B3n de solicitudes de dominios de Google utilizar%C3¡ los propios servidores p%C3%BAblicos de Google mediante el protocolo HTTPs (DoH)</us_google_dns_gdmains_explain>
 <validate>Validar</validate>
+<validate_config>Validar la configuraci%C3%B3n</validate_config>
+<validate_dhcp_explain>Verificar los par%C3¡metros DHCP sin aplicarlos</validate_dhcp_explain>
 <ValidStarting>Inicio de validez</ValidStarting>
 <value_to_send>Value to send</value_to_send>
 <vendor name>Nombre del vendedor</vendor name>
 <verify_client_certificate>Comprueba el certificado del cliente</verify_client_certificate>
 <verify_dns_record>Verificar el registro DNS</verify_dns_record>
 <verify_if_user>Verificar si el usuario</verify_if_user>
+<verify_the_full_chain>Verificar la cadena completa</verify_the_full_chain>
 <vga compatible controller>VGA compatible controller</vga compatible controller>
 <videofiles>Archivos de v%C3%ADdeo</videofiles>
 <video_recording>Video recording</video_recording>
@@ -3464,6 +3966,7 @@ Por favor, visite nuestro canal, ver%C3¡ muchos videos sobre Artica. Le sugerim
 <vitrification>Vitrificaci%C3%B3n</vitrification>
 <vitrification_explain>La vitrificaci%C3%B3n crea una instant%C3¡nea est%C3¡tica de su sitio web.[br]El modo est%C3¡tico ofrece un rendimiento %C3%B3ptimo al reducir dr%C3¡sticamente los recursos de ejecuci%C3%B3n necesarios para generar las p%C3¡ginas (frameworks, bases de datos, etc.).[br]Una vez habilitado, Articatech Cloud est%C3¡ autorizado a rastrear su sitio y crear una réplica local.[br]Cuando la copia local esté disponible en su servidor Artica, podr%C3¡ alternar din%C3¡micamente entre los modos din%C3¡mico y est%C3¡tico en cualquier momento.</vitrification_explain>
 <vitrified_mode>Modo vitrificado</vitrified_mode>
+<vlan_created>VLAN creado</vlan_created>
 <voucher_not_enabled>La parte de autenticaci%C3%B3n del ticket no est%C3¡ activada, los identificadores a%C3%B1adidos aqu%C3%AD no tendr%C3¡n ning%C3%BAn efecto.</voucher_not_enabled>
 <vpn_address>Your VPN address</vpn_address>
 <vpn_add_routes>A%C3%B1ada aqu%C3%AD redes en formato CDIR o direcciones IP (separadas por un retorno de carro) que se a%C3%B1adir%C3¡n en las reglas de enrutamiento después de establecer la conexi%C3%B3n VPN.</vpn_add_routes>
@@ -3503,6 +4006,14 @@ Inst%C3¡lelo si desea utilizarlo.</wazuh_not_enabled_ids>
 <wazuh_not_installed_ids>El cliente de Wazuh no est%C3¡ instalado en esta m%C3¡quina, por lo que Artica no puede enviar las alertas a su servidor Wazuh.[br]Artica utiliza el cliente de Wazuh como intermediario para las comunicaciones.</wazuh_not_installed_ids>
 <wazuh_siem_explain>Enviar los eventos del IDS a la plataforma EDR de Wazuh a través del agente Wazuh instalado en su servidor Artica.</wazuh_siem_explain>
 <WCCP_ASA_ROUTER_ERR1>CICSCO ASA Interface address cannot be the same address of the Router Identifier, please run show wccp to get IP of the Router Identifier.</WCCP_ASA_ROUTER_ERR1>
+<wccp_ask1>%C2%BFUtiliza FortiGate?</wccp_ask1>
+<wccp_ask2>Puede integrar Artica Proxy con su router FortiGate.[br]Esto le permite controlar la navegaci%C3%B3n por Internet directamente a nivel de la puerta de enlace superior.</wccp_ask2>
+<wccp_ask3>Su FortiGate es compatible con el protocolo WCCP.[br]
+Este protocolo permite la redirecci%C3%B3n transparente del tr%C3¡fico HTTP/HTTPS desde las pol%C3%ADticas del firewall hacia el proxy Artica.[br]
+Con esta integraci%C3%B3n, mantiene el control total de la arquitectura del tr%C3¡fico de Internet directamente desde el FortiGate.[br]
+Haga clic en el bot%C3%B3n a continuaci%C3%B3n para acceder a la documentaci%C3%B3n de implementaci%C3%B3n.</wccp_ask3>
+<wccp_fortigate_explain>[b]Soporte FortiGate OS[/b][br]
+Artica WCCP se registra en un router FortiGate mediante UDP y le indica que realice una redirecci%C3%B3n de Capa 2 (L2) de los flujos TCP coincidentes hacia la m%C3¡quina local.[br]Intercepta estas conexiones de forma transparente y las reenv%C3%ADa a los servicios proxy configurados, inyectando encabezados PROXY Protocol v1 para que el proxy conserve la direcci%C3%B3n IP real del cliente y el destino original.[br][b]No se requiere configuraci%C3%B3n en el lado del cliente.[/b]</wccp_fortigate_explain>
 <WCCP_NAME_EXPLAIN>El WCCP especifica las interacciones entre uno o varios routers y uno o varios cachés web de Artica.[br] El prop%C3%B3sito de dicha interacci%C3%B3n es establecer y mantener la redirecci%C3%B3n transparente de tipos seleccionados de tr%C3¡fico que fluyen a través de un grupo de routers.[br] El tr%C3¡fico seleccionado se redirige a un grupo de cachés web con el fin de optimizar el uso de recursos y reducir los tiempos de respuesta.</WCCP_NAME_EXPLAIN>
 <WCCP_PASSWORD>Contrase%C3%B1a WCCP</WCCP_PASSWORD>
 <WCCP_PASSWORD_EXPLAIN>
@@ -3515,6 +4026,10 @@ WCCP does not work if password specified is too complex.[br] It is recommended t
 <webcopy_no_feature>La funci%C3%B3n WebCopy est%C3¡ activada, esta secci%C3%B3n est%C3¡ desactivada y no puede utilizarse</webcopy_no_feature>
 <webdavinfoexplain>Puede acceder al directorio de trabajo de su sitio conectando su estaci%C3%B3n de trabajo a través de una unidad de red Web (WebDav) con la siguiente informaci%C3%B3n</webdavinfoexplain>
 <webservice_using_nginx>El motor web de este servicio est%C3¡ oculto por el proxy inverso, aseg%C3%BArese de haber a%C3%B1adido el método de servicio correcto en la secci%C3%B3n de proxy inverso.</webservice_using_nginx>
+<webshell_console>Consola Shell Web</webshell_console>
+<webshell_explain>La consola Shell permite acceder directamente al sistema de su appliance a través de la interfaz web.[br]
+Proporciona una visualizaci%C3%B3n remota en tiempo real de la salida de la consola del sistema.[br]
+Esta consola funciona de forma independiente de los servicios de acceso shell tradicionales como SSH.</webshell_explain>
 <website_blocked>Sitio web bloqueado</website_blocked>
 <website_content>Website content</website_content>
 <website_crawling_depth>Profundidad de rastreo del sitio web</website_crawling_depth>
@@ -3611,3 +4126,5 @@ Si el soporte IPv6 est%C3¡ habilitado, 127.0.0.1, ::127.0.0.1 y ::ffff:127.0.0.
 0.0.0.0/0 puede utilizarse para permitir cualquier direcci%C3%B3n IPv4.[br]
 Ejemplo: 127.0.0.1,192.168.1.0/24,::1,2001:db8::/32,zabbix.example.com</ZabbixAgentServerIP_explain>
 <zip_file>ZIP file</zip_file>
+<zones>Zonas</zones>
+<zone_name>Nombre de la zona</zone_name>

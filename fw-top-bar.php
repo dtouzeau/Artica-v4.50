@@ -323,26 +323,6 @@ function GlobalSearchEngine(e){
 
 
     if($users->AsAnAdministratorGeneric){
-        $EnableDarkStat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDarkStat"));
-        $DarkStatWebInterface=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DarkStatWebInterface");
-        $DarkStatWebPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DarkStatWebPort"));
-        if($EnableDarkStat==1){
-            if($DarkStatWebPort==0){$DarkStatWebPort=663;}
-            if($DarkStatWebInterface==null){$DarkStatWebInterface="eth0";}
-            $nicz=new system_nic($DarkStatWebInterface);
-            $IPClass=new IP();
-            if(!$IPClass->isValid($nicz->IPADDR)){
-                $nicz->IPADDR=$_SERVER["SERVER_ADDR"];
-            }
-            $url="http://$nicz->IPADDR:$DarkStatWebPort/";
-
-            $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:s_PopUpFull('$url',1024,768,'Network Monitor');\">";
-            $f[]="                            <i class=\"fas fa-chart-area\"></i> {network_monitor}";
-            $f[]="                        </a>";
-            $f[]="                    </li>";
-        }
-
 
         if($users->APP_NETDATA_INSTALLED){
             $NetDATAEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetDATAEnabled"));

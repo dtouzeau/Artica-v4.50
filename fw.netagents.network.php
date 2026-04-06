@@ -11,10 +11,25 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){
 }
 
 if(isset($_GET["interface-metrics-js"])){interface_metrics_js();exit;}
+if(isset($_GET["interfaces"])){interfaces();exit;}
 if(isset($_GET["interface-detail"])){interface_detail_popup();exit;}
-agent_info_net();
 
-function agent_info_net():bool{
+tabs();
+
+
+
+function tabs():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $id=intval($_GET["id"]);
+    $array["{network_interfaces}"]="$page?interfaces=yes&id=$id";
+    $array["{routing}"]="fw.netagents.network.routing.php?agent-id=$id";
+    $array["VLAN"]="fw.netagents.network.vlan.php?agent-id=$id";
+    echo "<div style='margin-top:10px'>".$tpl->tabs_default($array)."</div>";
+    return true;
+}
+
+function interfaces():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $id=intval($_GET["id"]);

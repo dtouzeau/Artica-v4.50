@@ -17,26 +17,22 @@ You can configure Squid to set filters for various entities and at different gra
 filters for certain types of commands, filters for specific routers, filters for specified domains, etc).[br]
 </acls_text>
 <acl_arp>Ethernet Address (unix only)</acl_arp>
-<acl_arp_text>This option only works for clients on the same local subnet, and only for certain platforms.[br]
-Linux, Solaris, and some BSD variants are the supported operating systems for this type of ACL.[br]
-This ACL can provide a somewhat secure method of access control, because MAC addresses are usually harder to spoof than IP addresses,
-and you can guarantee that your clients are on the local network (otherwise no ARP resolution can take place).
+<acl_arp_text>Ta opcja dzia%C5%82a tylko dla klient%C3%B3w w tej samej podsieci lokalnej i jest obs%C5%82ugiwana na wybranych platformach.[br]
+Linux, Solaris oraz niekt%C3%B3re warianty BSD obs%C5%82uguj%C4%85 ten typ ACL.[br]
+Ta ACL zapewnia stosunkowo bezpieczn%C4%85 metod%C4%99 kontroli dost%C4%99pu, poniewa%C5%BC adresy MAC s%C4%85 zazwyczaj trudniejsze do podrobienia ni%C5%BC adresy IP.[br]
+Zapewnia r%C3%B3wnie%C5%BC, %C5%BCe klienci znajduj%C4%85 si%C4%99 w sieci lokalnej (w przeciwnym razie nie mo%C5%BCe nast%C4%85pi%C4%87 rozwi%C4%85zywanie ARP).[br]
 [br]
-[b]EX:[/b][br]acl ACLARP arp 11:12:13:14:15:16[br]
-ACLARP refers MACADDRESS of the ethernet 11:12:13:14:15:16[br]
-[br][b]Note[/b]
-[br][i]Squid can only determine the MAC address for clients that are on the same subnet. If the client is on a different subnet, then Squid
-cannot find out its MAC address.[/i]
-</acl_arp_text>
+[b]Przyk%C5%82ad:[/b][br]acl ACLARP arp 11:12:13:14:15:16[br]
+ACLARP odnosi si%C4%99 do adresu MAC interfejsu Ethernet 11:12:13:14:15:16[br]
+[br][b]Uwaga[/b]
+[br][i]Proxy mo%C5%BCe okre%C5%9Bli%C4%87 adres MAC tylko dla klient%C3%B3w w tej samej podsieci. Je%C5%9Bli klient znajduje si%C4%99 w innej podsieci, proxy nie mo%C5%BCe uzyska%C4%87 jego adresu MAC.[/i]</acl_arp_text>
 <acl_arp_title>Ethernet (MAC) address matching</acl_arp_title>
 <acl_browser>Browser matching</acl_browser>
-<acl_browser_text>This is A regular expression that matches the clients browser type based on the user agent header[br]
-This allows for ACL's to operate based on the browser type in use, for example, using this ACL type, one could create an ACL for
-Netscape users and another for Internet Explorer users.[br]
-Example:[br]
-[b]MOZILLA[/b]
-This refers to the requests, which are coming from the browsers who have "MOZILLA" keyword in the user-agent header.
-</acl_browser_text>
+<acl_browser_text>Wyra%C5%BCenie regularne s%C5%82u%C5%BC%C4%85ce do identyfikacji typu przegl%C4%85darki klienta na podstawie nag%C5%82%C3%B3wka User-Agent.[br]
+Pozwala to regu%C5%82om ACL dzia%C5%82a%C4%87 w zale%C5%BCno%C5%9Bci od u%C5%BCywanej przegl%C4%85darki. Na przyk%C5%82ad mo%C5%BCna utworzy%C4%87 jedn%C4%85 ACL dla u%C5%BCytkownik%C3%B3w Netscape, a inn%C4%85 dla u%C5%BCytkownik%C3%B3w Internet Explorer.[br]
+Przyk%C5%82ad:[br]
+[b]MOZILLA[/b][br]
+Regu%C5%82a ta odpowiada %C5%BC%C4%85daniom pochodz%C4%85cym z przegl%C4%85darek, kt%C3%B3rych nag%C5%82%C3%B3wek User-Agent zawiera s%C5%82owo kluczowe MOZILLA.</acl_browser_text>
 <acl_browser_title>Browser Name matching</acl_browser_title>
 <acl_dst>Web Server Address</acl_dst>
 <acl_dstdomain>Web Server Hostname</acl_dstdomain>
@@ -65,9 +61,9 @@ cache_peer_access mycache_mydomain.net deny all[/b]
 </acl_dst_as_text>
 <acl_dst_as_title>Destination Autonomous System Number is the AS number of the server being queried</acl_dst_as_title>
 <acl_dst_text>[ul]
-[li]172.16.1.0/24 - refers to the whole Network with address 172.16.1.0[/li]
-[li]172.16.1.25/32 - refers to a single source[/li]
-[li]172.16.1.25-172.16.1.35/32 - refers range of IP Addresses from 172.16.1.25-172.16.1.35[/li]
+[li]172.16.1.0/24 â%80%94 odnosi si%C4%99 do ca%C5%82ej sieci 172.16.1.0[/li]
+[li]172.16.1.25/32 â%80%94 odnosi si%C4%99 do pojedynczego hosta[/li]
+[li]172.16.1.25-172.16.1.35 â%80%94 odnosi si%C4%99 do zakresu adres%C3%B3w IP od 172.16.1.25 do 172.16.1.35[/li]
 [/ul]</acl_dst_text>
 <acl_dst_title>Same as "Client Address" but looks for destination IP Address</acl_dst_title>
 <acl_external>Zewn%u0119trzny program</acl_external>

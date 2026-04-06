@@ -427,11 +427,16 @@ function xgen(){
         }
 
         $EnableNamespaces=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNamespaces"));
-            if($EnableNamespaces==1){
-                $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.namespaces.php",
-                        "ICO"=>"fas fa-layer-group","TEXT"=>"{network_namespaces}"));
-            }
+        if($EnableNamespaces==1){
+            $f[]=$tpl->LeftMenu(
+                array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.namespaces.php",
+                "ICO"=>"fas fa-layer-group","TEXT"=>"{network_namespaces}"));
+        }
+
+        $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.netdarkstats.php",
+                    "ICO" => "fas fa-chart-area", "TEXT" => "{network_traffic}"));
+
+
 
 
         if($isFireWall==0) {
@@ -508,13 +513,6 @@ function xgen(){
 
             }
 
-
-
-            $EnableDarkStat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDarkStat"));
-            if($EnableDarkStat==1){
-                $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.network.darkstat.php","ICO"=>"fas fa-chart-area","TEXT"=>"{network_monitor}"));
-            }
 
             $NtopNGInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NtopNGInstalled"));
             if($NtopNGInstalled==1){
@@ -618,7 +616,12 @@ function xgen(){
     $f[] = $leftmenus->keepalived();
     $f[] = $leftmenus->keepalived_slave();
     //END KEEPALIVED
-    $f[]=$leftmenus->Proxy();
+
+    $f[] = "<!-- LEFT MENU PROXY START SQUIDEnable=$SQUIDEnable -->";
+    if($SQUIDEnable==1) {
+        $f[] = $leftmenus->Proxy();
+    }
+    $f[] = "<!-- LEFT MENU HOTSPOT START  -->";
     if(method_exists($leftmenus,"hotspot")) {
         $f[]=$leftmenus->hotspot();
     }
@@ -626,7 +629,6 @@ function xgen(){
     $f[]=$leftmenus->ProxyPac();
     $f[]=$leftmenus->WanProxy();
     $f[]=$leftmenus->ZipProxy();
-    $f[]=$leftmenus->Privoxy();
     $f[]=$leftmenus->Mattermost();
     $f[] = "<!-- WEB-FILTERING START  -->";
 

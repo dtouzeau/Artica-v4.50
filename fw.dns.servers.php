@@ -12,11 +12,6 @@ if(isset($_GET["table2-status"])){table2_status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_POST["SquidDNSUseSystem"])){DNS_PROXY_SAVE();exit;}
 if(isset($_POST["DOMAINS1"])){DNS_SERVERS_SAVE();exit;}
-if(isset($_GET["namebench"])){NAMEBENCH();exit;}
-if(isset($_GET["namebench-start"])){NAMEBENCH_START();exit;}
-if(isset($_POST["QUERY_COUNT"])){NAMEBENCH_SAVE();exit;}
-if(isset($_GET["namebench-report-js"])){NAMEBENCH_REPORT_JS();exit;}
-if(isset($_GET["namebench-report"])){NAMEBENCH_REPORT();exit;}
 if(isset($_GET["popup-js"])){popup_js();exit;}
 if(isset($_GET["dnscache-status"])){dnscache_status();exit;}
 if(isset($_GET["dnscache-add-js"])){dnscache_add_js();exit;}
@@ -80,121 +75,16 @@ function dnscache_local_restart():bool{
 }
 
 
-function NAMEBENCH_START(){
-	$page=CurrentPageName();
-	echo "<div style='margin-top:10px' id='namebench-progress'></div><div id='namebench-start'></div><script>LoadAjax('namebench-start','$page?namebench=yes');</script>";
-}
 
 function tabs(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$array["{dns_servers}"]="$page?table=yes";
-	$NAMEBENCH_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NAMEBENCH_INSTALLED"));
 	$EnableDNSCryptProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSCryptProxy"));
 	if($EnableDNSCryptProxy==1){
 		$array["{public_dns_servers}"]="fw.dnscrypt-proxy.list.php";
 	}
-	
-	
-	if($NAMEBENCH_INSTALLED==1){
-		$array["{dns_benchmark}"]="$page?namebench-start=yes";
-	}
 	echo $tpl->tabs_default($array);
-
-}
-
-function NAMEBENCH(){
-	$tpl=new template_admin();
-	$page=CurrentPageName();
-	$sock=new sockets();
-	$SquidNameServer1=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidNameServer1"));
-	$SquidNameServer2=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidNameServer2"));
-	$UnboundInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundInstalled"));
-	$UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
-	if($UnboundInstalled==0){$UnboundEnabled=1;}
-	$EnablePDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePDNS"));
-	if($EnablePDNS==1){$DNS[]="127.0.0.1";}
-	if($UnboundEnabled==1){$DNS[]="127.0.0.1";}
-	if($SquidNameServer1<>null){$DNS[]=$SquidNameServer1;}
-	if($SquidNameServer2<>null){$DNS[]=$SquidNameServer2;}
-	$resolv=new resolv_conf();
-	if($resolv->MainArray["DNS1"]<>null){$DNS[]=$resolv->MainArray["DNS1"];}
-	if($resolv->MainArray["DNS2"]<>null){$DNS[]=$resolv->MainArray["DNS2"];}
-	if($resolv->MainArray["DNS3"]<>null){$DNS[]=$resolv->MainArray["DNS3"];}
-	$NAMEBENCH_ARRAY=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NAMEBENCH_ARRAY"));
-	
-	$data=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NameBenchReport");
-	if(strlen($data)>100){
-		$html[]=$tpl->button_autnonome("{display_report}", "Loadjs('$page?namebench-report-js')", "fa-pie-chart");
-	}
-	
-	for($i=0;$i<8;$i++){
-		if(!isset($NAMEBENCH_ARRAY["DNS$i"])){$NAMEBENCH_ARRAY["DNS$i"]=$DNS[$i];}
-		$form[]=$tpl->field_text("DNS$i", "{dns_server}", $DNS[$i]);
-		
-	}
-	if(intval($NAMEBENCH_ARRAY["QUERY_COUNT"])==0){$NAMEBENCH_ARRAY["QUERY_COUNT"]=80;}
-	if(intval($NAMEBENCH_ARRAY["PING_TIMEOUT"])==0){$NAMEBENCH_ARRAY["PING_TIMEOUT"]=2;}
-	$form[]=$tpl->field_numeric("QUERY_COUNT","{query_count}",$NAMEBENCH_ARRAY["QUERY_COUNT"]);
-	$form[]=$tpl->field_numeric("PING_TIMEOUT","{PING_TIMEOUT}",$NAMEBENCH_ARRAY["PING_TIMEOUT"]);
-	
-	
-	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/admin.dashboard.dnsperfs.progress";
-	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/admin.dashboard.dnsperfs.progress.txt";
-	$ARRAY["CMD"]="system.php?dnsperf-progress=yes";
-	$ARRAY["TITLE"]="{html_report})";
-	$ARRAY["AFTER"]="LoadAjax('namebench-start','$page?namebench=yes');";
-	$prgress=base64_encode(serialize($ARRAY));
-	$jsafter="Loadjs('fw.progress.php?content=$prgress&mainid=namebench-progress')";
-
-	//dns_benchmark
-
-	$TINY_ARRAY["TITLE"]="{dns_benchmark}";
-	$TINY_ARRAY["ICO"]="fa-solid fa-signal";
-	$TINY_ARRAY["EXPL"]="{check_your_dns_servers_performance}";
-	$TINY_ARRAY["URL"]="dns-servers";
-	$TINY_ARRAY["BUTTONS"]=null;
-	$jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-
-	$html[]=$tpl->form_outside("{performance_report}", @implode("\n", $form),
-			null,"{launch_scan}",$jsafter,"AsDnsAdministrator");
-
-	$html[]="<script>$jstiny</script>";
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-}
-
-function NAMEBENCH_SAVE(){
-	$tpl=new template_admin();
-	$tpl->CLEAN_POST();
-	$sock=new sockets();
-	$sock->SaveConfigFile(serialize($_POST), "NAMEBENCH_ARRAY");
-	
-}
-function NAMEBENCH_REPORT_JS(){
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$tpl->js_dialog1("{dns_performance}", "$page?namebench-report=yes");
-}
-
-function NAMEBENCH_REPORT(){
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$dns_performance_time=null;
-	$data=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NameBenchReport");
-
-	if(preg_match("#<body>(.*?)</body>#is", $data,$re)){$data=$re[1];}
-	$data=str_replace("<img src=","</center><center><img src=",$data);
-
-	$DNSPerfsDate=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NameBenchReport"));
-	if($DNSPerfsDate>0){
-		$dns_performance_time="&laquo;".$tpl->time_to_date($DNSPerfsDate,true)."&raquo;";
-	}
-
-	$html[]="<h2>{dns_performance}&nbsp;&nbsp;$dns_performance_time</h2>";
-	$html[]="<div class=NameBenchReport>";
-	$html[]=$data;
-	$html[]="</div>";
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 
 }
 function table(){

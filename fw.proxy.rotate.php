@@ -431,9 +431,10 @@ function main_start(){
 
 function main(){
     $tpl=new template_admin();
+    //
     $AutoFSEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AutoFSEnabled"));
     $SquidPerformance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidPerformance"));
-    $EnableIntelCeleron=intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/EnableIntelCeleron"));
+    $EnableIntelCeleron=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableIntelCeleron"));
     $page=CurrentPageName();
 
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LegalLogArticaClient",0);
@@ -461,7 +462,7 @@ function main(){
     $SquidRotateClean=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateClean"));
 
     $SquidLogsExceptions=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidLogsExceptions");
-    if(!is_file("/etc/artica-postfix/settings/Daemons/SquidLogsExceptions")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidLogsExceptions", "127.0.0.1");}
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("SquidLogsExceptions")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidLogsExceptions", "127.0.0.1");}
 
     $LogsRotateDefaultSizeRotation=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogsRotateDefaultSizeRotation"));
     if($LogsRotateDefaultSizeRotation<5){$LogsRotateDefaultSizeRotation=100;}
@@ -659,9 +660,9 @@ function main_default_size_popup():bool{
 
 function main_section_popup():bool{
 	$tpl=new template_admin();
-
+//
 	$SquidPerformance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidPerformance"));
-	$EnableIntelCeleron=intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/EnableIntelCeleron"));
+	$EnableIntelCeleron=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableIntelCeleron"));
     $page=CurrentPageName();
 	
 	if($SquidPerformance>2){$AutoFSEnabled=0;}
@@ -718,7 +719,7 @@ function main_section_popup():bool{
 	
 
     $SquidLogsExceptions=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidLogsExceptions");
-    if(!is_file("/etc/artica-postfix/settings/Daemons/SquidLogsExceptions")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidLogsExceptions", "127.0.0.1");}
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("SquidLogsExceptions")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidLogsExceptions", "127.0.0.1");}
 
 	$disabled=false;
     $SquidRotateForceRestart=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateForceRestart"));

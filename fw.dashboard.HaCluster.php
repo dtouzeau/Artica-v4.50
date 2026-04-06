@@ -205,6 +205,7 @@ function hacluster_clientdebug_save():bool{
 
 function haclient_flat(){
     $kerberosActiveDirectorySuffix=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("kerberosActiveDirectorySuffix"));
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/micro-ping");
 
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -228,6 +229,13 @@ function haclient_flat(){
     $HaClusterMyMasterAddr=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterMyMasterAddr"));
 
     if($HaClusterClient==1) {
+
+        if(is_file("/usr/share/artica-postfix/ressources/logs/web/HaClusterClient.report.error")){
+            $error=file_get_contents("/usr/share/artica-postfix/ressources/logs/web/HaClusterClient.report.error");
+            $tpl->table_form_field_text("{error}", "<small style='text-transform: none'>$error</small>", ico_error);
+
+        }
+
         $json = json_decode($GLOBALS["CLASS_SOCKETS"]->HACLUSTERCLIENT_API("/status"));
 
         if ($json->Status) {

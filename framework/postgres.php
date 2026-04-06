@@ -40,12 +40,10 @@ function is_installed(){
 	
 	if(!is_file("/usr/local/ArticaStats/bin/postgres")){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("POSTGRESSQL_INSTALLED", 0);
-		@chmod("/etc/artica-postfix/settings/Daemons/POSTGRESSQL_INSTALLED",0777);
 		return;
 	}
-	
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("POSTGRESSQL_INSTALLED", 1);
-		@chmod("/etc/artica-postfix/settings/Daemons/POSTGRESSQL_INSTALLED",0777);
+	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("POSTGRESSQL_INSTALLED", 1);
+
 }
 
 

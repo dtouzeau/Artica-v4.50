@@ -531,7 +531,6 @@ function sizes_backup(){
 	$unix=new unix();
 	$size=$unix->DIRSIZE_KO($WordpressBackupParams["DEST"]);
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("WordpressBackupSize", $size);
-	@chmod("/etc/artica-postfix/settings/Daemons/WordpressBackupSize",0755);
-	
+
 }
 

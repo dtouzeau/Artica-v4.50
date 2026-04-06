@@ -336,8 +336,8 @@ function scope_form(): void {
     $subnet  = '';
     $netmask = '';
     $auth    = true;
-    $ldef    = 3600;
-    $lmax    = 7200;
+    $ldef    = 28800;
+    $lmax    = 28800;
     $routers     = '';
     $dns         = '';
     $ntp         = '';
@@ -375,8 +375,8 @@ function scope_form(): void {
             $subnet  = htmlspecialchars($sc->subnet  ?? '');
             $netmask = htmlspecialchars($sc->netmask  ?? '');
             $auth    = !isset($sc->authoritative) || $sc->authoritative=false;
-            $ldef    = intval($sc->lease->default ?? 3600);
-            $lmax    = intval($sc->lease->max     ?? 7200);
+            $ldef    = intval($sc->lease->default ?? 28800);
+            $lmax    = intval($sc->lease->max     ?? 28800);
             $relayId = intval($sc->relay->relay_id ?? 0);
             $server_identifier = htmlspecialchars($sc->server_identifier ?? '');
             $optArr      = scope_options_to_form($sc->options ?? []);
@@ -742,8 +742,8 @@ function scope_save(): void {
         "authoritative" => !empty($_POST["authoritative"]),
         "server_identifier" => $server_identifier,
         "lease"         => [
-            "default" => max(60, intval($_POST["lease_default"] ?? 3600)),
-            "max"     => max(60, intval($_POST["lease_max"]     ?? 7200)),
+            "default" => max(60, intval($_POST["lease_default"] ?? 28800)),
+            "max"     => max(60, intval($_POST["lease_max"]     ?? 28800)),
         ],
         "options"       => $options,
         "flags"         => empty($flags) ? new stdClass() : (object)$flags,

@@ -10550,7 +10550,6 @@ e.grci.group
 e.hub.com.pl
 e.infogr.am
 e.infogram.com
-e.issuu.com
 e.kc-education.com
 e.marketing.dpd.co.uk
 e.metarouter.io

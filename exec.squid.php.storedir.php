@@ -157,15 +157,11 @@ function caches_infos(){
 	if(count($array)==0){
 		if($GLOBALS["VERBOSE"]){echo basename(__FILE__)."[".__LINE__."] unix->squid_get_cache_infos() O items !!...\n";}
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("squid_get_cache_infos.db", serialize($array));
-		@chmod("/etc/artica-postfix/settings/Daemons/squid_get_cache_infos.db",0755);
 		return;
 	}
 
 		@unlink("/etc/artica-postfix/settings/Daemons/squid_get_cache_infos.db");
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("squid_get_cache_infos.db", serialize($array));
-		@chmod("/etc/artica-postfix/settings/Daemons/squid_get_cache_infos.db",0755);
-
-
 	$uuid=$unix->GetUniqueID();
 	$q2=new lib_sqlite("/home/artica/SQLITE/caches.db");
 	

@@ -3003,7 +3003,7 @@ function dev_shm(){
 
 
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("StatusDevSHMPerc", $percent);
-    @chmod("/etc/artica-postfix/settings/Daemons/StatusDevSHMPerc", 0755);
+
 
     if($percent>90){
         if($percent<98){

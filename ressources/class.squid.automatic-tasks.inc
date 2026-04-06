@@ -159,9 +159,8 @@ class squid_auto_tasks{
                 $CacheSchedules = $GLOBALS["CLASS_UNIX"]->file_time_min("/etc/artica-postfix/ARTICA_WEBFILTER_DB_STATUS");
                 if ($CacheSchedules > 30) {
                     @unlink("/etc/artica-postfix/ARTICA_WEBFILTER_DB_STATUS");
-                    $cmd = trim($prefixcmd . "/usr/share/artica-postfix/exec.squidguard.php --artica-db-status >/dev/null 2>&1 &");
-                    if ($GLOBALS["VERBOSE"]) {echo "$cmd\n";}
-                    $this->shell_exec2($cmd);
+
+                    $this->shell_exec2("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/databases/status");
                 }
 
                 if(is_file("$ArticaDBPath/VERSION")){

@@ -14,10 +14,10 @@
 <IncrAgeMax_text>Very old incremental backups are removed after x days</IncrAgeMax_text>
 <IncrPeriod>Minimum period between incremental backups</IncrPeriod>
 <IncrPeriod_text>Minimum period between incremental backups</IncrPeriod_text>
-<MaxBackupPCNightlyJobs>Nightly Max Backups</MaxBackupPCNightlyJobs>
+<MaxBackupPCNightlyJobs>N%C3%BAmero m%C3¡ximo de backups a manter</MaxBackupPCNightlyJobs>
 <MaxBackupPCNightlyJobs_text>Each night, at the first wakeup, BackupPC is run.[br]
 Its job is to remove unneeded files in the pool, ie: files that only have one link.</MaxBackupPCNightlyJobs_text>
-<MaxBackups>Max backups</MaxBackups>
+<MaxBackups>N%C3%BAmero m%C3¡ximo de backups a manter</MaxBackups>
 <MaxBackups_text>Maximum number of simultaneous backups to run</MaxBackups_text>
 <MaxOldLogFiles>Maximum number of log files</MaxOldLogFiles>
 <MaxOldLogFiles_text>Maximum number of log files we keep around in log directory. These files are aged nightly. A setting of 14 means the log directory will contain about 2 weeks of old log files</MaxOldLogFiles_text>

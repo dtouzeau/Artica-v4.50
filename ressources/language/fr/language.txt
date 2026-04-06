@@ -904,7 +904,7 @@ Si le parent n'est pas titulaire d'un objet de requ&ecirc;te, il transmet la req
 <build_certificate>Construire le certificat.</build_certificate>
 <businessRole>R&ocirc;le d'affaires</businessRole>
 <by_file_type>Par type de fichier</by_file_type>
-<cache>cache</cache>
+<cache>Cache</cache>
 <cached>Mise en cache</cached>
 <cached_files_number>Nombre de fichiers mis en cache</cached_files_number>
 <cache_cleaned>Cache de la console nettoy&eacute;.</cache_cleaned>
@@ -3749,22 +3749,21 @@ Apr&egrave;s avoir termin&eacute; la livraison &agrave; une destination choisie,
 <smtp_connection_cache_time_limit>Temps limite du cache de connexion</smtp_connection_cache_time_limit>
 <smtp_connection_cache_time_limit_text>Lorsque le cache de connexions SMTP est activ&eacute;, temps pendant lequel une socket inutilis&eacute;e du client SMTP est conserv&eacute;e ouverte.[br]N'indiquez pas de valeur trop &eacute;lev&eacute;e sans la permission des sites distants.</smtp_connection_cache_time_limit_text>
 <smtp_connection_reuse_time_limit>D&eacute;lai de r&eacute;utilisation de la connexion</smtp_connection_reuse_time_limit>
-<smtp_connection_reuse_time_limit_text>Dur&eacute;e pendant laquelle Postfix doit utiliser une connexion SMTP &agrave; plusieurs reprises.[br]
-Le chronom&egrave;tre demarre lorsque la connexion est initialis&eacute;e (i.e. y compris le temps de latence d&ucirc; &agrave; la demande de connexion et au helo, en plus des latences dues &agrave; la transaction de livraison du courrier).[br]
-Cette fonctionnalit&eacute; r&eacute;pond &agrave; un probl&egrave;me de stabilit&eacute; des performances avec les serveurs SMTP distants.
-[br]Ce probl&egrave;me n'est pas sp&eacute;cifique &agrave; Postfix: [i]il peut se produire lorsque les MTA envoie de grandes quantit&eacute;s d'e-mail SMTP vers un site qui a de multiples machines MX [/i][br].
-Le probl&egrave;me commence lorsque l'une des machines d'un jeu de machines MX devient plus lente que les autres.[br]
-M&ecirc;me si les clients SMTP se connectent &agrave; des h&ocirc;tes MX rapides et lents avec une probabilit&eacute; &eacute;gale, l'h&ocirc;te MX lent finit avec plus de connexions simultan&eacute;es entrants que les h&ocirc;tes MX plus rapides, parce que l'h&ocirc;te MX lent n&eacute;cessite plus de temps pour servir toutes les requ&ecirc;tes des clients.[br]
-[strong]L'h&ocirc;te MX lent devient un attracteur de connexion.[/strong] Si un h&ocirc;te MX devient N fois plus lent que le reste, il domine le temps de latence de livraison du courrier sauf s'il ya plus de N h&ocirc;tes MX rapides pour contrer l'effet.[br]
-Et si le nombre de machines MX est plus petit que N, la latence la livraison du courrier devient effectivement celle du plus lent h&ocirc;te MX divis&eacute; par le nombre total de machines MX.[br]
-La solution utilise la mise en cache de connexion en limitant la quantit&eacute; de temps pendant lequel une connexion peut &ecirc;tre utilis&eacute;e de fa&ccedil;on r&eacute;p&eacute;t&eacute;e (au lieu de limiter le nombre de livraisons au cours de cette connexion),
- non seulement Postfix restaure l'&eacute;quit&eacute; dans la distribution des connexions simultan&eacute;es sur un ensemble de machines MX mais il privil&eacute;gie &eacute;galement les livraisons sur les connexions
-qui fonctionnent bien, ce qui est exactement ce que nous voulons. [br]
-Le d&eacute;lai de r&eacute;utilisation par d&eacute;faut, [code]300[/code], est comparable aux diff&eacute;rents d&eacute;lais d'attente de la transaction SMTP qui sont des juste une estimations  de l'exc&egrave;s maximal
-de temps de latence pour une livraison lente.[br][i]Notez que les h&ocirc;tes peuvent accueillir des milliers de messages sur une seule connexion dans la limite du temps de r&eacute;utilisation par d&eacute;faut de la connexion.[/i][br]
-Ce nombre est beaucoup plus grand que la limite de 10 messages par connexion mise en cache.[br]
-il peut s'av&eacute;rer n&eacute;cessaire d'abaisser la limite pour &eacute;viter les probl&egrave;mes d'interop&eacute;rabilit&eacute; avec les MTA qui pr&eacute;sentent des bugs lorsque de nombreux messages sont livr&eacute;s via une connexion unique.
-[br]Quand le d&eacute;lai de r&eacute;utilisation est faible, il y a risque de perdre l'avantage de la r&eacute;utilisation de la connexion lorsque la connexion et la latence moyenne de la distribution du courrier est sup&eacute;rieure &agrave; la limite de temps de r&eacute;utilisation.</smtp_connection_reuse_time_limit_text>
+<smtp_connection_reuse_time_limit_text>Durée pendant laquelle Postfix réutilise une connexion SMTP existante pour envoyer plusieurs messages.[br]
+Le minuteur démarre dès lâ%80%99établissement de la connexion (il inclut donc le temps de connexion, la bannière, la commande HELO/EHLO ainsi que les latences des transactions dâ%80%99envoi suivantes).[br]
+Cette fonctionnalité corrige un problème de stabilité des performances avec certains serveurs SMTP distants.[br]
+Ce problème nâ%80%99est pas spécifique à Postfix : [i]il peut survenir lorsquâ%80%99un MTA envoie de grandes quantités dâ%80%99emails vers un domaine possédant plusieurs hôtes MX.[/i][br]
+Il apparaît lorsquâ%80%99un des serveurs MX devient plus lent que les autres.[br]
+Même si les clients SMTP se connectent avec une probabilité égale aux MX rapides et lents, le serveur MX lent finit par recevoir plus de connexions simultanées, car il met plus de temps à traiter chaque requête.[br]
+[strong]Le serveur MX lent devient alors un â%80%9Cattracteur de connexionsâ%80%9D.[/strong]
+Si un MX devient N fois plus lent que les autres, il domine la latence globale dâ%80%99envoi sauf sâ%80%99il existe plus de N serveurs MX rapides pour compenser.[br]
+Si le nombre total de MX est inférieur à N, la latence de livraison devient essentiellement celle du MX le plus lent divisée par le nombre total de MX.[br]
+La solution repose sur le cache de connexions : en limitant la durée pendant laquelle une connexion peut être réutilisée (plutôt que le nombre de messages envoyés par connexion), Postfix rééquilibre la distribution des connexions entre les MX et privilégie les connexions les plus performantes.[br]
+La limite de réutilisation par défaut, [code]300s[/code], correspond approximativement aux délais SMTP maximaux estimés pour une transaction lente.[br]
+[i]Un hôte peut accepter des milliers de messages sur une seule connexion dans ce délai de réutilisation.[/i][br]
+Ce nombre est bien supérieur à la limite classique de 10 messages par connexion mise en cache.[br]
+Il peut toutefois être nécessaire de réduire cette limite pour éviter des problèmes dâ%80%99interopérabilité avec certains MTA présentant des bugs lorsquâ%80%99un grand nombre de messages est envoyé sur une même connexion.[br]
+Une limite de réutilisation trop faible peut cependant annuler les bénéfices du cache de connexions lorsque la latence moyenne de connexion et de livraison dépasse cette durée.</smtp_connection_reuse_time_limit_text>
 <smtp_connect_timeout>Timeout de connexion</smtp_connect_timeout>
 <smtp_connect_timeout_text>Limite de temps du client SMTP pour terminer une connexion TCP ou z&eacute;ro (utiliser la limite de temps int&eacute;gr&eacute;e du syst&egrave;me d'exploitation).[br]
 Lorsque aucune connexion ne peut &ecirc;tre faite dans ce d&eacute;lai, le client SMTP de Postfix tente l'adresse suivante sur la liste de messagerie.[br]
@@ -4135,7 +4134,8 @@ Ces mots-clefs seront remplac&eacute;s dynamiquement avec le contenu de votre ba
 <text_add_domain_entity>Donnez les domaines de messagerie de cette entit&eacute; :
 Exemple: user.name@domain.tlb -&gt; domain.tlb</text_add_domain_entity>
 <text_add_entity>Donner le nom de la nouvel entit&eacute;:</text_add_entity>
-<text_logs>Ce sont journaux temps r&eacute;el du d&eacute;mon en cours de Kaspersky Pour le serveur de courrier[br] Cette page est rafraichie toutes les 5 secondes</text_logs>
+<text_logs>Voici les journaux en temps réel du démon en cours dâ%80%99exécution.[br]
+Cette page est actualisée toutes les 5 secondes.</text_logs>
 <then>alors</then>
 <THIS_DISTRIBUTION_IS_NOT_SUPPORTED>Ce syst&egrave;me Linux n'est pas encore support&eacute;, contactez le support Artica Technology si vous souhaitez disposer de cette fonctionnalit&eacute; sur votre syst&egrave;me.</THIS_DISTRIBUTION_IS_NOT_SUPPORTED>
 <this_mac_address_is_already_used_by>Cette adresse MAC est d&eacute;j&agrave; utilis&eacute;e par</this_mac_address_is_already_used_by>

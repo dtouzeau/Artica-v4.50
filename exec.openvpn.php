@@ -224,43 +224,6 @@ function LoadArgvs(){
 }
 
 
-function debian_version(){
-	if(!is_file("/etc/debian_version")){return;}
-	$ver=trim(@file_get_contents("/etc/debian_version"));
-	preg_match("#^([0-9]+)\.#",$ver,$re);
-	if(preg_match("#squeeze\/sid#",$ver)){return 6;}
-	$Major=$re[1];
-	if(!is_numeric($Major)){return 0;}
-	return $Major;
-
-
-}
-function fw_transfert($interface,$sitename){
-	if(!is_dir("/etc/openvpn/fw")){@mkdir("/etc/openvpn/fw");}
-	$unix=new unix();
-	$MARKLOG="-m comment --comment \"openvpn_$sitename\"";
-	
-	$iptables=$unix->find_program("iptables");
-	$f[]="$iptables -t nat -I POSTROUTING -s %s -o $interface {$MARKLOG} -j MASQUERADE";
-	$f[]="$iptables -I FORWARD -i $interface -o -d %s -m state --state RELATED,ESTABLISHED {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -I FORWARD -s %s -o $interface -m state --state RELATED,ESTABLISHED {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -I FORWARD -i $interface -d %s -m state --state RELATED,ESTABLISHED {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -I FORWARD -s %s {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -I INPUT -s %s {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -I OUTPUT -s %s {$MARKLOG} -j ACCEPT";
-	@file_put_contents("/etc/openvpn/fw/$sitename.add", @implode("\n", $f)."\n");
-	$f=array();
-	
-	$f[]="$iptables -t nat -D POSTROUTING -s %s -o $interface {$MARKLOG} -j MASQUERADE";
-	$f[]="$iptables -D FORWARD -i $interface -o -d %s -m state --state RELATED,ESTABLISHED {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -D FORWARD -s %s -o eth0 -m state --state RELATED,ESTABLISHED {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -D FORWARD -i $interface -d %s -m state --state RELATED,ESTABLISHED {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -D FORWARD -s %s {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -D INPUT -s %s {$MARKLOG} -j ACCEPT";
-	$f[]="$iptables -D OUTPUT -s %s {$MARKLOG} -j ACCEPT";
-	@file_put_contents("/etc/openvpn/fw/$sitename.del", @implode("\n", $f)."\n");
-	
-}
 
 function GenStats(){
 	
@@ -310,9 +273,6 @@ function GenStats(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("OpenVPNStatsBytesIn", serialize($ydata));
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("OpenVPNStatsBytesOut", serialize($ydataL));
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("OpenVPNStatsnClients", serialize($ydataM));
-		@chmod("/etc/artica-postfix/settings/Daemons/OpenVPNStatsBytesIn",0755);
-		@chmod("/etc/artica-postfix/settings/Daemons/OpenVPNStatsBytesOut",0755);
-		@chmod("/etc/artica-postfix/settings/Daemons/OpenVPNStatsnClients",0755);
 	}
 	
 	

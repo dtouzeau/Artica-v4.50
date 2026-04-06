@@ -704,7 +704,7 @@ If the client does not match the list, then it is serviced
 <cured>Cured</cured>
 <current>Atual</current>
 <Current_Pending_Sector>Current Pending Sector Count</Current_Pending_Sector>
-<Current_Pending_Sector_text>Current quantity of unstable sectors (waiting for remapping)</Current_Pending_Sector_text>
+<Current_Pending_Sector_text>Quantidade atual de setores inst%C3¡veis (aguardando remapeamento)</Current_Pending_Sector_text>
 <CYRUS_DB_CONFIG_TEXT>Tune and define parameters for the Cyrus Imap databases</CYRUS_DB_CONFIG_TEXT>
 <dansguardian2_addedit_members_explain>You can add here items that will represent your users, it should be IP addresses or Ip ranges or accounts.</dansguardian2_addedit_members_explain>
 <dansguardian2_blacklist_explain>This section ban users browsing websites stored in selected categories.</dansguardian2_blacklist_explain>
@@ -814,7 +814,8 @@ Content will be erased...
 <DEVTYPE>Partition type</DEVTYPE>
 <dhcp-domain-name-explain>specifies the domain name that  client  should  use  when resolving hostnames via the Domain Name System</dhcp-domain-name-explain>
 <dhcp-groupnameAdd-explain>If you want to add a new group instead using one on the dropdown list, give here the name of your "shared-network"</dhcp-groupnameAdd-explain>
-<dhcp-next-server-explain>Used to specify the host address of the server from which the initial boot file (specified  in  the  filename statement)  is  to  be  loaded.[br]Server-name should be a numeric IP address or a domain name.</dhcp-next-server-explain>
+<dhcp-next-server-explain>Especifica o endereço do host do servidor a partir do qual ser%C3¡ carregado o arquivo de inicializaç%C3£o inicial (definido na instruç%C3£o filename).[br]
+O nome do servidor deve ser um endereço IP numérico ou um nome de dom%C3%ADnio.</dhcp-next-server-explain>
 <dhcp-scope-explain>This the name of your network configuration, used to find and retreive this section</dhcp-scope-explain>
 <dhcp-server-name_text>Server name  can  be used to inform the client of the name of the server from which it is booting.[br]
 Name  should  be  the name that will be provided to the client</dhcp-server-name_text>
@@ -885,14 +886,11 @@ This technology can help you to create containers for your users with a predefin
 <display_running_services>Display enabled and running services on your system</display_running_services>
 <display_update_events>Exibir eventos de atualizaç%C3£o</display_update_events>
 <DNSBL>DNSBL</DNSBL>
-<DNSBL_WHY>A DNSBL (DNS-based Blackhole List, Block List, or Blacklist; see below) is a list of IP addresses published through the Internet Domain Name Service (DNS) either as a zone file that can be used by DNS server software, or as a live DNS zone that can be queried in real-time.[br]
-DNSBLs are most often used to publish the addresses of computers or networks linked to spamming; 
-most mail server software can be configured to reject or flag messages which have been sent from a site listed on one or 
-more such lists.[br]
-DNSBL is a software mechanism, rather than a specific list or policy.[br]
-There are dozens of DNSBLs in existence,which use a wide array of criteria for listing and delisting of addresses.[br]
-These may include listing the addresses of zombie computers or other machines being used to send spam, listing the addresses of ISPs who willingly host spammers, or listing addresses which have sent spam to a honeypot system.
-</DNSBL_WHY>
+<DNSBL_WHY>Uma DNSBL (DNS-based Blackhole List, lista negra baseada em DNS; veja abaixo) é uma lista de endereços IP publicada por meio do Sistema de Nomes de Dom%C3%ADnio (DNS) da Internet, seja como um arquivo de zona utiliz%C3¡vel por software de servidor DNS, seja como uma zona DNS ativa que pode ser consultada em tempo real.[br]
+As DNSBL s%C3£o mais comumente usadas para publicar endereços de computadores ou redes vinculados ao envio de spam; a maioria dos softwares de servidores de e-mail pode ser configurada para rejeitar ou sinalizar mensagens enviadas a partir de um site listado em uma ou mais dessas listas.[br]
+DNSBL é um mecanismo de software, e n%C3£o uma lista ou pol%C3%ADtica espec%C3%ADfica.[br]
+Existem dezenas de DNSBL que utilizam uma ampla variedade de critérios para inclus%C3£o e remoç%C3£o de endereços.[br]
+Elas podem incluir a listagem de endereços de computadores zumbis ou outras m%C3¡quinas usadas para enviar spam, endereços de provedores de Internet (ISP) que hospedam spammers deliberadamente, ou endereços que enviaram spam para um sistema honeypot.</DNSBL_WHY>
 <DNSMasqUseStatsAppliance>Use statistics appliance settings</DNSMasqUseStatsAppliance>
 <DNSMasqUseStatsAppliance_explain>If your Web statistics appliance use dnsMASQ has the main DNS server, you can check this option in order to force this server to replicate the web statistics appliance configuration file for the dnsMASQ settings</DNSMasqUseStatsAppliance_explain>
 <dnsmasq_address_text>This section specify an IP or multiple IP addresses to return for any host in the given domains. Queries in the domains are never forwarded and always replied to with the specified IP address.
@@ -1026,7 +1024,7 @@ It is useful in providing training to email users about company policies and gen
  all the URLs will be replaced by the url that you set in this form</EnablePhishTag_explain_form>
 <EnablePublicOrganizations>Public user registration</EnablePublicOrganizations>
 <EnablePublicOrganizations_text>If checked, organization's administrator is able to allow public internet users to create accounts with a register form</EnablePublicOrganizations_text>
-<EnableRebootAfterUpgrade>Reboot system after system upgrade task</EnableRebootAfterUpgrade>
+<EnableRebootAfterUpgrade>Reiniciar o sistema ap%C3%B3s a tarefa de atualizaç%C3£o do sistema</EnableRebootAfterUpgrade>
 <EnableScheduleUpdates>Update only on specified schedule</EnableScheduleUpdates>
 <EnableSpamAssassinFreeMail_explain>detect email addresses using free webmail services</EnableSpamAssassinFreeMail_explain>
 <EnableWindowsAuthentication>Enable authentication via MS Windows</EnableWindowsAuthentication>
@@ -1156,7 +1154,7 @@ The filename should be a filename recognizable to whatever file transfer protoco
 <files_and_folders_permissions>Files and folders permissions</files_and_folders_permissions>
 <files_extension>Files extension</files_extension>
 <FILE_DIRECTORY_PATH>File directory path</FILE_DIRECTORY_PATH>
-<file_sharing_behavior>File sharing behavior</file_sharing_behavior>
+<file_sharing_behavior>Comportamento de compartilhamento de arquivos</file_sharing_behavior>
 <filtered>filtered</filtered>
 <filterwin2k_text>Makes dnsmasq ignore certain DNS requests which are made by Windows boxen every few minutes</filterwin2k_text>
 <find_features_and_options>Search features and options</find_features_and_options>
@@ -1173,7 +1171,7 @@ PLease not that it is not recommended to use DHCP for your Artica server.[br]
 Check the list below and click on each row in order to display Network interface card settings.[br]Modify detected informations or confirm the current settings.
 </FIRST_WIZARD_NIC1>
 <FIRST_WIZARD_NIC2>All Network Interface parameters are saved, if you want to apply this configuration, click on the button bellow and reboot your computer.</FIRST_WIZARD_NIC2>
-<fixed_ip_addr>Fixed IP address</fixed_ip_addr>
+<fixed_ip_addr>Endereço IP fixo</fixed_ip_addr>
 <flags>Flags</flags>
 <ForceGateway>Force Gateway</ForceGateway>
 <force_create_mode>Create mask (force)</force_create_mode>
@@ -1352,7 +1350,7 @@ You can finish the setup or access to the Web Administration interface by clicki
 <ID_FS_LABEL_ENC>Etiqueta</ID_FS_LABEL_ENC>
 <ID_FS_LABEL_SAFE>label save</ID_FS_LABEL_SAFE>
 <ID_FS_TYPE>filesystem</ID_FS_TYPE>
-<ID_FS_USAGE>usage</ID_FS_USAGE>
+<ID_FS_USAGE>Uso</ID_FS_USAGE>
 <ID_FS_UUID>uuid</ID_FS_UUID>
 <ID_FS_UUID_ENC>uuid</ID_FS_UUID_ENC>
 <ID_FS_VERSION>filesystem version</ID_FS_VERSION>
@@ -1697,7 +1695,7 @@ In the opposite if you define a lower value for maximal size some big images and
 <MinSpareServers>Min Spare servers</MinSpareServers>
 <missing_imap_sync_text>IMAPSync is missing, feature disabled</missing_imap_sync_text>
 <missing_module>The following modules are missing</missing_module>
-<MISSING_PARAMETER>Missing parameters</MISSING_PARAMETER>
+<MISSING_PARAMETER>Parâmetros ausentes</MISSING_PARAMETER>
 <MISSING_PARAMETER_TEXT>A parameter is missing, the service should not running proprely</MISSING_PARAMETER_TEXT>
 <ModPagespeedFileCacheCleanIntervalMs>Interval (in ms) for cleaning the file cache</ModPagespeedFileCacheCleanIntervalMs>
 <ModPagespeedFileCacheSizeKb>Target size (in kilobytes) for file cache</ModPagespeedFileCacheSizeKb>
@@ -1725,7 +1723,7 @@ Webmasters e desenvolvedores web podem usar este recurso para melhorar o desempe
 <multiple_entries>multiple entries</multiple_entries>
 <multiple_instances>M%C3%BAltiplas instâncias</multiple_instances>
 <multiple_webmail>Multiple WebMails</multiple_webmail>
-<Multi_Zone_Error_Rate>Write Error Rate</Multi_Zone_Error_Rate>
+<Multi_Zone_Error_Rate>Taxa de erro de escrita</Multi_Zone_Error_Rate>
 <Multi_Zone_Error_Rate_text>Frequency of errors appearance while recording data into disk (Western Digital: Multi Zone Error Rate)</Multi_Zone_Error_Rate_text>
 <must_choose_ipaddr>You must choose an IP address</must_choose_ipaddr>
 <mxrecords>Mail eXchanger records (MX)</mxrecords>
@@ -1782,7 +1780,7 @@ In this case, reboot your server.
 <new_item>Novo elemento</new_item>
 <NEW_SMTP_INSTANCE>Novo serviço SMTP</NEW_SMTP_INSTANCE>
 <new_time_rule>New time rule</new_time_rule>
-<next-server>Next server</next-server>
+<next-server>Servidor seguinte</next-server>
 <nics>Network Interface cards</nics>
 <NIC_UNCONFIGURED_ERROR>Parece que suas interfaces de rede principais ainda n%C3£o est%C3£o configuradas.[br]
 Você precisa configurar primeiro as interfaces principais.</NIC_UNCONFIGURED_ERROR>
@@ -2215,7 +2213,7 @@ The path is formatted as a character string consisting of characters from the NV
 <quota_soft>Quota Soft</quota_soft>
 <random>Aleat%C3%B3rio</random>
 <ratio>Ratio</ratio>
-<Raw_Read_Error_Rate>Raw Read Error Rate</Raw_Read_Error_Rate>
+<Raw_Read_Error_Rate>Taxa bruta de erros de leitura</Raw_Read_Error_Rate>
 <Raw_Read_Error_Rate_text>Frequency of errors appearance while reading RAW data from a disk</Raw_Read_Error_Rate_text>
 <rbl>RBL</rbl>
 <RBLCheckFrequency>Check RBL servers each</RBLCheckFrequency>
@@ -2227,7 +2225,7 @@ The path is formatted as a character string consisting of characters from the NV
 <Reallocated_Event_Count>Reallocated Event Count</Reallocated_Event_Count>
 <Reallocated_Event_Count_text>Quantity of remapping operations</Reallocated_Event_Count_text>
 <Reallocated_Sector_Ct>Reallocated Sector Count</Reallocated_Sector_Ct>
-<Reallocated_Sector_Ct_text>Quantity of remapped sectors</Reallocated_Sector_Ct_text>
+<Reallocated_Sector_Ct_text>Quantidade de setores remapeados</Reallocated_Sector_Ct_text>
 <reboot>reboot</reboot>
 <RebootAfterArticaUpgrade>Reboot system after Artica upgrade</RebootAfterArticaUpgrade>
 <reboot_computer_to_take_effects>You have to reboot the server in order to apply parameters</reboot_computer_to_take_effects>
@@ -2736,7 +2734,7 @@ Use the first table in order to find the desired Internet domain.[br]
 If you click on the domain, a new table will be generated in order to display all sub-websites stored by this domain.
 </SQUID_SEARCH_STATS_EXPLAIN>
 <SQUID_SMP_EXPLAIN>O serviço de Proxy pode ser usado para lançar v%C3¡rios fluxos de trabalho e usar v%C3¡rios n%C3%BAcleos de processadores.[br] A intenç%C3£o geral é fazer com que v%C3¡rios trabalhadores pareçam um a um observador externo para assegurar o processamento paralelo de pedidos.</SQUID_SMP_EXPLAIN>
-<SQUID_STATS>Squid Proxy Cache web statistics</SQUID_STATS>
+<SQUID_STATS>Estat%C3%ADsticas do proxy web</SQUID_STATS>
 <SQUID_STATS1>Proxy statistics</SQUID_STATS1>
 <SQUID_STATS_TEXT>Squid Statistics area is a Web frontend that provides proxy statistics with charts and graphs and categorized websites</SQUID_STATS_TEXT>
 <squid_traffic_statistics_text>Display flows passed trough your Proxy, get cache performances and display websites/categories by size</squid_traffic_statistics_text>
@@ -2896,22 +2894,23 @@ If the value of this attribute is decreasing there is a high probability that th
 <traffic_statistics>Traffic Statistics</traffic_statistics>
 <transfert_messages_if_av_failed>Forward messages if antivirus did not respond</transfert_messages_if_av_failed>
 <translators>translators</translators>
-<transparent_mode_limitations>
-[h3]Transparent mode limitations (please read it)[h3]
+<transparent_mode_limitations>[h3]Limitaç%C3µes do modo transparente (leia atentamente)[/h3]
 [ul]
-[li]Intercepting HTTP breaks TCP/IP standards because user agents think they are talking directly to the origin server.[/li]
-[li]Requires IPv4 with NAT.[/li]
-[li]It causes path-MTU (PMTUD) to fail, possibly making some remote sites inaccessible.[br] This is not usually a problem if your client machines are connected via Ethernet or DSL PPPoATM where the MTU of all links between the cache and client is 1500 or more. If your clients are connecting via DSL PPPoE then this is likely to be a problem as PPPoE links often have a reduced MTU (1472 is very common).[/li]
-[li]On older IE versions before version 6, the ctrl-reload function did not work as expected.[/li]
-[li]Proxy authentication does not work, and IP based authentication conceptually fails because the users are all seen to come from the Proxy own IP address.[/li]
-[li]You can't use IDENT lookups (which are inherently very insecure anyway).[/li]
-[li]Transparent mode only supports the HTTP protocol, not gopher, SSL, or FTP. You cannot setup a redirection-rule to the proxy server for other protocols other than HTTP since it will not know how to deal with it.[/li]
-[li]Transparent mode are incompatible with IP filtering designed to prevent address spoofing.[/li]
-[li]Clients are still expected to have full Internet DNS resolving capabilities; in certain intranet/firewalling setups, this is not always wanted.[/li]
-[li]Related to above: suppose the users browser connects to a site which is down. However, due to the transparent proxying, it gets a connected state to the interceptor[br]The end user may get wrong error messages or a hung browser, for seemingly unknown reasons to them.[/li] 
-[li]There is some uploads limitations when using Dansguardian has the main Web filter plugin[/li] 
-[/ul]
-</transparent_mode_limitations>
+[li]A interceptaç%C3£o HTTP quebra os padr%C3µes TCP/IP, pois os clientes acreditam que est%C3£o se comunicando diretamente com o servidor de origem.[/li]
+[li]Requer IPv4 com NAT.[/li]
+[li]Pode causar falhas no Path MTU Discovery (PMTUD), tornando alguns sites inacess%C3%ADveis.[br]
+Normalmente n%C3£o é um problema em Ethernet ou DSL PPPoATM (MTU â%89%A5 1500), mas pode ocorrer em PPPoE (MTU comum de 1472).[/li]
+[li]Em vers%C3µes antigas do Internet Explorer (anteriores à vers%C3£o 6), a funç%C3£o Ctrl+Reload n%C3£o funciona corretamente.[/li]
+[li]A autenticaç%C3£o proxy n%C3£o funciona. A autenticaç%C3£o baseada em IP também falha, pois todos os usu%C3¡rios aparecem com o IP do proxy.[/li]
+[li]N%C3£o é poss%C3%ADvel usar consultas IDENT (e s%C3£o inseguras).[/li]
+[li]O modo transparente suporta apenas HTTP. N%C3£o suporta Gopher, SSL ou FTP.[br]
+N%C3£o é poss%C3%ADvel criar regras de redirecionamento para outros protocolos.[/li]
+[li]Incompat%C3%ADvel com mecanismos de filtragem IP contra spoofing.[/li]
+[li]Os clientes devem ter capacidade completa de resoluç%C3£o DNS, o que nem sempre é desejado.[/li]
+[li]Se um site estiver fora do ar, o navegador ainda pode se conectar ao proxy.[br]
+Isso pode causar mensagens de erro incorretas ou travamento do navegador.[/li]
+[li]Podem ocorrer limitaç%C3µes de upload ao usar DansGuardian como filtro principal.[/li]
+[/ul]</transparent_mode_limitations>
 <treshold>Treshold</treshold>
 <TrustMyNetwork>Redes confi%C3¡veis</TrustMyNetwork>
 <TrustMyNetwork_text>If green, the server will allow any IP address (inside the trusted networks) sending messages to Internet.[br]
@@ -3199,7 +3198,7 @@ Includes all about Digital Cameras,How do I develop film..</www_photo>
 <www_pictureslib>Sites que oferecem coleç%C3µes/bibliotecas de imagens comerciais ou livres de royalties (%C3%ADcones, papéis de parede, obras de arte etc.). Isso exclui sites que oferecem compartilhamento e armazenamento de fotos para indiv%C3%ADduos/empresas.</www_pictureslib>
 <www_politic>Websites about politic, decision-making for groups, to get up a petition,political foundation,politician or politics blogs,voting instructions, general,local,congressional,presidential elections,
 candidacy for the presidential elections, presidential election campaign,polling day...</www_politic>
-<www_reale_state_office>Sites about all types of realestate, bying and selling homes, finding appartments for rent and selling</www_reale_state_office>
+<www_reale_state_office>Sites que abrangem todos os aspectos do mercado imobili%C3¡rio, incluindo compra e venda de casas, busca de apartamentos para aluguel e publicaç%C3£o de im%C3%B3veis à venda.</www_reale_state_office>
 <www_recategorize_explain>After updating or modify category databases, you need to recalculate categorized websites in the table history in order to get the correct information and charts.[br]
 For example, if you move a website from shopping to webphone, you need to update all entries in hours/day/month/week tables.[br]
 This operation will consume server performances.[br]This section define the task schedule and tweaks when executed.</www_recategorize_explain>

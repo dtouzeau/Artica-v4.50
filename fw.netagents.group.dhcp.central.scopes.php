@@ -213,8 +213,8 @@ function cscope_render_form(int $id, string $page, ?object $scope, string $actio
     $subnet    = $isEdit ? ($scope->subnet ?? '') : '';
     $netmask   = $isEdit ? ($scope->netmask ?? '') : '';
     $auth      = $isEdit ? (!empty($scope->authoritative)) : true;
-    $ldef      = $isEdit ? intval($scope->lease->default ?? 3600) : 3600;
-    $lmax      = $isEdit ? intval($scope->lease->max ?? 7200) : 7200;
+    $ldef      = $isEdit ? intval($scope->lease->default ?? 28800) : 28800;
+    $lmax      = $isEdit ? intval($scope->lease->max ?? 28800) : 28800;
 
     // Extract DHCP options
     $routers=$dnss=$ntps=$times=$nextSrv=$filename=$rfc3442=$broadcast='';
@@ -489,7 +489,7 @@ function cscope_render_form(int $id, string $page, ?object $scope, string $actio
     $h[] = "    vlan_id:parseInt($('#cscope-vlan-$id').val(),10)||0,";
     $h[] = "    subnet:subnet,netmask:netmask,";
     $h[] = "    authoritative:$('#cscope-auth-$id').is(':checked'),";
-    $h[] = "    lease:{'default':parseInt($('#cscope-ldef-$id').val(),10)||3600,max:parseInt($('#cscope-lmax-$id').val(),10)||7200},";
+    $h[] = "    lease:{'default':parseInt($('#cscope-ldef-$id').val(),10)||28800,max:parseInt($('#cscope-lmax-$id').val(),10)||28800},";
     $h[] = "    options:opts,flags:flags,pools:pools";
     $h[] = "  };";
     $h[] = "  if(scope.type==='relay') scope.relay={relay_id:parseInt($('#cscope-relay-id-$id').val(),10)||0};";

@@ -1,6 +1,6 @@
 <?php
 if(function_exists("posix_getuid")){if(posix_getuid()<>0){die("Cannot be used in web server mode\n\n");}}
-$EnableIntelCeleron=intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/EnableIntelCeleron"));
+$EnableIntelCeleron=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableIntelCeleron"));
 if($EnableIntelCeleron==1){die("EnableIntelCeleron==1\n");}
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();

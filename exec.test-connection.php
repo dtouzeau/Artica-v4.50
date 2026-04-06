@@ -23,8 +23,7 @@ if($NoInternetAccess==1){die();}
 $LinuxDistributionFullName = $sock->GET_INFO("LinuxDistributionFullName");
 if($LinuxDistributionFullName==null){ $LinuxDistributionFullName="Linux default";}
 $users=new usersMenus();
-shell_exec($unix->LOCATE_PHP5_BIN()." /usr/share/artica-postfix/exec.dmidecode.php --chassis --force");
-$datas=trim(@file_get_contents("/etc/artica-postfix/dmidecode.cache.url"));  
+$datas=trim(@file_get_contents("/etc/artica-postfix/dmidecode.cache.url"));
 $SYSTEMID=$sock->GET_INFO("SYSTEMID");
 $MEMORY_INSTALLED=$unix->TOTAL_MEMORY_MB();
 $SystemCpuNumber=$sock->GET_INFO("SystemCpuNumber");

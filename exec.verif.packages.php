@@ -501,7 +501,7 @@ function fix_systemd(){
     if(is_file("/usr/bin/php7.3")) {
         $f[] = "php7.3-fpm";
     }
-    $f[]="privoxy";
+
     $f[]="rsync";
     $f[]="snmpd";
     $f[]="wpa_supplicant";
@@ -582,7 +582,6 @@ function fix_systemd(){
     $f[]="opendkim";
     $f[]="redsocks";
     $f[]="freeradius";
-    $f[]="privoxy";
     $f[]="iscsid";
     $f[]="wpa_supplicant-nl80211@";
     $f[]="mariadb";

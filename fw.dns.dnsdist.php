@@ -161,22 +161,24 @@ function table(){
 
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$sock=new sockets();
-	$resolv=new resolv_conf();
-	$users=new usersMenus();
-	$DisableNetworksManagement=$sock->GET_INFO("DisableNetworksManagement");
-	$EnableDNSRootInts=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSRootInts"));
+    $EnableDNSRootInts=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSRootInts"));
 	$UnboundDisplayVersion=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundDisplayVersion"));
-	
-	
-	
-	if(!is_file("/etc/artica-postfix/settings/Daemons/UnBoundCacheMinTTL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMinTTL", 3600);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/UnBoundCacheMAXTTL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMAXTTL", 172800);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/UnBoundCacheNEGTTL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheNEGTTL", 3600);}
+
+
+    if (method_exists($GLOBALS["CLASS_SOCKETS"], 'INFO_EXISTS')) {
+        if (!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("UnBoundCacheMinTTL")) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMinTTL", 3600);
+        }
+        if (!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("UnBoundCacheMAXTTL")) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMAXTTL", 172800);
+        }
+        if (!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("UnBoundCacheNEGTTL")) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheNEGTTL", 3600);
+        }
+    }
 
 
 
-    $ipclass=new IP();
 	$UnBoundCacheSize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheSize"));
 	$UnBoundCacheMinTTL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheMinTTL"));
 	$UnBoundCacheMAXTTL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheMAXTTL"));
@@ -185,23 +187,7 @@ function table(){
 	$EnableUnboundBlackLists=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnboundBlackLists"));
 	$ListenOnlyLoopBack=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ListenOnlyLoopBack"));
 	$EnableUnboundLogQueries=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnboundLogQueries"));
-
-    $UnboundLogSyslogServer=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundLogSyslogServer"));
-    $UnboundLogSyslogServerPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundLogSyslogServerPort"));
-    $UnboundLogSyslogServerTCP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundLogSyslogServerTCP"));
-    $UnboundLogSyslogUseSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundLogSyslogUseSSL"));
-    $UnboundLogSyslogCertificate=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundLogSyslogCertificate"));
-    if($UnboundLogSyslogServerPort==0){$UnboundLogSyslogServerPort=514;}
     $UnboundLogSyslogDoNotStorelogsLocally=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundLogSyslogDoNotStorelogsLocally"));
-
-	$forcesafesearch=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoogleSafeSearchAddress"));
-	if(!$ipclass->isValid($forcesafesearch)){$forcesafesearch=null;}
-	if($forcesafesearch==null){$forcesafesearch=$GLOBALS["CLASS_SOCKETS"]->gethostbyname("forcesafesearch.google.com");}
-	if(!$ipclass->isValid($forcesafesearch)){$forcesafesearch=null;}
-
-	$UnboundTLSEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundTLSEnable"));
-    $UnboundTLSCertificate=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundTLSCertificate"));
-
 
     if($UnBoundCacheMinTTL==0){$UnBoundCacheMinTTL=3600;}
     if($UnBoundCacheMAXTTL==0){$UnBoundCacheMAXTTL=172800;}

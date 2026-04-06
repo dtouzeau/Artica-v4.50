@@ -62,7 +62,6 @@ if(isset($argv[1])){
     if($argv[1]=="--squid-tail"){$GLOBALS["OUTPUT"]=true;exit;}
     if($argv[1]=="--hypercache-tail"){$GLOBALS["OUTPUT"]=true;hypercache_tail();exit;}
     if($argv[1]=="--ldap-client"){$GLOBALS["OUTPUT"]=true;ldap_client();exit;}
-    if($argv[1]=="--policyd-weight"){$GLOBALS["OUTPUT"]=true;policyd_weight();exit;}
     if($argv[1]=="--transmission-daemon"){exit;}
         if($argv[1]=="--rest-on"){$GLOBALS["OUTPUT"]=true;enable_rest_api();exit;}
     if($argv[1]=="--rest-off"){$GLOBALS["OUTPUT"]=true;disable_rest_api();exit;}
@@ -105,7 +104,7 @@ $functions=array("upgrades","artica_monitor","bandwidthd","hypercache_tail","vsf
     "ifup","ftpproxy","phppfm","cicap",
     "CleanUbuntu","UpstartJob","debian_mirror","artica_categories","roundcube_http","fetchmail","vde_switch","squid_db","clamav_freshclam","postgres",
     "artica_iso","syncthing","proftpd",
-    "not_shutdown","cgconfig","cgredconfig","clamdscan","policyd_weight");
+    "not_shutdown","cgconfig","cgredconfig","clamdscan");
 
 $countDeFunc=count($functions);
 $c=0;
@@ -502,7 +501,7 @@ function start_ldap($aspid=false){
             if(is_file("$LDAP_SCHEMA_PATH/$file")){@unlink("$LDAP_SCHEMA_PATH/$file");}
             @copy("/usr/share/artica-postfix/bin/install/$file", "$LDAP_SCHEMA_PATH/$file");
             echo "slapd: [INFO] installing `$file` schema\n";
-            $unix->chmod_func(0777,"$LDAP_SCHEMA_PATH/$file");
+            $unix->chmod_func(0755,"$LDAP_SCHEMA_PATH/$file");
         }
     }
 
@@ -1747,175 +1746,7 @@ function squid_db()
 
 
 
-function policyd_weight(){
-    if(is_file("/etc/artica-postfix/WEBSECURITY_APPLIANCE")){return;}
-    return;
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    $f[]="#! /bin/sh";
-    $f[]="#";
-    $f[]="# policyd-weight	start/stop the policyd-weight deamon for postfix";
-    $f[]="#               	(priority should be smaller than that of postfix)";
-    $f[]="#";
-    $f[]="# Author:		(c) 2012 Werner Detter <werner@aloah-from-hell.de>";
-    $f[]="#";
-    $f[]="### BEGIN INIT INFO";
-    $f[]="# Provides: policyd-weight";
-    $f[]="# Required-Start: \$local_fs \$network \$remote_fs \$syslog";
-    $f[]="# Required-Stop: \$local_fs \$network \$remote_fs \$syslog";
-    $f[]="# Default-Start:  2 3 4 5";
-    $f[]="# Default-Stop: 0 1 6";
-    $f[]="# Short-Description: start and stop the policyd-weight daemon";
-    $f[]="# Description: Perl policy daemon for the Postfix MTA";
-    $f[]="### END INIT INFO";
-    $f[]="";
-    $f[]="set -e";
-    $f[]="";
-    $f[]="PATH=/sbin:/bin:/usr/sbin:/usr/bin";
-    $f[]="DAEMON=/usr/share/artica-postfix/bin/policyd-weight";
-    $f[]="NAME=policyd-weight";
-    $f[]="DESC=\"policyd-weight\"";
-    $f[]="";
-    $f[]="PIDFILE=/var/run/\$NAME.pid";
-    $f[]="SCRIPTNAME=/etc/init.d/\$NAME";
-    $f[]="DAEMON_OPTS=\"-f /etc/policyd-weight.conf\"";
-    $f[]="";
-    $f[]="# Gracefully exit if the package has been removed.";
-    $f[]="test -x \$DAEMON || exit 0";
-    $f[]="";
-    $f[]=". /lib/init/vars.sh";
-    $f[]=". /lib/lsb/init-functions";
-    $f[]="ret=0";
-    $f[]="";
-    $f[]="case \"\$1\" in";
-    $f[]="  start)";
 
-    $f[]="if [ ! -f \"/etc/artica-postfix/settings/Daemons/EnablePolicydWeight\" ]; then";
-    $f[]="\tlog_daemon_msg \"Starting \$DESC (Not enabled!)\" \"\$NAME\"";
-    $f[]="\texit 0";
-    $f[]="fi";
-
-    $f[]="EnablePolicydWeight=`cat /etc/artica-postfix/settings/Daemons/EnablePolicydWeight`";
-
-    $f[]="if [ \$EnablePolicydWeight -eq 0 ]; then";
-    $f[]="\tlog_daemon_msg \"Starting \$DESC (Not enabled!)\" \"\$NAME\"";
-    $f[]="\tlog_daemon_msg \"DONE.....\" \"\$NAME\"";
-    $f[]="\texit 0";
-    $f[]="fi";
-
-
-
-    $f[]="\tlog_daemon_msg \"Starting \$DESC (EnablePolicydWeight=\$EnablePolicydWeight)\" \"\$NAME\"";
-    $f[]="if [ ! -f \"/etc/artica-postfix/settings/Daemons/PolicydWeightConfig\" ]; then";
-    $f[]="\t$php /usr/share/artica-postfix/exec.postfix.maincf.php --policyd-reconfigure";
-    $f[]="fi";
-    $f[]="	/bin/rm -rf /var/run/policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	/bin/rm -rf /tmp/.policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	mkdir -p /var/run/policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	mkdir -p /tmp/.policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	/bin/chown postfix:postfix /var/run/policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	/bin/chmod 770 /var/run/policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	/bin/chown postfix:postfix /tmp/.policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	/bin/cp -f /etc/artica-postfix/settings/Daemons/PolicydWeightConfig /etc/policyd-weight.conf || true";
-    $f[]="        if start-stop-daemon --start --oknodo --quiet --pidfile \$PIDFILE --name \$NAME --exec \$DAEMON start -- \$DAEMON_OPTS";
-    $f[]="        then";
-    $f[]="            log_end_msg 0";
-    $f[]="        else";
-    $f[]="            ret=\$?";
-    $f[]="            log_end_msg 1";
-    $f[]="        fi";
-    $f[]="        ;;";
-    $f[]="  stop)";
-    $f[]="	log_daemon_msg \"Stopping \$DESC (incl. cache)\" \"\$NAME\"";
-    $f[]="	if \$DAEMON -k && start-stop-daemon --stop --quiet --oknodo --pidfile \$PIDFILE && rm -f \$PIDFILE";
-    $f[]="	then";
-    $f[]="		log_end_msg 0";
-    $f[]="	else";
-    $f[]="		ret=\$?";
-    $f[]="		log_end_msg 1";
-    $f[]="	fi";
-    $f[]="	;;";
-    $f[]="  dstop)";
-    $f[]="	log_daemon_msg \"Stopping \$DESC (without cache)\" \"\$NAME\"";
-    $f[]="	if start-stop-daemon --stop --quiet --oknodo --pidfile \$PIDFILE && rm -f \$PIDFILE";
-    $f[]="	then";
-    $f[]="		log_end_msg 0";
-    $f[]="	else	";
-    $f[]="		ret=\$?";
-    $f[]="		log_end_msg 1";
-    $f[]="	fi";
-    $f[]="	;;";
-    $f[]="  reload|force-reload)";
-    $f[]="		  /bin/cp -f /etc/artica-postfix/settings/Daemons/PolicydWeightConfig /etc/policyd-weight.conf || true";
-    $f[]="        log_daemon_msg \"Reloading \$DESC configuration files\" \"\$NAME\"";
-    $f[]="        if \$DAEMON \$DAEMON_OPTS reload > /dev/null 2>&1";
-    $f[]="        then";
-    $f[]="                log_end_msg 0";
-    $f[]="        else";
-    $f[]="                log_end_msg 1";
-    $f[]="                ret=\$?";
-    $f[]="        fi";
-    $f[]="        ;;";
-    $f[]="restart)";
-    $f[]="	log_daemon_msg \"Restarting \$DESC configuration (incl. cache)\" \"\$NAME\"";
-    $f[]="	mkdir -p /var/run/policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	mkdir -p /tmp/.policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	/bin/rm -rf /var/run/policyd-weight/* >/dev/null 2>&1 || true";
-    $f[]="	/bin/rm -rf /tmp/.policyd-weight/* >/dev/null 2>&1 || true";
-    $f[]="	/bin/chown postfix:postfix /var/run/policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	/bin/chmod 770 /var/run/policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	/bin/chown postfix:postfix /tmp/.policyd-weight >/dev/null 2>&1 || true";
-    $f[]="	/bin/cp -f /etc/artica-postfix/settings/Daemons/PolicydWeightConfig /etc/policyd-weight.conf || true";
-    $f[]="	if \$DAEMON -k && start-stop-daemon --stop --quiet --oknodo --pidfile \$PIDFILE && rm -f \$PIDFILE && start-stop-daemon --start --oknodo --quiet --pidfile \$PIDFILE --name \$NAME --exec \$DAEMON start -- \$DAEMON_OPTS";
-    $f[]="	then	";
-    $f[]="		log_end_msg 0";
-    $f[]="        else";
-    $f[]="        	ret=\$?";
-    $f[]="        	log_end_msg 1";
-    $f[]="        fi";
-    $f[]="	;;";
-    $f[]="	drestart)";
-    $f[]="        log_daemon_msg \"Restarting \$DESC configuration (without cache)\" \"\$NAME\"";
-    $f[]="        if \$DAEMON \$DAEMON_OPTS restart > /dev/null 2>&1";
-    $f[]="        then";
-    $f[]="                log_end_msg 0";
-    $f[]="        else";
-    $f[]="                ret=\$?";
-    $f[]="                log_end_msg 1";
-    $f[]="        fi";
-    $f[]="        ;;";
-    $f[]=" status)";
-    $f[]="	;;";
-    $f[]="  *)";
-    $f[]="	N=/etc/init.d/\$NAME";
-    $f[]="	echo \"Usage: \$N {start|stop|dstop|reload|force-reload|restart|drestart}\" >&2";
-    $f[]="	exit 1";
-    $f[]="	;;";
-    $f[]="esac";
-    $f[]="";
-    $f[]="exit \$ret";
-
-
-    @file_put_contents("/etc/init.d/policyd-weight", @implode("\n", $f));
-    @chmod("/etc/init.d/policyd-weight",0755);
-
-
-
-
-
-    if(is_file('/usr/sbin/update-rc.d')){
-        shell_exec('/usr/sbin/update-rc.d -f policyd-weight >/dev/null 2>&1');
-
-    }
-
-    if(is_file('/sbin/chkconfig')){
-        shell_exec('/sbin/chkconfig --add policyd-weight >/dev/null 2>&1');
-        shell_exec('/sbin/chkconfig --level 2345 policyd-weight on >/dev/null 2>&1');
-    }
-    if($GLOBALS["OUTPUT"]){echo "Starting......: ".date("H:i:s")." [INIT]: Policyd-weight success...\n";}
-
-
-}
 
 
 

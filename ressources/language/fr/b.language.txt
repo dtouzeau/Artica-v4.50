@@ -2086,7 +2086,8 @@ Dans la section r&eacute;seau, cliquez sur Changer les param&egrave;tres proxy.<
 <chronology>Chronologie</chronology>
 <chuuid_why>L'identifiant unique (%s) permet à Artica d'identifier votre serveur comme un objet unique dans votre réseau.[br]Lorsque vous connectez plusieurs serveurs Artica dans une ferme par exemple ( Load-balancing / cluster / fail-over ) cela permet d'identifier chaque serveur par cette clé. [Elle est également utilisée pour identifier votre serveur auprès du serveur de licence.[br]C'est pourquoi il est impératif que votre serveur possède cet identifiant et qu'il soit unique.[br]Lors du clonage d'une machine virtuelle, il est probable que cet identifiant soit dupliqué, vous devez alors le changer.[br]
 [b]Attention : La modification de l'identifiant va casser la licence, vous devrez réassigner ce serveur dans votre espace sur le serveur de licence Artica sur Internet[/b].</chuuid_why>
-<ciarmy.rules>R&egrave;gles permettant de contr&ocirc;ler le top des attaquants instruite par www.ciarmy.com</ciarmy.rules>
+<ciarmy.rules>Règles pour bloquer les principaux attaquants identifiés par CiArmy.com (www.ciarmy.com
+)</ciarmy.rules>
 <CICAP_MEM_BOOST_EXPLAIN>Le booster de m&eacute;moire C-ICAP vous permet de d&eacute;finir une plage de la m&eacute;moire physique pour les t&acirc;che d'analyse antivirus.[br]
 Par d&eacute;faut l'antivirus utilise le disque pour effectuer ses analyses.[br]
 En utilisant la m&eacute;moire, vous augmenter radicalement les performances.[br]
@@ -7096,7 +7097,7 @@ Si le ping est un succ&egrave;s apr&egrave;s la reconfiguration du r&eacute;seau
 <please_wait_while_calculate_informations>Veuillez patienter, calcul des informations demand&eacute;es...</please_wait_while_calculate_informations>
 <pluginsw>Plugins</pluginsw>
 <policies>Strat&eacute;gies</policies>
-<pools>Groupes</pools>
+<pools>Plages dâ%80%99adresses</pools>
 <poor>Pauvre</poor>
 <portal_options>Options du portail</portal_options>
 <portal_page>Page d'un portail Web</portal_page>
@@ -9488,7 +9489,7 @@ Elle a du sens que si vous avez ajout&eacute; des serveurs Artica &agrave; r&eac
 <syslog_store>Stockage des &eacute;v&egrave;nements syst&egrave;me</syslog_store>
 <SYSLOG_TYPE_EXPLAIN>Veuillez choisir o&ugrave; vous d&eacute;sirez stocker les anciens fichiers de logs</SYSLOG_TYPE_EXPLAIN>
 <syslog_used_nas_storage>Le stockage via N.A.S &agrave; &eacute;t&eacute; s&eacute;lectionn&eacute;, tous les logs sont directement d&eacute;plac&eacute;s vers votre syst&egrave;me de stockage.</syslog_used_nas_storage>
-<SystemEventsRetentionTime>NB jours de rétention pour les évènements système</SystemEventsRetentionTime>
+<SystemEventsRetentionTime>Retention days for system events</SystemEventsRetentionTime>
 <SystemLoadNotif>Envoyer un rapport lorsque la charge exc&egrave;de</SystemLoadNotif>
 <system_and_network>Syst&egrave;me et r&eacute;seaux</system_and_network>
 <system_console>Console Syst&egrave;me</system_console>

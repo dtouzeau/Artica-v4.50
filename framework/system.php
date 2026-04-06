@@ -6,14 +6,9 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once(
 
 if(isset($_GET["reset-rrd"])){reset_rrd();exit;}
 if(isset($_GET["force-status"])){force_status();exit;}
-if(isset($_GET["dnsperf-progress"])){dnsperf_progress();exit;}
 if(isset($_GET["seeker"])){seeker();exit;}
-
-
 if(isset($_GET["make-writable"])){make_www_writable();exit;}
-if(isset($_GET["phpldapadmin_installed"])){phpldapadmin_installed();exit;}
 if(isset($_GET["EnableMilterGreylistExternalDB"])){EnableMilterGreylistExternalDB();exit;}
-if(isset($_GET["ChangePerformance"])){ChangePerformance();exit;}
 if(isset($_GET["optimize-celeron"])){optimize_celeron();exit;}
 if(isset($_GET["sensors"])){sensors();exit;}
 if(isset($_GET["NetDiscover-restart"])){NetDiscover_Restart();exit;}
@@ -48,12 +43,8 @@ if(isset($_GET["syslogdb-status"])){syslogdb_status();exit;}
 if(isset($_GET["syslogdb-query"])){syslogdb_query();exit;}
 if(isset($_GET["logrotate-query"])){logrotate_query();exit;}
 if(isset($_GET["syslogarchive-logs"])){syslogarchive_logs();exit;}
-if(isset($_GET["routes-show"])){routes_show();exit;}
-if(isset($_GET["ifconfig-show"])){ifconfig_show();exit;}
 if(isset($_GET["rsync-debian-status"])){rsync_debian_status();exit;}
-if(isset($_GET["debian_version"])){debian_version();exit;}
 if(isset($_GET["refresh-index-ini"])){refresh_index_ini();exit;}
-if(isset($_GET["arp-resolve"])){arp_resolve();exit;}
 if(isset($_GET["backup-restore-new"])){backup_restore();exit;}
 if(isset($_GET["nmap-scan-single"])){nmap_scan_single();exit;}
 if(isset($_GET["ntopng-installed"])){ntopng_installed();exit;}
@@ -133,15 +124,6 @@ function searchlogs_kernel(){
 
 }
 
-function arp_resolve(){
-	$ip=$_GET["arp-resolve"];
-	$unix=new unix();
-	$arp=$unix->find_program("arp");
-	$mac = shell_exec("$arp -an ".escapeshellarg($ip)." 2>&1");
-	preg_match('/..:..:..:..:..:../',$mac , $matches);
-	$mac = @$matches[0];
-	echo "<articadatascgi>$mac</articadatascgi>";
-}
 
 
 function trackadmin_uninstall(){
@@ -227,13 +209,6 @@ function swap_init(){
 
 
 
-
-function routes_show(){
-	$unix=new unix();
-	$ip=$unix->find_program("ip");
-	exec("$ip route show 2>&1",$results);
-	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
-}
 
 
 
@@ -539,33 +514,7 @@ function syslogarchive_logs(){
 	exec("$cmdline 2>&1",$results);
 	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
 }
-function ifconfig_show(){
-	$unix=new unix();
-	$ifconfig=$unix->find_program("ifconfig");
-	exec("$ifconfig -a 2>&1",$results);
-	$results[]="\n\t***************\n";
-	$ip=$unix->find_program("ip");
-	exec("$ip link show 2>&1",$results);
-	$results[]="\n\t***************\n";	
-	exec("$ip route 2>&1",$results);
-	$results[]="\n\t***************\n";	
-	
-	$f=explode("\n",@file_get_contents("/etc/iproute2/rt_tables"));
-    foreach ($f as $line){
-		if(!preg_match("#^([0-9]+)\s+(.+)#", $line,$re)){continue;}
-		$table_num=$re[1];
-		$tablename=$re[2];
-		if($table_num==0){continue;}
-		if($table_num>252){continue;}
-		$results[]="\n\t***** Table route $table_num named $tablename *****\n";
-		exec("$ip route show table $table_num 2>&1",$results);
-		$results[]="\n\t***************\n";
-	}
-	
-	
-	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
-	
-}
+
 
 
 
@@ -839,27 +788,6 @@ function sensors(){
 
 
 
-function dnsperf_progress(){
-		$unix=new unix();
-		$php5=$unix->LOCATE_PHP5_BIN();
-		$nohup=$unix->find_program("nohup");
-	
-		$GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/admin.dashboard.dnsperfs.progress";
-		$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/admin.dashboard.dnsperfs.progress.txt";
-		@unlink($GLOBALS["CACHEFILE"]);
-		@unlink($GLOBALS["LOGSFILES"]);
-		@touch($GLOBALS["CACHEFILE"]);
-		@touch($GLOBALS["LOGSFILES"]);
-		@chmod($GLOBALS["CACHEFILE"], 0755);
-		@chmod($GLOBALS["LOGSFILES"], 0755);
-		$cmd="$nohup $php5 /usr/share/artica-postfix/exec.dnsperf.php --force >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-		writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-		shell_exec($cmd);
-
-}
-
-
-
 function seeker(){
 	$unix=new unix();
 	$php5=$unix->LOCATE_PHP5_BIN();
@@ -1074,27 +1002,6 @@ function  NetDiscover_Restart(){
 }
 
 
-function ChangePerformance(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();	
-	$tmpf=$unix->FILE_TEMP().".sh";
-	$H[]="#!/bin/sh";
-	$H[]="PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin";
-	$H[]="/usr/sbin/artica-phpfpm-service -nsswitch";
-	$H[]="/etc/init.d/slapd restart";
-	$H[]="/etc/init.d/artica-memcache restart";
-	$H[]="/etc/init.d/artica-syslog restart";
-	$H[]="/etc/init.d/mysql restart --force --framework=byhand";
-	$H[]="rm /etc/artica-postfix/CPU_NUMBER";
-	$H[]="rm -f $tmpf";
-	
-	$H[]="";
-	@file_put_contents($tmpf, @implode("\n", $H));
-	@chmod($tmpf, 0755);
-	writelogs_framework($tmpf ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec("$nohup $tmpf >/dev/null 2>&1 &");
-}
 
 function make_www_writable(){
 	$dir=$_GET["make-writable"];
@@ -1170,14 +1077,5 @@ function EnableMilterGreylistExternalDB(){
 	}	
 	
 	
-}
-
-
-function phpldapadmin_installed(){
-	
-	if(is_file("/usr/share/phpldapadmin/index.php")){
-		echo "<articadatascgi>TRUE</articadatascgi>";
-		
-	}
 }
 

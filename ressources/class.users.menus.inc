@@ -421,7 +421,6 @@ class usersMenus {
 	public $LDAP_SYNCPROV=false;
 	public $ARTICA_META_ENABLED=false;
 	public $PIWIGO_INSTALLED=false;
-	public $APP_SABNZBDPLUS_INSTALLED=false;
 	public $POSTSCREEN_INSTALLED=false;
 	public $deduplication_installed=false;
 
@@ -1096,11 +1095,9 @@ class usersMenus {
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TFTPD_INSTALLED"))==1){$this->TFTPD_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_VBOXADDINTION_INSTALLED"))==1){$this->APP_VBOXADDINTION_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VIRTUALBOX_HOST"))==1){$this->VIRTUALBOX_HOST=True;}
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SABNZBDPLUS_INSTALLED"))==1){$this->APP_SABNZBDPLUS_INSTALLED;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTSCREEN_INSTALLED"))==1){$this->POSTSCREEN_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPSET_INSTALLED"))==1){$this->IPSET_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ASPELL_INSTALLED"))==1){$this->ASPELL_INSTALLED=True;}
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MUNIN_CLIENT_INSTALLED"))==1){$this->MUNIN_CLIENT_INSTALLED;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AS_VPS_CLIENT"))==1){$this->AS_VPS_CLIENT=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("offlineimap_installed"))==1){$this->offlineimap_installed=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VLAN_INSTALLED"))==1){$this->VLAN_INSTALLED=True;}

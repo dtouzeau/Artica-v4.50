@@ -1193,7 +1193,7 @@ class mysql_squid_builder{
         $this->tasks_processes[19]="exec.squid.cloud.compile.php --v2";
         $this->tasks_processes[20]="exec.squid.cloud.compile.php --ufdb";
         //$this->tasks_processes[21]="exec.adusers.php";
-        $this->tasks_processes[22]="exec.squidguard.php --build --force";
+        $this->tasks_processes[22]="/usr/sbin/artica-phpfpm-service -rest-api /ufdb/compile";
         //$this->tasks_processes[24]="exec.cleancloudcatz.php --all";
         //$this->tasks_processes[29]="exec.squid.updateuris.malware.php --www";
         $this->tasks_processes[30]="/usr/sbin/artica-phpfpm-service -categories-update";
@@ -1210,10 +1210,10 @@ class mysql_squid_builder{
 
         $this->tasks_processes[47]="exec.squidlogs.purge.php";
         $this->tasks_processes[48]="exec.squidlogs.restore.php --restore-all";
-        $this->tasks_processes[51]="exec.ufdb.php --restart";
+        $this->tasks_processes[51]="/usr/sbin/artica-phpfpm-service -rest-api /ufdb/restart";
         $this->tasks_processes[52]="exec.status.php --all-squid";
         //$this->tasks_processes[53]="exec.squid.stats.central.php";
-        $this->tasks_processes[57]="exec.ufdb.php --reload --from-schedule";
+        $this->tasks_processes[57]="/usr/sbin/artica-phpfpm-service -rest-api /ufdb/reload";
         $this->tasks_processes[58]="exec.squid.squeezer.php";
         $this->tasks_processes[59]="exec.squid.static.ad.groups.php";
         $this->tasks_processes[60]="exec.squid.run.schedules.php";
@@ -3171,7 +3171,7 @@ class mysql_squid_builder{
 
         $sock=new sockets();
         if(!isset($GLOBALS["MY_UUID"])){
-            $GLOBALS["MY_UUID"]=base64_decode($sock->getFrameWork("cmd.php?system-unique-id=yes"));
+            $GLOBALS["MY_UUID"]=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
         }
         $uuid=$GLOBALS["MY_UUID"];
         if(strpos($category, ",")>0){$categories=explode(",",$category);}else{$categories[]=$category;}

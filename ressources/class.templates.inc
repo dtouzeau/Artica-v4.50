@@ -732,7 +732,7 @@ class templates{
     function _detect_lang(){
         if(!$GLOBALS["AS_ROOT"]){
             $currentPageName=CurrentPageName();
-            if($currentPageName=="exec.squidguard.php"){$this->_detect_lang_forced();}
+
         }
         if(!isset($GLOBALS["CURRENT_PAGE"])){$GLOBALS["CURRENT_PAGE"]=CurrentPageName();}
         if(isset($_GET["articalang"])){

@@ -89,7 +89,6 @@ class settings_inc {
 	
 	public $cyrus_sync_installed=false;
 	public $AllowManageOwnComputers=false;
-	public $POLICYD_WEIGHT_PORT;
 	public $CRYPTSETUP_INSTALLED=false;
 	public $ZABBIX_INSTALLED=true;
 	public $phpldapadmin_installed=false;
@@ -171,8 +170,6 @@ class settings_inc {
 	public $SQUID_BIN_PATH="";
 	public $VMWARE_HOST=false;
 	public $DANSGUARDIAN_INSTALLED=false;
-	public $AMAVIS_INSTALLED=false;
-	public $AMAVISD_VERSION=null;
 	public $DANSGUARDIAN_VERSION=null;
 	public $PUREFTP_INSTALLED=false;
 	public $PUREFTP_USERS=false;
@@ -182,20 +179,8 @@ class settings_inc {
 	public $fqdn;
 	public $hostname;
 	public $mysql_port;
-	public $SMTP_LEVEL;
-	public $ArticaFilterEnabled;
-	public $AmavisFilterEnabled;
 	public $MilterGreyListEnabled;
-	public $EnableMilterSpyDaemon=0;
-	public $SQLGreyEnabled;
-	public $KasxFilterEnabled;
-	
-	
-	
-	public $NTPDEnabled;
-	public $MailFromdEnabled;
-	public $IPTABLES_INSTALLED;
-	public $ApacheArticaEnabled;
+    public $IPTABLES_INSTALLED;
 	public $SAMBA_INSTALLED;
 	
 	public $SAMBA_VERSION;
@@ -248,21 +233,14 @@ class settings_inc {
 	public $p3scan_installed=false;
 	public $syslogng_installed=false;
 	public $AsDebianSystem=false;
-	public $sTunnel4enabled=0;
-	public $MailArchiverEnabled=0;
 	public $roundcube_version="0.0.0";
-	public $EnableMilterBogom=0;
 	public $openldap_installed=false;
-	public $EnableMysqlFeatures=1;
 	public $MILTER_SPY_INSTALLED=false;
-	public $EnableAmavisDaemon=0;
 	public $imapsync_installed=false;
 	public $mailsync_installed=false;
 	public $ISOQLOG_INSTALLED=false;
 	public $zip_installed=false;
-	public $EnableAmavisBackup=0;
 	public $OPENLDAP_DYNLIST=false;
-	public $EnableRemoteAddressBook=0;
 	public $SLPAD_LOCKED=false;
 	public $ALTERMIME_INSTALLED=false;
 	public $POMMO_INSTALLED=false;
@@ -371,7 +349,6 @@ class settings_inc {
 	public $LDAP_SYNCPROV=false;
 	public $ARTICA_META_ENABLED=false;
 	public $PIWIGO_INSTALLED=false;
-	public $APP_SABNZBDPLUS_INSTALLED=false;
 	public $POSTSCREEN_INSTALLED=false;
 	public $deduplication_installed=false;
 	
@@ -851,8 +828,6 @@ class settings_inc {
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KINIT_INSTALLED"))==1){$this->KINIT_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_VBOXADDINTION_INSTALLED"))==1){$this->APP_VBOXADDINTION_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VIRTUALBOX_HOST"))==1){$this->VIRTUALBOX_HOST=True;}
-			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SABNZBDPLUS_INSTALLED"))==1){$this->APP_SABNZBDPLUS_INSTALLED;}
-			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MUNIN_CLIENT_INSTALLED"))==1){$this->MUNIN_CLIENT_INSTALLED;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ASPELL_INSTALLED"))==1){$this->ASPELL_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPSET_INSTALLED"))==1){$this->IPSET_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTSCREEN_INSTALLED"))==1){$this->POSTSCREEN_INSTALLED=True;}

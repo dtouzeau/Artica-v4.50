@@ -230,7 +230,7 @@ function features():bool{
 
     $AUTOFS=$features->AUTOFS();
     $NETDATA=$features->NETDATA();
-    $DARKSTAT=$features->DARKSTAT();
+
     $IWLWIFI=$features->IWLWIFI();
 
 
@@ -265,7 +265,7 @@ function features():bool{
     $APP_WANPROXY=$features->APP_WANPROXY();
     $APP_ZIPROXY=$features->APP_ZIPROXY();
 //  $LM_SENSORS=$features->LM_SENSORS();
-    $APP_PRIVOXY=$features->APP_PRIVOXY();
+
 
     $POSTFIX=$features->POSTFIX();
 //  $APP_CYRUS=$features->APP_CYRUS();
@@ -618,7 +618,7 @@ function features():bool{
     $network_monitoring[]=$APP_VNSTAT;
     $network_monitoring[]=$NETDATA;
     $network_monitoring[]=$APP_SMOKEPING;
-    $network_monitoring[]=$DARKSTAT;
+
    // $network_monitoring[]=$APP_SYSLOG;
     $network_monitoring[]=$APP_LEGAL_LOGS_SERVER;
     $network_monitoring[]=$NTOPNG;
@@ -732,7 +732,7 @@ function features():bool{
         $proxy_features[]=$HA_CLUSTER;
         $proxy_features[]=$APP_GREENSQL;
 
-        if(!$DISABLE_SQUID) {$proxy_features[]=$APP_PRIVOXY;}
+
         if(!$DISABLE_SQUID) {$proxy_features[]=$APP_WANPROXY;}
         if(!$DISABLE_SQUID) {$proxy_features[]=$APP_ZIPROXY;}
         $proxy_features[]=$APP_RDPPROXY;

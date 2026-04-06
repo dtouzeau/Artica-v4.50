@@ -242,7 +242,6 @@ function remove(){
 
     $php=$unix->LOCATE_PHP5_BIN();
     $servicesINIT[]="squid";
-    $servicesINIT[]="squidguard-http";
     $servicesINIT[]="squid-nat";
     $servicesINIT[]="squid-tail";
     $servicesINIT[]="iptables-transparent";
@@ -276,7 +275,6 @@ function remove(){
 
     $SERVICES["/etc/init.d/proxy-pac"]="/usr/sbin/artica-phpfpm-service -uninstall-proxypac";
     $SERVICES["/etc/init.d/ufdb"]="/usr/sbin/artica-phpfpm-service -uninstall-ufdb";
-    $SERVICES["/etc/init.d/privoxy"]="exec.privoxy.php --remove";
     $SERVICES["/etc/init.d/wanproxy"]="exec.wanproxy.php --uninstall";
     $SERVICES["/etc/init.d/zipproxy"]="exec.zipproxy.php --uninstall";
     $SERVICES["/etc/init.d/ziproxy"]="exec.zipproxy.php --uninstall";
@@ -306,12 +304,10 @@ function remove(){
     $tokens[]="EnableUfdbGuard";
     $tokens[]="EnableUfdbGuard2";
     $tokens[]="EnableCNTLM";
-    $tokens[]="PrivoxyEnabled";
     $tokens[]="EnableKerbAuth";
     $tokens[]="EnableSquidMicroHotSpot";
     $tokens[]="EnableTransparent27";
     $tokens[]="EnableArticaHotSpot";
-    $tokens[]="PrivoxyEnabled";
     $tokens[]="WindowsUpdateCaching";
     $tokens[]="EnableQuotaSize";
     $tokens[]="SquidCachesProxyEnabled";

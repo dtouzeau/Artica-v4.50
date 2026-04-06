@@ -14,7 +14,7 @@
 <IncrAgeMax_text>Very old incremental backups are removed after x days</IncrAgeMax_text>
 <IncrPeriod>Minimum period between incremental backups</IncrPeriod>
 <IncrPeriod_text>Minimum period between incremental backups</IncrPeriod_text>
-<MaxBackupPCNightlyJobs>Nightly Max Backups</MaxBackupPCNightlyJobs>
+<MaxBackupPCNightlyJobs>N%C3%BAmero m%C3¡ximo de copias de seguridad a conservar</MaxBackupPCNightlyJobs>
 <MaxBackupPCNightlyJobs_text>Each night, at the first wakeup, BackupPC is run.[br]
 Its job is to remove unneeded files in the pool, ie: files that only have one link.</MaxBackupPCNightlyJobs_text>
 <MaxBackups>M&aacute;ximo de copias de seguridad</MaxBackups>

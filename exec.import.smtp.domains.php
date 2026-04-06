@@ -133,11 +133,7 @@ if($success){
 	if($usr->cyrus_imapd_installed){
 		$sock->getFrameWork("cmd.php?cyrus-check-cyr-accounts=yes");
 	}
-			
-	
-	if($usr->AMAVIS_INSTALLED){
-		$sock->getFrameWork("cmd.php?amavis-restart=yes");
-	}		
+
 }
 
 

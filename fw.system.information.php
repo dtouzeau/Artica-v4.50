@@ -27,7 +27,6 @@ if(isset($_GET["elastic-remove"])){elastic_remove_js();exit;}
 if(isset($_POST["elastic-remove"])){elastic_remove_perform();exit;}
 if(isset($_GET["upgrade-php-47-js"])){upgrade_php_47_js();exit;}
 if(isset($_POST["uprade-php-47"])){admin_tracks("Perform Upgrade to PHP 4.7");die();}
-if(isset($_GET["go-exec-version"])){go_exec_version();exit;}
 if(isset($_GET["boot-manager-js"])){boot_manager_js();exit;}
 if(isset($_GET["boot-manager-popup"])){boot_manager_popup();exit;}
 if(isset($_POST["DisableGrubSkin"])){boot_manager_save();exit;}
@@ -538,7 +537,7 @@ function table(){
     $page           = CurrentPageName();
 
     $LINUX_INFO_TXT = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("LINUX_INFO_TXT");
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("services.php?dmicode=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/dmidecode/refresh");
     $CPU_NUMBER=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CPU_NUMBER"));
     if($CPU_NUMBER==0){
         $_cpuJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/cpu-number"));
@@ -729,12 +728,6 @@ $reset="{reset} {installation}";
                 <td style='width:99% !important;'>$Myversion Service Pack $CurrentServicePack$NewVer</td>
                 </tr>";
 
-    $html[]="<tr>
-                <td style='width:1% !important;' nowrap>&nbsp;</td>
-                <td style='width:1% !important;text-align:right' nowrap><strong>Go-Exec {version}:</strong></td>
-                <td style='width:99% !important;'><div id='go-exec-version'><div></td>
-                </tr>";
-
 
     $html[]="<tr>
                 <td style='width:1% !important;' nowrap>&nbsp;</td>
@@ -796,12 +789,13 @@ $reset="{reset} {installation}";
                 </tr>";
 
 
-    $DMIDECODE_CACHE=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DMIDECODE_CACHE"));
-    if(isset($DMIDECODE_CACHE["VMWARE_SERIAL"])){
+    $dmi_json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/dmidecode"));
+    if(is_object($dmi_json) && isset($dmi_json->data->vmware_serial) && strlen($dmi_json->data->vmware_serial) > 0){
+        $vmware_serial = $dmi_json->data->vmware_serial;
         $html[]="<tr>
                 <td style='width:1% !important;' nowrap>&nbsp;</td>
                 <td style='width:1% !important;text-align:right' nowrap><strong>vCenter's BIOS UUID:</strong></td>
-                <td style='width:99% !important;'>{$DMIDECODE_CACHE["VMWARE_SERIAL"]}</td>
+                <td style='width:99% !important;'>$vmware_serial</td>
                 </tr>";
 
     }
@@ -1288,7 +1282,6 @@ if($SystemDenyUsb==0){
 
     $html[]="</table></td></tr></table></div>";
     $html[]="<script>";
-    $html[]="LoadAjaxSilent('go-exec-version','$page?go-exec-version=yes')";
     $html[]="</script>";
     echo $tpl->_ENGINE_parse_body($html);
 
@@ -1347,15 +1340,4 @@ function APP_XKERNEL():string{
                 <td style='width:1% !important;text-align:right' nowrap><i class='$text_class ".ico_emergency." '></i></strong></td>
                 <td style='width:99% !important;'><strong class='$text_class'>" . $tpl->td_href("{kernel_modules_update}", "$def", "Loadjs('fw.system.upgrade-software.php?product=APP_XTABLES');") . "</strong></td>
                 </tr>";
-}
-
-function go_exec_version(){
-    $sock=new sockets();
-    $version=$sock->go_exec_version();
-    if($version=="0.0.0"){
-        echo "<span class='label label-danger'>$sock->mysql_error</span>";
-        return false;
-    }
-    echo $version;
-    return true;
 }

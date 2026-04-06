@@ -660,3 +660,18 @@ It is designed to fast categorization and other resources</APP_GO_SHIELD_CONNECT
 <max_backups_desc>Number of rotated log files to keep.</max_backups_desc>
 <max_age_days>Max Days to Keep</max_age_days>
 <max_age_days_desc>Days to retain rotated log files.</max_age_days_desc>
+<agent>Agent</agent>
+<edgeguard>EdgeGuard</edgeguard>
+<edgeguard_explain>Artica EdgeGuard Agent is a lightweight security engine deployed at the edge alongside Reverse Proxy.[BR]It inspects every HTTP request in real-time, applying 145+ security modules to detect and block attacks before they reach your application.[BR]The agent syncs configuration and ships events to the central management plane over mTLS.</edgeguard_explain>
+<upload_enroll_success>Feel the form and click Link to continue</upload_enroll_success>
+<upload_success>Upload Success</upload_success>
+<central_ip>Central IP/Hostname</central_ip>
+<central_port>Central Port</central_port>
+<otp>One Time Password</otp>
+<edguard_enroll_file>Enroll File</edguard_enroll_file>
+<APP_EDGEGUARD_AGENT>EdgeGuard Agent</APP_EDGEGUARD_AGENT>
+<agent_name>Agent Name</agent_name>
+<agent_id>Agent ID</agent_id>
+<not_protected>Not Protected</not_protected>
+<protected_by_tenant>Protected by Tenant</protected_by_tenant>
+<nginx_version_not_supported>Nginx version not supported, please update to version 1.27.1.2+</nginx_version_not_supported>

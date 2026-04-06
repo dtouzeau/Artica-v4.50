@@ -108,11 +108,11 @@ function EnableUfdbGuard(){
     if($SQUIDEnable==1){
         if(is_file($initd)){
             cluster_events(2,"Reconfiguring Web-filtering service",null,__LINE__);
-            shell_exec("$php /usr/share/artica-postfix/exec.ufdbguard.rules.php");
+            shell_exec("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/compile");
             return;
         }
         cluster_events(2,"Installing Web-Filtering service...",null,__LINE__);
-        shell_exec("$php /usr/share/artica-postfix/exec.ufdb.enable.php");
+        shell_exec("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/install");
         return;
     }
 

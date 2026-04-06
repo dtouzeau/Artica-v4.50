@@ -2308,7 +2308,7 @@ Parfois vous avez besoin de modifier les param&egrave;tres par d&eacute;faut.[br
 Utilisez le premier tableau afin de rechercher les domaines internet d&eacute;sir&eacute;s.[br]
 Si vous cliquez sur le site web, une nouvelle table va s'afficher.[br]Cette table listera les sous-domaines utilis&eacute;s ainsi que leurs cat&eacute;gories.</SQUID_SEARCH_STATS_EXPLAIN>
 <SQUID_SMP_EXPLAIN>Le service Proxy peut être utilisé pour lancer plusieurs processus de travail et utiliser plusieurs cœurs de processeur. [br]L'intention générale est de faire en sorte que les travailleurs multiples ressemblent à un seul pour un observateur extérieur afin d'assurer le traitement des requêtes en parallèle.</SQUID_SMP_EXPLAIN>
-<SQUID_STATS>Statistiques du proxy cache Squid</SQUID_STATS>
+<SQUID_STATS>Statistiques du proxy Web</SQUID_STATS>
 <SQUID_STATS1>Statistiques Proxy</SQUID_STATS1>
 <SQUID_STATS_TEXT>La Zone de statistiques Squid est une console web permettant de visualiser des graphiques et statistiques sur l'utilisation Web des utilisateurs et les cat&eacute;gories des sites web.</SQUID_STATS_TEXT>
 <squid_traffic_statistics_text>Affiche le flux qui passe &agrave; travers votre proxy, vous indique la performance de vos caches et la taille par site web et cat&eacute;gories.</squid_traffic_statistics_text>

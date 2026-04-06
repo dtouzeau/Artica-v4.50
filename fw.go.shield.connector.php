@@ -294,8 +294,7 @@ function flat_config(){
     $Go_Shield_Connector_Addr=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_Addr"));
     $Go_Shield_Connector_Port=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_Port"));
     $Go_Shield_Connector_TimeOut=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_TimeOut"));
-    $KSRNClientCacheTime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KSRNClientCacheTime"));
-    $NetCoreSomaxConn=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?sysctl-value=yes&key=".base64_encode("net.core.somaxconn"));
+
 
     $UfdbGuardWebFilteringCacheTime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbGuardWebFilteringCacheTime"));
     if($UfdbGuardWebFilteringCacheTime==0){$UfdbGuardWebFilteringCacheTime=300;}
@@ -405,7 +404,13 @@ function timeout_section_popup():bool{
     $page=CurrentPageName();
     $Go_Shield_Connector_TimeOut=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_TimeOut"));
     if($Go_Shield_Connector_TimeOut==0){$Go_Shield_Connector_TimeOut=5;}
-    $NetCoreSomaxConn=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?sysctl-value=yes&key=".base64_encode("net.core.somaxconn"));
+    $NetCoreSomaxConn=0;
+    $sysctl=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/kernel/get/net.core.somaxconn"));
+    if(property_exists($sysctl,"Value")){
+        $NetCoreSomaxConn=intval($sysctl->Value);
+    }
+
+
     $KSRNClientCacheTime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KSRNClientCacheTime"));
 
 

@@ -157,7 +157,14 @@ function table(){
     $KSRNRemotePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KSRNRemotePort"));
     $KSRNClientTimeOut=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KSRNClientTimeOut"));
     $KSRNClientCacheTime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KSRNClientCacheTime"));
-    $NetCoreSomaxConn=$GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?sysctl-value=yes&key=".base64_encode("net.core.somaxconn"));
+
+    $NetCoreSomaxConn=0;
+    $sysctl=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/kernel/get/net.core.somaxconn"));
+    if(property_exists($sysctl,"Value")){
+        $NetCoreSomaxConn=intval($sysctl->Value);
+    }
+
+
     $MacToUidPHP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MacToUidPHP"));
     $KSRNOnlyCategorization=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KSRNOnlyCategorization"));
 

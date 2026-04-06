@@ -6,7 +6,6 @@ include_once(dirname(__FILE__)."/class.unix.inc");
 if(isset($_GET["kerberos-ticket"])){kerberos_ticket();exit;}
 if(isset($_GET["syslog-sysevnts"])){searchInSyslog_single_backends();exit;}
 if(isset($_GET["syslog"])){searchInSyslog();exit;}
-if(isset($_GET["syslog-backends"])){searchInSyslog_backends();exit;}
 if(isset($_GET["cnxs"])){searchInSyslog_connections();exit;}
 if(isset($_GET["ad-wizard"])){ad_wizard();exit;}
 if(isset($_GET["status-instance"])){status_instance();exit;}
@@ -500,56 +499,7 @@ function searchInSyslog_single_backends(){
 
 }
 
-function searchInSyslog_backends(){
-    $unix=new unix();
-    $grep=$unix->find_program("grep");
-    $tail=$unix->find_program("tail");
-    $MAIN=unserialize(base64_decode($_GET["syslog-backends"]));
-    $PROTO_P=null;
 
-    foreach ($MAIN as $val=>$key){
-        $MAIN[$key]=str_replace(".", "\.", $MAIN[$key]);
-        $MAIN[$key]=str_replace("*", ".*?", $MAIN[$key]);
-
-    }
-
-    $max=intval($MAIN["MAX"]);if($max>1500){$max=1500;}
-    $date=$MAIN["DATE"];
-    $PROTO=$MAIN["PROTO"];
-    $SRC=$MAIN["SRC"];
-    $DST=$MAIN["DST"];
-    $SRCPORT=$MAIN["SRCPORT"];
-    $DSTPORT=$MAIN["DSTPORT"];
-    $IN=$MAIN["IN"];
-    $OUT=$MAIN["OUT"];
-    $MAC=$MAIN["MAC"];
-    $PID=$MAIN["PID"];
-    if($MAIN["TERM"]<>null){$TERM=".*?{$MAIN["TERM"]}";}
-
-    if($PID<>null){$PID_P=".*?sshd\[$PID\].*?";}
-    if($IN<>null){$IN_P="(from|to)\s+.*?$IN.*?";}
-    if($SRC<>null){$IN_P="(from|to)\s+.*?$SRC.*?";}
-    if($DST<>null){$IN_P="(from|to)\s+.*?$DST.*?";}
-    if($MAIN["C"]==0){$TERM_P=$TERM;}
-
-
-    $mainline="{$PID_P}{$TERM_P}{$IN_P}";
-    if($TERM<>null){
-        if($MAIN["C"]>0){
-            $mainline="($mainline|$TERM)";
-        }
-    }
-
-
-
-    $search="$date.*?$mainline";
-    $search=str_replace(".*?.*?",".*?",$search);
-    $cmd="$grep --binary-files=text -i -E '$search' /var/log/hacluster-client.log |tail -n $max >/usr/share/artica-postfix/ressources/logs/web/hacluster-clients.syslog 2>&1";
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    @file_put_contents("/usr/share/artica-postfix/ressources/logs/web/hacluster-clients.syslog.query", $search);
-    shell_exec($cmd);
-
-}
 
 function searchInSyslog(){
     $unix=new unix();

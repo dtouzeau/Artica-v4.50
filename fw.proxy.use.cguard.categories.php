@@ -92,7 +92,7 @@ $(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabl
 function popup(){
     $tpl=new template_admin();
     $CGuardLicense=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CGuardLicense"));
-    $uuid=base64_decode($GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?system-unique-id=yes"));
+    $uuid= trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
     $t=time();
     $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/cguard.validator.progress";
     $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/cguard.validator.logs";

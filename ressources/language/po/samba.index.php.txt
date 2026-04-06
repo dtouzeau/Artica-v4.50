@@ -28,21 +28,23 @@ This  will also  cause  the Samba server to act as a domain controller for NT4 s
 For more details on setting up this feature see the Domain Control chapter of the Samba HOWTO Collection.
 </domain logons_text>
 <domain master>domain master</domain master>
-<domain master_text>Diga ao samba para permitir a recolha da lista de navegaç%C3£o em toda a WAN[br].
-A definiç%C3£o desta opç%C3£o faz com que o servidor reclame um nome NetBIOS espec%C3%ADfico de dom%C3%ADnio que o identifica como um navegador principal de dom%C3%ADnio para o seu grupo de trabalho dado.[br]
-Os navegadores principais locais no mesmo grupo de trabalho em sub-redes isoladas de radiodifus%C3£o dar%C3£o a este servidor as suas listas de navegaç%C3£o locais, e depois pedir%C3£o ao servidor partilhado
-para uma c%C3%B3pia completa da lista de navegaç%C3£o para toda a rede de %C3¡rea alargada.
-[br] Os clientes do navegador contactar%C3£o ent%C3£o o seu navegador principal local, e receber%C3£o a lista de navegaç%C3£o em todo o dom%C3%ADnio, em vez de apenas a lista para a sua sub-rede isolada de radiodifus%C3£o [br].
-Note que os Controladores de Dom%C3%ADnio Prim%C3¡rio do Windows NT esperam poder reivindicar este nome especial NetBIOS espec%C3%ADfico para este grupo de trabalho que identifica
-eles como navegadores principais de dom%C3%ADnio para esse grupo de trabalho por defeito (ou seja, n%C3£o h%C3¡ maneira de impedir que um PDC do Windows NT tente fazer isto) [br].
-Isto significa que se este parâmetro for definido e este servidor reclamar o nome especial para um grupo de trabalho antes que um PDC do Windows NT o possa fazer, ent%C3£o atravesse a navegaç%C3£o na subrede
-comportar-se-%C3¡ de forma estranha e poder%C3¡ falhar [br].
-Se logons de dom%C3%ADnio = sim, ent%C3£o o comportamento padr%C3£o é activar o parâmetro mestre de dom%C3%ADnio [br].
-Se os logons de dom%C3%ADnio n%C3£o estiverem activados (a definiç%C3£o por defeito), ent%C3£o o master de dom%C3%ADnio também n%C3£o estar%C3¡ activado por defeito [br].
-Quando logons de dom%C3%ADnio = Sim, a configuraç%C3£o padr%C3£o para este parâmetro é Sim, com o resultado de que o Samba ser%C3¡ um PDC [br].
-Se dom%C3%ADnio mestre = N%C3£o, Samba funcionar%C3¡ como um BDC [br].
-Em geral, este parâmetro deve ser definido para â??COPY2â%84%A2 apenas num BDC. [br]
-Predefiniç%C3£o: master de dom%C3%ADnio = auto</domain master_text>
+<domain master_text>Ative o motor de partilha de ficheiros para realizar a consolidaç%C3£o da lista de navegaç%C3£o a n%C3%ADvel WAN.[br]
+Quando esta opç%C3£o est%C3¡ ativa, o servidor reivindica um nome NetBIOS especial espec%C3%ADfico do grupo de trabalho, identificando-se como Domain Master Browser para esse grupo.[br]
+Os master browsers locais em sub-redes isoladas por broadcast dentro do mesmo grupo de trabalho enviar%C3£o as suas listas locais para este servidor. Em troca, solicitar%C3£o uma lista consolidada representando toda a rede WAN.[br]
+Os sistemas cliente continuar%C3£o a contactar o seu master browser local, mas receber%C3£o uma lista a n%C3%ADvel de dom%C3%ADnio em vez de uma lista limitada à sub-rede.[br]
+[b]Consideraç%C3µes importantes:[/b][br]
+Os Primary Domain Controllers (PDC) do Windows NT tentam automaticamente reivindicar o nome NetBIOS especial que os identifica como Domain Master Browser para o grupo de trabalho. Este comportamento n%C3£o pode ser desativado.[br]
+Se este servidor reivindicar o papel de Domain Master Browser antes de um PDC Windows NT, a navegaç%C3£o entre sub-redes pode comportar-se de forma imprevis%C3%ADvel ou falhar.[br]
+Resumo do comportamento:[br]
+
+Se ativado, o servidor ativa por defeito o parâmetro domain master.[br]
+
+Se domain logons n%C3£o estiver ativado (configuraç%C3£o padr%C3£o), o papel de domain master n%C3£o ser%C3¡ ativado automaticamente.[br]
+
+Quando ativo, o motor de partilha de ficheiros funciona como Primary Domain Controller (PDC).[br]
+
+Quando inativo, funciona como Backup Domain Controller (BDC).[br]
+De um modo geral, este parâmetro deve ser desativado apenas num BDC.</domain master_text>
 <domain_admin>Domain Administrator privileges</domain_admin>
 <domain_admin_text>Update the Administrator Account that allow to link computers to your Primary Domain Controler and be able to perform administration operations.</domain_admin_text>
 <enable_disable_samba>Enable or disable service</enable_disable_samba>

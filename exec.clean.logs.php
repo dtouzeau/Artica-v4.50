@@ -182,11 +182,6 @@ function CleanLOGSF(){
         build_progress_philesight("{cleaning_data}",$philesight++);
 		shell_exec("$rm -rf  /usr/share/artica-postfix/smb-audit");
 	}
-	
-	if(is_dir("/usr/share/artica-postfix/bin/install/amavisd-milter-1.4.0")){
-		shell_exec("$rm -rf  /usr/share/artica-postfix/bin/install/amavisd-milter-1.4.0");
-	}
-
 
     build_progress_philesight("{cleaning_data}",$philesight++);
 	$dir="/usr/share/artica-postfix/ressources/conf/upload/StatsApplianceLogs";

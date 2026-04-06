@@ -1188,7 +1188,7 @@ class dansguardian_rules{
 		
 		if(preg_match("#www\.(.+?)$#i",$WebsiteToAdd,$re)){$WebsiteToAdd=$re[1];}
 		$md5=md5($www.$category);
-		$uuid=base64_decode($sock->getFrameWork("cmd.php?system-unique-id=yes"));
+		$uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
 		$sql="INSERT INTO dansguardian_community_categories (zmd5,zDate,category,pattern,uuid) VALUES('$md5',NOW(),'$category','$www','$uuid')";
 		$q=new mysql_squid_builder();
 		$q->QUERY_SQL($sql,"artica_backup");
@@ -1268,7 +1268,7 @@ class dansguardian_rules{
 		writelogs("EnableWebProxyStatsAppliance=$EnableWebProxyStatsAppliance",__CLASS__.'/'.__FUNCTION__,__FILE__);
 		
 		if($EnableWebProxyStatsAppliance==1){
-			$sock->getFrameWork("squid.php?rebuild-filters=yes");
+			$GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/compile");
 			return;
 		}
 		

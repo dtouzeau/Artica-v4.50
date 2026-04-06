@@ -61,8 +61,8 @@ por favor, compruebe si todas las caracter%C3%ADsticas se traducen después de l
 <displayName>Mostrar nombre</displayName>
 <DnsMXLength>MX Lenght</DnsMXLength>
 <DnsType>Registro DNS Tipo de host</DnsType>
-<dnstypea>host address</dnstypea>
-<DnsZoneName>DNS Zone name</DnsZoneName>
+<dnstypea>Direcci%C3%B3n del host</dnstypea>
+<DnsZoneName>Nombre de la zona DNS</DnsZoneName>
 <DotClearUserEnabled>Enable DotClear</DotClearUserEnabled>
 <DotClearUserEnabledText>If DotClear is installed,this user can hav this own DotClear web site by turn to green this option</DotClearUserEnabledText>
 <duplicate_mailto>Duplicate mails to</duplicate_mailto>

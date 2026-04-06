@@ -12,7 +12,7 @@ function xgen(){
     $FORWARD_ZONES=false;
     $users=new usersMenus();
 	$tpl=new template_admin();
-    $EnableDNSFirewall=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSFirewall"));
+    $EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
     $EnableDNSDist=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSDist"));
     $UnboundEnabled     =   intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
 
@@ -35,37 +35,46 @@ function xgen(){
     }
 
     if($EnableDNSDist==0) {
-        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.SafeSearch.php", "ICO" => "fas fa-filter", "TEXT" => "SafeSearch(s)"));
+        if($EnableDebianAgent==0) {
+            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.SafeSearch.php", "ICO" => "fas fa-filter", "TEXT" => "SafeSearch(s)"));
+        }
     }
 
     if($EnableDNSDist==0) {
-        $FORWARD_ZONES=true;
-        $f[]=$tpl->LeftMenu(
-            array("PAGE"=>"fw.dns.forward.zone.php",
-                "ICO"=>"far fa-arrows","TEXT"=>"{forward_zones}",
-            ) );
+        if($EnableDebianAgent==0) {
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.dns.forward.zone.php",
+                    "ICO" => "far fa-arrows", "TEXT" => "{forward_zones}",
+                ));
+        }
     }
 
     if($UnboundEnabled==1) {
-        $f[] = $tpl->LeftMenu(
-            array("PAGE" => "fw.dns.unbound.domains.php",
-                "ICO" => "fab fab fa-soundcloud", "TEXT" => "{local_domains}",
-            ));
+        if($EnableDebianAgent==0) {
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.dns.unbound.domains.php",
+                    "ICO" => "fab fab fa-soundcloud", "TEXT" => "{local_domains}"));
 
-        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.unbound.redis.php", "ICO" => ico_database, "TEXT" => "{memory_database}"));
+            $f[] = $tpl->LeftMenu(
+                    array("PAGE" => "fw.dns.unbound.redis.php",
+                    "ICO" => ico_database, "TEXT" => "{memory_database}"));
 
-        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.unbound.records.php", "ICO" => "fa fa-list-ol", "TEXT" => "{DNS_RECORDS}"));
-
+            $f[] = $tpl->LeftMenu(
+                    array("PAGE" => "fw.dns.unbound.records.php",
+                    "ICO" => "fa fa-list-ol", "TEXT" => "{DNS_RECORDS}"));
+        }
 
         $f[]=$tpl->LeftMenu(
             array("PAGE"=>"fw.dns.agents.php",
                 "ICO"=>"fas fa-project-diagram","TEXT"=>"Artica agents",
             ) );
 
-        $f[] = $tpl->LeftMenu(
-            array("PAGE" => "fw.pdns.rpz.php",
-                "ICO" => ico_shield, "TEXT" => "{POLICIES_ZONES}",
-            ));
+        if($EnableDebianAgent==0) {
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.pdns.rpz.php",
+                    "ICO" => ico_shield, "TEXT" => "{POLICIES_ZONES}",
+                ));
+        }
 
         $f[] = $tpl->LeftMenu(
             array("PAGE" => "fw.unbound.events.php",

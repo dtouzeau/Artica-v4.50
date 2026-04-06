@@ -542,13 +542,12 @@ function EnableWebFiltering(){
 
 
     @file_put_contents("/etc/artica-postfix/settings/Daemons/SquidUrgency", 0);
-    @chmod("/etc/artica-postfix/settings/Daemons/SquidUrgency",0755);
+
 
     writeprogress(82,"{activate_webfiltering_service}: {building_settings}");
-    shell_exec("$php /usr/share/artica-postfix/exec.ufdb-lighthttp.php --install-web --nobuild >/dev/null 2>&1");
-    shell_exec("$php /usr/share/artica-postfix/exec.ufdb.enable.php --wizard >/dev/null 2>&1");
+    shell_exec("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/install");
     if(is_file("/etc/init.d/ufdb")){
-        shell_exec("$php /usr/share/artica-postfix/exec.squidguard.php --build --force >/dev/null 2>&1");
+        shell_exec("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/compile");
     }
 
 

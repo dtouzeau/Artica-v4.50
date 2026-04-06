@@ -372,6 +372,7 @@ function tabs(){
     $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
     $MUNIN_CLIENT_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MUNIN_CLIENT_INSTALLED"));
     $EnableMunin=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMunin"));
+    $EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
     $statusF="{status}";
 
 
@@ -385,7 +386,9 @@ function tabs(){
 
 
     $array[$statusF]="$page?table-start=yes";
-    $array["{networks_restrictions}"]="fw.pdns.restrictions.php?tinypage-unbound=yes";
+    if($EnableDebianAgent==0 ){
+        $array["{networks_restrictions}"] = "fw.pdns.restrictions.php?tinypage-unbound=yes";
+    }
     if($EnableDNSDist==1){
         unset($array["{networks_restrictions}"]);
     }
@@ -892,11 +895,13 @@ function unbound_status(){
         "progress-unbound-restart","LoadAjaxSilent('unbound-status','$page?unbound-status=yes')");
 
 
+    $EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+
 
     $topbuttons[] = array("Loadjs('$page?config-file-js=yes')", "fas fa-file-code", "{config_file}");
-
-
-    $topbuttons[] = array($jsReconfig,ico_save, "{reconfigure}");
+    if($EnableDebianAgent==0) {
+        $topbuttons[] = array($jsReconfig, ico_save, "{reconfigure}");
+    }
     $topbuttons[] = array("Loadjs('$page?unbound-uninstall=yes');",ico_trash
     , "{uninstall}");
 
@@ -1323,6 +1328,8 @@ function table():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
 
+
+
     $EnableDNSRootInts=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSRootInts"));
     $RefuseDNSRoot=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RefuseDNSRoot"));
 
@@ -1540,6 +1547,11 @@ function table():bool{
 
     $jstiny=null;
     $myform=$tpl->table_form_compile();
+    $EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
+    if($EnableDebianAgent==1){
+        $myform=$tpl->div_warning("Artica Meta||{block_by_meta}");
+    }
+
 
 
     $html="<table style='width:100%'>

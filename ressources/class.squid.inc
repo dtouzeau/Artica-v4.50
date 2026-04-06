@@ -201,7 +201,7 @@ class squidbee{
         $this->ParseConfig();
 
         $sock=new sockets();
-        $this->uuid=base64_decode($sock->getFrameWork("cmd.php?system-unique-id=yes"));
+        $this->uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
         if(!isset($GLOBALS["CLASS_USERS"])){$GLOBALS["CLASS_USERS"]=new usersMenus();}
         $users=$GLOBALS["CLASS_USERS"];
         $this->CPU_NUMBER=$users->CPU_NUMBER;

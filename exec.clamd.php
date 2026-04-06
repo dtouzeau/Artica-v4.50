@@ -513,7 +513,6 @@ function apparmor(){
     $f[]="  /var/spool/qpsmtpd/* r,";
     $f[]="  /var/spool/p3scan/children/** r,";
     $f[]="  /var/spool/havp/** r,";
-    $f[]="  /var/lib/amavis/tmp/** r,";
     $f[]="  /var/spool/MIMEDefang/mdefang-*/Work/ r,";
     $f[]="  /var/spool/MIMEDefang/mdefang-*/Work/** r,";
     $f[]="  # Allow home dir to be scanned,";

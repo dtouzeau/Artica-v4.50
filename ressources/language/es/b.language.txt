@@ -126,12 +126,10 @@ do not calulcate duration is time between 2 requests is more than 5 minutes;
 [br]
 </acl_quota_time_text>
 <acl_reply_body_max_size>Limitar un archivo descargado a</acl_reply_body_max_size>
-<acl_squid_browser_explain>Regular expression matching on the request user-agent header[br]
-Example: Mozilla/ ^Keyvelop$ ^ClamWin/ Symbian iP(hone|od)[br]
-or Mozilla \(compatible; MSIE\) [br]
-This should match mozilla and msie based browsers. 
-<acl_squid_browser_explain>
-<browsers>Browsers</acl_squid_browser_explain>
+<acl_squid_browser_explain>Coincidencia mediante expresi%C3%B3n regular sobre el encabezado User-Agent de la solicitud.[br]
+Ejemplos: Mozilla/ ^Keyvelop$ ^ClamWin/ Symbian iP(hone|od)[br]
+o Mozilla (compatible; MSIE)[br]
+Estas expresiones permiten coincidir con navegadores basados en Mozilla y MSIE.</acl_squid_browser_explain>
 <acl_squid_dst_explain>Solicitud de direcciones IP de destino (servidor) IPv4/IPv6[br]
 1.Se refiere a toda la red con la direcci%C3%B3n 172.16.1.0: &quot;172.16.1.0/24&quot; o &quot;172.16.1.0&quot;[br].
 2.Se refiere a una sola direcci%C3%B3n IP espec%C3%ADfica: &quot;172.16.1.25/32&quot;[br]
@@ -263,7 +261,7 @@ Los navegadores que no tengan definido el proxy en su configuraci%C3%B3n no reci
 <activate_statistics>Activar la generaci%C3%B3n de estad%C3%ADsticas</activate_statistics>
 <activate_streamcache>Activate the StreamCache engine</activate_streamcache>
 <activate_the_booster_cache>Enable the Proxy Booster feature</activate_the_booster_cache>
-<activate_the_feature>Activate this feature</activate_the_feature>
+<activate_the_feature>Activar esta funci%C3%B3n</activate_the_feature>
 <activate_the_mobile_app_inside_artica_3x>Activate the MobileAPP inside Artica 3.x.</activate_the_mobile_app_inside_artica_3x>
 <activate_the_service>Activate the service</activate_the_service>
 <activate_the_webfiltering_engine_wizard>Web filtering activation Wizard</activate_the_webfiltering_engine_wizard>
@@ -462,10 +460,9 @@ Usually CN=Computers</ad_cp_branch_expl>
 <ad_kerb_schedule_explain>Define operation to carry out when Active Directory members import schedule task has been executed</ad_kerb_schedule_explain>
 <ad_ldap_parameters_explain>Gestione las credenciales y la configuraci%C3%B3n que ayudar%C3¡n a Artica a navegar por el servidor o los servidores de Active Directory.</ad_ldap_parameters_explain>
 <AD_LDAP_RECURSIVE>B%C3%BAsqueda de grupos en modo recursivo</AD_LDAP_RECURSIVE>
-<AD_LDAP_RECURSIVE_EXPLAIN>By default, this option is turned OFF and Artica is only allowed to find Active Directory Groups attached to a member on the first level.[br]
-If enabled Artica will be able to find [b]All groups[/b] for a connected member.[br]
-It should be switched to ON if you want to use Active Directory Groups inside Active Directory Groups in proxy ACLs.
-</AD_LDAP_RECURSIVE_EXPLAIN>
+<AD_LDAP_RECURSIVE_EXPLAIN>De forma predeterminada, esta opci%C3%B3n est%C3¡ desactivada y Artica solo detecta los grupos de Active Directory asociados directamente a un miembro (primer nivel).[br]
+Si se habilita, Artica podr%C3¡ identificar [b]Todos los grupos[/b] del usuario conectado, incluidas las pertenencias anidadas.[br]
+Active esta opci%C3%B3n si desea utilizar grupos de Active Directory incluidos dentro de otros grupos de Active Directory en las ACL del proxy.</AD_LDAP_RECURSIVE_EXPLAIN>
 <ad_quick_1>Indique aqu%C3%AD su nombre de host completo de Active Directory, como myadserv.domain.ltd</ad_quick_1>
 <ad_quick_2>Give here account credentials that have privileges to join the Active Directory domain</ad_quick_2>
 <ad_quick_3>Verifique la configuraci%C3%B3n de sus conexiones[br]Si est%C3¡ de acuerdo con estos par%C3¡metros, haga clic en el bot%C3%B3n de conexi%C3%B3n para unir su Proxy a su servidor de Active Directory</ad_quick_3>
@@ -479,7 +476,7 @@ Por favor, cambie su nombre de host proxy con el nombre de host %dom</ad_quick_e
 <after_login_redirect_user_to>After login, redirect gest user to</after_login_redirect_user_to>
 <after_webserver_reply>After web server reply</after_webserver_reply>
 <against>against</against>
-<agent_address>Agent address</agent_address>
+<agent_address>Direcci%C3%B3n del agente</agent_address>
 <aiguil_max_msg_rate>Maximum execution duration</aiguil_max_msg_rate>
 <aiguil_max_msg_rate_explain>The main process (the router) is in charge to put mails in each sub-queues for each instance.[br]
 This value limit the time duration of the router.[br]
@@ -1695,7 +1692,7 @@ Forma parte de los esfuerzos continuos de Google por acelerar Internet mediante 
 El objetivo principal de BBR es mejorar el uso de la red y reducir los retrasos por almacenamiento en b%C3%BAfer (que pueden ralentizar la red).</BBR_EXPLAIN>
 <BCC>Copia oculta (BCC)</BCC>
 <bcc_to>Copia oculta (BCC) a</bcc_to>
-<behavior>behavior</behavior>
+<behavior>Comportamiento</behavior>
 <behavior_listen_ports>Behavior and Listen ports</behavior_listen_ports>
 <between_100_to_500>Between 100 to 50</between_100_to_500>
 <between_500_to_1000>Between 500 to 1000</between_500_to_1000>
@@ -1716,7 +1713,7 @@ All its incarnations feature a very simple, intuitive interface on top on an eff
 <blackandwhite_list>Black and Whitelist</blackandwhite_list>
 <blackandwhite_list_members>Gestionar los elementos de la lista de denegados y autorizados</blackandwhite_list_members>
 <blackhole>Black hole</blackhole>
-<blacklisted>Blacklisted</blacklisted>
+<blacklisted>En lista negra</blacklisted>
 <blacklist_categories>Blacklist categories</blacklist_categories>
 <blacklist_this_website>Blacklist this website</blacklist_this_website>
 <blacklist_this_website_explain>Guarde este sitio web en el %C3¡rea de [b]Servicio de filtrado web[/b] denegar sitios web.[br]Todos los usuarios ser%C3¡n denegados a este sitio web</blacklist_this_website_explain>
@@ -2288,7 +2285,7 @@ In the "Network" section, click Change proxy settings. This will open the Intern
 <chronology>Chronology</chronology>
 <chuuid_why>El identificador %C3%BAnico (%s) permite a Artica identificar su servidor como un objeto %C3%BAnico en su red.[br]Cuando se conectan varios servidores de Artica en una granja, por ejemplo ( Load-balancing / cluster / fail-over ) permite identificar cada servidor por esta clave. [br]También se utiliza para identificar su servidor al servidor de licencias.[br]Por eso es imprescindible que su servidor tenga este identificador y debe ser %C3%BAnico.[br]Al clonar una m%C3¡quina virtual, es probable que este identificador esté duplicado, debe entonces cambiarlo.[br]
 [b]Advertencia: Cambiar el identificador romper%C3¡ la licencia, deber%C3¡ reasignar este servidor en la consola de administraci%C3%B3n web de licencias en Internet[/b]</chuuid_why>
-<ciarmy.rules>Reglas para bloquear a los principales atacantes identificados de CiArmy.com (www.ciarmy.com)</ciarmy.rules>
+<ciarmy.rules>Reglas para bloquear a los principales atacantes identificados por CiArmy.com</ciarmy.rules>
 <CICAP_MEM_BOOST_EXPLAIN>C-ICAP memory booster permite definir un contenedor de memoria f%C3%ADsica en para los procesos del Antivirus.[br]
 Por defecto, los antivirus utilizan el disco duro para realizar las operaciones de an%C3¡lisis[br].
 El uso de la memoria para estas tareas aumentar%C3¡ el rendimiento del antivirus[br].
@@ -2542,7 +2539,7 @@ pc004,,c8:bc:c8:47:59:14,mike_pc[br]
 pc005,192.168.1.8,,[br]</computer_popup_import_explain_csv>
 <configuration>Configuration</configuration>
 <configuration_done>Configuration done</configuration_done>
-<configuration_wizard>Configuration wizard</configuration_wizard>
+<configuration_wizard>Asistente de configuraci%C3%B3n</configuration_wizard>
 <configure_your_browser>Configure your browser</configure_your_browser>
 <configure_your_database>Configure your database</configure_your_database>
 <configure_your_isp_proxy_explain>If you are the Proxy administrator inside your LAN, you use this service act has the [b]parent proxy[/b].[br]
@@ -3008,7 +3005,7 @@ Si necesita que NO se almacenen en caché los sitios web en todos los sentidos, 
 <deny_redirected>Deny & redirect</deny_redirected>
 <deny_reply_access>Denegar el acceso a la respuesta</deny_reply_access>
 <deny_ssl>Deny SSL</deny_ssl>
-<deny_unkown_clients>Deny unknown clients</deny_unkown_clients>
+<deny_unkown_clients>Denegar clientes desconocidos</deny_unkown_clients>
 <deny_unkown_clients_explain>If set then the DHCP service will not serve IP configuration for clients that are not added in the DHCP fixed hosts table</deny_unkown_clients_explain>
 <deny_unlock>Deny unlock</deny_unlock>
 <deny_web_page_text>Deny Web page service allows you to define the behavior when a website is banned.[br]
@@ -3073,8 +3070,8 @@ subred 172.16.0.0 con m%C3¡scara de red 255.255.0.0 y un rango de 172.16.1.30 a
 <dhcp_simulation_explain>With this form, you will be able to simulate a DHCP client, in order to analyze the DHCP response inside your Network.</dhcp_simulation_explain>
 <dhcp_start_ip>DHCP start IP</dhcp_start_ip>
 <dhcp_use_local_database>Utilizar la base de datos de los ordenadores locales</dhcp_use_local_database>
-<dhcp_use_local_database_explain>In the computers database you can fix computers and define specific DHCP settings.[br]
-If defined, fixed computers in Artica database will be added in the DHCP configuration</dhcp_use_local_database_explain>
+<dhcp_use_local_database_explain>En la base de datos de equipos, puede asignar entradas est%C3¡ticas (fijas) y definir par%C3¡metros DHCP espec%C3%ADficos para cada dispositivo.[br]
+Una vez configuradas, estas entradas fijas almacenadas en la base de datos de Artica se integran autom%C3¡ticamente en la configuraci%C3%B3n DHCP.</dhcp_use_local_database_explain>
 <dhcp_wizard_2>DHCP service will listen %i interface</dhcp_wizard_2>
 <dhcp_wizard_3>DHCP service will listen %i interface for the subnet %n</dhcp_wizard_3>
 <dhcp_wizard_4>DHCP service will listen %i interface for the subnet %n and will provide IP %t
@@ -3464,7 +3461,7 @@ You will find a server name %h on your Active Directory server, this is normal d
 <drop.rules>Reglas para bloquear las redes de la lista DROP de Spamhaus (www.spamhaus.org)</drop.rules>
 <drop_caches>Eliminar las cachés del kernel</drop_caches>
 <drop_caches_explain>Hacer que el kernel deje limpias las cachés, las dentr%C3%ADas y los inodos de la memoria, haciendo que esa memoria quede libre</drop_caches_explain>
-<dshield.rules>Rules to block Dshield identified Top Attackers (www.dshield.org)</dshield.rules>
+<dshield.rules>Reglas para bloquear a los principales atacantes identificados por DShield</dshield.rules>
 <dst>IP(s) de destino</dst>
 <dstdomainsrc>Dominio y direcci%C3%B3n IP de origen</dstdomainsrc>
 <dstdomain_regex>Web server (regex)</dstdomain_regex>
@@ -3763,7 +3760,7 @@ Utiliza las estad%C3%ADsticas de la interfaz de red proporcionadas por el kernel
 Debe consumir CPU y memoria porque para proporcionar las estad%C3%ADsticas.[br]
 Deber%C3%ADa desactivar este servicio para asegurar su rendimiento.</EnableVnStat_disable_explain>
 <EnableWatchCPUsage>Enable watchdog on CPU</EnableWatchCPUsage>
-<EnableWatchdog>Enable Watchdog service</EnableWatchdog>
+<EnableWatchdog>Activar el servicio Watchdog</EnableWatchdog>
 <EnableWatchMemoryUsage>Enable watchdog on Memory</EnableWatchMemoryUsage>
 <EnableWebPageDebugging>Debug all administration pages</EnableWebPageDebugging>
 <EnableWindowsAuthentication_text>Si est%C3¡ activo, entonces permite que este servidor sea un cliente de su servidor de Windows Active Directory para habilitar el protocolo NTLM que puede autenticar silenciosamente a sus usuarios seg%C3%BAn sus sesiones de Windows</EnableWindowsAuthentication_text>
@@ -3918,7 +3915,7 @@ Si se pone en verde esta funci%C3%B3n, se asegurar%C3¡ un cierto tiempo de resp
 <enable_master_mode>Enable Master mode</enable_master_mode>
 <enable_messaging>Activate messaging</enable_messaging>
 <enable_mimedefang_ask>This task will activate the MimeDefang daemon. Proceed ?</enable_mimedefang_ask>
-<enable_nat_compatibility>Firewall NAT Compatibility</enable_nat_compatibility>
+<enable_nat_compatibility>Compatibilidad NAT del firewall</enable_nat_compatibility>
 <enable_NAT_proxy>Redirigir las conexiones HTTP/HTTPS</enable_NAT_proxy>
 <enable_NAT_proxy_text>Si se activa, todas las conexiones ser%C3¡n redirigidas a un servicio proxy HTTP transparente[br].
 Esta funci%C3%B3n s%C3%B3lo est%C3¡ disponible si este servidor act%C3%BAa como pasarela.</enable_NAT_proxy_text>
@@ -4405,7 +4402,7 @@ Los valores numéricos pueden indicarse como valores enteros o con una fracci%C3
 <failed_to_start_service>Fallo al iniciar el servicio</failed_to_start_service>
 <failover>Failover</failover>
 <failover2>failover</failover2>
-<FailOverArtica>Enable health checking</FailOverArtica>
+<FailOverArtica>Activar la comprobaci%C3%B3n de estado</FailOverArtica>
 <FailOverArtica_explain>If this feature is turned to off, the backup server will be activated only when this server is unreachable ( shutdown or if network if off).</FailOverArtica_explain>
 <failover_explain>La conmutaci%C3%B3n por error es el cambio a un servidor inform%C3¡tico, sistema, componente de hardware o red redundante o de reserva tras el fallo o la finalizaci%C3%B3n anormal de la aplicaci%C3%B3n, el servidor, el sistema, el componente de hardware o la red anteriormente activos.
 de la aplicaci%C3%B3n, el servidor, el sistema, el componente de hardware o la red anteriormente activos.
@@ -4787,7 +4784,7 @@ maxmind comprueba las conexiones, esto no tiene sentido para actualizar menos de
 <get_a_free_trial_period>Get a free trial period</get_a_free_trial_period>
 <get_free_license_trial>Evaluate this products for free (30 days)</get_free_license_trial>
 <get_index_file>Retreive index file</get_index_file>
-<get_lease_hostnames>Get lease hostnames</get_lease_hostnames>
+<get_lease_hostnames>Obtener los nombres de host de los leases</get_lease_hostnames>
 <get_lease_hostnames_explain>Indica al servidor si debe o no buscar el nombre de dominio correspondiente a la direcci%C3%B3n IP de cada direcci%C3%B3n en el grupo de arrendamiento y usar esa direcci%C3%B3n para la opci%C3%B3n de nombre de host DHCP.
 Si se habilita, esta b%C3%BAsqueda se realiza para todas las direcciones en el %C3¡mbito actual.
 Por defecto, o si se desactiva, no se realiza ninguna b%C3%BAsqueda.</get_lease_hostnames_explain>
@@ -5193,7 +5190,7 @@ Al activar la opci%C3%B3n FireWall, Artica es capaz de crear autom%C3¡ticamente
 <ids_updates_explain>Esta secci%C3%B3n muestra sus reglas IDS actualizadas</ids_updates_explain>
 <ID_ATA>ATA ID</ID_ATA>
 <ID_ATA_WRITE_CACHE>ID ATA Write cache</ID_ATA_WRITE_CACHE>
-<ID_FS_SEC_TYPE>File sectors type</ID_FS_SEC_TYPE>
+<ID_FS_SEC_TYPE>Tipo de sectores del archivo</ID_FS_SEC_TYPE>
 <ID_MODEL_ENC>Model Enc.</ID_MODEL_ENC>
 <ID_PART_TABLE_TYPE>Partition table type</ID_PART_TABLE_TYPE>
 <ID_SCSI>SCSI ID</ID_SCSI>
@@ -5561,7 +5558,7 @@ If defined instead of be redirected to the requested website, user will be redir
 <items_has_been_added_in_webfiltering_database>Se han a%C3%B1adido elementos en la base de datos de filtrado web</items_has_been_added_in_webfiltering_database>
 <item_added>Item added</item_added>
 <item_deleted>Item deleted</item_deleted>
-<item_executed>Task executed</item_executed>
+<item_executed>Tarea ejecutada</item_executed>
 <IT_charter>Technology Charter</IT_charter>
 <it_charters>IT Charters</it_charters>
 <IT_charter_explain>La funci%C3%B3n de la Carta de Tecnolog%C3%ADa permite al servicio proxy redirigir las solicitudes a una p%C3¡gina web interna que obliga a los miembros a leer la pol%C3%ADtica de la empresa antes de acceder a Internet[br].
@@ -6089,7 +6086,7 @@ En este caso, es necesario especificar qué interfaz debe utilizar Artica para r
 example:[br]jhon;123;ssl:imap.remotehost.com;jhon.local[/b]
 </MAILBOXES_MIGRATION_EXPLAIN_2>
 <mailbox_agent>Mailbox agent</mailbox_agent>
-<mailbox_agent_text>Define local or remote address of the MDA agent address in order to save messages to mailbox.</mailbox_agent_text>
+<mailbox_agent_text>Defina la direcci%C3%B3n local o remota del agente MDA para permitir guardar los mensajes en el buz%C3%B3n.</mailbox_agent_text>
 <mailbox_error>Mailbox error</mailbox_error>
 <mailbox_protocols>Mailboxes Protocols</mailbox_protocols>
 <mailhost>Mail host</mailhost>
@@ -6870,7 +6867,7 @@ If you want to access to it trough HTTP (WebDav), enable the option HTTP sharing
 <new_expression>New expression</new_expression>
 <new_file>New file</new_file>
 <new_folder>New folder</new_folder>
-<new_forward_zone>New forward zone</new_forward_zone>
+<new_forward_zone>Nueva zona de reenv%C3%ADo</new_forward_zone>
 <new_gateway>New gateway</new_gateway>
 <new_group>Nuevo grupo</new_group>
 <new_group_of_rules>Nuevo grupo de reglas</new_group_of_rules>
@@ -7152,8 +7149,8 @@ Visualice esta secci%C3%B3n e intente categorizar usted mismo los sitios web par
 <not_set>No set</not_set>
 <not_store_log_locally>Do not store events locally</not_store_log_locally>
 <not_trust_mynets>Not trust local networks</not_trust_mynets>
-<not_trust_mynets_text>Most of engines are activated only if senders addresses are outside trusted networks.[br]
-if this server is installed after a front-end MX, you should enable this option.</not_trust_mynets_text>
+<not_trust_mynets_text>La mayor%C3%ADa de los motores se activan %C3%BAnicamente si las direcciones de los remitentes est%C3¡n fuera de las redes de confianza.[br]
+Si este servidor est%C3¡ instalado detr%C3¡s de un MX front-end, debe habilitar esta opci%C3%B3n.</not_trust_mynets_text>
 <not_used>No se utiliza</not_used>
 <not_used_no_license>No se utiliza, no hay licencia activa</not_used_no_license>
 <now_you_can_monitorize_your_server_through_your_smartphone>Now you can monitorize your server through your smartphone</now_you_can_monitorize_your_server_through_your_smartphone>
@@ -7280,7 +7277,7 @@ Actualmente s%C3%B3lo se utiliza el método nativo de Kerberos</ntlm_monitor_ker
 <NTLM_PERFORMANCES_NOT_DEFINED>Active Directory performance has not been set</NTLM_PERFORMANCES_NOT_DEFINED>
 <ntlm_plugins_number>NTLM plugins number</ntlm_plugins_number>
 <ntlm_processes>NTLM Processes</ntlm_processes>
-<ntp-servers>NTP servers</ntp-servers>
+<ntp-servers>Servidores NTP</ntp-servers>
 <NTPD>NTP Server</NTPD>
 <NTPDRestrictToLocalNetwork>Restringir a redes locales</NTPDRestrictToLocalNetwork>
 <NTPDRestrictToLocalNetwork_explain>si est%C3¡ activada, s%C3%B3lo las redes definidas en la secci%C3%B3n de red podr%C3¡n consultar el servidor de la hora[br].
@@ -7289,7 +7286,7 @@ Si est%C3¡ desactivado, no hay ninguna restricci%C3%B3n</NTPDRestrictToLocalNet
 It cannot serve clocks for your network.[br]
 You can still define in this configuration file the NTPD service to use under [b]Main settings[/b]
 </ntpd_server_not_installed_only_client_mode>
-<ntp_servers>NTP servers</ntp_servers>
+<ntp_servers>Servidores NTP</ntp_servers>
 <ntp_servers_status_explain>Esta secci%C3%B3n muestra la lista y el estado de cada servidor NTP remoto utilizado para sincronizar el reloj</ntp_servers_status_explain>
 <nudityScan>Nudity Scanner</nudityScan>
 <NumberOfMaximumFiles>Number Of Maximum Files</NumberOfMaximumFiles>
@@ -7689,8 +7686,8 @@ If Ping is success then it send a success report by eMail</PING_FAILED_RELOAD_NE
 <ping_kdc>PING Domain controler</ping_kdc>
 <ping_networks>Ping Networks</ping_networks>
 <PING_TIMEOUT>N%C3%BAmero de segundos de espera de las solicitudes de ping en</PING_TIMEOUT>
-<pkg_upgrade_interface>Upgrade system packages</pkg_upgrade_interface>
-<pkg_upgrade_interface_explain>This task is able to upgrade system packages you have enabled in the Web administration interface.[br]If no package has been selected, the task will die automatically</pkg_upgrade_interface_explain>
+<pkg_upgrade_interface>Actualizar los paquetes del sistema</pkg_upgrade_interface>
+<pkg_upgrade_interface_explain>Esta tarea permite actualizar los paquetes del sistema que haya habilitado en la interfaz de administraci%C3%B3n web.[br]Si no se ha seleccionado ning%C3%BAn paquete, la tarea se detendr%C3¡ autom%C3¡ticamente.</pkg_upgrade_interface_explain>
 <play_store>Play Store</play_store>
 <please_choose_a_bandwith_rule>Please choose a bandwidth rule</please_choose_a_bandwith_rule>
 <please_choose_a_correct_rule>Please choose a correct rule</please_choose_a_correct_rule>
@@ -7759,7 +7756,7 @@ If Ping is success then it send a success report by eMail</PING_FAILED_RELOAD_NE
 <please_wait_while_calculate_informations>Please wait, calculating requested information...</please_wait_while_calculate_informations>
 <pluginsw>Extensiones</pluginsw>
 <policies>Pol%C3%ADticas</policies>
-<pools>pools</pools>
+<pools>Rangos de direcciones</pools>
 <poor>Poor</poor>
 <portal_options>Portal options</portal_options>
 <portal_page>P%C3¡gina del portal</portal_page>
@@ -8695,7 +8692,7 @@ Example:[b]Admin123[/b]</reset_admin_password_explain>
 All datas according SMTP events will be removed</reset_smtp_logs_ask>
 <reset_system>Reiniciar el sistema</reset_system>
 <reset_table>Empty table</reset_table>
-<RESOLVED>Resolved</RESOLVED>
+<RESOLVED>Resuelto</RESOLVED>
 <ResolvIPStatistics>Resolve destination servers IPs</ResolvIPStatistics>
 <ResolvIPStatistics_explain>When using transparent method or if user type and IP address in browser, artica will write in traces the IP address of the remote web server.[br]
 This feature force Artica logger to resolve the hostname.[br]
@@ -9332,7 +9329,7 @@ means that all traffic originating from 10.0.0.0/8 and want to outgoing will pas
 <shorwallnic_arp_filter>ARP filter</shorwallnic_arp_filter>
 <shorwallnic_blacklist>Activate blacklists on this interface</shorwallnic_blacklist>
 <shorwallnic_dhcp>A DHCP service using this interface</shorwallnic_dhcp>
-<shorwallnic_dropunclean>Logs and drops mangled/invalid packets</shorwallnic_dropunclean>
+<shorwallnic_dropunclean>Registra en los logs y bloquea los paquetes corruptos o no v%C3¡lidos</shorwallnic_dropunclean>
 <shorwallnic_filterping>Ping answer by rules</shorwallnic_filterping>
 <shorwallnic_logmartians>LOG packets with impossible source addresses</shorwallnic_logmartians>
 <shorwallnic_logunclean>Logs mangled/invalid packets but does not drop them</shorwallnic_logunclean>
@@ -10417,7 +10414,7 @@ When Artica extract events from MySQL database, it will save compressed logs to 
 <syslog_store>System events storage</syslog_store>
 <SYSLOG_TYPE_EXPLAIN>Choose where you want to store old logs</SYSLOG_TYPE_EXPLAIN>
 <syslog_used_nas_storage>N.A.S storage as been selected, all logs rotation are directly moved to your NAS system</syslog_used_nas_storage>
-<SystemEventsRetentionTime>NB d%C3%ADas de retenci%C3%B3n para los eventos del sistema</SystemEventsRetentionTime>
+<SystemEventsRetentionTime>D%C3%ADas de retenci%C3%B3n de los eventos del sistema</SystemEventsRetentionTime>
 <SystemLoadNotif>Send report when system load exceed</SystemLoadNotif>
 <system_and_network>System and network</system_and_network>
 <system_console>Consola del sistema</system_console>
@@ -10449,7 +10446,7 @@ Por defecto todos los servicios usan [b]/var/log[/b] pero si lo has cambiado pon
 <system_swap_reboot_explain>If the swap use exceed rules in pourcent or in memory size, Artica will reboot automatically the system and send a report by email and in task events.</system_swap_reboot_explain>
 <system_table_route>Table System</system_table_route>
 <system_user>System user</system_user>
-<system_users>System users</system_users>
+<system_users>Usuarios del sistema</system_users>
 <system_users_informations>Mostrar los usuarios utilizados por el sistema operativo/los demonios</system_users_informations>
 <system_watchdog>System Watchdog</system_watchdog>
 <system_watchdog_text>Parameters for the system that monitor CPU, memory and system load</system_watchdog_text>
@@ -11326,8 +11323,8 @@ Do you want to carry out this operation ?</vde_remove_ask>
 A Virtual Switch have the same behavior as a physical switch.[br]It can include several virtual interfaces that use the same "real interface" behavior.[br]
 Each Virtual Switch is plugged to a real interface in order to communicate with the real network.
 </vde_switch_explain>
-<verbose>Verbose mode</verbose>
-<verbose_mode>Verbose mode</verbose_mode>
+<verbose>Modo detallado</verbose>
+<verbose_mode>Modo detallado</verbose_mode>
 <verifiy_recipients_on_target_server>Verificar los destinatarios en el servidor de destino</verifiy_recipients_on_target_server>
 <verify>Verificar</verify>
 <verify_caches>Verificar las cachés</verify_caches>
@@ -11844,10 +11841,9 @@ The Community Edition allows you to use this appliance for an unlimited time and
 If you need to turn to [b]Enterprise Edition[/b] click on the wizard button.
 </WELCOME_4_4>
 <welcome_new_cache_wizard>Welcome to the new proxy cache wizard</welcome_new_cache_wizard>
-<welcome_new_cache_wizard_license>In community edition, your are limited to a single CPU and the default cache that is able to store 2GB of Internet objects.[br]
-This configuration is designed to less than 15 Internet users.[br]
-Your are not allowed to use this wizard.
-</welcome_new_cache_wizard_license>
+<welcome_new_cache_wizard_license>En la edici%C3%B3n Community, est%C3¡ limitado a una sola CPU y a la caché predeterminada capaz de almacenar hasta 2 GB de objetos de Internet.[br]
+Esta configuraci%C3%B3n est%C3¡ dise%C3%B1ada para menos de 15 usuarios de Internet.[br]
+No tiene permitido utilizar este asistente.</welcome_new_cache_wizard_license>
 <welcome_new_cache_wizard_text>Este asistente le ayudar%C3¡ a crear una nueva caché Proxy para almacenar objetos de Internet y proporcionarlos localmente para asegurar el ancho de banda[br].
 Elija aqu%C3%AD c%C3%B3mo quiere crear su sistema de almacenamiento.</welcome_new_cache_wizard_text>
 <WELCOME_ON_ARTICA_PROJECT>Bienvenido al proyecto Artica</WELCOME_ON_ARTICA_PROJECT>

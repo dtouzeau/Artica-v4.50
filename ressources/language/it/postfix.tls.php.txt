@@ -44,20 +44,18 @@ Only information that was recorded by the final destination can be trusted.
 <smtpd_tls_req_ccert_text>With mandatory TLS encryption, require a trusted remote SMTP client certificate in order to allow TLS connections to proceed.[br]
 When TLS encryption is optional, this setting is ignored with a warning written to the mail log.</smtpd_tls_req_ccert_text>
 <smtp_tls_mandatory_protocols>Mandatory protocols</smtp_tls_mandatory_protocols>
-<smtp_tls_mandatory_protocols_text>
-List of SSL/TLS protocols that the Postfix SMTP client will use with mandatory TLS encryption.[br]
-the values are separated by whitespace, commas or colons.[br]
-In the policy table "protocols" attribute (see smtp tls policy maps) the only valid separator is colon.[br]
-[b]An empty value means allow all protocols.[/b][br]
-The valid protocol names, are [b]"SSLv2", "SSLv3" and "TLSv1"[/b].
-With Postfix up to 2.5 version, the parameter syntax is expanded to support protocol exclusions.[br]
-One can now explicitly exclude SSLv2 by setting [b]"!SSLv2"[/b].[br]
-To exclude both SSLv2 and SSLv3 set [b]!SSLv2, !SSLv3"[/b].[br]
-Listing the protocols to include, rather than protocols to exclude, is still supported; use the form you find more intuitive.[br]
-Since SSL version 2 has known protocol weaknesses and is now deprecated, the default setting excludes "SSLv2".[br]
-This means that by default, SSL version 2 will not be used at the "encrypt" security level and higher.[br]
-See the documentation of the smtp_tls_policy_maps parameter and TLS_README for more information about security levels.[br]
-</smtp_tls_mandatory_protocols_text>
+<smtp_tls_mandatory_protocols_text>Elenco dei protocolli SSL/TLS che il client SMTP Postfix utilizzerà con crittografia TLS obbligatoria.[br]
+I valori possono essere separati da spazi, virgole o due punti.[br]
+Nella tabella delle policy lâ%80%99attributo &quot;protocols&quot; (vedere smtp tls policy maps) accetta come separatore solo i due punti.[br]
+[b]Un valore vuoto significa che tutti i protocolli sono consentiti.[/b][br]
+I nomi di protocollo validi sono [b]&quot;SSLv2&quot;, &quot;SSLv3&quot; e &quot;TLSv1&quot;[/b].[br]
+Con Postfix dalla versione 2.5, la sintassi del parametro è stata estesa per supportare lâ%80%99esclusione dei protocolli.[br]
+%C3%88 ora possibile escludere esplicitamente SSLv2 impostando [b]&quot;!SSLv2&quot;[/b].[br]
+Per escludere sia SSLv2 che SSLv3 impostare [b]&quot;!SSLv2, !SSLv3&quot;[/b].[br]
+%C3%88 ancora possibile elencare i protocolli da includere invece di quelli da escludere; utilizzare la forma che si ritiene più intuitiva.[br]
+Poiché SSL versione 2 presenta note vulnerabilità ed è ormai deprecato, lâ%80%99impostazione predefinita esclude &quot;SSLv2&quot;.[br]
+Ci%C3² significa che, per impostazione predefinita, SSL versione 2 non verrà utilizzato al livello di sicurezza &quot;encrypt&quot; o superiore.[br]
+Consultare la documentazione del parametro smtp_tls_policy_maps e TLS_README per maggiori informazioni sui livelli di sicurezza.[br]</smtp_tls_mandatory_protocols_text>
 <test_cert_failed>Failed testing certificate</test_cert_failed>
 <test_cert_ok>Testing certificate OK</test_cert_ok>
 <test_TLS>Test Postfix TLS..</test_TLS>

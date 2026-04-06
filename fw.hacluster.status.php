@@ -744,14 +744,32 @@ function widget_backends($json):string{
 
         }
     }
+
+    $HaClusterInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterInterface"));
+    $HaClusterPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterPort"));
+    $from="$HaClusterInterface:$HaClusterPort&nbsp;<i class='".ico_arrow_right."'></i>&nbsp;";
+    $Sum=$bf+$bb;
+    $px=20;
+
+    if($bb>9){
+        $px=17;
+    }
+
+    if($bb>9 && $Sum>9){
+        $px=16;
+    }
+
+    $ss="style='font-size:{$px}px;color:white'";
+
+
     if($bb==0){
         return $tpl->_ENGINE_parse_body($tpl->widget_style1("yellow-bg",ico_server,"{backends}", 0));
     }
     if($bf==0){
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("navy-bg",ico_server,"{backends}", $bb));
+        return $tpl->_ENGINE_parse_body($tpl->widget_style1("navy-bg",ico_server,"{backends}", "<small $ss>$from$bb</small>"));
     }
-    $Sum=$bf+$bb;
-    return $tpl->_ENGINE_parse_body($tpl->widget_style1("yellow-bg",ico_server,"{backends}", "$bb/$Sum"));
+
+    return $tpl->_ENGINE_parse_body($tpl->widget_style1("yellow-bg",ico_server,"{backends}", "<small $ss>$from$bb/$Sum</small>"));
 
 
 }

@@ -580,16 +580,6 @@ function APP_STRONGSWAN_VERSION(){
 		}
 	}return null;}
 
-function APP_PRIVOXY_VERSION(){
-	if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
-	$masterbin=$GLOBALS["CLASS_UNIX"]->find_program("privoxy");
-	exec("$masterbin --version 2>&1",$results);
-	foreach ($results as $line){
-		if(!preg_match("#version\s+([0-9\.]+)#", $line,$re)){continue;}
-		$GLOBALS[__FUNCTION__]=$re[1];
-	}
-	return $GLOBALS[__FUNCTION__];
-	return null;}
 
 
 function MUNIN_NODE_VERSION(){
@@ -1327,7 +1317,6 @@ function Build_default_values(){
     $f[]="postfix.service";
     $f[]="pppd-dns.service";
     $f[]="prads.service";
-    $f[]="privoxy.service";
     $f[]="quotarpc.service";
     $f[]="redsocks.service";
     $f[]="rpcbind.service";
@@ -1391,10 +1380,6 @@ function Build_default_values(){
 
 	foreach ($SET0 as $filename){
 		if(!is_file("$SetDaemons/$filename")){
-			@file_put_contents("$SetDaemons/$filename",0);
-			@chmod("$SetDaemons/$filename",0755);
-			@chown("$SetDaemons/$filename","www-data");
-			@chgrp("$SetDaemons/$filename","www-data");
 			$GLOBALS["CLASS_SOCKETS"]->SET_INFO("$filename", 0);
 		}
 	}
@@ -1441,8 +1426,6 @@ function Build_default_values(){
 
 	PATCH_120_SQUID();
 	$GLOBALS["CLASS_UNIX"]->CPU_NUMBER();
-	$dialog=$GLOBALS["CLASS_UNIX"]->find_program("dialog");
-	$msktutil=$GLOBALS["CLASS_UNIX"]->find_program("msktutil");
 	$hostapd=$GLOBALS["CLASS_UNIX"]->find_program("hostapd");
 	$losetup=$GLOBALS["CLASS_UNIX"]->find_program("losetup");
 	$vconfig=$GLOBALS["CLASS_UNIX"]->find_program("vconfig");
@@ -1458,7 +1441,6 @@ function Build_default_values(){
     $adagent=$GLOBALS["CLASS_UNIX"]->find_program("ad-agent-lbl");
 	$ebtables=$GLOBALS["CLASS_UNIX"]->find_program("ebtables");
 	$squid27=$GLOBALS["CLASS_UNIX"]->find_program("squid27");
-	$apache2=$GLOBALS["CLASS_UNIX"]->LOCATE_APACHE_BIN_PATH();
 	$offlineimap=$GLOBALS["CLASS_UNIX"]->find_program("offlineimap");
 	$postscreen=$GLOBALS["CLASS_UNIX"]->LOCATE_POSTFIX_POSTSCREEN();
 	$ipset=$GLOBALS["CLASS_UNIX"]->find_program("ipset");
@@ -1470,7 +1452,6 @@ function Build_default_values(){
 	$php_fpm=$GLOBALS["CLASS_UNIX"]->find_program("php5-fpm");
 	$ntopng=$GLOBALS["CLASS_UNIX"]->find_program("ntopng");
 	$pureftpd=$GLOBALS["CLASS_UNIX"]->find_program("pure-ftpd");
-	$sabnzbdplus=$GLOBALS["CLASS_UNIX"]->find_program("sabnzbdplus");
 	$rpc_nfsd=$GLOBALS["CLASS_UNIX"]->find_program("rpc.nfsd");
 	$dstat=$GLOBALS["CLASS_UNIX"]->find_program("dstat");
 	$gnuplot=$GLOBALS["CLASS_UNIX"]->find_program("gnuplot");
@@ -1501,10 +1482,8 @@ function Build_default_values(){
 	$sensors_detect=$GLOBALS["CLASS_UNIX"]->find_program("sensors-detect");
 	$ziproxy=$GLOBALS["CLASS_UNIX"]->find_program("ziproxy");
 	$iwconfig=$GLOBALS["CLASS_UNIX"]->find_program("iwconfig");
-	$KERNEL_VERSION=$GLOBALS["CLASS_UNIX"]->KERNEL_VERSION();
 	$namebench=$GLOBALS["CLASS_UNIX"]->find_program("namebench");
 	$nohup=$GLOBALS["CLASS_UNIX"]->find_program("nohup");
-	$privoxy=$GLOBALS["CLASS_UNIX"]->find_program("privoxy");
 	$pdns_server=$GLOBALS["CLASS_UNIX"]->find_program("pdns_server");
 	$msmtp=$GLOBALS["CLASS_UNIX"]->find_program("msmtp");
 	$glances=$GLOBALS["CLASS_UNIX"]->find_program("glances");
@@ -1953,16 +1932,6 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PEAR_INSTALLED", 0);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PEAR_PACKAGES", "");
 	}
-
-	if(is_file($privoxy)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_PRIVOXY_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_PRIVOXY_VERSION", APP_PRIVOXY_VERSION());
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PEAR_INSTALLED", 0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PEAR_PACKAGES", "");
-	}
-
-
 	if(is_file($pdns_server)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PDNSInstalled", 1);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PDNSVersion", APP_PDNS_VERSION());
@@ -2027,12 +1996,6 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ZIPROXY_VERSION", ZIPROXY_VERSION());
 	}else{
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ZIPROXY_INSTALLED", 0);
-	}
-
-	if(is_file($namebench)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("NAMEBENCH_INSTALLED", 1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("NAMEBENCH_INSTALLED", 0);
 	}
 
 	if(is_file('/usr/sbin/hv_vss_daemon')){
@@ -2468,11 +2431,6 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("NtopNGInstalled", 0);
 	}
 
-	if(is_file($sabnzbdplus)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SABNZBDPLUS_INSTALLED",1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_SABNZBDPLUS_INSTALLED",0);
-	}
 
 	if(is_file($muninnode)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MUNIN_CLIENT_INSTALLED",1);
@@ -3123,8 +3081,7 @@ function watch_fsfilemax(){
         shell_exec("/sbin/sysctl -w fs.file-max=80128");
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("fs_filemax",80128);
         $filemax=80128;
-        $cmd=trim("$pfixcmd/exec.sysctl.php --build >/dev/null 2>&1 &");
-        shell_exec($cmd);
+        shell_exec("/usr/sbin/artica-phpfpm-service -sysctl");
     }
 
 	$max_filedesc=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("max_filedesc"));
@@ -3136,8 +3093,7 @@ function watch_fsfilemax(){
             " must at least $max_filedesc",null,__FILE__,__LINE__);
         shell_exec("/sbin/sysctl -w fs.file-max=$max_filedesc");
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("fs_filemax",$max_filedesc);
-        $cmd=trim("$pfixcmd/exec.sysctl.php --build >/dev/null 2>&1 &");
-        shell_exec($cmd);
+        shell_exec("/usr/sbin/artica-phpfpm-service -sysctl");
         return true;
     }
 
@@ -3146,8 +3102,7 @@ function watch_fsfilemax(){
         squid_admin_mysql(1,"Restoring Kernel Max File descriptors from $filemax".
             " must at least $fs_filemax",null,__FILE__,__LINE__);
         shell_exec("/sbin/sysctl -w fs.file-max=$fs_filemax");
-        $cmd=trim("$pfixcmd/exec.sysctl.php --build >/dev/null 2>&1 &");
-        shell_exec($cmd);
+        shell_exec("/usr/sbin/artica-phpfpm-service -sysctl");
         return true;
 
     }

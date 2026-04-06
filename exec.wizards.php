@@ -386,7 +386,7 @@ function create_simple_proxy(){
     system("/usr/sbin/artica-phpfpm-service -install-proxy");
     $ppr++;
     build_progress("{installing} {APP_UFDBGUARD}",$ppr);
-    if(!is_file("/etc/init.d/ufdb")) {system("$php5 /usr/share/artica-postfix/exec.ufdb.enable.php");}
+    if(!is_file("/etc/init.d/ufdb")) {system("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/install");}
 
 
 
@@ -398,7 +398,7 @@ function create_gateway(){
     $ppr=uninstall_all();
     $ppr++;
     build_progress("{installing}....",$ppr);
-    shell_exec("$php5 ".ARTICA_ROOT."/exec.sysctl.php --restart");
+    shell_exec("/usr/sbin/artica-phpfpm-service -sysctl");
     build_progress("{done}....",100);
 
 }
@@ -435,7 +435,7 @@ function create_waf($hostname){
 
     build_progress("{installing} {APP_UFDBGUARD}",30);
     if(!is_file("/etc/init.d/ufdb")) {
-        system("$php5 /usr/share/artica-postfix/exec.ufdb.enable.php");
+        system("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/install");
     }
     build_progress("{installing} {APP_NGINX}",40);
     if(!is_file("/etc/init.d/nginx")) {
@@ -472,7 +472,7 @@ function create_waf($hostname){
     $sock->SET_INFO("SquidGuardWebExternalUri","$hostname");
 
     build_progress("{configuring} {APP_UFDBGUARD}",80);
-    system("$php5 /usr/share/artica-postfix/exec.squidguard.php --build");
+    system("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/compile");
 
     $nohup=$unix->find_program("nohup");
     system("$nohup $php5 /usr/share/artica-postfix/exec.squid.blacklists.php --force >/dev/null 2>&1 &");

@@ -377,7 +377,6 @@ function widget_nginx():bool{
     $tpl=new template_admin();
     $bg="white-bg";
     $title_icon="fas fa-globe-africa";
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?status=yes");
     $explain_error=null;
     $APP_NGINX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NGINX_VERSION");
     $widget_title="{APP_NGINX} v$APP_NGINX_VERSION";
@@ -490,8 +489,13 @@ function widget_dnsdist():bool{
         $DISPLAY[]="<li><span class=\"fas fa-plug m-r-xs\"></span>&nbsp;{running}:</label> {since} $uptime</li>";
     }
     $EnableDNSFirewall_text="{inactive}";
+    $function="";
+    if(isset($_GET["function"])){
+        $function=$_GET["function"];
+    }
 
-    $new_host_resolve=$tpl->td_href("{new_host_resolve}",null,"Loadjs('fw.dns.unbound.php?addhost-js=yes&function={$_GET["function"]}');");
+
+    $new_host_resolve=$tpl->td_href("{new_host_resolve}",null,"Loadjs('fw.dns.unbound.php?addhost-js=yes&function=$function');");
 
     $DISPLAY[]="<li><span class=\"fas fa-bolt m-r-xs\"></span>&nbsp;{queries}:</label> $QUERIES_TEXT</li>";
     $DISPLAY[]="<li><span class=\"fas fa-microchip m-r-xs\"></span>&nbsp;{cache_rate}:</label> $prc%</li>";
@@ -588,7 +592,6 @@ $RBLDNSD_BLCK_COUNT=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RBLDNSD_BLCK_COUNT");
 
 }
 function widget_hacluster():bool{
-    include_once(dirname(__FILE__)."/ressources/class.hacluster.inc");
     $tpl=new template_admin();
 
 

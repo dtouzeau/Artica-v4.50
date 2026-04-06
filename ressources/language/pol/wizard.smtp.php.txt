@@ -1,4 +1,4 @@
-<company>Company name</company>
+<company>Nazwa firmy</company>
 <company_domain>Give here your company name that will be the reference of your organization and your messaging domain name such has domain.tld has your first SMTP domain name</company_domain>
 <company_domain_t>Your company name and domain name</company_domain_t>
 <domain_routing>Routing Domain</domain_routing>

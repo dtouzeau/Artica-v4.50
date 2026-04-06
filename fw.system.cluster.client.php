@@ -324,7 +324,7 @@ function Save():bool{
     $data=unserialize(base64_decode($data));
 
     if(!isset($ARRAY["UUID"])){$ARRAY["UUID"]=null;}
-    $uuid=base64_decode($GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?system-unique-id=yes"));
+    $uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
     if($ARRAY["UUID"]<>null){
         if(trim($ARRAY["UUID"])==trim($uuid)){
             echo "jserror:Loop back to myself, same uuid";

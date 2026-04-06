@@ -47,7 +47,6 @@ if(isset($_GET["single-searchs"])){single_searchs();exit;}
 
 if(isset($_GET["nas-storage-progress"])){nas_storage_progress();exit;}
 if(isset($_GET["rockstore-progress"])){rockstore_progress();exit;}
-if(isset($_GET["disable-hypercache-urgency"])){squid_hypercache_emergency();exit;}
 if(isset($_GET["network-switch"])){squid_network_switch();exit;}
 if(isset($_GET["mysql-crash"])){mysql_crash();exit;}
 if(isset($_GET["failover-progress-unlink"])){failover_unlink_progress();exit;}
@@ -73,10 +72,6 @@ if(isset($_GET["ps-aux-squid"])){psauxsquid();exit;}
 if(isset($_GET["shock-active-requests"])){shock_active_requests();exit;}
 if(isset($_GET["replicate-source-logs"])){squid_replicate_source_logs();exit;}
 if(isset($_GET["unlink-source-logs"])){squid_unlink_source_logs();exit;}
-if(isset($_GET["ufdbguard_enable_progress"])){ufdbguard_enable_progress();exit;}
-
-
-
 if(isset($_GET["squid_caches_infos"])){squid_caches_infos();exit;}
 if(isset($_GET["mikrotik-ipface"])){mikrotik_ipface();exit;}
 if(isset($_GET["ufdbcat-restart-interface"])){ufdbcat_restart_interface();exit;}
@@ -92,8 +87,6 @@ if(isset($_GET["reconfigure-unlock"])){reconfigure_unlock();exit;}
 if(isset($_GET["single-templates"])){single_templates();exit;}
 if(isset($_GET["firewall-progress"])){firewall_progress("","");exit;}
 if(isset($_GET["IS_APP_SQUIDDB_INSTALLED"])){exit;}
-
-if(isset($_GET["force-restart-ufdbguard"])){ufdbguard_force_restart();exit;}
 if(isset($_GET["check-status-progress"])){check_status_progress();exit;}
 if(isset($_GET["test-ntlm"])){test_ntlm();exit;}
 if(isset($_GET["install-squid-tgz"])){install_squid_tgz();exit;}
@@ -284,7 +277,6 @@ if(isset($_GET["purge-site"])){purge_site();exit;}
 if(isset($_GET["boosterpourc"])){boosterpourc();exit;}
 
 if(isset($_GET["compile-list"])){compile_list();exit;}
-if(isset($_GET["ufdbguard-compile-smooth"])){ufdbguard_compile_smooth();exit;}
 if(isset($_GET["compile-by-interface"])){compile_by_interface();exit;}
 if(isset($_GET["support-step1"])){support_step1();exit;}
 if(isset($_GET["support-step2"])){support_step2();exit;}
@@ -294,7 +286,6 @@ if(isset($_GET["restore-backup-catz"])){restore_backuped_categories();exit;}
 if(isset($_GET["empty-perso-catz"])){empty_personal_categories();exit;}
 if(isset($_GET["ScanThumbnails"])){ScanThumbnails();exit;}
 if(isset($_GET["recompile-debug"])){recompile_debug();exit;}
-if(isset($_GET["clean-mysql-stats"])){clean_mysql_stats_db();exit;}
 if(isset($_GET["follow-xforwarded-for-enabled"])){follow_xforwarded_for_enabled();exit;}
 if(isset($_GET["enable-http-violations-enabled"])){enable_http_violations_enabled();exit;}
 if(isset($_GET["update-ufdb-precompiled"])){update_ufdb_precompiled();exit;}
@@ -308,8 +299,6 @@ if(isset($_GET["squidclient-infos"])){squidclient_infos();exit;}
 if(isset($_GET["articadbsize"])){articadb_size();exit;}
 if(isset($_GET["CheckRunningTasks"])){CheckRunningTasks();exit;}
 if(isset($_GET["dynamicgroups-logs"])){dynamic_groups_logs();exit;}
-if(isset($_GET["old-logs-scan-nas"])){squid_oldlogs_scan_nas();exit;}
-if(isset($_GET["old-logs-import-nas"])){squid_oldlogs_import_nas();exit;}
 if(isset($_GET["purge-numeric-members-statistics"])){purge_numeric_members_statistics();exit;}
 if(isset($_GET["legal-logs-progress"])){LEGAL_LOGS_SERVER_CONNECT();exit;}
 if(isset($_GET["legal-logs-disconnect"])){LEGAL_LOGS_SERVER_DISCONNECT();exit;}
@@ -794,33 +783,7 @@ function SQUID_REFRESH_PANEL_STATUS(){
 }
 
 
-function squid_k_reconfigure(){
 
-    $unix=new unix();
-    $squid=$unix->LOCATE_SQUID_BIN();
-    $force=null;
-    if(isset($_GET["force"])){$force=" --force";}
-    squid_watchdog_events("Reconfiguring Proxy parameters...");
-    SQUID_REFRESH_PANEL_STATUS();
-    $statusfile=$GLOBALS["SQUID_REFRESH_PANEL_STATUS"];
-    $unix->chmod_func(0755, "/etc/artica-postfix/settings/Daemons/*");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-
-    if(isset($_GET["ApplyConfToo"])){
-        $cmd="$nohup $php5 /usr/share/artica-postfix/exec.squid.php --build{$force} >> {$GLOBALS["SQUID_REFRESH_PANEL_STATUS"]} 2>&1 &";
-        squid_admin_mysql(2, "Framework executed to reconfigure squid-cache", @file_get_contents($statusfile));
-        writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-        shell_exec($cmd);
-        return;
-    }
-
-    shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.squid.php --kreconfigure >> {$GLOBALS["SQUID_REFRESH_PANEL_STATUS"]} 2>&1");
-    squid_admin_mysql(2, "Framework executed to reconfigure squid-cache", @file_get_contents($statusfile));
-    sleep(2);
-    $tail=$unix->find_program("tail");
-    shell_exec("$tail -n 100 /var/log/squid/cache.log >> $statusfile 2>&1");
-}
 
 function squid_watchdog_events($text){
     $unix=new unix();
@@ -976,25 +939,8 @@ function squid_realtime_cache(){
 
 
 
-function ufdbguard_compile_smooth(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squidguard.php --build-ufdb-smoothly >/dev/null 2>&1 &");
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
 
 
-}
-function rebuild_filters(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    if(isset($_GET["force"])){$f=" --force ";}
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.squidguard.php --build $f>/dev/null 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
 function ufdbguard_compile_database(){
     $unix=new unix();
     $database=$_GET["ufdbguard-compile-database"];
@@ -1014,45 +960,9 @@ function ufdbguard_compile_database(){
 }
 
 
-function ufdbguard_force_restart(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdb.restart.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdb.restart.logs";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);$array["POURC"]=2;$array["TEXT"]="{please_wait}";@file_put_contents($GLOBALS["CACHEFILE"], serialize($array));
 
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["LOGSFILES"],0777);
 
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb.php --force-restart-squid >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 
-}
-
-function ufdbguard_enable_progress(){
-    $GLOBALS["CACHEFILE"]="/usr/share/artica-postfix/ressources/logs/web/ufdb.enable.progress";
-    $GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/ufdb.enable.logs";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @chmod($GLOBALS["CACHEFILE"],0777);$array["POURC"]=2;$array["TEXT"]="{please_wait}";@file_put_contents($GLOBALS["CACHEFILE"], serialize($array));
-
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["LOGSFILES"],0777);
-
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.ufdb.enable.php >{$GLOBALS["LOGSFILES"]} 2>&1 &");
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-
-}
 
 
 

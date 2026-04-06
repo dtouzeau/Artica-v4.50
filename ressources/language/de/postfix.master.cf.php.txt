@@ -13,7 +13,7 @@ Specify  0  for  no process count limit.[br]
 with no process limit (for example, cleanup).[br]These limits must not be changed.
 </MAXPROC_TEXT>
 <OPTIONS>Optionen</OPTIONS>
-<PRIVATE>Private</PRIVATE>
+<PRIVATE>Privat</PRIVATE>
 <PRIVATE_TEXT>Whether or not access is  restricted  to  the  mail system.
 [br]Internet  (type  inet)  services can't be private</PRIVATE_TEXT>
 <rebuild_configuration>Rebuild to default config</rebuild_configuration>

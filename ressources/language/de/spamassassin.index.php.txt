@@ -60,27 +60,24 @@ SpamAssassin runs on a server, and filters spam before it reaches your mailbox</
 <title1>Basic Message Tagging Options</title1>
 <To>To Header</To>
 <trusted_networks>Vertrauensw%C3%BCrdige Netzwerke</trusted_networks>
-<trusted_networks_text>
-What networks or hosts are 'trusted' in your setup.[br]
-Trusted in this case means that relay hosts on these networks are considered to not be potentially operated by spammers,
-open relays, or open proxies.
+<trusted_networks_text>Definiert, welche Netzwerke oder Hosts in Ihrer Konfiguration als vertrauensw%C3%BCrdig gelten.[br]
+In diesem Zusammenhang bedeutet vertrauensw%C3%BCrdig, dass Relay-Hosts in diesen Netzwerken nicht als von Spammern betriebene offene Relays oder offene Proxys betrachtet werden.[br]
 [br]
-A trusted host could conceivably relay spam, but will not originate it, and will not forge header data.[br]
-DNS blacklist checks will never query for hosts on these networks.[br]
-MXes for your domain(s) and internal relays should also be specified using the internal networks setting.[br]
-When there are 'trusted' hosts that are not MXes or internal relays for your domain(s) they should only be specified in trusted networks.[br]
-If a /mask is specified, it's considered a CIDR-style 'netmask', specified in bits.[br]
-If it is not specified, but less than 4 octets are specified with a trailing dot, that's considered a mask to allow
-all addresses in the remaining octets.[br]
-If a mask is not specified, and there is not trailing dot, then just the single IP address specified is used, as if the mask was /32.
-If a network or host address is prefaced by a ! the network or host will be excluded (or included) in a first listed match fashion.[br]
-[i]Note: 127/8 is always included in trusted_networks, regardless of your config.[/i][br]
-[blk]Examples:
-[li]192.168/16 (all in 192.168.*.*)[/li]
-[li]212.17.35.15 (just that host)[/li]
-[li]!10.0.1.5 10.0.1/24   (all in 10.0.1.* but not 10.0.1.5)[/li]
-[/blk]
-</trusted_networks_text>
+Ein vertrauensw%C3%BCrdiger Host k%C3%B6nnte theoretisch Spam weiterleiten, sollte ihn jedoch nicht selbst erzeugen oder Header-Daten f%C3%A4lschen.[br]
+DNS-Blacklist-Abfragen werden f%C3%BCr Hosts in diesen Netzwerken niemals durchgef%C3%BChrt.[br]
+Die MX-Server Ihrer Domain(s) sowie interne Relays sollten ebenfalls %C3%BCber die Einstellung internal networks angegeben werden.[br]
+Vertrauensw%C3%BCrdige Hosts, die keine MX-Server oder internen Relays f%C3%BCr Ihre Domain(s) sind, sollten ausschlie%C3%9Flich in trusted networks angegeben werden.[br]
+[br]
+Wenn eine /mask angegeben ist, wird sie als CIDR-Netzmaske interpretiert, die in Bits angegeben wird.[br]
+Wenn keine Maske angegeben ist, aber weniger als vier Oktette mit einem abschlie%C3%9Fenden Punkt vorhanden sind, wird dies als Maske interpretiert, die alle verbleibenden Adressen zul%C3%A4sst.[br]
+Wenn keine Maske und kein abschlie%C3%9Fender Punkt vorhanden sind, wird nur die angegebene IP-Adresse verwendet, als w%C3%A4re eine /32-Maske gesetzt.[br]
+Wenn eine Netzwerk- oder Hostadresse mit ! beginnt, wird dieses Netzwerk oder dieser Host anhand der zuerst passenden Regel ausgeschlossen (oder eingeschlossen).[br]
+[i]Hinweis: 127/8 ist immer in trusted_networks enthalten, unabh%C3%A4ngig von Ihrer Konfiguration.[/i][br]
+[blk]Beispiele:
+[li]192.168/16 (alle Adressen in 192.168..)[/li]
+[li]212.17.35.15 (nur dieser Host)[/li]
+[li]!10.0.1.5 10.0.1/24 (alle Adressen in 10.0.1.* au%C3%9Fer 10.0.1.5)[/li]
+[/blk]</trusted_networks_text>
 <use_auto_whitelist>Enable automatic whitelist</use_auto_whitelist>
 <use_auto_whitelist_text>
 The auto-whitelist, aka automatic whitelist or AWL, tracks scores for your regular correspondents in a small on-disk database.[br]

@@ -877,15 +877,10 @@ function search(){
     $category=$tpl->_ENGINE_parse_body("{category}");
     $emergency_text = $tpl->_ENGINE_parse_body("{urgency_mode}");
     $theshield  = "The Shields";
-    $PrivoxyEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PrivoxyEnabled"));
+
     $hotspot_text=$tpl->_ENGINE_parse_body("&nbsp;<i>({hotspot})</i>");
     $SquidLogUsersAgents=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidLogUsersAgents"));
     $webfiltering_error=$tpl->_ENGINE_parse_body("{webfiltering} {error}");
-
-    if($PrivoxyEnabled==1){
-        $PrivoxyPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PrivoxyPort"));
-        $LOCAL_SERVICES["127.0.0.1:$PrivoxyPort"]="{APP_PRIVOXY}";
-    }
 
 
     $html[]="

@@ -38,22 +38,15 @@ if(isset($_GET["quotasize-status"])){quotasize_status();exit;}
 if(isset($_GET["quotasize-uninstall"])){quotasize_uninstall();exit;}
 if(isset($_GET["reload-progress"])){reload_progress();exit;}
 if(isset($_GET["dump-hour-progress"])){DUMP_HOUR_PROGRESS();exit;}
-if(isset($_GET["windows-update-delete"])){windows_update_delete();exit;}
-if(isset($_GET["wizard-ports"])){wizard_ports();exit;}
 
-if(isset($_GET["caches-rules-progress"])){caches_rules_progress();exit;}
-if(isset($_GET["ntlm-install-progress"])){ntlm_install_progress();exit;}
-if(isset($_GET["ntlm-uninstall-progress"])){ntlm_uninstall_progress();exit;}
-if(isset($_GET["ntlm-reconfigure-progress"])){ntlm_reconfigure_progress();exit;}
 if(isset($_GET["ntlm-monitor-status"])){ntlm_monitor_status();exit;}
 if(isset($_GET["kerbauth-squid-progress"])){ntlm_squid_compile();exit;}
-if(isset($_GET["run-calamaris"])){run_calamaris();exit;}
 //EnableHotSpotInSquid
 if(isset($_GET["quotarules-status-progress"])){quotarules_status_progress();exit;}
 if(isset($_GET["clean-logs-emergency"])){clean_logs_emergency();exit;}
 if(isset($_GET["rebuild-and-restart"])){rebuild_and_restart();exit;}
 if(isset($_GET["rebuild-and-restart-complete"])){rebuild_and_restart_complete();exit;}
-if(isset($_GET["squidclient-ipcache"])){squidclient_ipcache();exit;}
+
 
 
 if(isset($_GET["emergency-activedirectory-progress"])){activedirectory_emergency_progress();exit;}
@@ -79,11 +72,7 @@ if(isset($_GET["squid-conf-externals"])){squid_externals_conf();exit;}
 
 if(isset($_GET["saveSquidPortContent"])){squid_ports_conf_save();exit;}
 if(isset($_GET["saveSquidSSLContent"])){squid_ssl_conf_save();exit;}
-if(isset($_GET["ssl-satus"])){ssl_status();exit;}
-
 if(isset($_GET["saveSquidExternalContent"])){squid_external_conf_save();exit;}
-if(isset($_GET["watchdog-restart"])){watchdog_restart();exit;}
-
 if(isset($_GET["global-ufdb-client"])){squid_ufdbclient();exit;}
 if(isset($_GET["global-timeouts-center"])){squid_timeouts();exit;}
 if(isset($_GET["global-common-cache"])){configure_cache();exit;}
@@ -122,7 +111,6 @@ if(isset($_GET["testTheWhiteLists"])){testTheWhiteLists();exit;}
 
 if(isset($_GET["create-cache-wizard"])){create_cache_wizard();exit;}
 if(isset($_GET["allow-80443-port"])){allow_8083_port();exit;}
-if(isset($_GET["reload-squid-cache"])){reload_squid_cache();exit;}
 if(isset($_GET["logsfinder"])){logsfinder();exit;}
 if(isset($_GET["useragents-rules"])){squid_useragents_rules();exit;}
 if(isset($_GET["purge-delete"])){purge_delete();exit;}
@@ -530,18 +518,7 @@ function watchdog_bandwidth(){
 
 }
 
-function reload_squid_cache(){
-    $unix=new unix();
-    $squidbin=$unix->LOCATE_SQUID_BIN();
-    $nohup=$unix->find_program("nohup");
-    $php=$unix->LOCATE_PHP5_BIN();
 
-    if( is_file($squidbin)){
-        squid_admin_mysql(2, "{reloading_proxy_service} by framework (".__FUNCTION__.")", null,__FILE__,__LINE__);
-        system("/usr/sbin/artica-phpfpm-service -reload-proxy");
-    }
-
-}
 
 function categories_hot(){
     $CATEGORIES_HOT=unserialize(@file_get_contents("/var/log/squid/category.array"));
@@ -593,9 +570,7 @@ function squid_templates_background(){
     writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 
-    $cmd=trim("$nohup $php /usr/share/artica-postfix/exec.privoxy.php --template >/dev/null 2>&1 &");
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
+
 
 }
 

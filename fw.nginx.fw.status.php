@@ -67,7 +67,7 @@ function status():bool{
     if($MODSECURITY_INSTALLED==0){$EnableModSecurityIngix=0;}
 
     if($EnableModSecurityIngix==1){
-        $uninstall_modsecurity=$tpl->framework_buildjs("nginx.php?modsecurity-uninstall=yes",
+        $uninstall_modsecurity=$tpl->framework_buildjs("nginx:/modsecurity/disable",
             "modsecurity.progress",
             "modsecurity.progress.log",
             "progress-web-firewall","LoadAjaxSilent('webf-section','$page?tabs=yes');$refreshAll");
@@ -79,7 +79,7 @@ function status():bool{
         $MODSECURITY_GLOBAL = $tpl->widget_h("green", "fa fa-thumbs-up", "{enabled}", "{WAF_LONG}",$button);
     }else{
 
-        $install_modsecurity=$tpl->framework_buildjs("nginx.php?modsecurity-install=yes",
+        $install_modsecurity=$tpl->framework_buildjs("nginx:/modsecurity/enable",
             "modsecurity.progress",
             "modsecurity.progress.log",
             "progress-web-firewall","LoadAjaxSilent('webf-section','$page?tabs=yes');$refreshAll");

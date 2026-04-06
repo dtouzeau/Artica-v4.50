@@ -378,24 +378,7 @@ class features{
         return $this->build_paragraph($config);
     }
 
-    public function APP_PRIVOXY(){
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TOKEN_REQUIRE"]="{proxy_service}";
-        $config["TITLE"]="{APP_PRIVOXY}";
-        $config["EXPLAIN"]="{privoxy_explain}";
-        $config["TOKEN_INSTALLED"]="APP_PRIVOXY_INSTALLED";
-        $config["TOKEN_REQUIRE_INSTALLED"]="SQUID_INSTALLED";
-        $config["TOKEN_REQUIRE_ENABLED"]="SQUIDEnable";
-        $config["TOKEN"]="PrivoxyEnabled";
-        $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/privoxy.progress";
-        $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/privoxy.txt";
-        $config["CMD_ON"]="privoxy.php?install=yes";
-        $config["CMD_OFF"]="privoxy.php?disable=yes";
-        return $this->build_paragraph($config);
-    }
+
 
     public function APP_ZABBIX_AGENT(){
         $config["SECURITY"]="AsSystemAdministrator";
@@ -471,15 +454,12 @@ class features{
         $config["TOKEN_INSTALLED"]="MODSECURITY_INSTALLED";
         $config["TOKEN_REQUIRE_ENABLED"]="EnableNginx";
         $config["TOKEN"]="EnableModSecurityIngix";
-        $config["CMD_ON"]="nginx.php?modsecurity-install=yes";
-        $config["CMD_OFF"]="nginx.php?modsecurity-uninstall=yes";
+        $config["CMD_ON"]="nginx:/modsecurity/enable";
+        $config["CMD_OFF"]="nginx:/modsecurity/disable";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/modsecurity.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/modsecurity.progress.log";
         return $this->build_paragraph($config);
     }
-
-
-
     public function APP_SNMPD(){
         $config["SECURITY"]="AsSystemAdministrator";
         $config["DEBIAN"]=true;
@@ -1256,14 +1236,6 @@ class features{
 
     }
 
-
-
-    public function WSUSOFFLINE():string{
-
-            return "";
-
-
-    }
     public function INSTANTSEARCH(){
         if($this->ASReverseProxyAppliance){
             return "";
@@ -1804,18 +1776,7 @@ class features{
         return $this->build_paragraph($config);
     }
 
-    public function DARKSTAT(){
-        $config["SECURITY"]="AsSystemAdministrator";
-        //$config["TOKEN_INSTALLED"]="NetDataInstalled";
-        $config["TITLE"]="{APP_DARKSTAT}";
-        $config["EXPLAIN"]="{APP_DARKSTAT_EXPLAIN}";
-        $config["TOKEN"]="EnableDarkStat";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/darkstat.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/darkstat.progress.txt";
-        $config["CMD_ON"]="darkstat.php?enable=yes";
-        $config["CMD_OFF"]="darkstat.php?disable=yes";
-        return $this->build_paragraph($config);
-    }
+
 
     public function APP_IWCONFIG(){
         if($this->ASReverseProxyAppliance){

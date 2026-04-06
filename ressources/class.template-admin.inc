@@ -6652,7 +6652,7 @@ if(typeof dialogInstance == 'object'){
         // btn-default
         // fad fa-hat-wizard
         $xlog[]="<!-- class=$class -->";
-        if($icon_class==null){$icon_class="fas fa-save";}
+        if($icon_class==null){$icon_class=ico_params;}
 
 
         if(preg_match("#^(.+?)\s+(.+)#", $icon_class,$re)){
@@ -9740,8 +9740,9 @@ if(typeof dialogInstance == 'object'){
         }
 
         $maskedValue=($value!==null && strlen($value)>0) ? '%%MASKED%%' : '';
-        $F="<div class=\"input-group\"><input type='password' id='$id' class='form-control' value='$maskedValue' style='font-size:14px' onfocus=\"if(this.value==='%%MASKED%%'){this.value='';}\">$view_pass1</div>";
-        $F2="<div class=\"input-group\"><input type='password' id='$id2' class='form-control' value='$maskedValue' style='font-size:14px' onfocus=\"if(this.value==='%%MASKED%%'){this.value='';}\">$view_pass2</div>";
+        $onblur=($maskedValue==='%%MASKED%%') ? " onblur=\"if(this.value===''){this.value='%%MASKED%%';}\"" : '';
+        $F="<div class=\"input-group\"><input type='password' id='$id' class='form-control' value='$maskedValue' style='font-size:14px' autocomplete='new-password' onfocus=\"if(this.value==='%%MASKED%%'){this.value='';}\"$onblur>$view_pass1</div>";
+        $F2="<div class=\"input-group\"><input type='password' id='$id2' class='form-control' value='$maskedValue' style='font-size:14px' autocomplete='new-password' onfocus=\"if(this.value==='%%MASKED%%'){this.value='';}\"$onblur>$view_pass2</div>";
 
         $NoSpinner="NoSpinner()";
 
@@ -9836,8 +9837,9 @@ if(typeof dialogInstance == 'object'){
 
 
         $maskedValue=($value!==null && strlen($value)>0) ? '%%MASKED%%' : '';
+        $onblur=($maskedValue==='%%MASKED%%') ? " onblur=\"if(this.value===''){this.value='%%MASKED%%';}\"" : '';
         $F="<div class=\"input-group\">
-            <input type='password' name='{$name}' placeholder='{$label}' id='$id' class='form-control' value='$maskedValue' style='font-size:14px' onfocus=\"if(this.value==='%%MASKED%%'){this.value='';}\">
+            <input type='password' name='{$name}' placeholder='{$label}' id='$id' class='form-control' value='$maskedValue' style='font-size:14px' autocomplete='new-password' onfocus=\"if(this.value==='%%MASKED%%'){this.value='';}\"$onblur>
             $view_pass1
             </div>";
 
@@ -12948,17 +12950,7 @@ $('#data_$id .input-group.date').datepicker({
 
     }
 
-    private function SERVICE_STATUS_RRD($servicename,$servicekey):string{
-        if(!is_file("squid/img/$servicename-cpu-hourly.png")) {
-            return $servicename;
-        }
-        VERBOSE("squid/img/$servicename-cpu-hourly.png NOT FOUND",__LINE__);
-        if(is_file("squid/img/$servicekey-cpu-hourly.png")){
-            return $servicekey;
-        }
-        VERBOSE("squid/img/$servicekey-cpu-hourly.png NOT FOUND",__LINE__);
-        return "";
-    }
+
 
     public function SERVICE_STATUS($ini,$MASTER_KEY,$restartbutton_js=null,$forceversion=null,$refreshjs=null):string{
         $styleKey=null;
@@ -13069,17 +13061,11 @@ $('#data_$id .input-group.date').datepicker({
             $dash_div_title="";
             $service_name=$ARRAY["service_name"];
             if(!isset($ARRAY["Nograph"])) {
-                $rrdkey = $this->SERVICE_STATUS_RRD($service_name, $MASTER_KEY);
-                VERBOSE("RRD KEY: $rrdkey", __LINE__);
-                if (strlen($rrdkey) > 3) {
-                     $topbuttons[] = array("Loadjs('fw.rrd.micro.php?key=$rrdkey');", ico_mem, "{graph} {memory}");
-                    $topbuttons[] = array("Loadjs('fw.rrd.micro.php?key=$rrdkey');", ico_cpu, "{graph} {cpu}", "green");
-                    $bbtn = $this->th_buttons($topbuttons);
-
-                    $dash_div_title = " <div class='text-white' style='margin-bottom:5px;margin-top:10px'>$bbtn</div>";
-                }
+                 $topbuttons[] = array("Loadjs('fw.rrd.micro.php?key=$MASTER_KEY');", ico_mem, "{graph} {memory}");
+                 $topbuttons[] = array("Loadjs('fw.rrd.micro.php?key=$MASTER_KEY');", ico_cpu, "{graph} {cpu}", "green");
+                 $bbtn = $this->th_buttons($topbuttons);
+                 $dash_div_title = " <div class='text-white' style='margin-bottom:5px;margin-top:10px'>$bbtn</div>";
             }
-
 
             if(is_file("/usr/share/artica-postfix/ressources/pmemory/$service_name")){
                 $data_mem=explode(";",@file_get_contents("/usr/share/artica-postfix/ressources/pmemory/$service_name"));

@@ -22,7 +22,7 @@ if(isset($_GET["link-dump-popup"])){link_dump_popup();exit;}
 js();
 
 
-function js(){
+function js():bool{
 	$ID=intval($_GET["ID"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
 	$tpl=new template_admin();
@@ -30,9 +30,9 @@ function js(){
 	$sql="SELECT groupname FROM webfilter_rules WHERE ID=$ID";
 	$ligne=$q->mysqli_fetch_array($sql);
 	$rulename=$ligne["groupname"];
-	$tpl->js_dialog("{sources} $rulename", "$page?popup=$ID");
+	return $tpl->js_dialog("{sources} $rulename", "$page?popup=$ID");
 }
-function link_group_js(){
+function link_group_js():bool{
 	$ID=intval($_GET["link-group-js"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
 	$tpl=new template_admin();
@@ -40,9 +40,9 @@ function link_group_js(){
 	$sql="SELECT groupname FROM webfilter_rules WHERE ID=$ID";
 	$ligne=$q->mysqli_fetch_array($sql);
 	$rulename=$ligne["groupname"];
-	$tpl->js_dialog("{link_group} $rulename", "$page?link-group-popup=$ID");
+	return $tpl->js_dialog("{link_group} $rulename", "$page?link-group-popup=$ID");
 }
-function link_dump_js(){
+function link_dump_js():bool{
 	$ID=intval($_GET["link-dump-js"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
 	$tpl=new template_admin();
@@ -50,18 +50,21 @@ function link_dump_js(){
 	$sql="SELECT groupname FROM webfilter_rules WHERE ID=$ID";
 	$ligne=$q->mysqli_fetch_array($sql);
 	$rulename=$ligne["groupname"];
-	$tpl->js_dialog2("$rulename {members}", "$page?link-dump-popup=$ID");
+	return $tpl->js_dialog2("$rulename {members}", "$page?link-dump-popup=$ID");
 	
 }
 function link_dump_popup(){
 	$ID=intval($_GET["link-dump-popup"]);
-	$sock=new sockets();
 	$tpl=new template_admin();
-	$sock->getFrameWork("ufdbguard.php?dump-members=$ID");
-	$data=@file_get_contents("/usr/share/artica-postfix/ressources/logs/external_acl_squid_ldap.dump.$ID");
-        $t=time();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/userdump/$ID"),true);
 
-    $html[]="<div class='alert alert-info'>{ufdb_dump_users_howto}</div>";
+    if(!isset($json["Users"])){
+        echo $tpl->div_error("{protocol_error}");
+        return false;
+    }
+
+
+    $t=time();
     $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";
     $html[]="<tr>";
@@ -70,9 +73,9 @@ function link_dump_popup(){
     $html[]="</thead>";
     $html[]="<tbody>";
     $TRCLASS=null;
-    $f=explode("\n",$data);
 
-    foreach ($f as $member) {
+
+    foreach ($json["Users"] as $member) {
         $member=trim($member);
         if($member==null){continue;}
         if ($TRCLASS == "footable-odd") {
@@ -80,6 +83,7 @@ function link_dump_popup(){
         } else {
             $TRCLASS = "footable-odd";
         }
+        $member=urldecode($member);
         $html[] = "<tr class='$TRCLASS' id='nn'>";
         $html[] = "<td><i class=\"fas fa-user-shield\"></i>&nbsp;$member</td>";
 
@@ -106,23 +110,24 @@ $html[]="
 	</script>";
 
 echo $tpl->_ENGINE_parse_body($html);
-
+return true;
 }
 
 
-function group_rmunlink(){
+function group_rmunlink():bool{
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
 	$tpl=new template_admin();
-	$page=CurrentPageName();
 	$md=$_GET["md"];
 	$ID=intval($_GET["unlink-js"]);
 	$q->QUERY_SQL("DELETE FROM webfilter_assoc_groups WHERE ID=$ID");
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
+	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/userclear");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
 	header("content-type: application/x-javascript");
 	$js[]="LoadAjax('table-loader-ufdbrules-service','fw.ufdb.rules.php?table=yes');";
 	$js[]="\$('#$md').remove()";
 	echo @implode("\n", $js);
-	
+	return admin_tracks("Web-Filtering: Unlink #$ID Group");
 }
 
 function delete_js(){
@@ -145,35 +150,33 @@ function delete_js(){
 	$tpl->js_confirm_delete($text, "none", "none",$jsafter,true);
 }
 
-function delete_confirm(){
+function delete_confirm():bool{
 	$page=CurrentPageName();
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-	$tpl=new template_admin();
 	$ruleid=intval($_GET["ruleid"]);
 	$gpid=intval($_GET["gpid"]);
-	$assoc=intval($_GET["delete-confirm"]);
-	$md=$_GET["md"];
-	
 	$q->QUERY_SQL("DELETE FROM webfilter_assoc_groups WHERE group_id=$gpid");
 	$q->QUERY_SQL("DELETE FROM webfilter_group WHERE ID=$gpid");
 	$js[]="LoadAjaxSilent('table-loader-ufdbrules-service','fw.ufdb.rules.php?table=yes');";
 	$js[]="LoadAjaxSilent('ufdb-rules-source','$page?table=$ruleid');";
 	header("content-type: application/x-javascript");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/userclear");
 	echo @implode("\n", $js);
+    return admin_tracks("Web-Filtering : Unlink #$gpid Group from #$ruleid web-filtering rule");
 }
 
 
 
-function popup(){
+function popup():bool{
 	$page=CurrentPageName();
 	$ID=intval($_GET["popup"]);
 	$RefreshTable=base64_encode("LoadAjaxSilent('ufdb-rules-source','$page?table=$ID');");
 	echo "<div id='ufdb-rules-source'></div><script>LoadAjaxSilent('ufdb-rules-source','$page?table=$ID&RefreshTable=$RefreshTable');</script>";
+    return true;
 }
 function link_group_popup():bool{
 	$page=CurrentPageName();
 	$ID=intval($_GET["link-group-popup"]);
-	
 	echo "<div id='ufdb-rules-source-choose'></div><script>LoadAjaxSilent('ufdb-rules-source-choose','$page?link-group-choose=$ID');</script>";
     return true;
 }
@@ -216,6 +219,7 @@ function link_group_choose():bool{
     }
 	$GROUPS=array();
     foreach ($results as $index=>$ligne){
+        VERBOSE("$index=>$ligne",__LINE__);
 		$groupid=$ligne['ID'];
 		if(preg_match("#ExtLDAP:(.+?):#", $ligne["groupname"],$re)){$ligne["groupname"]=$re[1];}
 		$typeexplain=$tpl->_ENGINE_parse_body($localldap[$ligne["localldap"]]);
@@ -232,10 +236,11 @@ function link_group_choose():bool{
 
 }
 
-function link_group_choose_step2(){
+function link_group_choose_step2():bool{
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
 	$tpl=new template_admin();
 	$page=CurrentPageName();
+    $form_explain="";
 	$ID=intval($_GET["link-group-step2"]);
 	
 	$js[]="BootstrapDialog1.close()";
@@ -251,10 +256,10 @@ function link_group_choose_step2(){
             $q->QUERY_SQL($sql);
             if (!$q->ok) {
                 echo $q->mysql_error_html();
-                return;
+                return false;
             }
             echo "<script>" . @implode(";\n", $js) . "</script>";
-            return;
+            return false;
         }
 	}
 	
@@ -309,11 +314,11 @@ function link_group_choose_step2(){
 
 
     echo $tpl->form_outside("$rulename &raquo; {source} &raquo; $typeexplain", @implode("\n", $form),$form_explain,"{link}",@implode(";", $js),"AsDansGuardianAdministrator");
-	
+	return true;
 	
 }
 
-function link_group_choose_final(){
+function link_group_choose_final():bool{
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
 	$webfilter_ruleid=intval($_POST["link2"]);
@@ -327,23 +332,25 @@ function link_group_choose_final(){
         $ad=new external_ad_search();
         $Ous=$ad->active_directory_ListOus($ouName);
         if(!$Ous){
-            echo "jserror: ".$tpl->_ENGINE_parse_body("{unable_to_find_ou}")." $ouName<br>{$ad->error}";
-            return;
+            echo "jserror: ".$tpl->_ENGINE_parse_body("{unable_to_find_ou}")." $ouName<br>$ad->error";
+            return false;
         }
 
         $sql_add="INSERT INTO webfilter_group (`settings`,`groupname`,`enabled`,`localldap`,`description`,`dn`) VALUES ('$ouName','$ouName',1,$localldap,'Organization Unit $ouName','')";
         $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
         $q->QUERY_SQL($sql_add);
-        if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "jserror:$q->mysql_error";return;}
+        if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "jserror:$q->mysql_error";return false;}
 
         $groupid=$q->last_id;
-        if($groupid==0){echo "jserror: Unable to find the Next ID!!";return;}
+        if($groupid==0){echo "jserror: Unable to find the Next ID!!";return false;}
 
         $md5=md5("$webfilter_ruleid$groupid");
         $sql="INSERT INTO `webfilter_assoc_groups` (zMD5,webfilter_id,group_id) VALUES('$md5','$webfilter_ruleid','$groupid')";
         $q->QUERY_SQL($sql);
-        if(!$q->ok){echo $q->mysql_error;return;}
-        return;
+        if(!$q->ok){echo $q->mysql_error;return false;}
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/userclear");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
+        return admin_tracks("Link $ouName to group #$groupid and rule #$groupid");
 
     }
 	
@@ -354,12 +361,12 @@ function link_group_choose_final(){
 		$ARRAY=$ad->FindParametersByDN($dn);
 		if($ARRAY["samaccountname"]==null){
 			echo "jserror:samaccountname not found";
-			return;
+			return false;
 		}
 		$settings=base64_encode(serialize($ARRAY));
 		$groupname=$ARRAY["samaccountname"];
 		$description=$ARRAY["description"];
-		$ldap_server=$ARRAY["LDAP_SERVER"].":".$ARRAY["LDAP_PORT"];
+		//$ldap_server=$ARRAY["LDAP_SERVER"].":".$ARRAY["LDAP_PORT"];
 		//recherche la source via le DN...
         $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
 		$dn=$q->sqlite_escape_string2($dn);
@@ -368,15 +375,16 @@ function link_group_choose_final(){
 
 		$q->QUERY_SQL($sql_add);
 
-		if(!$q->ok){echo $q->mysql_error;return;}
+		if(!$q->ok){echo $q->mysql_error;return false;}
 		$groupid=$q->last_id;
-		if($groupid==0){echo "Unable to find the Next ID!!\n";return;}
+		if($groupid==0){echo "Unable to find the Next ID!!\n";return false;}
 		
 		$md5=md5("$webfilter_ruleid$groupid");
 		$sql="INSERT INTO `webfilter_assoc_groups` (zMD5,webfilter_id,group_id) VALUES('$md5','$webfilter_ruleid','$groupid')";
 		$q->QUERY_SQL($sql);
-		if(!$q->ok){echo $q->mysql_error;return;}
-		return;
+		if(!$q->ok){echo $q->mysql_error;return false;}
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/userclear");
+        return admin_tracks("Link AD $groupname to group #$groupid and rule #$groupid");
 	}	
 	
 	if($localldap==1){
@@ -385,22 +393,23 @@ function link_group_choose_final(){
 		VALUES ('','$groupname',1,$localldap,'{virtual_group}','')";
 		$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
 		$q->QUERY_SQL($sql_add);
-		if(!$q->ok){echo $q->mysql_error;return;}
+		if(!$q->ok){echo $q->mysql_error;return false;}
 		$groupid=$q->last_id;
-		if($groupid==0){echo "Unable to find the Next ID!!\n";return;}
+		if($groupid==0){echo "Unable to find the Next ID!!\n";return false;}
 		$md5=md5("$webfilter_ruleid$groupid");
 		$sql="INSERT INTO `webfilter_assoc_groups` (zMD5,webfilter_id,group_id) VALUES('$md5','$webfilter_ruleid','$groupid')";
 		$q->QUERY_SQL($sql);
-		if(!$q->ok){echo $q->mysql_error;return;}
-		return;
+		if(!$q->ok){echo $q->mysql_error;return false;}
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/userclear");
+        return admin_tracks("Link Virtual group $groupname to group #$groupid and rule #$groupid");
 		
 	}
     if($localldap==3){
 
         if(!preg_match("#ExtLDAP:(.+?):(.+)#", $groupid,$re)){
-            WLOG("Wrong ACL pattern $groupid");
+            if(function_exists("WLOG")){WLOG("Wrong ACL pattern $groupid");}
             echo "jserror:Wrong ACL pattern $groupid";
-            return;
+            return false;
         }
 
         $groupname=$groupid;
@@ -408,14 +417,15 @@ function link_group_choose_final(){
 		VALUES ('','$groupname',1,$localldap,'{remote_ladp_group}','')";
         $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
         $q->QUERY_SQL($sql_add);
-        if(!$q->ok){echo $q->mysql_error;return;}
+        if(!$q->ok){echo $q->mysql_error;return false;}
         $groupid=$q->last_id;
-        if($groupid==0){echo "Unable to find the Next ID!!\n";return;}
+        if($groupid==0){echo "Unable to find the Next ID!!\n";return false;}
         $md5=md5("$webfilter_ruleid$groupid");
         $sql="INSERT INTO `webfilter_assoc_groups` (zMD5,webfilter_id,group_id) VALUES('$md5','$webfilter_ruleid','$groupid')";
         $q->QUERY_SQL($sql);
-        if(!$q->ok){echo $q->mysql_error;return;}
-        return;
+        if(!$q->ok){echo $q->mysql_error;return false;}
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/userclear");
+        return admin_tracks("Link ExtLDAP group $groupname to group #$groupid and rule #$groupid");
 
     }
 
@@ -425,37 +435,32 @@ function link_group_choose_final(){
 		VALUES ('','$groupname',1,$localldap,'{ldap_group}','',$groupid)";
         $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
         $q->QUERY_SQL($sql_add);
-        if(!$q->ok){echo $q->mysql_error;return;}
+        if(!$q->ok){echo $q->mysql_error;return false;}
         $groupid=$q->last_id;
-        if($groupid==0){echo "Unable to find the Next ID!!\n";return;}
+        if($groupid==0){echo "Unable to find the Next ID!!\n";return false;}
         $md5=md5("$webfilter_ruleid$groupid");
         $sql="INSERT INTO `webfilter_assoc_groups` (zMD5,webfilter_id,group_id) VALUES('$md5','$webfilter_ruleid','$groupid')";
         $q->QUERY_SQL($sql);
-        if(!$q->ok){echo $q->mysql_error;return;}
-        return;
+        if(!$q->ok){echo $q->mysql_error;return false;}
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/userclear");
+        return admin_tracks("Link Local LDAP group $groupname to group #$groupid and rule #$groupid");
 
     }
-	
-	
-	
-	
-	
-	
-	
+	return false;
 }
 
-function link_group_choose_save(){
+function link_group_choose_save():bool{
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
 	$_SESSION["UFDB_CHOOSE_GROUP"]["localldap"]=$_POST["localldap"];
 	$_SESSION["UFDB_CHOOSE_GROUP"]["ruleid"]=$_POST["link1"];
 	if(isset($_POST["choosen"])){$_SESSION["UFDB_CHOOSE_GROUP"]["choosen"]=$_POST["choosen"];}
-	
+	return true;
 }
 
 
 
-function table(){
+function table():bool{
 	if(!isset($_GET["QuotaID"])){$_GET["QuotaID"]=0;}
 	$tpl=new template_admin();
 	$page=CurrentPageName();
@@ -472,7 +477,6 @@ function table(){
 	FROM webfilter_group,webfilter_assoc_groups WHERE webfilter_assoc_groups.webfilter_id={$ID} AND webfilter_assoc_groups.group_id=webfilter_group.ID ORDER BY webfilter_group.groupname";
 	
 	if($_GET["QuotaID"]>0){
-		if(!$q->TABLE_EXISTS("webfilter_assoc_quota_groups")){$q->CheckTables(null,true);}
 		$sql="SELECT webfilter_assoc_quota_groups.ID,webfilter_assoc_quota_groups.webfilter_id,webfilter_group.groupname,webfilter_group.description,webfilter_group.gpid,webfilter_group.localldap,webfilter_group.ID as webfilter_group_ID,webfilter_group.dn as webfilter_group_dn,webfilter_group.enabled FROM webfilter_group,webfilter_assoc_quota_groups WHERE webfilter_assoc_quota_groups.webfilter_id={$_GET["QuotaID"]} AND webfilter_assoc_quota_groups.group_id=webfilter_group.ID ORDER BY webfilter_group.groupname";
 	}
 	
@@ -482,11 +486,18 @@ function table(){
 	$localldap[3]="{remote_ladp_group}";
 	$localldap[4]="{active_directory_group} ({other})";
     $localldap[5]="{active_directory_ou}";
-	
-	
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/userdump/$ID"),true);
+    $addonDump="";
+    if(isset($json["Count"])){
+        if($json["Count"]>1){
+            $addonDump=" ({$json["Count"]} {records})";
+        }
+    }
+
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:10px'>";
 	$html[]=$tpl->button_label_table("{link_group}", "Loadjs('$page?link-group-js=$ID')", "fa-plus","AsDansGuardianAdministrator");
-	$html[]=$tpl->button_label_table("{display_members}", "Loadjs('$page?link-dump-js=$ID')", "fa-search","AsDansGuardianAdministrator");
+	$html[]=$tpl->button_label_table("{display_members}$addonDump", "Loadjs('$page?link-dump-js=$ID')", "fa-search","AsDansGuardianAdministrator");
 	$html[]="</div>";
 	
 	$html[]="<table id='table-ufbd-linked-groups' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
@@ -504,7 +515,7 @@ function table(){
 	
 	
 	$results = $q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error_html();return;}
+	if(!$q->ok){echo $q->mysql_error_html();return false;}
 	$TRCLASS=null;
 	foreach ($results as $index=>$ligne){
 		$textExplainGroup=null;
@@ -513,7 +524,7 @@ function table(){
 		$Textdynamic=null;
 		$md=$ligne["zMD5"];
 		$webfilter_assoc_groups_ID=$ligne["ID"];
-		
+        $description="";
 	
 		if($ligne["localldap"]==0){
 			$gp=new groups($ligne["gpid"]);
@@ -528,8 +539,7 @@ function table(){
 			$COUNLIGNE=$q->mysqli_fetch_array($sql);
 			$CountDeMembers=$COUNLIGNE["tcount"];
 		}
-	
-		
+
 		if($ligne["enabled"]==0){$color="#9A9A9A";}
 		
 		if($ligne["localldap"]==2){
@@ -537,9 +547,10 @@ function table(){
 			$dnEnc=$re[2];
 			$LDAPID=$re[1];
 			$ad=new ActiveDirectory($LDAPID);
+            $tty=array();
 
 			if(preg_match("#^CN=(.+?),.*#i", base64_decode($dnEnc),$re)){
-				$groupname=_ActiveDirectoryToName($re[1]);
+				$groupname=$re[1];
 				$CountDeMembers='-';
 				$Debug="&nbsp;<a href=\"javascript:Loadjs('dansguardian2.explodeadgroup.php?rule-id={$_GET["rule-id"]}&groupid=$KEY_ID_GROUP');\"
 				style=\"text-decoration:underline\">$dump_group_text</a>";
@@ -585,8 +596,7 @@ function table(){
 			$Members=$ad->search_users_from_groupName($ligne["groupname"]);
 			$CountDeMembers=count($Members);
 		}
-		
-		
+
 		if($ligne["localldap"]==1){
 			$ligne["groupname"]=$tpl->td_href($ligne["groupname"],null,"Loadjs('fw.ufdb.group.php?ID=$KEY_ID_GROUP&RefreshTable=$RefreshTable')");
 			$description=$ligne["description"];
@@ -596,17 +606,19 @@ function table(){
 		$imgGP="win7groups-32.png";
 		if($ligne["localldap"]<2){$imgGP="group-32.png";}
 		if($Textdynamic<>null){$imgGP="warning-panneau-32.png";}
-		
 		$TextGroupType=$tpl->_ENGINE_parse_body($localldap[$ligne["localldap"]]);
-		
-				if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-				$html[]="<tr class='$TRCLASS' id='$md'>";
-				$html[]="<td>{$ligne["groupname"]}$description</td>";
-				$html[]="<td>{$TextGroupType}</td>";
-				$html[]="<td style='width:1%' nowrap>{$CountDeMembers}</td>";
-				$html[]="<td style='width:1%' class='center' nowrap>".$tpl->icon_unlink("Loadjs('$page?unlink-js=$webfilter_assoc_groups_ID&md=$md')","AsDansGuardianAdministrator") ."</center></td>";
-				$html[]="<td style='width:1%' class='center' nowrap>".$tpl->icon_delete("Loadjs('$page?delete-js=$webfilter_assoc_groups_ID&gpid=$KEY_ID_GROUP&ruleid=$ID&md=$md')","AsDansGuardianAdministrator") ."</center></td>";
-				$html[]="</tr>";
+
+        if($CountDeMembers==0){
+            $CountDeMembers=$tpl->icon_nothing();
+        }
+        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$html[]="<tr class='$TRCLASS' id='$md'>";
+		$html[]="<td>{$ligne["groupname"]}$description</td>";
+		$html[]="<td>$TextGroupType</td>";
+		$html[]="<td style='width:1%' nowrap>$CountDeMembers</td>";
+		$html[]="<td style='width:1%' class='center' nowrap>".$tpl->icon_unlink("Loadjs('$page?unlink-js=$webfilter_assoc_groups_ID&md=$md')","AsDansGuardianAdministrator") ."</center></td>";
+		$html[]="<td style='width:1%' class='center' nowrap>".$tpl->icon_delete("Loadjs('$page?delete-js=$webfilter_assoc_groups_ID&gpid=$KEY_ID_GROUP&ruleid=$ID&md=$md')","AsDansGuardianAdministrator") ."</center></td>";
+		$html[]="</tr>";
 				
 			
 	}
@@ -614,7 +626,6 @@ function table(){
 	
 	$html[]="</tbody>";
 	$html[]="<tfoot>";
-	
 	$html[]="<tr>";
 	$html[]="<td colspan='5'>";
 	$html[]="<ul class='pagination pull-right'></ul>";
@@ -629,7 +640,5 @@ function table(){
 	</script>";
 	
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-	
+	return true;
 }
-
-

@@ -72,7 +72,7 @@ function js_id(){
 }
 
 
-function category_del(){
+function category_del():bool{
 
     $category   = $_GET["category-del-js"];
     $ID         = $_GET["ID"];
@@ -84,21 +84,23 @@ function category_del(){
         $MAIN_ID=$re[1];
         $sql = "DELETE FROM webfilter_blklnk WHERE ID=$MAIN_ID";
         $q->QUERY_SQL($sql);
-        if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
+        if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
         header("content-type: application/x-javascript");
         echo "$('#{$_GET["md"]}').remove();\n";
         echo "LoadAjax('table-loader-ufdbrules-service','fw.ufdb.rules.php?table=yes');";
-        return;
+        return false;
     }
 
 
 
     $sql="DELETE FROM webfilter_blks WHERE category='$category' AND modeblk='$modeblk' AND webfilter_id='$ID'";
     $q->QUERY_SQL($sql);
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
+    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
     header("content-type: application/x-javascript");
     echo "$('#{$_GET["md"]}').remove();\n";
     echo "LoadAjax('table-loader-ufdbrules-service','fw.ufdb.rules.php?table=yes');";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
+    return admin_tracks("Removing Web-filter rule category black=$modeblk $category from rule #$ID");
 }
 
 function categoy_post(){
@@ -122,6 +124,7 @@ function categoy_post(){
         echo "$('#{$_GET["md"]}').remove();\n";
         echo "RefreshUfdbCategoriesList();\n";
         echo "LoadAjax('table-loader-ufdbrules-service','fw.ufdb.rules.php?table=yes');\n";
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
         return;
     }
 
@@ -144,6 +147,7 @@ function categoy_post(){
             $tpl->js_mysql_alert($q->mysql_error);
             return;
         }
+
     }
 
     if(isset($_GET["groupid"])){
@@ -163,7 +167,7 @@ function categoy_post(){
     echo "$add\n";
     echo "RefreshUfdbCategoriesList();\n";
     echo "LoadAjax('table-loader-ufdbrules-service','fw.ufdb.rules.php?table=yes');\n";
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
 
 }
 
@@ -237,7 +241,7 @@ function category_all_perform():bool{
     if(!category_inject($category_list,$ID,$modeblk)){
         return false;
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
     return admin_tracks("Adding All Web-Filtering categories inside rule $ID");
 
 }
@@ -473,7 +477,6 @@ function category_all_js():bool{
 function category_dangerous_js():bool{
     $ID=intval($_GET["ID"]);
     $modeblk=$_GET["modeblk"];
-    $page=CurrentPageName();
     $tpl=new template_admin();
     $MAIN=base64_encode(serialize($_GET));
     $js="RefreshUfdbCategoriesList$ID$modeblk();";
@@ -556,6 +559,7 @@ function category_inject($Next,$ID,$modeblk):bool{
         }
 
     }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
     return true;
 
 }
@@ -588,7 +592,7 @@ function category_dangerous_perform():bool{
     if(!category_inject($category_dangerous_list,$ID,$modeblk)){
         return false;
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
     return admin_tracks("Adding Web-Filtering Dangerous categories for rule $ID");
 
 }

@@ -36,7 +36,7 @@ false causes deleted messages to be permanantly removed if there is no Trash fol
 <PHP_FCGI_CHILDREN>The number of php-cgi processes per lightppd processes</PHP_FCGI_CHILDREN>
 <PHP_FCGI_MAX_REQUESTS>Max. Abfragen vor dem Neustart eines Kindprozesses</PHP_FCGI_MAX_REQUESTS>
 <product_name>Pages title</product_name>
-<rebuild>Rebuild</rebuild>
+<rebuild>Neu aufbauen</rebuild>
 <rlogs>RoundCube events</rlogs>
 <RoundCubeHTTPEngineEnabled>Enable Dedicated Web site</RoundCubeHTTPEngineEnabled>
 <RoundCubePath>RoundCube base path</RoundCubePath>

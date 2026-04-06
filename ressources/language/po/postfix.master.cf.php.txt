@@ -12,7 +12,7 @@ Especifique 0 para sem limite de contagem de processos [br].
 [i]NOTA: Alguns serviços Postfix devem ser configurados como um serviço de processo %C3%BAnico (por exemplo, qmgr) e alguns serviços devem ser configurados
 sem limite de processo (por exemplo, limpeza).[br]Estes limites n%C3£o devem ser alterados.</MAXPROC_TEXT>
 <OPTIONS>Opç%C3µes</OPTIONS>
-<PRIVATE>Private</PRIVATE>
+<PRIVATE>Privado</PRIVATE>
 <PRIVATE_TEXT>Whether or not access is  restricted  to  the  mail system.
 [br]Internet  (type  inet)  services can't be private</PRIVATE_TEXT>
 <rebuild_configuration>Rebuild to default config</rebuild_configuration>

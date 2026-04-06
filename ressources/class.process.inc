@@ -39,16 +39,13 @@ function MemoryInstances(){
 		
 		$Toremove["exec.squid.blacklists.php"]=true;
 		$Toremove["exec.haproxy-tail.php"]=true;
-		$Toremove["exec.maillog.php"]=true;
 		$Toremove["exec.status.php"]=true;
 		$Toremove["exec.executor.php"]=true;
 		$Toremove["exec.ufdbguard-tail.php"]=true;
 		$Toremove["exec.squid-tail.php"]=true;
 		$Toremove["exec.fetmaillog.php"]=true;
-		$Toremove["exec.dansguardian-tail.php"]=true;	
 		$Toremove["exec.auth-tail.php"]=true;
 		$Toremove["exec.artica-filter-daemon.php"]=true;
-		$Toremove["exec.postfix-logger.php"]=true;
 		$Toremove["exec.openvpn.php"]=true;
 		$Toremove["exec.smtp-senderadv.php"]=true;	
 		$Toremove["external_acl_squid.php"]=true;
@@ -59,36 +56,32 @@ function MemoryInstances(){
 		$Toremove["exec.pdns.pipe.php"]=true;
 		
 		
-		$Toremove["exec.maillog.php"]=true;
+
 		$Toremove["exec.status.php"]=true;
 		$Toremove["exec.executor.php"]=true;
 		$Toremove["exec.ufdbguard-tail.php"]=true;
 		$Toremove["exec.squid-tail.php"]=true;
 		$Toremove["exec.fetmaillog.php"]=true;
-		$Toremove["exec.dansguardian-tail.php"]=true;
 		$Toremove["exec.hotspot-tail.php"]=true;
 		$Toremove["exec.auth-tail.php"]=true;
 		$Toremove["exec.artica-filter-daemon.php"]=true;
-		$Toremove["exec.postfix-logger.php"]=true;
 		$Toremove["exec.openvpn.php"]=true;
 		$Toremove["exec.squid.blacklists.php"]=true;
 		$Toremove["exec.parse-orders.php"]=true;
 
 		
-		$Toremove["exec.maillog.php"]=true;
+
 		$Toremove["exec.status.php"]=true;
 		$Toremove["exec.executor.php"]=true;
 		$Toremove["exec.ufdbguard-tail.php"]=true;
 		$Toremove["exec.squid-tail.php"]=true;
 		$Toremove["exec.fetmaillog.php"]=true;
-		$Toremove["exec.dansguardian-tail.php"]=true;
 		$Toremove["exec.auth-tail.php"]=true;
 		$Toremove["exec.hypercache-tail.php"]=true;
 		$Toremove["exec.apache-tail.php"]=true;
 		$Toremove["exec.c-icap-watchdog.php"]=true;
 		
 		$Toremove["exec.artica-filter-daemon.php"]=true;
-		$Toremove["exec.postfix-logger.php"]=true;
 		$Toremove["exec.openvpn.php"]=true;
 		$Toremove["exec.schedules.php"]=true;
 		$Toremove["exec.smtp-senderadv.php"]=true;
@@ -111,7 +104,6 @@ function MemoryInstances(){
 		$arrayK["exec.squid.stats.php"]=380;
 		$arrayK["exec.mysql.build.php"]=30;
 		$arrayK["exec.smtp-hack.export.php"]=10;
-		$arrayK["exec.postfix-logger.php"]=10;	
 		$arrayK["exec.ipband.php"]=60;
 		$arrayK["exec.testspeed.php"]=15;
 		$arrayK["exec.cache.pages.php"]=10;

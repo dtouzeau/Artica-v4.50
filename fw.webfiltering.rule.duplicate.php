@@ -75,7 +75,7 @@ function duplicate_default_rule(){
     $_POST["duplicate-name"]=url_decode_special_tool($_POST["duplicate-name"]);
     $idname=addslashes($_POST["duplicate-name"]);
     $sock=new sockets();
-    $ligne=unserialize(base64_decode(@file_get_contents("/etc/artica-postfix/settings/Daemons/DansGuardianDefaultMainRule")));
+    $ligne=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DansGuardianDefaultMainRule")));
     $ligne["groupmode"]=1;
     $ligne["enabled"]=1;
     $ligne["embeddedurlweight"]=0;

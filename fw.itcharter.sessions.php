@@ -39,7 +39,7 @@ function reload_proxy(){
             $libmem->Delkey($item);
         }
     }
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?reload-squid-cache=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/nohup/reload");
     $tpl=new template_admin();
     $tpl->js_error("{empty_cache} {done}");
 

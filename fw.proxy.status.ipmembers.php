@@ -8,12 +8,18 @@
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){$GLOBALS["CLASS_SOCKETS"]=new sockets();}
-
+if(isset($_GET["js"])){js();exit;}
 if(isset($_GET["charts"]))        { render_charts(); exit; }
 if(isset($_GET["charts-render"])) { charts_render(); exit; }
 page();
 
 // ── Main page ────────────────────────────────────────────────────────────────
+
+function js():bool{
+    $tpl  = new template_admin();
+    $page = CurrentPageName();
+    return $tpl->js_dialog6("{members}",$page,990);
+}
 
 function page(): void {
     $tpl  = new template_admin();

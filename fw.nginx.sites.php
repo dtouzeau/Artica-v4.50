@@ -2492,6 +2492,7 @@ function new_www_after():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $tmplid=intval($_SESSION["NEWNGINXAFTER"]["TPLID"]);
     $serviceid=intval($_SESSION["NEWNGINXAFTER"]["SITEID"]);
+
    echo  $tpl->framework_buildjs("nginx.php?apply-template=$tmplid&serviceid=$serviceid",
         "nginx.replic.$serviceid.progress",
         "nginx.replic.$serviceid.log",
@@ -2558,6 +2559,7 @@ function new_www_save():bool{
     }
     $q->QUERY_SQL("UPDATE nginx_services SET `servicename`='$servicename' WHERE ID=$ID");
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/writeconfigs/flush");
     return admin_tracks("Add new reverse-proxy site $servicename");
 }
 function new_www_defaults_ports($servicename,$servicetype,$ID):bool{
@@ -3239,6 +3241,7 @@ function td_row_status($id=0):bool{
     $servernames=base64_encode(td_row_serversnames($id));
     $ServerStats=base64_encode(td_row_serverstats($id,$GLOBALS["MAIN_RT_USERS"]));
     $Vitrification=base64_encode(td_row_vitrification($id,$sockngix));
+    $checkTenant=base64_encode(getTenantID($id));
 
 
 
@@ -3285,7 +3288,10 @@ function td_row_status($id=0):bool{
     $f[]="\tdocument.getElementById('rcolor7-$id').innerHTML=tempdata;";
     $f[]="}";
 
-
+    $f[]="if( document.getElementById('rcolor10-$id') ){";
+    $f[]="\ttempdata=base64_decode('$checkTenant');";
+    $f[]="\tdocument.getElementById('rcolor10-$id').innerHTML=tempdata;";
+    $f[]="}";
 
 
     if($ligne["enabled"]==1) {
@@ -3326,6 +3332,31 @@ function td_row_status($id=0):bool{
 
     echo @implode("\n",$f);
     return true;
+}
+
+function getTenantID($id){
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
+
+    //Check Service Tenant
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/site/$id"),true);
+    $ligne=$json["config"];
+    $hosts=$ligne["hosts"];
+
+    $jsonTenant=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/edgeguard/service/tenant/$hosts"),true);
+    $tenantID=intval($jsonTenant["Tenant"]);
+    $style="";
+    $TenantMessage="";
+    if($tenantID==0) {
+        $style = "style='color:#a3a1a1;'";
+        $TenantMessage="<button class=\"btn btn-default\" type=\"button\" title=\"{not_protected}\"><i class=\"fa-solid fa-binary-slash\"></i></button>";
+
+    }
+
+    if($tenantID>0) {
+        $TenantMessage="<button class=\"btn btn-primary\" type=\"button\" title=\"{protected_by_tenant} $tenantID\"><i class=\"fa-solid fa-binary-circle-check\"></i> <span class=\"badge\">$tenantID</span></button>";
+    }
+    return "<span $style>".$tpl->_ENGINE_parse_body($TenantMessage)."</span>";
+
 }
 function table_form():bool{
     $page=CurrentPageName();
@@ -3430,6 +3461,7 @@ function table():bool{
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{service}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>WAF</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{edgeguard}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{servernames}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{default}</th>";
@@ -3629,6 +3661,7 @@ function table():bool{
         $html[]="<td nowrap>$RCOlor2<span id='rcolorStats-$ID'></span></td>";
         $html[]="<td><span style='$color' id='rcolor3-$ID'></span></td>"; // Vitrification
         $html[]="<td><span style='$color' id='rcolor4-$ID'></span></td>"; // WAF
+        $html[]="<td><span style='$color' id='rcolor10-$ID'></span></td>"; // EDGEGUARD
         $html[]="<td><span style='$color' id='rcolor7-$ID'></span></td>";
         $html[]="<td><span style='$color;width:35%' id='rcolor5-$ID'></span></td>";
         $html[]="<td $ssTyle1 class='center' nowrap>$is_default_icon</td>";

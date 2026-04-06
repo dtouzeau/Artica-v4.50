@@ -589,7 +589,7 @@ function compile_site_old($ID,$norestart=false):bool{
             $SquidGuardWebWebServiceID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidGuardWebWebServiceID"));
             if($SquidGuardWebWebServiceID==$SERVICE_ID) {
                 $php5 = $unix->LOCATE_PHP5_BIN();
-                $cmd = trim("$php5 /usr/share/artica-postfix/exec.ufdbguard.rules.php");
+                shell_exec("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/compile");
                 system($cmd);
             }
     }

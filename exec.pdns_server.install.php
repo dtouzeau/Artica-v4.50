@@ -194,9 +194,9 @@ function install_ufdb(){
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableUfdbGuard", 1);
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableUfdbGuard2", 1);
 	build_progress(20,"{reconfiguring} {webfiltering_service}");
-	system("$php /usr/share/artica-postfix/exec.ufdb.enable.php");
+	system("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/install");
 	build_progress("{reconfiguring} {webfiltering_service}",30);
-	system("$php /usr/share/artica-postfix/exec.squidguard.php --build --force --output");
+
 	build_progress("{restarting} {webfiltering_service}",50);
 	system("/etc/init.d/ufdb restart --force");
 	build_progress("{restarting} {webfiltering_service}",60);

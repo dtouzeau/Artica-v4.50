@@ -122,10 +122,17 @@ function table_flat(){
 function table(){
 
 	$tpl=new template_admin();
-	if(!is_file("/etc/artica-postfix/settings/Daemons/UnBoundCacheMinTTL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMinTTL", 3600);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/UnBoundCacheMAXTTL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMAXTTL", 172800);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/UnBoundCacheNEGTTL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheNEGTTL", 3600);}
-	
+    if (method_exists($GLOBALS["CLASS_SOCKETS"], 'INFO_EXISTS')) {
+        if (!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("UnBoundCacheMinTTL")) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMinTTL", 3600);
+        }
+        if (!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("UnBoundCacheMAXTTL")) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheMAXTTL", 172800);
+        }
+        if (!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("UnBoundCacheNEGTTL")) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnBoundCacheNEGTTL", 3600);
+        }
+    }
 
 	$EnableGoogleSafeSearch=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableGoogleSafeSearch"));
     $EnableBraveSafeSearch=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableBraveSafeSearch"));

@@ -1751,7 +1751,7 @@ function table1():bool{
         $cache_mgr_user=$LicenseInfos["EMAIL"];
     }
 
-    $uuid=base64_decode($GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?system-unique-id=yes"));
+    $uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
     $myhostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
     $SquidDebug5=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDebug5"));
     $SquidDebugAcls=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDebugAcls"));

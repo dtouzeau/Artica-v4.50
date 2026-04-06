@@ -57,7 +57,6 @@ function disable_urgency(){
 	build_progress_urgency(10,"{disable_emergency}");
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("StoreIDUrgency", 0);
 	@file_put_contents("/etc/artica-postfix/settings/Daemons/StoreIDUrgency", 0);
-	@chmod("/etc/artica-postfix/settings/Daemons/StoreIDUrgency", 0777);
 	build_progress_urgency(50,"{reconfigure_proxy_service}");
 	if(!build_sequence_plugin()){
 		build_progress_urgency(110,"{failed}");

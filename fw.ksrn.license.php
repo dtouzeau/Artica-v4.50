@@ -157,7 +157,7 @@ function status(){
         }
 
     }
-    $uuidRea=base64_decode($GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?system-unique-id=yes"));
+    $uuidRea=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
     $uuid="<br><small>{uuid}: $uuidRea</small>";
 
 

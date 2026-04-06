@@ -690,8 +690,7 @@ function start_transparent_install_service(){
     if($EnableipV6==0){
         echo "Activate ipv6 configuration...\n";
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableipV6",1);
-        shell_exec("/usr/share/artica-postfix/bin/articarest -sysctl");
-        shell_exec("$php /usr/share/artica-postfix/exec.sysctl.php --start");
+        shell_exec("/usr/sbin/artica-phpfpm-service -sysctl");
     }
 
 }
@@ -957,9 +956,13 @@ function start_transparent_squid_config(){
     $HaClusterTransParentDebug=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTransParentDebug"));
     $HaClusterTransParentCertif=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTransParentCertif"));
     $HaClusterTransparentBalance=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTransparentBalance"));
-    $CPU_NUMBER=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CPU_NUMBER"));
+
     $HaClusterTransParentCPU=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTransParentCPU"));
-    if($CPU_NUMBER==0){$CPU_NUMBER=intval($GLOBALS["CLASS_SOCKETS"]->getFrameWork("services.php?CPU-NUMBER=yes"));}
+    $CPU_NUMBER=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CPU_NUMBER"));
+    if($CPU_NUMBER==0){
+        $_cpuJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/cpu-number"));
+        $CPU_NUMBER=(is_object($_cpuJson) && !empty($_cpuJson->success))?intval($_cpuJson->cpu_number):2;
+    }
     if($HaClusterTransparentBalance==null){$HaClusterTransparentBalance="leastconn";}
     $squid_certificate=new squid_certificate();
 

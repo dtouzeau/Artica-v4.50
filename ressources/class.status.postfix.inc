@@ -31,12 +31,11 @@ function postfix_increment_func($array){
 	
 	
 
-	$array[]="postfix_logger";
+
 	$array[]="opendkim";
 	$array[]="milter_greylist";
 	$array[]="milter_greylist_updates";
 	$array[]="postfix_schedules";
-	$array[]="policyd_weight";
 	$array[]="milter_regex";
 	$array[]="cleanClode";
 	$array[]="PostfixClusterServer";
@@ -174,60 +173,7 @@ function milter_greylist_updates():bool{
 }
 
 //==============================================================================================================
-function policyd_weight():string{
-	if(!is_file("/usr/share/artica-postfix/bin/artica-install")){return false;}
-	$EnablePolicydWeight=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePolicydWeight"));
-	if($EnablePolicydWeight==null){$EnablePolicydWeight=0;}
 
-	$l[]="[POLICYD_WEIGHT]";
-	$l[]="service_name=APP_POLICYD_WEIGHT";
-	$l[]="service_cmd=policydw";
-	$l[]="family=postfix";
-	$l[]="master_version=".GetVersionOf("policydw");
-	$l[]="service_disabled=$EnablePolicydWeight";
-	$l[]="watchdog_features=1";
-	//$l[]="remove_cmd=--pureftpd-remove";
-
-	if($EnablePolicydWeight==0){
-		$l[]="running=0\ninstalled=1";$l[]="";
-		return implode("\n",$l);
-	}
-
-	$pid_path=$GLOBALS["CLASS_UNIX"]->POLICYD_WEIGHT_GET("PIDFILE");
-	
-	events("PID Path: $pid_path",__FUNCTION__,__LINE__);
-	
-	
-	$master_pid=$GLOBALS["CLASS_UNIX"]->get_pid_from_file($pid_path);
-	events("master_pid: $master_pid",__FUNCTION__,__LINE__);
-
-	$l[]="watchdog_features=1";
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		$master_pid=$GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN("policyd-weight \(");
-		events("PIDOF_PATTERN: $master_pid",__FUNCTION__,__LINE__);
-	}
-
-
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		events("Not running: $master_pid",__FUNCTION__,__LINE__);
-		
-		if(!is_file("/etc/init.d/policyd-weight")){
-			shell_exec2("{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.initslapd.php --policyd-weight");
-			
-		}
-		
-		shell_exec2("/etc/init.d/policyd-weight start");
-		$l[]="running=0\ninstalled=1";$l[]="";
-		return implode("\n",$l);
-		
-	}
-
-	$l[]="running=1";
-	$l[]=GetMemoriesOf($master_pid,"APP_POLICYD_WEIGHT");
-	$l[]="";
-	return implode("\n",$l);
-
-}
 //==============================================================================================================
 
 
@@ -414,71 +360,10 @@ function milter_regex(){
 
 
 
-function postfix_logger_pid(){
-	$pid=$GLOBALS["CLASS_UNIX"]->get_pid_from_file('/etc/artica-postfix/exec.maillog.php.pid');
-	if($GLOBALS["CLASS_UNIX"]->process_exists($pid)){return $pid;}
-	return $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN("/exec.maillog.php");
-}
 
 //========================================================================================================================================================
-function postfix_logger(){
-	
-	$l[]="[ARTICA_MYSQMAIL]";
-	$l[]="service_name=APP_ARTICA_MYSQMAIL";
-	$l[]="installed=1";
-	$l[]="family=postfix";
-	$l[]="watchdog_features=1";
-	
-	if(is_file("/etc/artica-postfix/DO_NOT_DETECT_POSTFIX")){
-		$l[]="service_disabled=0";
-		$l[]="DO_NOT_DETECT_POSTFIX=1";
-		return @implode("\n", $l);
-	}
-	$ActAsSMTPGatewayStatistics=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActAsSMTPGatewayStatistics");
-	if(!is_numeric($ActAsSMTPGatewayStatistics)){$ActAsSMTPGatewayStatistics=0;}
-	if($ActAsSMTPGatewayStatistics==0){
-		$bin_path=$GLOBALS["CLASS_UNIX"]->find_program("postconf");
-		if($bin_path==null){
-			$l[]="service_disabled=0";
-			$l[]="postconf=No such file!";
-			return @implode("\n", $l);
-		}
-	}
-	
-	$master_pid=postfix_logger_pid();
-	ToSyslog("Scanning Postfix mail.log watchdog PID: $master_pid");
-
-	$l[]="[ARTICA_MYSQMAIL]";
-	$l[]="service_name=APP_ARTICA_MYSQMAIL";
-	$l[]="master_version=".trim(@file_get_contents("/usr/share/artica-postfix/VERSION"));
-	$l[]="service_cmd=/etc/init.d/postfix-logger";
-	$l[]="service_disabled=1";
-	$l[]="pid_path=/etc/artica-postfix/exec.maillog.php.pid";
-	
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		if(!$GLOBALS["DISABLE_WATCHDOG"]){
-			squid_admin_mysql(0, "Fatal, Postfix-logger did {stopped} [{action}={start}]", null,__FILE__,__LINE__);
-			shell_exec("{$GLOBALS["nohup"]} /etc/init.d/postfix-logger start >/dev/null 2>&1 &");
-			$l[]="running=0\ninstalled=1";$l[]="";
-			return implode("\n",$l);
-		}
-	}
-	
-	if(!is_file("/etc/monit/conf.d/ARTICA_MYSQMAIL.monitrc")){
-        shell_exec("/usr/bin/monit -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload");
-		
-	}
-
-	$l[]=GetMemoriesOf($master_pid);
-	$l[]="";
-	
-	
 
 
-	return implode("\n",$l);
-
-}
-//========================================================================================================================================================
 function opendkim(){
 
 	$EnableDKFilter=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDKFilter");

@@ -14,6 +14,7 @@ if(isset($_POST["port-delete"])){connected_port_delete();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["tlimit-js"])){tlimit_js();exit;}
 if(isset($_GET["tlimit-popup"])){tlimit_popup();exit;}
+if(isset($_GET["fix-rpfilter"])){fix_rp_filter();exit;}
 table_start();
 
 
@@ -485,42 +486,120 @@ function status(){
     $page=CurrentPageName();
     $tpl=new template_admin();
 
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT COUNT(*) as tcount FROM transparent_ports WHERE enabled=1");
-    VERBOSE("tcount={$ligne["tcount"]}",__LINE__);
-    $sCount=intval($ligne["tcount"]);
-    if(!$q->ok){
-        echo   $tpl->widget_jaune("{status}","SQL Error");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/transparent/validate"));
+
+    if(!is_object($json)){
+        echo $tpl->widget_jaune("{status}","API Error");
         return;
     }
 
+    $portCount=intval($json->port_count ?? 0);
 
-    if($sCount==0){
-        echo   $tpl->widget_grey("{status}","{disabled}");
+    if($portCount==0){
+        echo $tpl->widget_grey("{status}","{disabled}");
         return;
-
     }
 
-    $FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
+    $overallOk=!empty($json->Status);
 
-    $jsrestart=$tpl->framework_buildjs("/proxy/general/nohup/restart",
-        "squid.articarest.nohup","squid.articarest.nohup.log","progress-squid-ports-restart","LoadAjax('proxy-transparent-ports-status','$page?status=yes');RefreshSecondInterfaceBarrs()");
-
-
-    $button[1]["name"]="{reconfigure}";
-    $button[1]["js"]=$jsrestart;
-    $button[1]["icon"]="fa fa-save";
-
-    $sock=new sockets();
-    $sock->getFrameWork("firehol.php?transparent-status=yes");
-    $Status=intval(@file_get_contents(PROGRESS_DIR."/ArticaSquidTransparent"));
-
-    if($Status==0){
-        echo   $tpl->widget_rouge("{status}","{not_configured}",$button);
-        return;
-
-
+    if($overallOk){
+        $bg="navy-bg";
+        $mainIco="fas fa-thumbs-up";
+    }else{
+        $bg="red-bg";
+        $mainIco="fas fa-exclamation-triangle";
     }
-    echo   $tpl->widget_vert("{status}","{linked}");
 
+    // Per-port detail lines
+    $portHtml=[];
+    if(is_array($json->ports)){
+        foreach($json->ports as $p){
+            $name=htmlspecialchars($p->port_name ?? '');
+            if(strlen($name)==0){$name="#{$p->id}";}
+            $iface='';
+            if(!empty($p->interface)){$iface=" (".htmlspecialchars($p->interface).")";}
+            $arrow=":{$p->dest_port} &rarr; :{$p->local_port}";
+
+            if(!empty($p->status)){
+                $ico="<i class='fas fa-check-circle' style='color:#1ab394'></i>";
+            }else{
+                $ico="<i class='fas fa-times-circle' style='color:#f8ac59'></i>";
+            }
+            $portHtml[]="<div style='text-align:left;padding:2px 10px'>$ico <span style='font-size:12px'>$name$iface $arrow</span></div>";
+
+            if(empty($p->status) && is_array($p->issues)){
+                foreach($p->issues as $issue){
+                    $check=htmlspecialchars($issue->check ?? '');
+                    $portHtml[]="<div style='text-align:left;padding:1px 10px 1px 30px;font-size:11px;opacity:0.8'>&bull; $check</div>";
+                }
+            }
+        }
+    }
+
+    // Kernel parameter issues
+    $kernelHtml=[];
+    $kernelFails=0;
+    $rp_filter=false;
+    if(is_array($json->kernel)){
+        foreach($json->kernel as $k){
+            if(empty($k->status)){
+                $kernelFails++;
+
+                if(strpos($k->param,"rp_filter")>0){
+                    $rp_filter=true;
+                }
+
+                $param=htmlspecialchars($k->param ?? '');
+                $cur=htmlspecialchars($k->current ?? '');
+                $exp=htmlspecialchars($k->expected ?? '');
+                $kernelHtml[]="<div style='text-align:left;padding:1px 10px 1px 30px;font-size:11px;opacity:0.8'>&bull; <span style='font-family:monospace'>$param</span>: $cur &rarr; $exp</div>";
+            }
+        }
+    }
+    if($kernelFails>0){
+        array_unshift($kernelHtml,
+            "<div style='text-align:left;padding:5px 10px 2px 10px;border-top:1px solid rgba(255,255,255,0.2);margin-top:5px'>".
+            "<i class='fas fa-exclamation-triangle' style='color:#f8ac59'></i> ".
+            "<span style='font-size:12px'><b>Kernel</b> ($kernelFails)</span></div>");
+    }
+
+    // Reconfigure button only when issues exist
+    $btnHtml="";
+    if(!$overallOk){
+        $jsrestart=$tpl->framework_buildjs("/proxy/general/nohup/restart",
+            "squid.articarest.nohup","squid.articarest.nohup.log",
+            "progress-squid-ports-restart",
+            "LoadAjax('proxy-transparent-ports-status','$page?status=yes');RefreshSecondInterfaceBarrs()");
+        $btnHtml="<div style='margin-top:10px'>".$tpl->button_autnonome("{reconfigure}",$jsrestart,"fa fa-save",null,0,"btn-danger")."</div>";
+    }
+
+    $details=implode("\n",$portHtml).implode("\n",$kernelHtml);
+    $rp_filter_button="";
+    if($rp_filter){
+        $rp_filter_button=$tpl->button_autnonome("{fix_kernel_values}",
+            "Loadjs('$page?fix-rpfilter=yes');", ico_bug,null,339,"btn-warning","small");
+    }
+
+
+    $widget="
+<div style='vertical-align:top;width:340px'>
+    <div class='widget $bg p-lg text-center' style='min-height:257px;margin-top:2px'>
+        <i class='$mainIco fa-3x'></i>
+        <h3 class='font-bold no-margins' style='padding-top:8px;padding-bottom:5px'>{status}</h3>
+        <div style='font-size:13px;margin-bottom:8px'>$portCount {ports}</div>
+        $details
+        <div id='progress-squid-ports-restart'></div>
+        $btnHtml
+    </div>
+    <div class='center;margin-top:20px'>$rp_filter_button</div>
+</div>";
+
+    echo $tpl->_ENGINE_parse_body($widget)."<script>NoSpinner()</script>";
+}
+function fix_rp_filter():bool{
+    header("content-type: application/x-javascript");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/transparent/rp_filter");
+    $page=CurrentPageName();
+    echo "LoadAjax('proxy-transparent-ports-status','$page?status=yes');";
+    return admin_tracks("Save kernel rp filter parameters");
 }

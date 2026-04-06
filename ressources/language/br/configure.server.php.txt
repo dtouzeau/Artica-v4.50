@@ -13,7 +13,7 @@
 <clamav_av>ClamAV Antivirus</clamav_av>
 <clamav_av_text>Get status of your Open Source antivirus</clamav_av_text>
 <disable_startup>Disable automatically loading this section</disable_startup>
-<distri>Distribution</distri>
+<distri>Distribuiç%C3£o</distri>
 <domain_controler>Domain Controler</domain_controler>
 <domain_controler_text>Make this server has a domain controler in order to serve MS Windows workstations</domain_controler_text>
 <enable_kaspersky>Enable Kaspersky Plugins</enable_kaspersky>
@@ -42,7 +42,7 @@
 <messaging_text>Set your messaging system and configure your Postfix</messaging_text>
 <nfs_share>NFS Sharing folders</nfs_share>
 <nfs_share_text>Share folder using the NFS Linux (Network File System) protocol</nfs_share_text>
-<nic_settings>Network settings</nic_settings>
+<nic_settings>Configuraç%C3µes de rede</nic_settings>
 <nic_settings_text>Set your IP configuration</nic_settings_text>
 <play_with_isp>Play with your ISP</play_with_isp>
 <play_with_isp_text>Use this server has a real mail server between you and your ISP  (aol,free,yahoo..)...</play_with_isp_text>

@@ -199,10 +199,10 @@ function go_shield_form():bool{
     $GoShieldNotCategorized=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoShieldNotCategorized"));
     $SelfGosShieldCacheNoCatz=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GosShieldCacheNoCatz"));
     $SelfGosShieldCacheNoCatzTTL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GosShieldCacheNoCatzTTL"));
-    if(!file_exists("/etc/artica-postfix/settings/Daemons/GoShieldNotCategorized")){
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("GoShieldNotCategorized")){
         $GoShieldNotCategorized=0;
     }
-    if(!file_exists("/etc/artica-postfix/settings/Daemons/GosShieldCacheNoCatz")){
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("GosShieldCacheNoCatz")){
         $SelfGosShieldCacheNoCatz=1;
     }
     if ($SelfGosShieldCacheNoCatzTTL==0){
@@ -380,10 +380,10 @@ function ksrn_form_server():bool{
         $SelfGosShieldCacheNoCatzTTL=1;
     }
 
-    if(!file_exists("/etc/artica-postfix/settings/Daemons/GoShieldNotCategorized")){
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("GoShieldNotCategorized")){
         $GoShieldNotCategorized=0;
     }
-    if(!file_exists("/etc/artica-postfix/settings/Daemons/GosShieldCacheNoCatz")){
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("GosShieldCacheNoCatz")){
         $SelfGosShieldCacheNoCatz=1;
     }
 

@@ -57,7 +57,8 @@ extract and clean up posts downloaded from Usenet.
 <ArticaMetaDisableSetupCenter_explain>Disable any operations on the Setup center area</ArticaMetaDisableSetupCenter_explain>
 <artica_meta_hard_drive_become_full>servers with hard drives that exceed more than 80% of their capacity</artica_meta_hard_drive_become_full>
 <artica_meta_hard_drive_ok>no server have hard drives in capacity limit</artica_meta_hard_drive_ok>
-<artica_meta_openports>List open ports and listening services on your servers inside your network, it can helps you to monitor or to secure your server by referencing all open ports</artica_meta_openports>
+<artica_meta_openports>Listet offene Ports und lauschende Dienste auf Ihren Servern im Netzwerk auf.[br]
+Dies hilft Ihnen, die Angriffsfl%C3%A4che zu %C3%BCberwachen und die Sicherheit zu verbessern, indem Sie ein vollst%C3%A4ndiges Inventar aller offenen Ports pflegen.</artica_meta_openports>
 <artica_meta_ping_enable>If enabled, remote servers will ask (around each 2 minutes) if there is any task for them.[br]They will not send status and informations but just request if there is any operations scheduled to preform</artica_meta_ping_enable>
 <ARTICA_META_SERVER_NOT_REPORT_ITS_STATUS>This server did not report it's status.[br]Perhaps server is down or the Artica Version is not compatible with this feature...</ARTICA_META_SERVER_NOT_REPORT_ITS_STATUS>
 <artica_meta_system_update>System-Aktualisierung</artica_meta_system_update>

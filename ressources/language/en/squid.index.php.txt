@@ -24,7 +24,7 @@ and you can guarantee that your clients are on the local network (otherwise no A
 [b]EX:[/b][br]acl ACLARP arp 11:12:13:14:15:16[br]
 ACLARP refers MACADDRESS of the ethernet 11:12:13:14:15:16[br]
 [br][b]Note[/b]
-[br][i]Squid can only determine the MAC address for clients that are on the same subnet. If the client is on a different subnet, then Squid
+[br][i]The proxy can only determine the MAC address for clients that are on the same subnet. If the client is on a different subnet, then Squid
 cannot find out its MAC address.[/i]</acl_arp_text>
 <acl_arp_title>Ethernet (MAC) address matching</acl_arp_title>
 <acl_browser>Browser matching</acl_browser>

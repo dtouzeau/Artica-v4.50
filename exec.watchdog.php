@@ -498,11 +498,6 @@ function loadavg_table($filepath=null,$lsof=null){
 function monit(){
 	$monit=new monit_unix();
 	$monit->WAKEUP();
-	$unix=new unix();
-	$unix->chmod_func(0755, "/etc/artica-postfix/settings/Daemons/*");
-	
-	
-	
 }
 
 

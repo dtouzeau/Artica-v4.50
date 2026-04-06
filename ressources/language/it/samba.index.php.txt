@@ -30,23 +30,23 @@ This  will also  cause  the Samba server to act as a domain controller for NT4 s
 For more details on setting up this feature see the Domain Control chapter of the Samba HOWTO Collection.
 </domain logons_text>
 <domain master>domain master</domain master>
-<domain master_text>
-Tell samba to enable WAN-wide browse list collation.[br]
-Setting this option causes server to claim a special domain specific NetBIOS name that  identifies it as a domain master browser for its given workgroup.[br]
-Local master browsers in the same workgroup on broadcast-isolated subnets will give this server their local browse lists, and then ask shared server
-for a complete copy of the browse list for the  whole wide area network.
-[br]Browser clients will then contact their local master browser, and will receive the domain-wide browse list, instead of just the list for their broadcast-isolated subnet.[br]
-Note that Windows NT Primary Domain Controllers expect to be able to claim this workgroup specific special NetBIOS name that identifies
-them as domain master browsers for that workgroup by default (i.e. there is no way to prevent a Windows NT PDC from attempting to do this).[br]
-This means that if this parameter is set and this server claims the special name for a workgroup before a Windows NT PDC is able to do so then cross subnet browsing
-will behave strangely and may fail.[br]
-If  domain  logons  =  yes,  then  the default behavior is to enable the domain master parameter.[br]
-If domain logons is not enabled (the default setting), then neither will domain master be enabled by default.[br]
-When domain logons = Yes the default setting for this parameter is Yes, with the result that Samba will be a PDC.[br]
-If domain  master  = No, Samba will function as a BDC.[br]
-In general, this parameter should be set to â€™Noâ€™ only on a BDC. [br]
-Default: domain master = auto
-</domain master_text>
+<domain master_text>Abilita il motore di condivisione file per eseguire la raccolta delle liste di esplorazione a livello WAN.[br]
+Quando questa opzione è abilitata, il server rivendica un nome NetBIOS speciale specifico del gruppo di lavoro che lo designa come Domain Master Browser per quel gruppo.[br]
+I master browser locali situati su sottoreti isolate dal broadcast nello stesso gruppo di lavoro inoltreranno le loro liste locali a questo server. In cambio, richiederanno una lista consolidata che rappresenta lâ%80%99intera rete WAN.[br]
+I sistemi client continueranno a contattare il proprio master browser locale, ma riceveranno una lista a livello di dominio invece di una limitata alla sottorete.[br]
+[b]Considerazioni importanti:[/b][br]
+I Primary Domain Controller (PDC) Windows NT tentano automaticamente di rivendicare il nome NetBIOS speciale che li identifica come Domain Master Browser per il gruppo di lavoro. Questo comportamento non pu%C3² essere disabilitato.[br]
+Se questo server rivendica il ruolo di Domain Master Browser prima di un PDC Windows NT, la navigazione tra sottoreti potrebbe comportarsi in modo imprevedibile o non funzionare.[br]
+Riepilogo comportamento:[br]
+
+Se abilitato, il server attiva per impostazione predefinita il parametro domain master.[br]
+
+Se domain logons non è abilitato (impostazione predefinita), il ruolo di domain master non sarà attivato automaticamente.[br]
+
+Quando attivo, il motore di condivisione file opera come Primary Domain Controller (PDC).[br]
+
+Quando inattivo, opera come Backup Domain Controller (BDC).[br]
+In generale, questo parametro dovrebbe essere disabilitato solo su un BDC.</domain master_text>
 <domain_admin>Domain Administrator privileges</domain_admin>
 <domain_admin_text>Update the Administrator Account that allow to link computers to your Primary Domain Controler and be able to perform administration operations.</domain_admin_text>
 <enable_disable_samba>Enable or disable service</enable_disable_samba>

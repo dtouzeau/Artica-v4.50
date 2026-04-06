@@ -609,12 +609,10 @@ function step3(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $savedsettings=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TempWizard")));
-
     $users=new usersMenus();
-    $sock=new sockets();
     $CPU=$users->CPU_NUMBER;
-    $memory=intval($sock->getFrameWork("services.php?total-memory=yes"));
-    if($memory==0){$memory=intval($sock->getFrameWork("services.php?total-memory=yes"));}
+    $mem_json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/memory/info"));
+    $memory = (is_object($mem_json) && isset($mem_json->total_mb)) ? intval($mem_json->total_mb) : 0;
     if($memory==0){$memory=round($users->MEM_TOTAL_INSTALLEE/1024);}
 
     $main_array[0]="{webproxy_service} {or} {transparent_mode}";
@@ -823,7 +821,7 @@ function step3_save(){
     $sock->SET_INFO("SquidPerformance", $_POST["SquidPerformance"]);
     $sock->SET_INFO("WizardWebFilteringLevel", $_POST["WizardWebFilteringLevel"]);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("TempWizard",base64_encode(serialize($savedsettings)));
-    @file_put_contents("/etc/artica-postfix/settings/Daemons/TempWizardback", serialize($savedsettings));
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("TempWizardback", serialize($savedsettings));
 
 
 }

@@ -111,18 +111,18 @@ W interfejsie u%C5%BCytkownika ko%C5%84cowego u%C5%BCytkownik mo%C5%BCe przeczyt
 <address_verify_map>Address verification database</address_verify_map>
 <address_verify_map_field>Verify database path</address_verify_map_field>
 <address_verify_map_minitext>Manage Persistent storage of address verification information</address_verify_map_minitext>
-<address_verify_map_text>
-By default, address verification information is not stored in a persistent file.[br]
-You have to specify one.[br]Persistent storage is off by default because it may need more disk space than is available in your file system.[br]
-Address verification information is cached by the Postfix [i]verify[/i] daemon.
-Postfix has a bunch of parameters that control the caching of positive and negative results.[br]
-The Address verification database configuration parameter specifies an optional database for sender or recipient address verification results.[br]
-If you don't specify a file, all address verification information is lost after "postfix reload" or "postfix stop".
-[br]If your /var file system has sufficient space specify here the path to the database eg [code](/var/postfix/verify)[/code]
-[br][i]NOTE: Do not put this file in a file system that may run out of space.[/i]
-[br] When the address verification table gets corrupted the world comes to an end. Meanwhile, you will not receive mail via SMTP.
-The verify daemon process will create a new database when none exists, and will open/create the file before it enters the chroot jail and before it drops root privileges. 
-</address_verify_map_text>
+<address_verify_map_text>Domy%C5%9Blnie informacje o weryfikacji adres%C3%B3w nie s%C4%85 zapisywane w trwa%C5%82ym pliku.[br]
+Nale%C5%BCy wskaza%C4%87 taki plik.[br]
+Trwa%C5%82e przechowywanie jest domy%C5%9Blnie wy%C5%82%C4%85czone, poniewa%C5%BC mo%C5%BCe wymaga%C4%87 wi%C4%99cej miejsca na dysku ni%C5%BC jest dost%C4%99pne w systemie plik%C3%B3w.[br]
+Informacje o weryfikacji adres%C3%B3w s%C4%85 buforowane przez demon Postfix [i]verify[/i].[br]
+Postfix posiada wiele parametr%C3%B3w kontroluj%C4%85cych buforowanie wynik%C3%B3w pozytywnych i negatywnych.[br]
+Parametr konfiguracji bazy danych weryfikacji adres%C3%B3w okre%C5%9Bla opcjonaln%C4%85 baz%C4%99 danych dla wynik%C3%B3w weryfikacji adres%C3%B3w nadawcy lub odbiorcy.[br]
+Je%C5%9Bli nie zostanie wskazany plik, wszystkie informacje o weryfikacji zostan%C4%85 utracone po wykonaniu &quot;postfix reload&quot; lub &quot;postfix stop&quot;.[br]
+Je%C5%9Bli system plik%C3%B3w /var ma wystarczaj%C4%85c%C4%85 ilo%C5%9B%C4%87 miejsca, podaj tutaj %C5%9Bcie%C5%BCk%C4%99 do bazy danych, np. code
+[/code].[br]
+[i]UWAGA: Nie umieszczaj tego pliku w systemie plik%C3%B3w, w kt%C3%B3rym mo%C5%BCe zabrakn%C4%85%C4%87 miejsca.[/i][br]
+Je%C5%9Bli tabela weryfikacji adres%C3%B3w zostanie uszkodzona, odbi%C3%B3r poczty przez SMTP mo%C5%BCe zosta%C4%87 przerwany.[br]
+Proces demona verify utworzy now%C4%85 baz%C4%99 danych, je%C5%9Bli %C5%BCadna nie istnieje, oraz otworzy/utworzy plik przed wej%C5%9Bciem do %C5%9Brodowiska chroot i przed zrzuceniem uprawnie%C5%84 root.</address_verify_map_text>
 <address_verify_negative_cache>Enable caching of failed address</address_verify_negative_cache>
 <address_verify_negative_cache_text>Enable caching of failed address verification probe results.[br]
 When this feature is enabled, the cache may pollute quickly with garbage.[br]
@@ -684,7 +684,7 @@ If you enable this feature, you will be able to share folders trough the explore
 <APP_XMLRPC_PHP>Librairie PHP XML-RPC</APP_XMLRPC_PHP>
 <APP_XPDF>PDF converter</APP_XPDF>
 <APP_YOREL>YorHel's RRD scripts</APP_YOREL>
-<APP_ZABBIX_AGENT>Zabbix Agent</APP_ZABBIX_AGENT>
+<APP_ZABBIX_AGENT>Agent Zabbix</APP_ZABBIX_AGENT>
 <APP_ZABBIX_SERVER>Zabbix monitoring solution</APP_ZABBIX_SERVER>
 <APP_ZABIX_SERVER>Zabbix monitoring solution</APP_ZABIX_SERVER>
 <APP_ZABIX_SERVER_CONSOLE>Open Zabbix Web console</APP_ZABIX_SERVER_CONSOLE>
@@ -878,11 +878,10 @@ terminated, and the back end is marked dead</backend-timout-xr>
 <banned_page_webservice>Strony b%C5%82%C4%99d%C3%B3w filtrowania stron internetowych</banned_page_webservice>
 <banned_page_webservice_text>Set listen port and parameters for the web service that handle your banned web page</banned_page_webservice_text>
 <ban_browsers>Browsers Filter</ban_browsers>
-<ban_browsers_explain>If you enable this feature, all browsers will be banned except browsers listed below[br]
-This feature has been designed to provide more security against spywares or bots that should use Internet from your local network.[br]
-It designed to force users using browsers validated by your company.[br]
-You can use this feature to provide a specific Proxy for servers which store robots and need different outgoing requests behavior
-</ban_browsers_explain>
+<ban_browsers_explain>Je%C5%9Bli w%C5%82%C4%85czysz t%C4%99 funkcj%C4%99, wszystkie przegl%C4%85darki zostan%C4%85 zablokowane z wyj%C4%85tkiem tych wymienionych poni%C5%BCej.[br]
+Funkcja ta zosta%C5%82a zaprojektowana w celu zwi%C4%99kszenia bezpiecze%C5%84stwa przed spywareâ%80%99em lub botami korzystaj%C4%85cymi z Internetu z sieci lokalnej.[br]
+Pozwala wymusi%C4%87 korzystanie z przegl%C4%85darek zatwierdzonych przez firm%C4%99.[br]
+Mo%C5%BCna jej r%C3%B3wnie%C5%BC u%C5%BCy%C4%87 do przypisania dedykowanego proxy dla serwer%C3%B3w przechowuj%C4%85cych roboty, kt%C3%B3re wymagaj%C4%85 innego zachowania dla ruchu wychodz%C4%85cego.</ban_browsers_explain>
 <ban_browsers_explain2>User-Agents listed below are allowed to browse trough the Proxy</ban_browsers_explain2>
 <ban_browsers_text>Allow outgoing requests only for specified Browsers</ban_browsers_text>
 <BasesPath>Antivirus database path</BasesPath>
@@ -898,7 +897,7 @@ If multiple BCC actions are  specified  within  the same  SMTP  MAIL  transactio
 <BlackoutPeriods>Blackout periods</BlackoutPeriods>
 <BlackoutPeriods_text>Do not execute backup tasks...</BlackoutPeriods_text>
 <black_lists>Black lists engines</black_lists>
-<black_spam>Blacklisted</black_spam>
+<black_spam>Na czarnej li%C5%9Bcie</black_spam>
 <block_banner_advertisements>Banner advertisements</block_banner_advertisements>
 <Body>Body</Body>
 <bodym>Body message</bodym>
@@ -1442,18 +1441,15 @@ Then create a TXT entry, like this:[br]
 Outgoing mails can be signed with your certificates in order to be verified by others mails servers.</dkim_about2>
 <dkim_showkeys_text>You need to set up the DNS record of each domain listed above.[br]Each DNS record will should have a 'TXT' type DNS record.</dkim_showkeys_text>
 <DKIM_SPAMASS_WBL_HOWTO>Servers listed in this section will reduce the anti-spam score behavior</DKIM_SPAMASS_WBL_HOWTO>
-<dkim_testkeys_text>If TXT DNS records are successfully added, this section should display your domains and the records DKIM success validation.</dkim_testkeys_text>
+<dkim_testkeys_text>Je%C5%9Bli rekordy DNS TXT zostan%C4%85 pomy%C5%9Blnie dodane, ta sekcja wy%C5%9Bwietli Twoje domeny oraz potwierdzenie poprawnej walidacji DKIM.</dkim_testkeys_text>
 <dmidecode>DMI BIOS Informations</dmidecode>
 <dmidecode_text>Contains a description  of  the  systemâ€™s  hardware  components,  as well as other useful pieces of information such as serial numbers and BIOS revision</dmidecode_text>
-<DNSBL_EXPLAIN>A DNSBL (DNS-based Blackhole List, Block List, or Blacklist; see below) is a list of IP addresses published through the 
-Internet Domain Name Service in a particular format.[br]
-DNSBLs are most often used to publish the addresses of computers or networks linked to spamming;
- most mail server software can be configured to reject or flag messages which have been sent from a site listed on one or more such lists.[br]
-"DNSBL" is a software mechanism, rather than a specific list or policy.[br]
-There are dozens of DNSBLs in existence,[1][2] which use a wide array of standards for listing and delisting of addresses.[br]
-These may include listing the addresses of zombie computers or other machines being used to send spam, listing the addresses of ISPs who willingly host spammers, or listing addresses which have sent spam to a honeypot system.[br]
-Since the creation of the first DNSBL in 1997, the operation and policies of these lists have been frequently controversial, both in Internet advocacy and occasionally in lawsuits. Many mail system operators and users consider DNSBLs a valuable tool to share information about spam sources, but others including prominent Internet activists have objected to them as a form of censorship. In addition, a small number of DNSBL operators have been the target of lawsuits filed by spammers seeking to have the lists shut down.
-</DNSBL_EXPLAIN>
+<DNSBL_EXPLAIN>DNSBL (DNS-based Blackhole List, lista blokuj%C4%85ca oparta na DNS; patrz poni%C5%BCej) to lista adres%C3%B3w IP publikowana za po%C5%9Brednictwem systemu nazw domen (DNS) w okre%C5%9Blonym formacie.[br]
+DNSBL s%C4%85 najcz%C4%99%C5%9Bciej wykorzystywane do publikowania adres%C3%B3w komputer%C3%B3w lub sieci powi%C4%85zanych ze spamem; wi%C4%99kszo%C5%9B%C4%87 oprogramowania serwer%C3%B3w pocztowych mo%C5%BCe by%C4%87 skonfigurowana tak, aby odrzuca%C4%87 lub oznacza%C4%87 wiadomo%C5%9Bci wys%C5%82ane z witryny znajduj%C4%85cej si%C4%99 na jednej lub kilku takich listach.[br]
+â%80%9EDNSBLâ%80%9D to mechanizm programowy, a nie konkretna lista czy polityka.[br]
+Istniej%C4%85 dziesi%C4%85tki DNSBL,[1][2] kt%C3%B3re stosuj%C4%85 szerok%C4%85 gam%C4%99 standard%C3%B3w dotycz%C4%85cych dodawania i usuwania adres%C3%B3w z listy.[br]
+Mog%C4%85 one obejmowa%C4%87 umieszczanie na li%C5%9Bcie adres%C3%B3w komputer%C3%B3w zombie lub innych maszyn wykorzystywanych do wysy%C5%82ania spamu, adres%C3%B3w dostawc%C3%B3w Internetu (ISP), kt%C3%B3rzy %C5%9Bwiadomie hostuj%C4%85 spamer%C3%B3w, lub adres%C3%B3w, kt%C3%B3re wys%C5%82a%C5%82y spam do systemu honeypot.[br]
+Od czasu utworzenia pierwszej DNSBL w 1997 roku spos%C3%B3b dzia%C5%82ania i polityki tych list by%C5%82y cz%C4%99sto przedmiotem kontrowersji, zar%C3%B3wno w%C5%9Br%C3%B3d zwolennik%C3%B3w Internetu, jak i sporadycznie w s%C4%85dach. Wielu operator%C3%B3w i u%C5%BCytkownik%C3%B3w system%C3%B3w pocztowych uwa%C5%BCa DNSBL za cenne narz%C4%99dzie do wymiany informacji o %C5%BAr%C3%B3d%C5%82ach spamu. Inni, w tym znani dzia%C5%82acze internetowi, sprzeciwiaj%C4%85 si%C4%99 im, uznaj%C4%85c je za form%C4%99 cenzury. Ponadto niewielka liczba operator%C3%B3w DNSBL by%C5%82a celem pozw%C3%B3w s%C4%85dowych wnoszonych przez spamer%C3%B3w, kt%C3%B3rzy d%C4%85%C5%BCyli do zamkni%C4%99cia tych list.</DNSBL_EXPLAIN>
 <dnsDomainIs>If contains in host fqdn</dnsDomainIs>
 <dnsDomainIs_text>Detects whether the URL host name belongs to a given DNS domain</dnsDomainIs_text>
 <dnsmasq_DNS_records>MX Records</dnsmasq_DNS_records>
@@ -1463,7 +1459,7 @@ Since the creation of the first DNSBL in 1997, the operation and policies of the
 <dns_information>DNS information</dns_information>
 <dns_main_settings>DNS settings and tweeks</dns_main_settings>
 <DNS_RECORDS>Zapisy DNS</DNS_RECORDS>
-<DNS_RECORDS_TESTS>DNS records validations</DNS_RECORDS_TESTS>
+<DNS_RECORDS_TESTS>Walidacja rekord%C3%B3w DNS</DNS_RECORDS_TESTS>
 <dns_server>Serwer DNS</dns_server>
 <dns_servers>Serwery DNS</dns_servers>
 <Doc>Documents</Doc>
@@ -1491,7 +1487,7 @@ Since the creation of the first DNSBL in 1997, the operation and policies of the
 <downloaded>Downloaded</downloaded>
 <downloading>Downloading</downloading>
 <downloads>This covers mostly filesharing, p2p and torrent sites</downloads>
-<downloads_edk_section>Downloads</downloads_edk_section>
+<downloads_edk_section>Pobrane pliki</downloads_edk_section>
 <DOWNLOAD_CONFIRM_CANCEL>Zatrzyma%C4%87 pobieranie zadania?</DOWNLOAD_CONFIRM_CANCEL>
 <download_kbs>Przepustowo%C5%9B%C4%87 pobierania</download_kbs>
 <download_list>Downloads list</download_list>
@@ -1508,7 +1504,7 @@ Dropbox works on both Mac and Windows.[br]
   Pretend that the lookup key  was  not  found.[br]This prevents  Postfix  from  trying  substrings  of the lookup key (such as a subdomain name, or a  network address subnetwork).</DUNNO_help>
 <duration>Czas trwania</duration>
 <during>Podczas</during>
-<each>each</each>
+<each>Ka%C5%BCdy</each>
 <ED2K-port>eMule Client port</ED2K-port>
 <ED2K-port_help>This is the port that allow other eMule client and servers to connect.[br]You need to open this port on your Internet box in order to increase your connection rate.[br]
 If you did not open this port, you will have a LowID and you will not be able to obtain the maximal sources to retreive files.</ED2K-port_help>
@@ -1939,7 +1935,7 @@ after the message is queued, send the  entire  message through the specified ext
 <finance-insurance>Strony internetowe firm ubezpieczeniowych i ich ekosystem%C3%B3w, zar%C3%B3wno materialnych, jak i spo%C5%82ecznych (takich jak ubezpieczenia wzajemne, ubezpieczenia zdrowotne itp.)</finance-insurance>
 <finance-moneylending>Sites one can apply for loans and mortgages or can obtain information about this business</finance-moneylending>
 <finance-other>All financial pages that do not fit in the financial categories above.</finance-other>
-<finance-realestate>Sites about all types of realestate, bying and selling homes, finding appartments for rent and selling.</finance-realestate>
+<finance-realestate>Strony obejmuj%C4%85ce wszystkie aspekty rynku nieruchomo%C5%9Bci, w tym kupno i sprzeda%C5%BC dom%C3%B3w, wyszukiwanie mieszka%C5%84 do wynaj%C4%99cia oraz publikowanie ofert sprzeda%C5%BCy nieruchomo%C5%9Bci.</finance-realestate>
 <find>Find</find>
 <find user>Find user</find user>
 <find_documents>find documents</find_documents>
@@ -2251,40 +2247,38 @@ For example :
 <index_page_settings>Index page</index_page_settings>
 <index_page_settings_text>Administrator index page parameters</index_page_settings_text>
 <inet_interface>Inet interface</inet_interface>
-<inet_interfaces_text>
-The network interface addresses that this mail system receives mail on.[br]
-Specify "all" to receive mail on all network interfaces (default), and "loopback-only" to receive mail on loopback network interfaces only 
-(Postfix version 2.2 and later). [br]
-The parameter also controls delivery of mail to user@[ip.address].[br]
+<inet_interfaces_text>Adresy interfejs%C3%B3w sieciowych, na kt%C3%B3rych ten system pocztowy odbiera wiadomo%C5%9Bci.[br]
+Okre%C5%9Bl &quot;all&quot;, aby odbiera%C4%87 poczt%C4%99 na wszystkich interfejsach sieciowych (domy%C5%9Blnie), lub &quot;loopback-only&quot;, aby odbiera%C4%87 poczt%C4%99 tylko na interfejsach loopback
+(Postfix wersja 2.2 i nowsze).[br]
+Ten parametr kontroluje r%C3%B3wnie%C5%BC dostarczanie wiadomo%C5%9Bci do user@[ip.address].[br]
 
-    [i]Note 1: you need to stop and start Postfix when this parameter changes.[/i][br]
+[i]Uwaga 1: po zmianie tego parametru nale%C5%BCy zatrzyma%C4%87 i ponownie uruchomi%C4%87 Postfix.[/i][br]
 
-    [i]Note 2: address information may be enclosed inside [], but this form is not required here.[/i]
+[i]Uwaga 2: informacje o adresie mog%C4%85 by%C4%87 uj%C4%99te w [], ale nie jest to tutaj wymagane.[/i]
 
-    [br]
-    When inet_interfaces specifies just one IPv4 and/or IPv6 address that is not a loopback address,
-     the Postfix SMTP client will use this address as the IP source address for outbound mail.[br]
-     Support for IPv6 is available in Postfix version 2.2 and later.[br]
+[br]
+Je%C5%BCeli inet_interfaces okre%C5%9Bla tylko jeden adres IPv4 i/lub IPv6, kt%C3%B3ry nie jest adresem loopback,
+klient SMTP Postfixa u%C5%BCyje tego adresu jako %C5%BAr%C3%B3d%C5%82owego adresu IP dla poczty wychodz%C4%85cej.[br]
+Obs%C5%82uga IPv6 jest dost%C4%99pna od wersji Postfix 2.2.[br]
 
-    On a multi-homed firewall with separate Postfix instances listening on the "inside" and "outside" interfaces,
-    this can prevent each instance from being able to reach servers on the "other side" of the firewall.
-    [br]A better solution for multi-homed firewalls is to leave inet_interfaces at the default value and instead use explicit IP addresses in the master.cf[br]
-    SMTP server definitions.
-    [br]This preserves the Postfix SMTP client's loop detection, by ensuring that each side of the firewall knows that 
-    the other IP address is still the same host.[br]
-     Setting $inet_interfaces to a single IPv4 and/or IPV6 address is primarily useful with virtual hosting of domains on secondary IP addresses,
-     when each IP address serves a different domain (and has a different $myhostname setting).[br]
-	[br]
-  
-    Examples:
-    [ul]
-	[li]all (DEFAULT)[/li]
-    [li]loopback-only (Postfix version 2.2 and later)[/li]
-    [li]127.0.0.1[/li]
-    [li][::1] (Postfix version 2.2 and later)[/li]
-    [li]192.168.1.2[/li]
-    [/ul]
-</inet_interfaces_text>
+Na firewallu wielointerfejsowym z oddzielnymi instancjami Postfix nas%C5%82uchuj%C4%85cymi na interfejsach &quot;inside&quot; i &quot;outside&quot;,
+mo%C5%BCe to uniemo%C5%BCliwi%C4%87 ka%C5%BCdej instancji dost%C4%99p do serwer%C3%B3w po drugiej stronie zapory.[br]
+Lepszym rozwi%C4%85zaniem jest pozostawienie inet_interfaces z warto%C5%9Bci%C4%85 domy%C5%9Bln%C4%85 i u%C5%BCycie jawnych adres%C3%B3w IP w definicjach serwera SMTP w pliku master.cf.[br]
+
+Pozwala to zachowa%C4%87 mechanizm wykrywania p%C4%99tli klienta SMTP Postfixa, zapewniaj%C4%85c, %C5%BCe ka%C5%BCda strona zapory wie, %C5%BCe drugi adres IP nadal nale%C5%BCy do tego samego hosta.[br]
+
+Ustawienie $inet_interfaces na pojedynczy adres IPv4 i/lub IPv6 jest szczeg%C3%B3lnie przydatne w %C5%9Brodowiskach hostingu wirtualnego,
+gdy r%C3%B3%C5%BCne domeny s%C4%85 obs%C5%82ugiwane na r%C3%B3%C5%BCnych adresach IP (ka%C5%BCdy z inn%C4%85 warto%C5%9Bci%C4%85 $myhostname).[br]
+
+[br]
+Przyk%C5%82ady:
+[ul]
+[li]all (DEFAULT)[/li]
+[li]loopback-only (Postfix wersja 2.2 i nowsze)[/li]
+[li]127.0.0.1[/li]
+[li][::1] (Postfix wersja 2.2 i nowsze)[/li]
+[li]192.168.1.2[/li]
+[/ul]</inet_interfaces_text>
 <inet_interfaces_title>Bind interfaces</inet_interfaces_title>
 <Infected>Infected</Infected>
 <infected_spam>Infected</infected_spam>
@@ -2376,7 +2370,7 @@ Log a warning with the optional text... (or  log  a
               a pattern before applying more drastic actions.
 </INFOS_WARN_EXPLAIN>
 <INFOS__EXPLAIN>Select the action operation when matching the rule</INFOS__EXPLAIN>
-<inherit_acls>inherit acls</inherit_acls>
+<inherit_acls>Dziedziczy%C4%87 ACL</inherit_acls>
 <inherit_acls_text>Ensure that if default acls exist on parent directories, they are always honored when creating a new file or subdirectory in these parent directories</inherit_acls_text>
 <inherit_permissions>inherit permissions</inherit_permissions>
 <inherit_permissions_text>New directories inherit the permissions of the parent directory.[br]
@@ -2496,7 +2490,7 @@ With the default 100 SMTP server process limit, "in flow delay as 1s" limits the
 <last_100_mails>last 100 emails</last_100_mails>
 <last_24_h>Ostatnie 24 godziny</last_24_h>
 <last_48_h>Ostatnie 48 godzin</last_48_h>
-<last_days>last days</last_days>
+<last_days>Ostatnie dni</last_days>
 <last_error>Last error</last_error>
 <last_logoff>Ostatnie wylogowanie</last_logoff>
 <last_logon>Ostatnie logowanie</last_logon>
@@ -2525,7 +2519,7 @@ With the default 100 SMTP server process limit, "in flow delay as 1s" limits the
 <licence status>licence status</licence status>
 <license>Licencja</license>
 <license_error>B%C5%82%C4%85d licencji</license_error>
-<license_expired>The license is expired</license_expired>
+<license_expired>Licencja wygas%C5%82a</license_expired>
 <license_info>License information</license_info>
 <license_informations>license informations</license_informations>
 <license_info_text>Display license and update it</license_info_text>
@@ -2811,7 +2805,7 @@ This parameter also limits the time an unreachable destination is kept in the sh
 <monthly_statistics_text>Display email statistics by month</monthly_statistics_text>
 <months>Miesi%C4%85ce</months>
 <more>more</more>
-<more_infos>More informations</more_infos>
+<more_infos>Wi%C4%99cej informacji</more_infos>
 <more_stats>More Statistics</more_stats>
 <mount>Po%C5%82%C4%85cz</mount>
 <mounted>mounted on</mounted>
@@ -2891,7 +2885,7 @@ It's the names that Windows boxes see are always the NetBIOS names</netbiosname_
 <network_information>Network information</network_information>
 <network_name>Network name</network_name>
 <network_password>Network password</network_password>
-<network_settings>Network settings</network_settings>
+<network_settings>Ustawienia sieci</network_settings>
 <network_settings_text>You need to choose wich network interface the Postfix mail server will hook, choose on the field above</network_settings_text>
 <net_agent_howto>Install the Network Agent</net_agent_howto>
 <net_agent_howto_text>How to install the Network Agent on your remote computers without remote installation task ?</net_agent_howto_text>
@@ -3123,30 +3117,30 @@ It is recommended to use 0 to emphasis the fact that ICP is not used in any way 
 <pattern>pattern</pattern>
 <patterns_vers_status>Patterns Databases status</patterns_vers_status>
 <pattern_action>pattern action</pattern_action>
-<pattern_action_help>
-When pattern matches a mail address, domain or host address, it perform an action.
-[h4]EMAIL ADDRESS PATTERNS[/h4]
-[ul]
-[li][code]user@domain[/code][br]Matches the specified mail address.[/li]
-[li][code] domain.tld[/code][br]
-              Matches  domain.tld  as the domain part of an email
-              address.[br]
-              The pattern domain.tld also matches domains
-              Otherwise,  specify [code].domain.tld[/code]  (note  the  initial  dot)  in order to match subdomains.
+<pattern_action_help>Gdy wzorzec pasuje do adresu e-mail, domeny lub adresu hosta, wykonywana jest odpowiednia akcja.
 
-[li][code]user@[/code][br]Matches all mail addresses with the specified  user part.
+[h4]WZORCE ADRES%C3%93W E-MAIL[/h4]
+[ul]
+[li][code]user@domain[/code][br]Pasuje do okre%C5%9Blonego adresu e-mail.[/li]
+
+[li][code]domain.tld[/code][br]
+Pasuje do domain.tld jako cz%C4%99%C5%9Bci domenowej adresu e-mail.[br]
+Wzorzec domain.tld pasuje r%C3%B3wnie%C5%BC do wszystkich jego subdomen.[br]
+Aby dopasowa%C4%87 wy%C5%82%C4%85cznie subdomeny, u%C5%BCyj [code].domain.tld[/code] (zwr%C3%B3%C4%87 uwag%C4%99 na pocz%C4%85tkow%C4%85 kropk%C4%99).[/li]
+
+[li][code]user@[/code][br]Pasuje do wszystkich adres%C3%B3w e-mail z okre%C5%9Blon%C4%85 cz%C4%99%C5%9Bci%C4%85 u%C5%BCytkownika.[/li]
 [/ul]
-[h4]HOST NAME/ADDRESS PATTERNS[/h4]
-[ul][li][code]net.work.addr.ess[/code][/li]
+
+[h4]WZORCE NAZWY / ADRESU HOSTA[/h4]
+[ul]
+[li][code]net.work.addr.ess[/code][/li]
 [li][code]net.work.addr[/code][/li]
 [li][code]net.work[/code][/li]
 [li][code]net[/code][br]
-Matches  the specified IPv4 host address or subnetwork.[br]
-An IPv4 host address is a  sequence  of  four decimal octets separated by ".".[br]
-Subnetworks  are  matched  by repeatedly truncating the last ".octet" from the remote IPv4 host address string  until a match is found in the access table,
-or until further truncation is not possible.(eg:192.168.1.0/24)
-[/ul]
-</pattern_action_help>
+Pasuje do okre%C5%9Blonego adresu IPv4 lub podsieci.[br]
+Adres IPv4 to sekwencja czterech oktet%C3%B3w dziesi%C4%99tnych oddzielonych &quot;.&quot;.[br]
+Podsieci s%C4%85 dopasowywane poprzez stopniowe usuwanie ostatniego &quot;.oktetu&quot; z adresu IPv4 zdalnego hosta, a%C5%BC zostanie znalezione dopasowanie w tabeli dost%C4%99pu lub dalsze skracanie nie b%C4%99dzie mo%C5%BCliwe (np. 192.168.1.0/24).[/li]
+[/ul]</pattern_action_help>
 <pattern_database>Pattern Database date</pattern_database>
 <pattern_date>Pattern date</pattern_date>
 <pattern_update_date>Pattern database update date</pattern_update_date>
@@ -3433,7 +3427,7 @@ See also "maximal backoff time".
 <recreation_humor>Humorystyczne strony, komiksy, zabawne historie</recreation_humor>
 <recreation_sports>All about sports</recreation_sports>
 <recreation_travel>Sites with information about foreign countries, travel companies, travel fares, accomondations and everything else that has to do with travel</recreation_travel>
-<recreation_wellness>Sites about treatments for feeling internally and externally healthy and beautiful again</recreation_wellness>
+<recreation_wellness>Strony oferuj%C4%85ce zabiegi i rozwi%C4%85zania pomagaj%C4%85ce ludziom poczu%C4%87 si%C4%99 ponownie zdrowo i pi%C4%99knie, zar%C3%B3wno wewn%C4%99trznie, jak i zewn%C4%99trznie.</recreation_wellness>
 <recursive>recursive</recursive>
 <redirect>Redirect to email address</redirect>
 <redirected>Redirected</redirected>
@@ -3518,15 +3512,17 @@ This feature specifies the response code to rejected requests (default: 504).</r
 [br]and contains no sender-specified routing (user@elsewhere@domain). </reject_unauth_destination_text>
 <reject_unauth_pipelining>reject unauth pipelining</reject_unauth_pipelining>
 <reject_unauth_pipelining_text>Reject the request when the client sends SMTP commands[br] ahead of time where it is not allowed,[br] or when the client sends SMTP commands ahead of time without knowing[br] that Postfix actually supports ESMTP command pipelining.[br] This stops mail from bulk mail software[br] that improperly uses ESMTP command pipelining[br]in order to speed up deliveries</reject_unauth_pipelining_text>
-<reject_unknown_client_hostname>reject unknown client hostname</reject_unknown_client_hostname>
+<reject_unknown_client_hostname>Odrzu%C4%87 nieznane nazwy host%C3%B3w klient%C3%B3w</reject_unknown_client_hostname>
 <reject_unknown_client_hostname_text>Reject the client when[br][ul][li]1) the client IP address=name mapping fails,[/li][li]2) the name=address mapping fails,[/li][li]3) the name=address mapping does not match the client IP address[/li][/ul]</reject_unknown_client_hostname_text>
 <reject_unknown_helo_hostname>reject unknown helo hostname</reject_unknown_helo_hostname>
 <reject_unknown_helo_hostname_text>Reject the request when the HELO or EHLO hostname has no DNS A or MX record</reject_unknown_helo_hostname_text>
 <reject_unknown_recipient_domain>reject unknown recipient domain</reject_unknown_recipient_domain>
 <reject_unknown_recipient_domain_text>Reject the request when Postfix is not final destination for the recipient address,[br] and the RCPT TO address has no DNS A or MX record,[br] or when it has a malformed MX record[br] such as a record with a zero-length MX hostname</reject_unknown_recipient_domain_text>
 <reject_unknown_reverse_client_hostname>reject unknown reverse client hostname</reject_unknown_reverse_client_hostname>
-<reject_unknown_reverse_client_hostname_text>Reject the SMTP connection when[br] the client IP address has no address=name mapping.[br]
-This is a weaker restriction than the reject unknown client hostname rule,[br] which requires not only that[br]the address=name and name=address mappings exist,[br] but also that the two mappings reproduce the client IP address.</reject_unknown_reverse_client_hostname_text>
+<reject_unknown_reverse_client_hostname_text>Odrzu%C4%87 po%C5%82%C4%85czenie SMTP, gdy adres IP klienta nie ma przypisania adres â%86%92 nazwa.[br]
+To ograniczenie jest s%C5%82absze ni%C5%BC regu%C5%82a reject unknown client hostname,[br]
+kt%C3%B3ra wymaga nie tylko istnienia mapowa%C5%84 adres â%86%92 nazwa i nazwa â%86%92 adres,[br]
+ale r%C3%B3wnie%C5%BC tego, aby oba mapowania poprawnie odtwarza%C5%82y adres IP klienta.</reject_unknown_reverse_client_hostname_text>
 <reject_unknown_sender_domain>reject unknown sender domain</reject_unknown_sender_domain>
 <reject_unknown_sender_domain_text>Reject the request when Postfix is not final destination[br] for the sender address, and the MAIL FROM address has no DNS or MX record,[br] or when it has a malformed MX record[br] such as a record with a zero-length MX hostname</reject_unknown_sender_domain_text>
 <reject_unlisted_recipient>reject unlisted recipient</reject_unlisted_recipient>
@@ -3770,7 +3766,9 @@ You can enable RBL RHSBL features in order to prevent spams
 <senders>Senders</senders>
 <sender_address>Adres nadawcy</sender_address>
 <sender_bcc>Duplicate outgoing mails</sender_bcc>
-<sender_bcc_explain>This feature will put in BCC all outgoing mails sent by this user.[br]You can only set one email address.[br]If you want to send to multiple emails, use a distribution list</sender_bcc_explain>
+<sender_bcc_explain>Ta funkcja automatycznie dodaje odbiorc%C4%99 w BCC do wszystkich wiadomo%C5%9Bci wychodz%C4%85cych wysy%C5%82anych przez tego u%C5%BCytkownika.[br]
+Mo%C5%BCna okre%C5%9Bli%C4%87 tylko jeden adres e-mail.[br]
+Aby wys%C5%82a%C4%87 kopie do wielu odbiorc%C3%B3w, u%C5%BCyj listy dystrybucyjnej.</sender_bcc_explain>
 <sender_bcc_text>Duplicate all outgoing messages of this user to an other email address</sender_bcc_text>
 <sender_bcc_to>Duplicate outgoing mails to</sender_bcc_to>
 <sender_canonical>rewriting sent address</sender_canonical>
@@ -4069,25 +4067,21 @@ Po zako%C5%84czeniu dostarczania do wybranego miejsca docelowego, proces nadawcy
 <smtp_connection_cache_time_limit>Connection cache time limit</smtp_connection_cache_time_limit>
 <smtp_connection_cache_time_limit_text>When SMTP connection caching is enabled, the amount of time that an unused SMTP client socket is kept open before it is closed.[br][i]Do not specify larger values without permission from the remote sites[/i].</smtp_connection_cache_time_limit_text>
 <smtp_connection_reuse_time_limit>Connection reuse time limit</smtp_connection_reuse_time_limit>
-<smtp_connection_reuse_time_limit_text>The amount of time during which Postfix will use an SMTP connection repeatedly.[br]
-The timer starts when the connection is initiated (i.e. it includes the connect, greeting and helo latency, in addition to the latencies of subsequent mail delivery transactions).[br]
-This feature addresses a performance stability problem with remote SMTP servers.
-[br]This problem is not specific to Postfix: [i]it can happen when any MTA sends large amounts of SMTP email to a site that has multiple MX hosts.[/i][br]
-The problem starts when one of a set of MX hosts becomes slower than the rest.[br]
-Even though SMTP clients connect to fast and slow MX hosts with equal probability, the slow MX host ends up with more simultaneous inbound connections than the faster MX hosts, 
-because the slow MX host needs more time to serve each client request.[br]
-[strong]The slow MX host becomes a connection attractor.[/strong]If one MX host becomes N times slower than the rest, it dominates mail delivery 
-latency unless there are more than N fast MX hosts to counter the effect.[br]
-And if the number of MX hosts is smaller than N, the mail delivery latency becomes effectively that of the slowest MX host divided by the total number of MX hosts.[br]
-The solution uses connection caching by limiting the amount of time during which a connection can be used repeatedly (instead of limiting the number of deliveries over that connection),
- Postfix not only restores fairness in the distribution of simultaneous connections across a set of MX hosts, it also favors deliveries over connections 
- that perform well, which is exactly what we want.[br]
-The default reuse time limit, [code]300s[/code], is comparable to the various smtp transaction timeouts which are fair estimates of maximum excess 
-latency for a slow delivery.[br][i]Note that hosts may accept thousands of messages over a single connection within the default connection reuse time limit.[/i][br]
-This number is much larger than the limit of 10 messages per cached connection.[br]
-it may prove necessary to lower the limit to avoid interoperability issues with MTAs that exhibit bugs when many messages are delivered via a single connection.
-[br]A lower reuse time limit risks losing the benefit of connection reuse when the average connection and mail delivery latency exceeds the reuse time limit.
-</smtp_connection_reuse_time_limit_text>
+<smtp_connection_reuse_time_limit_text>Czas, przez kt%C3%B3ry Postfix ponownie wykorzystuje po%C5%82%C4%85czenie SMTP do wysy%C5%82ania wielu wiadomo%C5%9Bci.[br]
+Licznik czasu rozpoczyna si%C4%99 w momencie ustanowienia po%C5%82%C4%85czenia (obejmuje czas po%C5%82%C4%85czenia, baner, polecenie HELO/EHLO oraz op%C3%B3%C5%BAnienia kolejnych transakcji SMTP).[br]
+Funkcja ta rozwi%C4%85zuje problem stabilno%C5%9Bci wydajno%C5%9Bci z niekt%C3%B3rymi zdalnymi serwerami SMTP.[br]
+Problem ten nie jest specyficzny dla Postfixa: [i]mo%C5%BCe wyst%C4%85pi%C4%87, gdy dowolny MTA wysy%C5%82a du%C5%BCe ilo%C5%9Bci poczty do domeny posiadaj%C4%85cej wiele host%C3%B3w MX.[/i][br]
+Problem pojawia si%C4%99, gdy jeden z host%C3%B3w MX staje si%C4%99 wolniejszy od pozosta%C5%82ych.[br]
+Mimo %C5%BCe klienci SMTP %C5%82%C4%85cz%C4%85 si%C4%99 z szybkim i wolnym MX z tak%C4%85 sam%C4%85 prawdopodobno%C5%9Bci%C4%85, wolniejszy serwer ko%C5%84czy z wi%C4%99ksz%C4%85 liczb%C4%85 jednoczesnych po%C5%82%C4%85cze%C5%84, poniewa%C5%BC potrzebuje wi%C4%99cej czasu na obs%C5%82ug%C4%99 ka%C5%BCdego %C5%BC%C4%85dania.[br]
+[strong]Wolny host MX staje si%C4%99 wtedy â%80%9Emagnesem na po%C5%82%C4%85czeniaâ%80%9D.[/strong][br]
+Je%C5%9Bli jeden MX jest N razy wolniejszy od pozosta%C5%82ych, dominuje op%C3%B3%C5%BAnienie dostarczania poczty, chyba %C5%BCe istnieje wi%C4%99cej ni%C5%BC N szybkich host%C3%B3w MX, kt%C3%B3re zr%C3%B3wnowa%C5%BC%C4%85 efekt.[br]
+Je%C5%BCeli liczba host%C3%B3w MX jest mniejsza ni%C5%BC N, op%C3%B3%C5%BAnienie dostarczania poczty staje si%C4%99 w praktyce op%C3%B3%C5%BAnieniem najwolniejszego hosta MX podzielonym przez liczb%C4%99 wszystkich host%C3%B3w MX.[br]
+Rozwi%C4%85zanie polega na wykorzystaniu cache po%C5%82%C4%85cze%C5%84, ograniczaj%C4%85c czas ponownego u%C5%BCycia po%C5%82%C4%85czenia zamiast liczby wiadomo%C5%9Bci wysy%C5%82anych przez jedno po%C5%82%C4%85czenie.[br]
+Domy%C5%9Blny limit ponownego u%C5%BCycia, [code]300s[/code], jest por%C3%B3wnywalny z maksymalnymi czasami transakcji SMTP dla powolnych dostaw.[br]
+[i]W tym czasie jeden host mo%C5%BCe przyj%C4%85%C4%87 tysi%C4%85ce wiadomo%C5%9Bci przez jedno po%C5%82%C4%85czenie.[/i][br]
+Jest to znacznie wi%C4%99cej ni%C5%BC tradycyjny limit 10 wiadomo%C5%9Bci na jedno po%C5%82%C4%85czenie z cache.[br]
+Mo%C5%BCe by%C4%87 konieczne obni%C5%BCenie tego limitu, aby unikn%C4%85%C4%87 problem%C3%B3w interoperacyjnych z MTA, kt%C3%B3re zawieraj%C4%85 b%C5%82%C4%99dy przy wysy%C5%82aniu wielu wiadomo%C5%9Bci przez jedno po%C5%82%C4%85czenie.[br]
+Zbyt niski limit ponownego u%C5%BCycia mo%C5%BCe jednak spowodowa%C4%87 utrat%C4%99 korzy%C5%9Bci z ponownego u%C5%BCycia po%C5%82%C4%85cze%C5%84, gdy %C5%9Brednie op%C3%B3%C5%BAnienie po%C5%82%C4%85czenia i dostarczania przekracza ten limit.</smtp_connection_reuse_time_limit_text>
 <smtp_connect_timeout>Czas oczekiwania na po%C5%82%C4%85czenie</smtp_connect_timeout>
 <smtp_connect_timeout_text>
 The SMTP client time limit for completing a TCP connection, or zero (use the operating system built-in time limit).[br]
@@ -4192,7 +4186,7 @@ by changing 5xx reply codes into 4xx. However, this option is no cure for addres
 <spam option 2>If a message is recognized as 'Probable Spam'</spam option 2>
 <spam option 2r>Probable Spam</spam option 2r>
 <spam option 3>If a message is recognized as 'Blacklisted'</spam option 3>
-<spam option 3r>Blacklisted</spam option 3r>
+<spam option 3r>Na czarnej li%C5%9Bcie</spam option 3r>
 <spam option 4>If a message is recognized as 'Formal'</spam option 4>
 <spam option 4r>Formal</spam option 4r>
 <spam option 5>If a message is recognized as 'Trusted'</spam option 5>
@@ -4504,7 +4498,8 @@ keywords will be replaced dynamically with the content of your contacts database
 example : user.name@domain.tlb -&amp;raquo; domain.tlb
 </text_add_domain_entity>
 <text_add_entity>Give the name of the new entity:</text_add_entity>
-<text_logs>This is realtime logs of the current daemon of Kaspersky For Mail server[br]These page is refresh every 5 seconds</text_logs>
+<text_logs>To s%C4%85 logi w czasie rzeczywistym aktualnie dzia%C5%82aj%C4%85cego demona.[br]
+Ta strona jest od%C5%9Bwie%C5%BCana co 5 sekund.</text_logs>
 <then>Nast%C4%99pnie</then>
 <THIS_DISTRIBUTION_IS_NOT_SUPPORTED>This distribution is not currently supported, contact Artica Technology support</THIS_DISTRIBUTION_IS_NOT_SUPPORTED>
 <this_mac_address_is_already_used_by>This MAC Address is already used by</this_mac_address_is_already_used_by>
@@ -4783,7 +4778,7 @@ If you are agree with the proposal, click on apply</tune_squid_performances_expl
 <update_now>Wykonaj aktualizacj%C4%99 teraz</update_now>
 <update_servers_sources>Update server list</update_servers_sources>
 <update_settings>Parametry aktualizacji</update_settings>
-<upgrade>upgrade</upgrade>
+<upgrade>Aktualizacja</upgrade>
 <upgrade_artica>New artica version</upgrade_artica>
 <upgrade_artica_text>A new Artica version is available, you can perform update if you want...</upgrade_artica_text>
 <upgrade_your_system>Uaktualnij sw%C3%B3j system</upgrade_your_system>
@@ -5045,7 +5040,7 @@ mailboxes will not remove
 <your_vacation_is_active_text>Automatically generated responses to email (autoreply), specifically vacation messages is enabled on your mailbox</your_vacation_is_active_text>
 <you_can_close_this_form>You can close this form now</you_can_close_this_form>
 <you_should_use_one_of_these_network>You should use one of these network parameters</you_should_use_one_of_these_network>
-<ZabbixAgentServerIP>Zabbix server address</ZabbixAgentServerIP>
+<ZabbixAgentServerIP>Adres serwera Zabbix</ZabbixAgentServerIP>
 <ZAP_AD>images</ZAP_AD>
 <ZAP_ADBG>Background images</ZAP_ADBG>
 <ZAP_ADBG_explain>background images containing ads</ZAP_ADBG_explain>

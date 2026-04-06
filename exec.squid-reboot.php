@@ -31,11 +31,8 @@ function start_procedure(){
     if(is_file("/etc/init.d/ufdb")){
        zsyslog("Reconfiguring Web-filtering service....");
         $LOGS[]=date("Y-m-d H:i:s")." Building Web-filtering rules";
-        shell_exec("$php /usr/share/artica-postfix/exec.ufdbguard.rules.php");
+        shell_exec("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/compile");
         $LOGS[]=date("Y-m-d H:i:s")." Building Web-filtering rules [DONE]";
-        $LOGS[]=date("Y-m-d H:i:s")." Restarting Web-filtering Service";
-        shell_exec("/etc/init.d/ufdb restart --reboot");
-        $LOGS[]=date("Y-m-d H:i:s")." Restarting Web-filtering Service [DONE]";
     }
     if(is_file("/etc/init.d/squid")) {
         zsyslog("{reloading_proxy_service} after rebooting");

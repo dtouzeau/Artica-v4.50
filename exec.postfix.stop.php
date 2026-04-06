@@ -38,7 +38,6 @@ function start(){
 		build_progress("{stop_messaging}",20);
 		system("/etc/init.d/postfix stop");
 		build_progress("{stop_messaging}",30);
-		system("/etc/init.d/amavis stop");
 		build_progress("{stop_messaging}",40);
 		system("/etc/init.d/milter-greylist stop");
 		build_progress("{stop_messaging} {success}",100);
@@ -49,7 +48,6 @@ function start(){
 	build_progress("{start_messaging}",20);
 	system("/etc/init.d/postfix start");
 	build_progress("{start_messaging}",30);
-	system("/etc/init.d/amavis start");
 	build_progress("{start_messaging}",40);
 	system("/etc/init.d/milter-greylist start");
 	build_progress("{start_messaging} {success}",100);

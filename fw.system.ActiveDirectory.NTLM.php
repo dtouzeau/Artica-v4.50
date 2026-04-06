@@ -44,10 +44,8 @@ function table(){
 	$cache_manager=new cache_manager();
 	$datas=explode("\n",$cache_manager->makeQuery("ntlmauthenticator"));
 	if(!$cache_manager->ok){echo $tpl->FATAL_ERROR_SHOW_128("Err! $cache_manager->errstr");return;}
-		
 	if(count($datas)==0){
-		$cachefile="/etc/artica-postfix/settings/Daemons/makeQuery_ntlmauthenticator";
-		if(is_file($cachefile)){$datas=explode("\n",@file_get_contents($cachefile));}
+		$datas=explode("\n",$GLOBALS["CLASS_SOCKETS"]->GET_INFO("makeQuery_ntlmauthenticator"));
 	}
 	
 	$CPU_NUMBER=0;

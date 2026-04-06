@@ -119,11 +119,13 @@ function table():bool{
     $v4softsRepo=base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("v4softsRepo"));
     $Strlen=strlen($v4softsRepo);
     if($Strlen < 10){
-        if(!is_file("/etc/artica-postfix/settings/Daemons/v4softsRepo")) {
-            $TinyJS=TinyJS();
-            echo $tpl->_ENGINE_parse_body($tpl->div_warning("{missing_update_index}||{missing_update_index_explain}"));
-            echo "<script>$TinyJS</script>";
-            return true;
+        if (method_exists($GLOBALS["CLASS_SOCKETS"], 'INFO_EXISTS')) {
+            if (!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("v4softsRepo")) {
+                $TinyJS = TinyJS();
+                echo $tpl->_ENGINE_parse_body($tpl->div_warning("{missing_update_index}||{missing_update_index_explain}"));
+                echo "<script>$TinyJS</script>";
+                return true;
+            }
         }
     }
 

@@ -17,6 +17,7 @@
 <active_health_check_type>Protocolo de verificaç%C3£o de integridade</active_health_check_type>
 <active_health_check_workers>Processos</active_health_check_workers>
 <ADANCED>Método avançado</ADANCED>
+<adaptivePerformanceTrackingTXT>[BR][B]O monitoramento adaptativo de desempenho est%C3¡ ativado.[br]Ative o modo Consistent para permitir o ajuste autom%C3¡tico de pesos.[/B]</adaptivePerformanceTrackingTXT>
 <adaptive_least_response>Menor tempo de resposta adaptativo</adaptive_least_response>
 <adaptive_rr>Adaptive Round Robin</adaptive_rr>
 <adb_detected_body>Seams that you have an AdBlocker enabled on your browser, please consider turning it off to avoid Artica malfunction.</adb_detected_body>
@@ -37,7 +38,10 @@ Atualmente, o Artica tem dois métodos para realizar essa operaç%C3£o, [b]Conn
 <age_penalty_max>Age Penalty Max</age_penalty_max>
 <age_penalty_max_explain>Maximum penalty for old data[BR]If a server has not reported metrics for a long time, its score can be increased by up to this amount (for example, +100%).[BR]This prevents traffic from being sent to servers that might be down or unreachable.</age_penalty_max_explain>
 <age_penalty_window>Age Penalty Window</age_penalty_window>
-<age_penalty_window_explain>How fast old data becomes untrusted[BR]Time (in seconds) over which the staleness penalty grows.[BR]After this time, the maximum penalty is applied.[BR]This makes servers slowly fade out instead of disappearing suddenly.</age_penalty_window_explain>
+<age_penalty_window_explain>Define a rapidez com que os dados antigos se tornam n%C3£o confi%C3¡veis.[BR]
+Especifica o tempo (em segundos) durante o qual a penalidade de obsolescência aumenta.[BR]
+Ap%C3%B3s esse per%C3%ADodo, a penalidade m%C3¡xima é aplicada.[BR]
+Isso faz com que os servidores desapareçam gradualmente em vez de sumirem abruptamente.</age_penalty_window_explain>
 <Aggressive_Explain>Whether to use IKEv1 Aggressive or Main Mode (the default)</Aggressive_Explain>
 <allow_overwrite_explain>Por defeito as configuraç%C3µes nos n%C3%B3s est%C3£o bloqueadas e n%C3£o s%C3£o permitidas, se quiser permitir que os n%C3%B3s sobreponham as configuraç%C3µes do Master, active a opç%C3£o &quot;Desconectar da quinta&quot;.</allow_overwrite_explain>
 <almost_there_secondary_nodes>Last but not least, add one secondary node</almost_there_secondary_nodes>
@@ -56,6 +60,7 @@ Foi concebido para fornecer categorizaç%C3µes de s%C3%ADtios e serviços de re
 <APP_GO_SHIELD_SERVER_EXPLAIN>O serviço The Shields assegura a relaç%C3£o entre os seus serviços locais e os serviços de categorizaç%C3£o e reputaç%C3£o na Internet.
 [br]Permite a consulta destas bases de conhecimento num %C3%BAnico ou em v%C3¡rios servidores.</APP_GO_SHIELD_SERVER_EXPLAIN>
 <APP_GO_WEBFITLER_ERROR_PAGE_ENGINE>Artica Error Page Engine</APP_GO_WEBFITLER_ERROR_PAGE_ENGINE>
+<APP_HEALTH_CHECK_MONITOR>Monitor de verificaç%C3£o de integridade</APP_HEALTH_CHECK_MONITOR>
 <APP_KEEPALIVED>Failover</APP_KEEPALIVED>
 <APP_KEEPALIVED_INSTANCES>[B]Failover service[/B] is used to create high-availability solutions, and was designed to be simple but powerful.[BR][BR]Create a new [B]Failover Service[/B], select the service or services that you what to perform health checks, add one Floating IP and the secondary nodes, and that's it, the Primary node will be in charge to replicate the [B]Failover configurations[/B] between all the secondary nodes.[BR][BR]Now Failover will perform health checks to the selected services and if detects any malfunctions it will automatically move the Floating IP to the next node with higher priority without any lost of communication to end user.</APP_KEEPALIVED_INSTANCES>
 <APP_STRONGSWAN>IPSEC</APP_STRONGSWAN>
@@ -91,6 +96,10 @@ Foi concebido para fornecer categorizaç%C3µes de s%C3%ADtios e serviços de re
 <APP_WIFI4EU_TEMPLATE>WIFI4EU Template</APP_WIFI4EU_TEMPLATE>
 <APP_WIFI4EU_UUID>WIFI4EU UUID</APP_WIFI4EU_UUID>
 <arr_outlier_threshold>Outlier Threshold</arr_outlier_threshold>
+<arr_outlier_threshold_explain>O limite de outlier controla o n%C3%ADvel de tolerância do balanceador de carga em relaç%C3£o a servidores lentos.[BR]
+Ele funciona como uma [b]v%C3¡lvula de segurança[/b], evitando que um backend lento prejudique as decis%C3µes de balanceamento de carga.[BR]
+Valores mais baixos â%86%92 detecç%C3£o mais agressiva de servidores lentos.[BR]
+Valores mais altos â%86%92 comportamento mais tolerante.</arr_outlier_threshold_explain>
 <arr_p>Parameters available for Adaptive Round Robin Load method</arr_p>
 <assigned_to>Assigned to</assigned_to>
 <Authby_Explain>How the two security gateways should authenticate each other; acceptable values are secret or psk
@@ -249,7 +258,7 @@ Available for IKEv1 connections since 5.0.2 and for IKEv2 connections since 5.2.
 <health_checks_small>Controles de sa%C3%BAde</health_checks_small>
 <HttpQueueTimeout>Queue Timeout</HttpQueueTimeout>
 <http_expected_status>Status esperado</http_expected_status>
-<http_expected_status_explain>C%C3%B3digos de status HTTP esperados (separados por v%C3%ADrgulas)[BR]Exemplo: expected_status=200,201</http_expected_status_explain>
+<http_expected_status_explain>C%C3%B3digos de status HTTP esperados (separados por v%C3%ADrgulas)[BR]expected_status=200,201</http_expected_status_explain>
 <http_headers>Cabeçalhos</http_headers>
 <http_header_explain>Enviar cabeçalhos personalizados[br]Example: header=Authorization:Bearer-tokenheader=Authorization:Bearer-mytokenheader=X-Custom-Header:value</http_header_explain>
 <http_match_body>Correspondência do corpo</http_match_body>
@@ -267,6 +276,8 @@ and proposals may be included, such as aes128-aes256-sha1-modp3072-modp2048,3des
 The ability to configure a PRF algorithm different to that defined for integrity protection was added with 5.0.2.
 If no PRF is configured, the algorithms defined for integrity are proposed as PRF. The prf keywords are the same as
 the integrity algorithms, but have a prf prefix (such as prfsha1, prfsha256 or prfaesxcbc).</Ike_Explain>
+<inital_down>Estado inicial: Desativado</inital_down>
+<inital_down_explain>O servidor inicia em estado inativo até a primeira verificaç%C3£o bem-sucedida.</inital_down_explain>
 <interval_explain>How often the health check should be run (seconds)</interval_explain>
 <ipvlan_explain>IPvlan é semelhante à tecnologia MacVLAN, com uma diferença fundamental: o IPvlan n%C3£o atribui endereços MAC %C3%BAnicos às suas subinterfaces.[br]Em vez disso, todas as subinterfaces compartilham o endereço MAC da interface principal enquanto usam endereços IP %C3%BAnicos.</ipvlan_explain>
 <ip_hash>Hash de IP</ip_hash>
@@ -368,10 +379,13 @@ keying channel) before it expires (see margintime). The two ends need not exactl
 do not, there will be some clutter of superseded connections on the end which thinks the lifetime is longer.</Lifetime_Explain>
 <list_recursive_users>Lista de membros recursivos</list_recursive_users>
 <list_recursive_users_groups>Lista de membros/grupos recursivos</list_recursive_users_groups>
+<load-balancer>Balanceador de carga</load-balancer>
 <local_interface_dev>Assign to interface</local_interface_dev>
 <LogNotCategorizedWebsite>Registrar sites n%C3£o categorizados</LogNotCategorizedWebsite>
 <log_filtered_servers>Log Filtered Servers</log_filtered_servers>
-<log_filtered_servers_explain>Log when servers are ignored[BR]When enabled, logs when a server is filtered out due to being slow, stale, or unhealthy.[BR]Useful for debugging.</log_filtered_servers_explain>
+<log_filtered_servers_explain>Registrar quando os servidores s%C3£o ignorados.[BR]
+Quando ativado, uma entrada de log é gerada sempre que um servidor é filtrado por estar lento, desatualizado ou n%C3£o saud%C3¡vel.[BR]
+%C3%9Atil para depuraç%C3£o.</log_filtered_servers_explain>
 <LOG_STRONGSWAN>Log Section</LOG_STRONGSWAN>
 <LOG_STRONGSWAN_EXPLAIN>Define the retention time and if you want to send data to a remote syslog server.</LOG_STRONGSWAN_EXPLAIN>
 <management_by>Management by</management_by>
@@ -379,12 +393,18 @@ do not, there will be some clutter of superseded connections on the end which th
 <mandatory_explain>O servidor inicia em estado inativo até a primeira verificaç%C3£o bem-sucedida</mandatory_explain>
 <Margintime_Explain>How long before connection expiry or keying-channel expiry should attempts to negotiate a replacement begin; acceptable values
 as for lifetime (default 9m). Relevant only locally, other end need not agree on it.</Margintime_Explain>
+<max_age_days>N%C3%BAmero m%C3¡ximo de dias de retenç%C3£o</max_age_days>
+<max_age_days_desc>N%C3%BAmero de dias para manter os arquivos de log rotacionados.</max_age_days_desc>
+<max_backups>N%C3%BAmero m%C3¡ximo de backups a manter</max_backups>
+<max_backups_desc>N%C3%BAmero de arquivos de log rotacionados a manter.</max_backups_desc>
+<max_size_mb>Tamanho m%C3¡ximo (MB)</max_size_mb>
+<max_size_mb_desc>Tamanho m%C3¡ximo em megabytes antes da rotaç%C3£o dos logs.</max_size_mb_desc>
 <max_ttl_1>Maximal time to live</max_ttl_1>
 <mb_in>Traffic In</mb_in>
 <mb_out>Traffic Out</mb_out>
 <monitor_service>Services Health Check</monitor_service>
 <monitor_service_explain>Select the service or service that the Failover will perform health checks, if the primary node detects some malfunctions on thoose services, it will automatically move the Floating  IP to the next secondary node with higher priority.</monitor_service_explain>
-<NetCoreNetdevMaxBacklog>Core Netdev Max Backlog</NetCoreNetdevMaxBacklog>
+<NetCoreNetdevMaxBacklog>Backlog m%C3¡ximo do core netdev</NetCoreNetdevMaxBacklog>
 <NetCoreNetdevMaxBacklogExplain>Maximum number  of  packets,  queued  on  the  INPUT  side, when the interface receives packets faster than kernel can process the.</NetCoreNetdevMaxBacklogExplain>
 <NetCoreOptmemMax>Core Optmem Max</NetCoreOptmemMax>
 <NetCoreOptmemMaxExplain>optmem_max is a kernel option that affects the memory allocated to the cmsg list maintained by the kernel that contains "extra" packet information like SCM_RIGHTS or IP_TTL.[BR]Increasing this option allows the kernel to allocate more memory as needed for more control messages that need to be sent for each socket connected (including IPC sockets/pipes).</NetCoreOptmemMaxExplain>
@@ -406,7 +426,11 @@ Os valores poss%C3%ADveis s%C3£o:[br]
 - 2 Habilitar ECN quando solicitado pelas conex%C3µes de entrada, mas n%C3£o solicitar ECN nas conex%C3µes de sa%C3%ADda [br].
 Default: 2</NetIpv4TcpEcnExplain>
 <netipv4tcpfastopen>TCP Fast Open</netipv4tcpfastopen>
-<netipv4tcpfastopen_explain>Enable TCP Fast Open (RFC7413) to send and accept data in the opening SYN packet.[BR]0=TFO is not enabled.[BR]1=TFO is enabled for outgoing connections (clients).[BR]2=TFO is enabled for incoming connections (servers).[BR]3=TFO is enabled for both clients and servers.</netipv4tcpfastopen_explain>
+<netipv4tcpfastopen_explain>Ativar o TCP Fast Open (RFC7413) para enviar e receber dados j%C3¡ no pacote SYN inicial.[BR]
+0 = TFO desativado.[BR]
+1 = TFO ativado para conex%C3µes de sa%C3%ADda (cliente).[BR]
+2 = TFO ativado para conex%C3µes de entrada (servidor).[BR]
+3 = TFO ativado para cliente e servidor.</netipv4tcpfastopen_explain>
 <NetIpv4TcpKeepAliveTime>TCP Keepalive Time</NetIpv4TcpKeepAliveTime>
 <NetIpv4TcpKeepAliveTimeExplain>Frequência com que o TCP envia mensagens keepalive quando ativado, em segundos.[BR]
 Valor padr%C3£o: 2 horas.</NetIpv4TcpKeepAliveTimeExplain>
@@ -556,7 +580,11 @@ Desde a vers%C3£o 5.0.1, uma lista de endereços IP/pools separada por v%C3%ADr
 <strongSwanCachecrls>Cache CRLS</strongSwanCachecrls>
 <strongSwanCachecrls_explain>If enabled, certificate revocation lists (CRLs) fetched via HTTP or LDAP will be cached in /etc/ipsec.d/crls/ under a unique file name derived from the certification authority's public key.</strongSwanCachecrls_explain>
 <strongSwanCharondebug>Charon Debug Level</strongSwanCharondebug>
-<strongSwanCharondebug_explain>How much charon debugging output should be logged.[br]A comma-separated list containing type/level pairs may be specified, e.g: dmn 3, ike 1, net -1.[br]Acceptable values for types are dmn, mgr, ike, chd, job, cfg, knl, net, asn, enc, lib, esp, tls, tnc, imc, imv, pts and the level is one of [-1, 0, 1, 2, 3, 4] (for silent, audit, control, controlmore, raw, private).[br]By default, the level is set to 1 for all types.</strongSwanCharondebug_explain>
+<strongSwanCharondebug_explain>Define o n%C3%ADvel de depuraç%C3£o registrado pelo charon.[br]
+Pode ser especificada uma lista separada por v%C3%ADrgulas contendo pares tipo/n%C3%ADvel, por exemplo: dmn 3, ike 1, net -1.[br]
+Os tipos aceitos s%C3£o: dmn, mgr, ike, chd, job, cfg, knl, net, asn, enc, lib, esp, tls, tnc, imc, imv, pts.[br]
+O n%C3%ADvel pode ser um dos seguintes: -1, 0, 1, 2, 3, 4 (silent, audit, control, controlmore, raw, private).[br]
+Por padr%C3£o, o n%C3%ADvel é definido como 1 para todos os tipos.</strongSwanCharondebug_explain>
 <strongSwanCharonstart>Auto Start Charon</strongSwanCharonstart>
 <strongSwanCharonstart_explain>Whether to start the IKE charon daemon or not. The default is yes.</strongSwanCharonstart_explain>
 <strongSwanDHCPForceServerAddress>Force Server Address</strongSwanDHCPForceServerAddress>
@@ -581,7 +609,7 @@ Desde a vers%C3£o 5.0.1, uma lista de endereços IP/pools separada por v%C3%ADr
 <strongswan_real_time_sessions>Real Time Sessions</strongswan_real_time_sessions>
 <STRONGSWAN_RSA>RSA Secret</STRONGSWAN_RSA>
 <STRONGSWAN_RSA_EXPLAIN>For the private key file both absolute paths or paths relative to /etc/ipsec.d/private are accepted. If the private key file is encrypted, the passphrase must be defined. Instead of a passphrase %prompt can be used which then causes the daemons to ask the user for the password whenever it is required to decrypt the key.</STRONGSWAN_RSA_EXPLAIN>
-<STRONGSWAN_SECRET>Secret Key</STRONGSWAN_SECRET>
+<STRONGSWAN_SECRET>Chave secreta</STRONGSWAN_SECRET>
 <STRONGSWAN_SELECTOR>Selector</STRONGSWAN_SELECTOR>
 <STRONGSWAN_SELECTOR_EXPLAIN>A selector is an IP address, a Fully Qualified Domain Name, user@FQDN, %any or %any6</STRONGSWAN_SELECTOR_EXPLAIN>
 <STRONGSWAN_SERVER_SETTINGS>IPSEC server parameters</STRONGSWAN_SERVER_SETTINGS>

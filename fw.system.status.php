@@ -74,6 +74,10 @@ function tabs(){
         $array["{connections}"] = "fw.conntrackd.php";
     }
 
+
+
+
+
     if($EnableStatsCommunicator==1){
         $suffix_gen=" ({your_server})";
     }
@@ -182,26 +186,37 @@ function system_start(){
         $bandwidth_js="LoadAjaxTiny('bandwidth-dashboard','fw.system.status.php?bandwidth=yes');";
     }
 
+    // Pre-render widgets inline to avoid race condition with Loadjs
+    $memory = sysmemory();
+    list($widget_cpu, $Status, $metrics) = widget_cpu();
+    $widget_load = widget_load($Status, $metrics);
+    $widget_sysdisk = widget_sysdisk();
+
+    $w_memory = (strlen($memory) > 10) ? $tpl->_ENGINE_parse_body($memory) : "";
+    $w_cpu    = (strlen($widget_cpu) > 10) ? $tpl->_ENGINE_parse_body($widget_cpu) : "";
+    $w_load   = (strlen($widget_load) > 10) ? $tpl->_ENGINE_parse_body($widget_load) : "";
+    $w_disk   = (strlen($widget_sysdisk) > 10) ? $tpl->_ENGINE_parse_body($widget_sysdisk) : "";
+
     $html[]="<div style='margin-top:10px'>$ERROR_FATAL</div>";
-    $html[]='<div class="container-fluid">
-  <div class="row"  style="vertical-align:top;padding:5px">
-    <div class="col-sm-3">
-    <div id="sysmemory"></div>
+    $html[]="<div class='container-fluid'>
+  <div class='row' style='vertical-align:top;padding:5px'>
+    <div class='col-sm-3'>
+    <div id='sysmemory'>$w_memory</div>
     </div>
-    <div class="col-sm-3">
-    <div id="syscpu"></div>
+    <div class='col-sm-3'>
+    <div id='syscpu'>$w_cpu</div>
     </div>
-    <div class="col-sm-3">
-    <div id="sysload"></div>
+    <div class='col-sm-3'>
+    <div id='sysload'>$w_load</div>
     </div>
-        <div class="col-sm-2">
-    <div id="sysdisk"></div>
+        <div class='col-sm-2'>
+    <div id='sysdisk'>$w_disk</div>
     </div>
-            <div class="col-sm-2">
-    <div id="bandwidth-dashboard"></div>
+            <div class='col-sm-2'>
+    <div id='bandwidth-dashboard'></div>
     </div>
   </div>
-</div>';
+</div>";
     $html[]="<div class=\"container-fluid\">";
     $html[]="<div class=\"row\">";
     $html[]="                    <div class=\"col-lg-6\" id='frontend-notifications'>";
@@ -581,7 +596,7 @@ function bandwidth():bool{
 function Cronos():string{
     $HTMLTITLE=null;
     $FileCookyKey=md5($_SERVER["REMOTE_ADDR"].$_SERVER["HTTP_USER_AGENT"]);
-    if(is_file("/etc/artica-postfix/settings/Daemons/$FileCookyKey.HTMLTITLE")){$HTMLTITLE=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("$FileCookyKey.HTMLTITLE");}
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("$FileCookyKey.HTMLTITLE")){$HTMLTITLE=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("$FileCookyKey.HTMLTITLE");}
     if(isset($_COOKIE["HTMLTITLE"])){$HTMLTITLE=$_COOKIE["HTMLTITLE"];}
 
     if(!is_null($HTMLTITLE)){
@@ -611,7 +626,7 @@ function Cronos():string{
 }
 
 function top_cpus($Status):string{
-    if(!isset($Status["data"])){return "";}
+    if(!isset($Status["data"]["latest"])){return "";}
 
     $MEM_USED_PERC=floatval($Status["data"]["latest"]["mem_percent"]);
     $cpu = floatval($Status["data"]["latest"]["cpu_percent"]);
@@ -692,13 +707,10 @@ function top_widgets(): bool {
         $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
     }
 
-    echo "// FW_INDEX_PHP_HOSTNAME=".strlen($FW_INDEX_PHP_HOSTNAME)."\n";
     if (strlen($FW_INDEX_PHP_HOSTNAME) > 10) {
-
         $payload["#widget-hostname"] = $tpl->_ENGINE_parse_body($FW_INDEX_PHP_HOSTNAME);
     }
     $top_cpu_mem=top_cpus( $Status, $metrics);
-
 
     if (strlen($memory) > 10) {
         $payload["#sysmemory"] = $tpl->_ENGINE_parse_body($memory);
@@ -819,7 +831,7 @@ function widget_sysdisk():string{
     $tpl=new template_admin();
 
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/harddrives/partitions/inodes"));
-    if(!property_exists($json,"fs_filemax_prc")){
+    if(!is_object($json)||!property_exists($json,"fs_filemax_prc")){
         return "";
     }
     $fs_filemax_prc=$json->fs_filemax_prc;
@@ -837,7 +849,7 @@ function widget_sysdisk():string{
     }
 
     $fs_class=null;
-    $nf_conntrack_loaded=intval($json->nf_conntrack_loaded);
+    $nf_conntrack_loaded=intval($json->nf_conntrack_loaded ?? 0);
     if($nf_conntrack_loaded==1) {
         $nf_conntrack_prc = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("nf_conntrack_prc"));
         $prc = $nf_conntrack_prc;
@@ -994,12 +1006,11 @@ function widget_cpu():array{
 }
 function widget_load_GetInfo($status,$metrics):array{
 
-
+    $num_cpu=intval($status["data"]["num_cpu"] ?? 0);
     if(!isset($status["data"]["latest"])){
-        return array(0,0,array());
+        return array(0,$num_cpu,array());
     }
     $latest=$status["data"]["latest"];
-    $num_cpu=intval($status["data"]["num_cpu"]);
     $CURLOAD=round($latest["load1"],1);
 
     $zMetrics=array();
@@ -1017,12 +1028,12 @@ function widget_load_GetInfo($status,$metrics):array{
 function widget_cpu_GetInfo():array{
 
     $status=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/sysmonitor/stats"),true);
+    $num_cpu=intval($status["data"]["num_cpu"] ?? 0);
     if(!isset($status["data"]["latest"])){
-        return array(0,0,array(),$status,array());
+        return array(0,$num_cpu,array(),$status,array());
     }
     $latest=$status["data"]["latest"];
     $CPUPERCENT=round($latest["cpu_percent"],1);
-    $num_cpu=intval($status["data"]["num_cpu"]);
     $zMetrics=array();
     $metrics=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/sysmonitor/metrics?hours=1"),true);
     if(!isset($metrics["data"])){
@@ -1039,7 +1050,7 @@ function widget_cpu_GetInfo():array{
 function sysmemory():string{
     VERBOSE(" -- START --",__LINE__);
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/widget/memory"));
-    if(!property_exists($json,"Status")){
+    if(!is_object($json)||!property_exists($json,"Status")){
         VERBOSE("Status not a property!",__LINE__);
         return "";
     }

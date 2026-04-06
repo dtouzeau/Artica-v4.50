@@ -10,7 +10,6 @@ if(isset($_GET["install"])){install();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["reload"])){reload();exit;}
 if(isset($_GET["restart"])){restart_progress();exit;}
-if(isset($_GET["systemusers"])){systemusers();exit;}
 if(isset($_GET["restart-progress"])){restart_progress();exit;}
 if(isset($_GET["install-tgz"])){install_tgz();exit;}
 if(isset($_GET["chowndirs"])){chowndirs();exit;}
@@ -23,16 +22,8 @@ foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
 
 
-function status(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$cmd="$php5 /usr/share/artica-postfix/exec.status.php --3proxy >/usr/share/artica-postfix/ressources/logs/web/3proxy.status 2>&1";
-	shell_exec($cmd);
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
 
-function externals(){
-}
+
 function SearchEventsInSyslog():bool{
     $unix=new unix();
     $unix->framework_search_syslog($_GET["search-in-logs"],
@@ -137,20 +128,7 @@ function categorize_export(){
 
 
 
-function systemusers(){
-	
-	
-	$f=explode("\n",@file_get_contents("/etc/passwd"));
-	foreach ($f as $num=>$line){
-		if(!preg_match("#(.+?):x:([0-9]+):([0-9]+):#", $line,$re)){continue;}
-		$ARRAYU["{$re[2]}:{$re[3]}"]=$re[1];
-		
-		
-	}
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SystemUsers", serialize($ARRAYU));
-	@chmod("/etc/artica-postfix/settings/Daemons/SystemUsers",0755);
-	
-}
+
 function searchInSyslog(){
 	$unix=new unix();
 	$tail=$unix->find_program("tail");

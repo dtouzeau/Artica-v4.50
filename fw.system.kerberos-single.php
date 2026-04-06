@@ -550,7 +550,7 @@ function flat_config():string{
 
     $array = unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
     if (!is_array($array)) {
-        $array = array();
+        $array["fullhosname"]="";
     }
 
     $fullhosname = $array["fullhosname"];
@@ -637,7 +637,9 @@ function CheckUPSettings(){
     $kread=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/mktutils/kread"));
     $div_explain=array();
     if(!$kread->Status){
-        echo $tpl->div_warning("{mustkinit}");
+        $btn=$tpl->button_autnonome("{welcome_ad_wizard}","Loadjs('fw.system.kerberos.wizard.php?js=yes')",
+            ico_wizard,"AsSquidAdministrator");
+        echo $tpl->div_warning("{mustkinit}<div style='margin:30px;text-align:right'>$btn</div>'");
         return true;
     }else{
         $klistexplain=$tpl->_ENGINE_parse_body("{klistexplain}");
@@ -1035,6 +1037,12 @@ function ticket_audit():bool{
     if(!$json->Status){
 
         if(!$json->KeyTabExists){
+
+            $btn["ico"]=ico_wizard;
+            $btn["name"]="{wizard}";
+            $btn["js"]="Loadjs('fw.system.kerberos.wizard.php?js=yes')";
+
+
             $html[]=$tpl->_ENGINE_parse_body($tpl->widget_h("grey",ico_timeout,"{not_connected}","{not_connected}",$btn));
             echo $tpl->_engine_parse_body($html);
             return false;

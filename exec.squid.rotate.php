@@ -713,7 +713,6 @@ function build($OnlyUnbound=false):bool{
         }
 
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("BackupMaxDaysDirCurrentSize", $unix->DIRSIZE_KO($BackupMaxDaysDir));
-        @chmod("/etc/artica-postfix/settings/Daemons/BackupMaxDaysDirCurrentSize",0777);
         build_progress_rotation("Scanning {success}",100);
         return true;
     }
@@ -836,7 +835,6 @@ function build($OnlyUnbound=false):bool{
 	}
 	
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("BackupMaxDaysDirCurrentSize", $unix->DIRSIZE_KO($BackupMaxDaysDir));
-	@chmod("/etc/artica-postfix/settings/Daemons/BackupMaxDaysDirCurrentSize",0777);
 	return true;
 }
 

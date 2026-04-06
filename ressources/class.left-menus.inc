@@ -489,13 +489,6 @@ class left_menus{
         $f[]="<!-- FREERADIUS END -->";
         return @implode("\n",$f);
     }
-
-    public function WSUSOFFLINE(): string
-    {
-
-        return @implode("\n",$f);
-    }
-
     public function Rsync(): string
     {
         if(!$this->users->AsSystemAdministrator){return "";}
@@ -690,16 +683,11 @@ class left_menus{
 
 
         $SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
-        $EnablePostfix=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePostfix"));
+
 
         $HIDEADCONNECT=false;
 
         if($SQUIDEnable==0){$HIDEADCONNECT=true;}
-
-
-
-
-
         if(!$HIDEADCONNECT) {
 
             $f[]="<!-- SQUIDEnable=$SQUIDEnable -->";
@@ -1888,6 +1876,9 @@ class left_menus{
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.backends.php",
             "ICO"=>"fas fa-server","TEXT"=>"{backends}"));
 
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.backends.metrics.php",
+            "ICO"=>"fas fa-chart-bar","TEXT"=>"{metrics}"));
+
         $EnableITChart=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableITChart");
         if($EnableITChart==1) {
             if($this->users->AsDansGuardianAdministrator) {
@@ -1970,46 +1961,52 @@ class left_menus{
         return @implode("\n",$f);
     }
 
-    function isProxy(){
-        if($this->users->isWebStatisticsAdministratorOnly()){return false;}
-        $SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
-        if(!$this->users->SQUID_INSTALLED){return false;}
-        if($SQUIDEnable==0){return false;}
-        if(($this->users->AsProxyMonitor) OR ($this->users->AsWebStatisticsAdministrator) OR ($this->users->AsDansGuardianAdministrator)){
+    function isProxy():bool{
+        if($this->users->AsSystemAdministrator){
+            return true;
+        }
 
+        if($this->users->AsSquidAdministrator){
+            return true;
+        }
+
+        if($this->users->isWebStatisticsAdministratorOnly()){
+            return false;
+        }
+        if(!$this->users->SQUID_INSTALLED){return false;}
+        if(($this->users->AsProxyMonitor)
+            OR ($this->users->AsWebStatisticsAdministrator)
+            OR ($this->users->AsDansGuardianAdministrator)){
             return true;
         }
         return false;
 
     }
 
-    function Proxy(){
+    function Proxy():string{
 
-        if (!$this->isProxy()) {return "";}
-        $users=new usersMenus();
-        $EnableITChart              =   0;
-        $SquidWCCPEnabled           = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidWCCPEnabled"));
+        if (!$this->isProxy()) {return "<!-- Seems this user did not have Proxy privileges  -->";}
         $SquidInRouterMode          = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidInRouterMode"));
         $EnableStatsCommunicator    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableStatsCommunicator"));
         $SquidMikrotikEnabled       = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMikrotikEnabled"));
 
         VERBOSE("SquidMikrotikEnabled = $SquidMikrotikEnabled",__LINE__);
 
+        $f[] = "<!-- LICENSE =  {$this->users->CORP_LICENSE} As Proxy Monitor = {$this->users->AsProxyMonitor} -->";
 
         if ($this->users->CORP_LICENSE) {
-            $EnableITChart              = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableITChart"));
             unset($_SESSION["SQUID_DYNAMIC_ACLS"]);
             if ($GLOBALS["VERBOSE"]) {
                 echo "dynamic_acls_auth({$_SESSION["uid"]})<br>\n";
             }
         }
         $tpl = new template_admin();
-        $f[] = "<!-- PROXY START  -->";
+        $f[] = "<!-- PROXY INSIDE MENU START  -->";
         $f[] = "                <li id='left-menu'>";
         $f[] = "                    <a href='#' ><i class=\"fas fa-globe\"></i> <span class=\"nav-label\">{your_proxy}</span> </a>";
 
 
-        if( $users->AsProxyMonitor) {
+        if( $this->users->AsProxyMonitor) {
             $f[] = "                    <ul class='nav nav-second-level'>";
 
         $f[] = "                			<li id='left-menu'>";
@@ -2020,7 +2017,7 @@ class left_menus{
         }
         $f[] = "                <ul class='nav nav-second-level'>";
 
-        if($users->AsSquidAdministrator) {
+        if($this->users->AsSquidAdministrator) {
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.general.php",
                 "ICO" => "fas fa-cogs", "TEXT" => "{global_settings}",));
 
@@ -2038,14 +2035,14 @@ class left_menus{
 
         }
 
-        if($users->AsDansGuardianAdministrator) {
+        if($this->users->AsDansGuardianAdministrator) {
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.proxy.rules.php",
                     "ICO" => "fa-shield", "TEXT" => "{access_rules}",
                 ));
         }
 
-        if($users->AsProxyMonitor) {
+        if($this->users->AsProxyMonitor) {
             $TProxyFortiEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TProxyFortiEnable"));
             if($TProxyFortiEnable==1) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.fortigate.tproxy.php", "ICO" => ico_firewall, "TEXT" => "Fortigate",));
@@ -2057,37 +2054,25 @@ class left_menus{
 		<i class=\"fa fa-square\"></i> <span class=\"nav-label\">{ssl_protocol}</span> </a>";
             $f[] = "</li>";
         }
-        $UseNativeKerberosAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseNativeKerberosAuth"));
-        $LockActiveDirectoryToKerberos=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LockActiveDirectoryToKerberos"));
-        $HaClusterClient= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
-        if($HaClusterClient==1){$LockActiveDirectoryToKerberos=1;}
-        $sHowAuth=true;
-        $EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
-        if($EnableKerbAuth==1 OR $UseNativeKerberosAuth==1
-            OR $LockActiveDirectoryToKerberos==1 or $SquidInRouterMode == 1){
-            $sHowAuth=false;
-        }
-
-
-        if($users->AsProxyMonitor) {
+        if($this->users->AsProxyMonitor) {
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.members.php",
                 "ICO" => "fas fa-users", "TEXT" => "{authentication}",));
 
         }
 
-        if($users->AsProxyMonitor) {
+        if($this->users->AsProxyMonitor) {
             if ($this->HideCorporateFeatures == 0) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.errors.page.php", "ICO" => "fas fa-file-alt", "TEXT" => "{errors_pages}",));
             }
         }
-        if($users->AsProxyMonitor) {
+        if($this->users->AsProxyMonitor) {
             if ($SquidInRouterMode == 0) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.watchdog.php", "ICO" => ico_monitor, "TEXT" => "{monitoring}", "LEVEL3" => array("ID" => "fw-left-menus-proxy-logs", "PAGE" => "fw-left-menus-proxy-logs.php")));
             }
         }
 
 
-        if($users->AsSquidAdministrator) {
+        if($this->users->AsSquidAdministrator) {
             $EnableeCapClamav=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableeCapClamav"));
             if($EnableeCapClamav==1){
                 $f[] = $tpl->LeftMenu(array(
@@ -2098,17 +2083,13 @@ class left_menus{
             }
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.icap.center.php", "ICO" => "fas fa-plug", "TEXT" => "{icap_center}",));
         }
-
-
-
-
-        if($users->AllowViewStatistics) {
+        if($this->users->AllowViewStatistics) {
             if ($EnableStatsCommunicator == 0) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.statistics.service.php", "ICO" => "fad fa-chart-pie", "TEXT" => "{statistics_service}",));
             }
         }
 
-        if($users->AsProxyMonitor) {
+        if($this->users->AsProxyMonitor) {
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.proxy.global.rules.php",
                     "ICO" => "fa-square",
@@ -2121,7 +2102,7 @@ class left_menus{
         }
 
 
-        if($users->AsSquidAdministrator) {
+        if($this->users->AsSquidAdministrator) {
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.proxy.tasks.php", "ICO" => "fa-clock", "TEXT" => "{proxy_tasks}"
                 ));
@@ -2131,11 +2112,11 @@ class left_menus{
         $f[] = "					 </ul>";
         $f[] = "                </li>";
         $f[] = "<!-- PROXY END  -->";
-        if($users->AsSquidAdministrator) {
+        if($this->users->AsSquidAdministrator) {
             $f[] = $this->Proxy_cache();
         }
         $f[] = $this->Proxy_acls();
-        if($users->AsSquidAdministrator) {
+        if($this->users->AsSquidAdministrator) {
             $f[] = $this->Proxy_parents();
         }
 
@@ -2575,33 +2556,7 @@ class left_menus{
 
     public function Privoxy(){
 
-        if (!$this->users->AsProxyMonitor) {return "";}
-        $PrivoxyEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO('PrivoxyEnabled'));
-        if($PrivoxyEnabled==0){return "";}
-        //--------------------------- PRIVOXY ----------------------------------------------------------------------------
-        $f[]="<!-- PRIVOXY START  -->";
-        $f[]="                <li id='left-menu'>";
-        $f[]="                    <a href='#' ><i class=\"fa fa-sitemap\"></i> <span class=\"nav-label\">{APP_PRIVOXY}</span> </a>";
-        $f[]="                    <ul class='nav nav-second-level'>";
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.privoxy.status.php');\">
-														<i class=\"fas fa-tachometer-alt\"></i> <span class=\"nav-label\">{status}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.privoxy.rules.php');\">
-														<i class=\"far fa-exchange\"></i> <span class=\"nav-label\">{forward_rules}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="                			<li id='left-menu'>";
-        $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.privoxy.logs.php');\">
-													<i class=\"".ico_eye."\"></i> <span class=\"nav-label\">{events}</span> </a>";
-        $f[]="							</li>";
-
-        $f[]="					 </ul>";
-        $f[]="                </li>";
-        $f[]="<!-- PRIVOXY END  -->";
-        return @implode("\n",$f);
+        return "";
 
     }
 
@@ -2864,7 +2819,7 @@ class left_menus{
 
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.status.php","ICO"=>"fas fa-tachometer-alt","TEXT"=>"{status}",) );
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.sites.php","ICO"=>"fas fa-list-alt","TEXT"=>"{services}",) );
-
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.egdeguard.php","ICO"=>"fa-solid fa-block-brick-fire","TEXT"=>"{edgeguard}",) );
         //$f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.services.php","ICO"=>"fas fa-list-alt","TEXT"=>"{services} 2",) );
 
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.sla.php","ICO"=>ico_performance,"TEXT"=>"SLA",) );

@@ -8,7 +8,6 @@ include_once(dirname(__FILE__).'/ressources/class.mysql.inc');
 include_once(dirname(__FILE__).'/ressources/class.ldap.inc');
 include_once(dirname(__FILE__).'/ressources/class.main_cf.inc');
 include_once(dirname(__FILE__).'/ressources/class.maincf.multi.inc');
-include_once(dirname(__FILE__).'/ressources/class.policyd-weight.inc');
 include_once(dirname(__FILE__).'/ressources/class.main.hashtables.inc');
 include_once(dirname(__FILE__).'/ressources/class.postfix.certificate.inc');
 $GLOBALS["RELOAD"]=false;

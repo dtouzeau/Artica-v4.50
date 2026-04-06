@@ -168,7 +168,7 @@ function install($filename){
 	system("$php /usr/share/artica-postfix/exec.squid.php --build --force");
 	
 	build_progress("{reconfiguring} {APP_UFDBGUARD}...",70);
-	system("$php /usr/share/artica-postfix/exec.squidguard.php --build --force");
+
 	
 	build_progress("{restarting} {APP_C_ICAP}...",80);
     $unix->CICAP_SERVICE_EVENTS("Restarting ICAP service",__FILE__,__LINE__);

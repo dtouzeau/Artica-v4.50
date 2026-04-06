@@ -255,7 +255,7 @@ function features(){
     $severtype["WIN_2003"]="Windows 2000/2003";
     $severtype["WIN_2008AES"]="Windows 2008/2012/2016";
     if(isset($_GET["switch-template"])){$_GET["switch-template"]=null;}
-    if(!is_file("/etc/artica-postfix/settings/Daemons/KerbAuthSMBV2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthSMBV2", 1);}
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("KerbAuthSMBV2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthSMBV2", 1);}
     $WindowsActiveDirectoryKerberos_explain=null;
     $array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
 
@@ -414,7 +414,7 @@ function close_form(){
     $severtype["WIN_2003"]="Windows 2000/2003";
     $severtype["WIN_2008AES"]="Windows 2008/2012/2016";
     if(isset($_GET["switch-template"])){$_GET["switch-template"]=null;}
-    if(!is_file("/etc/artica-postfix/settings/Daemons/KerbAuthSMBV2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthSMBV2", 1);}
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("KerbAuthSMBV2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthSMBV2", 1);}
 
     $array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
     if(!isset($array["ADNETBIOSDOMAIN"])){$array["ADNETBIOSDOMAIN"]=null;}
@@ -556,7 +556,7 @@ function hostname_popup():bool{
     $severtype["WIN_2003"]="Windows 2000/2003";
     $severtype["WIN_2008AES"]="Windows 2008/2012/2016";
     if(isset($_GET["switch-template"])){$_GET["switch-template"]=null;}
-    if(!is_file("/etc/artica-postfix/settings/Daemons/KerbAuthSMBV2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthSMBV2", 1);}
+    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("KerbAuthSMBV2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthSMBV2", 1);}
 
     $fullhosname="{$array["WINDOWS_SERVER_NETBIOSNAME"]}.{$array["WINDOWS_DNS_SUFFIX"]}";
     $ADNETIPADDR=null;

@@ -1345,9 +1345,7 @@ function ufdbclient():bool{
             cluster_mode();
         }
     }
-
-    $php=$unix->LOCATE_PHP5_BIN();
-    shell_exec("$php /usr/share/artica-postfix/exec.ufdbguard.rules.php");
+    shell_exec("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/compile");
     return true;
 }
 
@@ -1624,7 +1622,7 @@ function CheckIptablesPorts($startProgress):bool{
 
 
     $SUM=$MIKROTIK_FIREWALL_C+$TRANSPARENT_FIREWALL_C;
-    system("$nohup $php /usr/share/artica-postfix/exec.sysctl.php --restart >/dev/null 2>&1 &");
+    system("/usr/sbin/artica-phpfpm-service -sysctl &");
 
     build_progress("{starting} {listen_ports} - {secure_gateway}",$startProgress++);
     system("$php /usr/share/artica-postfix/exec.secure.gateway.php");

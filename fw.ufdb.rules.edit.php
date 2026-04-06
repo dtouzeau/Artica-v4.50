@@ -152,11 +152,11 @@ function popup(){
 	echo $tpl->form_outside($FORM_TITLE, @implode("\n", $form),$FORM_EXPLAIN,$button_name,"LoadAjax('table-loader-ufdbrules-service','fw.ufdb.rules.php?table=yes');$close","AsDansGuardianAdministrator");
 
 }
-function rule_edit_save(){
+function rule_edit_save():bool{
 	$ID=$_POST["ID"];
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
 	$tpl=new template_admin();
-    $sock=new sockets();
+
     $tpl->CLEAN_POST();
 
 	
@@ -217,16 +217,17 @@ function rule_edit_save(){
 	if($ID==0){
 		$sock=new sockets();
 		$sock->SaveConfigFile(base64_encode(serialize($DEFAULTARRAY)), "DansGuardianDefaultMainRule");
-		return;
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
+		return admin_tracks("Saving Web-filter rule default");
 	}
 
 	$sql_edit="UPDATE webfilter_rules SET ".@implode(",", $fieldsEDIT)." WHERE ID=$ID";
 	$sql_add="INSERT INTO webfilter_rules (".@implode(",", $fieldsAddA).") VALUES (".@implode(",", $fieldsAddB).")";
 
-	if($ID<0){$s=$sql_add;$build=true;}else{$s=$sql_edit;}
+	if($ID<0){$s=$sql_add;}else{$s=$sql_edit;}
 	$q->QUERY_SQL($s);
 
-	if(!$q->ok){echo $q->mysql_error."\n$q->mysql_error\n$s\n";return;}
+	if(!$q->ok){echo $q->mysql_error."\n$q->mysql_error\n$s\n";return false;}
 		$c=0;
 		$sql="SELECT ID FROM webfilter_rules ORDER BY zOrder";
 		$results = $q->QUERY_SQL($sql);
@@ -237,5 +238,7 @@ function rule_edit_save(){
 		}
 
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/weberror/rules");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
+    return admin_tracks("Saving Web-filter rule {$_POST["groupname"]}");
 
 }

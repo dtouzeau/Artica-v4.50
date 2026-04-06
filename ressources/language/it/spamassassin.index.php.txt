@@ -58,27 +58,24 @@ SpamAssassin runs on a server, and filters spam before it reaches your mailbox</
 <title1>Basic Message Tagging Options</title1>
 <To>To Header</To>
 <trusted_networks>Reti attendibili</trusted_networks>
-<trusted_networks_text>
-What networks or hosts are 'trusted' in your setup.[br]
-Trusted in this case means that relay hosts on these networks are considered to not be potentially operated by spammers,
-open relays, or open proxies.
+<trusted_networks_text>Definisce quali reti o host sono considerati attendibili nella configurazione.[br]
+In questo contesto, attendibile significa che i relay presenti su queste reti non sono considerati gestiti da spammer, open relay o open proxy.[br]
 [br]
-A trusted host could conceivably relay spam, but will not originate it, and will not forge header data.[br]
-DNS blacklist checks will never query for hosts on these networks.[br]
-MXes for your domain(s) and internal relays should also be specified using the internal networks setting.[br]
-When there are 'trusted' hosts that are not MXes or internal relays for your domain(s) they should only be specified in trusted networks.[br]
-If a /mask is specified, it's considered a CIDR-style 'netmask', specified in bits.[br]
-If it is not specified, but less than 4 octets are specified with a trailing dot, that's considered a mask to allow
-all addresses in the remaining octets.[br]
-If a mask is not specified, and there is not trailing dot, then just the single IP address specified is used, as if the mask was /32.
-If a network or host address is prefaced by a ! the network or host will be excluded (or included) in a first listed match fashion.[br]
-[i]Note: 127/8 is always included in trusted_networks, regardless of your config.[/i][br]
-[blk]Examples:
-[li]192.168/16 (all in 192.168.*.*)[/li]
-[li]212.17.35.15 (just that host)[/li]
-[li]!10.0.1.5 10.0.1/24   (all in 10.0.1.* but not 10.0.1.5)[/li]
-[/blk]
-</trusted_networks_text>
+Un host attendibile potrebbe teoricamente inoltrare spam, ma non dovrebbe originarlo né falsificare gli header dei messaggi.[br]
+I controlli tramite DNS blacklist non verranno mai eseguiti per host appartenenti a queste reti.[br]
+I server MX per i tuoi domini e i relay interni devono essere specificati utilizzando lâ%80%99impostazione internal networks.[br]
+Gli host attendibili che non sono MX o relay interni devono essere elencati solo in trusted networks.[br]
+[br]
+Se viene specificato un /mask, è interpretato come una netmask CIDR espressa in bit.[br]
+Se non è specificata una mask ma sono presenti meno di quattro ottetti con un punto finale, significa che tutte le restanti combinazioni sono consentite.[br]
+Se non è specificata alcuna mask né punto finale, si considera solo lâ%80%99indirizzo IP indicato, come se fosse /32.[br]
+Se una rete o host è preceduto da !, verrà escluso (o incluso) in base alla prima regola corrispondente.[br]
+[i]Nota: 127/8 è sempre incluso in trusted_networks indipendentemente dalla configurazione.[/i][br]
+[blk]Esempi:
+[li]192.168/16 (tutti gli indirizzi 192.168..)[/li]
+[li]212.17.35.15 (solo quellâ%80%99host)[/li]
+[li]!10.0.1.5 10.0.1/24 (tutti gli indirizzi 10.0.1.* eccetto 10.0.1.5)[/li]
+[/blk]</trusted_networks_text>
 <use_auto_whitelist>Enable automatic whitelist</use_auto_whitelist>
 <use_auto_whitelist_text>
 The auto-whitelist, aka automatic whitelist or AWL, tracks scores for your regular correspondents in a small on-disk database.[br]

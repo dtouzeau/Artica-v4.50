@@ -1360,22 +1360,8 @@ function spammassassin_tables():bool{
 			 `MimeDefangMaxQuartime` INTEGER,
 			 `MimeDefangQuartDest` TEXT)");
 
+return true;
 
-    echo "[".__LINE__."]: Create table amavisd_tests\n";
-    $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS `amavisd_tests` (
-			  `ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-			  `sender` TEXT,
-			  `recipients` TEXT,
-			  `message` TEXT,
-			  `amavisd_results` TEXT,
-			  `spamassassin_results` TEXT,
-			  `spamassassin_results_header` TEXT,
-			  `spamassassin_score` TEXT,
-			  `sanlearn` INTEGER,
-			  `finish` INTEGER NOT NULL DEFAULT '0',
-			  `saved_date` TEXT NOT NULL,
-			  `subject` TEXT NOT NULL)");
-    return true;
 }
 function postfix_tables():bool{
     echo "[".__LINE__."]: Migrate table relay_domains_restricted FROM artica_backup\n";

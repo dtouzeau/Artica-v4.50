@@ -366,7 +366,7 @@ function checkWebFiltering(){
     $EnableWebFiltering=intval($CONFIG["EnableWebFiltering"]);
     if($EnableWebFiltering==0){return;}
     $php5=$unix->LOCATE_PHP5_BIN();
-    shell_exec("$php5 /usr/share/artica-postfix/exec.ufdb.enable.php");
+    shell_exec("/usr/sbin/artica-phpfpm-service -rest-api /ufdb/install");
 
     $AdvancedWebFilteringPage=intval($CONFIG["AdvancedWebFilteringPage"]);
     $AdvancedWebFilteringPagePort=intval($CONFIG["AdvancedWebFilteringPagePort"]);

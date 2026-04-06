@@ -277,8 +277,25 @@ function events_backend_search(){
     $tpl        = new template_admin();
     $MAIN=$tpl->format_search_protocol($_GET["sysevnts-search"]);
     $hostname=$_GET["hostname"];
-    $line=base64_encode(serialize($MAIN));
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("hacluster.php?syslog-sysevnts=$line&hostname=$hostname");
+
+
+    $rp=intval($MAIN["MAX"]);
+    $search=trim($MAIN["TERM"]);
+    if(strlen($search)<3){$search="NONE";}
+
+    $data=$GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/events/$hostname/$rp/$search");
+
+    $json=json_decode($data);
+    if (json_last_error()> JSON_ERROR_NONE) {
+        echo $tpl->div_error("{error}<hr>".json_last_error_msg());
+    }
+    if(!$json->Status){
+        echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
+    }
+
+    // /hacluster/client/events/{hostname}/{max}/{search}
+
+
     $filename=PROGRESS_DIR."/hacluster-$hostname.syslog";
     $date_text=$tpl->_ENGINE_parse_body("{date}");
     $events=$tpl->_ENGINE_parse_body("{events}");
@@ -295,17 +312,12 @@ function events_backend_search(){
 	<tbody>
 ";
 
-    $data=explode("\n",@file_get_contents($filename));
-    if(count($data)>3){$_SESSION["HACLUSTER_BACKENDS_SEARCH"]=$_GET["search"];}
-    krsort($data);
+
+    if(count($json->Logs)>3){$_SESSION["HACLUSTER_BACKENDS_SEARCH"]=$_GET["search"];}
     $tpl=new template_admin();
 
-    foreach ($data as $line){
+    foreach ($json->Logs as $line){
         $line=trim($line);
-        $ruleid=0;
-        $rulename=null;
-        $ACTION=null;
-        $FF=false;
         if(!preg_match("#^([A-Za-z]+)\s+([0-9]+)\s+([0-9:]+)\s+(.+?)\s+hacluster-client\[([0-9]+)\]:(.+)#", $line,$re)){
             echo "<strong style='color:red'>$line</strong><br>";
             continue;}
@@ -411,8 +423,8 @@ function tabs():bool{
 
     $page       = CurrentPageName();
     $tpl        = new template_admin();
-    $array["{backends}"]="$page?page=yes";
-    $array["{metrics}"]="$page?metrics=yes";
+    $array["<i class='".ico_server."'></i>&nbsp;{backends}"]="$page?page=yes";
+    $array["<i class='".ico_statistics."'></i>&nbsp;{metrics}"]="fw.hacluster.backends.metrics.php?main-view=yes&range=1h";
     echo $tpl->tabs_default($array);
     return true;
 }

@@ -31,7 +31,7 @@ function remove_perform(){
     if($macaddress<>null){$memcached->Delkey("MICROHOTSPOT:$macaddress");}
     $q->QUERY_SQL("DELETE FROM sessions WHERE sessionkey='$sessionkey'");
     if(!$q->ok){echo $q->mysql_error;}
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?reload-squid-cache=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/nohup/reload");
 }
 
 
@@ -54,7 +54,7 @@ function uncheck(){
     if($newenabled==0){
         if($macaddress<>null){$memcached->Delkey("MICROHOTSPOT:$macaddress");}
         $memcached->Delkey("MICROHOTSPOT:$ipaddr");
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?reload-squid-cache=yes");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/nohup/reload");
     }else{
         $ligne=$q->mysqli_fetch_array("SELECT * FROM sessions WHERE sessionkey='$sessionkey'");
         if($macaddress<>null){$memcached->saveKey("MICROHOTSPOT:$macaddress",$ligne,5*60);}
@@ -90,7 +90,7 @@ function tabs(){
 }
 
 function reload_squid_cache(){
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?reload-squid-cache=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/nohup/reload");
     $tpl=new template_admin();
     $tpl->js_display_results("{empty_cache}","{empty_cache} {success}");
 }

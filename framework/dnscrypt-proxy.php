@@ -1,6 +1,6 @@
 <?php
 
-include_once(dirname(__FILE__)."/frame.class.inc"); 
+include_once(dirname(__FILE__)."/frame.class.inc");
 include_once(dirname(__FILE__)."/class.unix.inc");
 
 if(isset($_GET["update"])){update();exit;}
@@ -9,7 +9,6 @@ if(isset($_GET["install"])){install();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["reload"])){reload();exit;}
 if(isset($_GET["restart"])){restart();exit;}
-if(isset($_GET["systemusers"])){systemusers();exit;}
 if(isset($_GET["restart-progress"])){restart_progress();exit;}
 if(isset($_GET["install-tgz"])){install_tgz();exit;}
 if(isset($_GET["chowndirs"])){chowndirs();exit;}
