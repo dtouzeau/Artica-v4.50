@@ -1686,8 +1686,11 @@ exec.fix.urllib3.php
 squid.global.whitelists.progress.php
 exec.ufdbgclient.whitelists.php
 exec.squidMins.php
+exec.unifi.php
 exec.msktutils.php
+exec.unsom.php
 exec.test.chown.php
+fw.ufdb.lighttpd.php
 msktutil.update.engine.progress.php
 msktutil.update.engine.php
 framework/msktutil.php
@@ -1696,10 +1699,14 @@ framework/dnsdist.php
 framework/squidguardweb.php
 framework/mailman.php
 framework/mailspy.php
+framework/unifi.php
+exec.vacationtime.php
+exec.users-agents.php
 exec.ufdbconfig.php
 exec.ufdbguard.rules.php
 exec.dansguardian.compile.php
 exec.dansguardian.last.php
+nodes.squid.ufdbgclient.php
 exec.dansguardian-tail.php
 exec.ufdbclient.reload.php
 exec.ufdb.scandb.php

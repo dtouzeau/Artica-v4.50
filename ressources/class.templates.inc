@@ -1556,7 +1556,6 @@ function noback(){
     $noback["404.php"]=true;
     $noback["auto-account.php"]=true;
     $noback["exec.scan-networks.php"]=true;
-    $noback["exec.vacationtime.php"]=true;
     $noback["dansguardian.users.index.php"]=true;
     $noback["cyrus.murder.listener.php"]=true;
     $noback["haproxy.listener.php"]=true;

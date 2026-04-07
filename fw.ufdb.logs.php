@@ -87,14 +87,19 @@ function search_opts_save():bool{
     return true;
 }
 
-function page(){
+function page():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$t=time();
 	if(!isset($_SESSION["WEBF_SEARCH"])){$_SESSION["WEBF_SEARCH"]="";}
 	if(isset($_GET["logfile"])){$addPLUS="&logfile=".urlencode($_GET["logfile"]);}
     $options["WRENCH"]="Loadjs('$page?opts=yes&function=%s')";
     $search_block=$tpl->search_block($page,null,null,null,"",$options);
+    if(isset($_GET["without-title"])){
+        echo "<div style='margin-top:10px'>";
+        echo $tpl->_ENGINE_parse_body($search_block);
+        echo "</div>";
+        return true;
+    }
 
 	$html="
 	<div class=\"row border-bottom white-bg dashboard-header\">
@@ -109,7 +114,7 @@ function page(){
 
 	
 	echo $tpl->_ENGINE_parse_body($html);
-
+    return true;
 }
 
 function search(){
@@ -187,38 +192,27 @@ function search(){
 ";
 	
 
-	$zcat=new squid_familysite();
+
     $tcp=new IP();
 
 
     foreach ($json->Logs as $line){
-		$TR=preg_split("/[\s]+/", $line);
-		
-		if(count($TR)<5){continue;}
-		
+
+        $JsonLine=json_decode($line,true);
+
 		$c++;
-        $RULE="";
-        $CLIENT_IP="";
+        $RULE=$JsonLine["aclName"];
+        $CLIENT_IP=$JsonLine["clientIP"];
 		$color="black";
-		$date=$TR[0];
-		$TIME=$TR[1];
-		$PID=$TR[2];
-		$ALLOW=$TR[3];
-		$CLIENT=$TR[4];
+        $timeStamp=strtotime($JsonLine["timestamp"]);
+		$date=date("Y-m-d", $timeStamp);
+        $TIME=date("H:i:s", $timeStamp);
 
-        if(isset($TR[5])) {
-            $CLIENT_IP=$TR[5];
-        }
-
-        if(isset($TR[6])) {
-            $RULE = $TR[6];
-        }
-        if(!isset($TR[7])){$TR[7]=0;}
-        if(!isset($TR[8])){$TR[8]="NONE";}
-        if(!isset($TR[9])){$TR[9]="NONE";}
-		$CATEGORY=categoryCodeTocatz($TR[7]);
-		$URI=$TR[8];
-		$PROTO=$TR[9];
+		$ALLOW=$JsonLine["action"];
+		$CLIENT=$JsonLine["username"];
+        $CATEGORY=categoryCodeTocatz($JsonLine["category"]);
+		$URI=$JsonLine["url"];
+		$PROTO=$JsonLine["method"];
 
 		$parse=parse_url($URI);
         if(!isset($parse["host"])){continue;}
@@ -297,6 +291,10 @@ function search(){
 }
 
 function categoryCodeTocatz($category){
+    if($category=="any"){
+        $tpl=new template_admin();
+        return $tpl->_ENGINE_parse_body("{all}");
+    }
 	if(preg_match("#P([0-9]+)#", $category,$re)){$category=$re[1];}
 	if($category==0){return "($category) Unknown(0)";}
 

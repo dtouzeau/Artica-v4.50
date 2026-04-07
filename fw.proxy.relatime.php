@@ -119,7 +119,7 @@ function tabs(){
         $array["{requests}:{APP_PROXY}"] = "$page?page-requests=yes&notitle=yes";
     }
     if($EnableUfdbGuard==1) {
-        $array["{requests}:{web_filtering}"] = "fw.ufdb.logs.php";
+        $array["{requests}:{web_filtering}"] = "fw.ufdb.logs.php?without-title=yes";
     }
 
     if($EnableNginx==1){

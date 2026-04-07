@@ -4203,4 +4203,5 @@ Manually create the computer object for this Artica server in your Active Direct
 <welcome_ad_wizard3>Artica uses an LDAP connection to retrieve user groups.[br]This connection can be configured in plain mode (port 389) or in secure mode (port 636).[br]
 Check the box below if you want Artica to use a secure connection.</welcome_ad_wizard3>
 <welcome_ad_wizard4>Validate the Active Directory suffix that defines the user directory realm, and specify the organizational unit (OU) that hosts or will host the Artica server.</welcome_ad_wizard4>
+<filtered_members>Filtered members</filtered_members>
 

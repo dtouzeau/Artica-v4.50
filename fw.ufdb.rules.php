@@ -10,6 +10,7 @@ if(isset($_GET["delete-js"])){delete_js();exit;}
 if(isset($_POST["delete"])){delete_rule();exit;}
 if(isset($_POST["rule-order"])){move_rule();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
+if(isset($_GET["dynamics"])){dynamics();exit;}
 page();
 
 
@@ -63,7 +64,7 @@ function table():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-    $rule_text=$tpl->_ENGINE_parse_body("{rule}");
+    $rule_text=$tpl->_ENGINE_parse_body("{rules}");
     $EnableUfdbGuard=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUfdbGuard"));
 
     $q->QUERY_SQL("DELETE FROM webfilter_assoc_groups WHERE group_id=''");
@@ -141,16 +142,13 @@ function table():bool{
 
 
     $html[]="<div id='missing-databases-ufdb-alert'></div>";
-    $html[]="<table id='table-filtragewebrules-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<table id='table-filtragewebrules-rules' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' >$order</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' >{status}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$rule_text</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' colspan='2'>{status}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'><span id='th-rules'>$rule_text</span></th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$groups</th>";
-
-
-
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>". $tpl->_ENGINE_parse_body($blacklists)."</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>". $tpl->_ENGINE_parse_body($whitelists)."</th>";
     $html[]="<th data-sortable=true class='text-capitalize' style='width:1%' nowrap>". $tpl->_ENGINE_parse_body("{duplicate}")."</th>";
@@ -182,17 +180,8 @@ function table():bool{
     $webfilter=new webfilter_rules();
     $t=time();
     $tpl->CLUSTER_CLI=true;
-    $PRODUCTION_RULES=array();
-    $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/rules"));
-    if(!property_exists($data,"Rules")){
-        echo $tpl->div_error("Rest API rules does not exist");
 
-    }else{
-        foreach ($data->Rules as $rule) {
-            $PRODUCTION_RULES[intval($rule)]=true;
-        };
-    }
-
+    $status="<span class='label label-default'>{inactive}</span>";
     foreach ($results as $index=>$ligne){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $ID=intval($ligne["ID"]);
@@ -201,10 +190,7 @@ function table():bool{
         if($endofrule==null){$endofrule="any";}
         $md=md5(serialize($ligne));
         $text_class=null;
-        $status="<span class='label label-default'>{inactive2}</span>";
-        if(isset($PRODUCTION_RULES[$ID])){
-            $status="<span class='label label-primary'>{active2}</span>";
-        }
+       
 
         $MAIN_EXPLAIN_TR=array();
 
@@ -227,11 +213,12 @@ function table():bool{
         }
         $iconw="";
         $icon="";
-        $TimeSpace=$webfilter->rule_time_list_explain($ligne["TimeSpace"],$ligne["ID"],$t);
+        $RuleID=$ligne["ID"];
+        $TimeSpace=$webfilter->rule_time_list_explain($ligne["TimeSpace"],$RuleID,$t);
         $TimeSpace=str_replace('\n\n', "<br>", $TimeSpace);
 
-        $CountDeGroups=$webfilter->COUNTDEGROUPES($ligne["ID"]);
-        $row_sources=$tpl->td_href("$CountDeGroups {sources}",null,"Loadjs('fw.ufdb.rules.sources.php?ID={$ligne['ID']}')");
+        $CountDeGroups=$webfilter->COUNTDEGROUPES($RuleID);
+        $row_sources=$tpl->td_href("$CountDeGroups {sources}",null,"Loadjs('fw.ufdb.rules.sources.php?ID=$RuleID')");
 
         if($ligne["AllSystems"]==1){$row_sources="<i class=\"fas fa-asterisk\"></i>";}
 
@@ -260,12 +247,13 @@ function table():bool{
         if($CountDeBlack<2){$CountDeBlack="$CountDeBlack {category}";}else{$CountDeBlack="$CountDeBlack {categories}";}
         $groupnameenc=urlencode($ligne["groupname"]);
 
-        $jsCatBlack="Loadjs('fw.ufdb.rules.categories.php?js-ID={$ligne['ID']}&modeblk=0');";
-        $jsCatWhite="Loadjs('fw.ufdb.rules.categories.php?js-ID={$ligne['ID']}&modeblk=1');";
+        $jsCatBlack="Loadjs('fw.ufdb.rules.categories.php?js-ID=$RuleID&modeblk=0');";
+        $jsCatWhite="Loadjs('fw.ufdb.rules.categories.php?js-ID=$RuleID&modeblk=1');";
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='width:1%' nowrap class='center'>{$ligne["zOrder"]}</td>";
-        $html[]="<td style='width:1%' nowrap class='center'>$status</td>";
+        $html[]="<td style='width:1%' nowrap class='center'><span id='td-status-$RuleID'>$status</span></td>";
+        $html[]="<td style='width:1%' nowrap class='center'><span id='td-requests-$RuleID'>0</span></td>";
         $html[]="<td class='$text_class'>". $tpl->td_href($ligne["groupname"],null,"Loadjs('fw.ufdb.rules.edit.php?ID={$ligne['ID']}')")."&nbsp;&nbsp;$MAIN_EXPLAIN_TEXT</td>";
         $html[]="<td style='width:1%' nowrap class='$text_class center'>$row_sources</td>";
 
@@ -277,8 +265,6 @@ function table():bool{
         }
         $html[]="<td style='width:1%' nowrap class='$text_class center'>$blackRow</td>";
         $html[]="<td style='width:1%' nowrap class='$text_class center'><strong><i class='$iconw'></i>&nbsp;".$tpl->td_href($CountDewhite,null,$jsCatWhite)."</strong></td>";
-
-
         $html[]="<td style='width:1%' nowrap class='$text_class center'>". $tpl->icon_copy("Loadjs('fw.webfiltering.rule.duplicate.php?from={$ligne['ID']}&t=$t&page=$page')")."</td>";
         $html[]="<td style='width:1%' nowrap class='$text_class center'>". $tpl->icon_up("RuleGroupUpDown$t({$ligne['ID']},1);").$tpl->icon_down("RuleGroupUpDown$t({$ligne['ID']},0);")."</td>";
         $html[]="<td style='width:1%' nowrap class='$text_class center'>". $tpl->icon_delete("Loadjs('$page?delete-js={$ligne['ID']}&rule=$groupnameenc&md=$md')","AsDansGuardianAdministrator")."</td>";
@@ -299,21 +285,21 @@ function table():bool{
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
 
+    $jsClock=$tpl->RefreshInterval_Loadjs("table-filtragewebrules-rules",$page,"dynamics=yes");
+
     $html[]="</tbody>";
     $html[]="<tfoot>";
     $html[]="<tr>";
-    $html[]="<td colspan='9'>";
+    $html[]="<td colspan='10'>";
     $html[]="<ul class='pagination pull-right'></ul>";
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</tfoot>";
     $html[]="</table>";
-    $html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."$headsjs;
-$(document).ready(function() { $('#table-filtragewebrules-rules').footable({\"filtering\": { \"enabled\": false },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) });";
-
-
+    $html[]="<script>";
+    $html[]="NoSpinner();";
+    $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
+    $html[]="$headsjs;";
     $html[]="
 var xRuleGroupUpDown$t= function (obj) {
 	var res=obj.responseText;
@@ -327,6 +313,7 @@ function RuleGroupUpDown$t(ID,direction){
 		XHR.sendAndLoad('$page', 'POST',xRuleGroupUpDown$t);
 	}";
     $html[]="LoadAjaxSilent('missing-databases-ufdb-alert','$page?missing-databases-ufdb-alert=yes');";
+    $html[]=$jsClock;
     $html[]="</script>";
 
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
@@ -426,10 +413,11 @@ function DefaultRule($TRCLASS){
     }
     $MAINTRTEXT=str_replace("<br>\n<br>", "<br>", $MAINTRTEXT);
     $MAINTRTEXT=str_replace("<br><br>", "<br>", $MAINTRTEXT);
-    $status="<span class='label label-primary'>{active2}</span>";
+    $status="<span class='label label-default'>{inactive}</span>";
     $html[]="<tr class='$TRCLASS'>";
     $html[]="<td class='center'>". $tpl->icon_nothing()."</td>";
-    $html[]="<td class='center'>$status</td>";
+    $html[]="<td style='width:1%' nowrap class='center'><span id='td-status-0'>$status</span></td>";
+    $html[]="<td style='width:1%' nowrap class='center'><span id='td-requests-0'>0</span></td>";
     $html[]="<td>". $tpl->td_href("{default_webrule}",null,"Loadjs('fw.ufdb.rules.edit.php?ID=0')")."&nbsp;&nbsp;$MAINTRTEXT</td>";
     $html[]="<td class='center'><i class=\"fas fa-asterisk\"></i></td>";
 
@@ -542,4 +530,49 @@ function missing_databases_alert():bool{
 
     echo $tpl->_ENGINE_parse_body("<div class='alert alert-danger' style='margin-top:10px'>$missing_webf_database_explain$link</div>");
     return true;
+}
+
+function dynamics(){
+    $tpl=new template_admin();
+
+    $f=array();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/usercur"),true);
+    if(isset($json["Users"])){
+        $Users=json_decode($json["Users"],true);
+        $records=$Users["records"];
+        if($records>0){
+            $text=base64_encode($tpl->_ENGINE_parse_body("{rules} &raquo; (".$tpl->FormatNumber($records)." {filtered_members})"));
+            $f[]="$('#th-rules').html(base64_decode('$text'));";
+        }
+
+    }
+    if(isset($json["Metrics"])){
+        $Metrics=json_decode($json["Metrics"],true);
+        foreach ($Metrics as $ID=>$Main){
+            $requests=intval($Main["requests"]);
+            if($requests==0){
+                $status=base64_encode($tpl->_ENGINE_parse_body("<span class='label label-default'>{not_used}</span>"));
+                $f[]="$('#td-status-$ID').html(base64_decode('$status'));";
+                continue;
+            }
+            $status=base64_encode($tpl->_ENGINE_parse_body("<span class='label label-primary'>{active2}</span>"));
+            $f[]="$('#td-status-$ID').html(base64_decode('$status'));";
+            $rq=$tpl->FormatNumber($requests);
+            $f[]="$('#td-requests-$ID').html('$rq');";
+        }
+
+
+    }
+
+
+
+ /*
+  *     $html[]="<td style='width:1%' nowrap class='center'><span id='td-status-0'></span></td>";
+    $html[]="<td style='width:1%' nowrap class='center'><span id='td-requests-0'></span></td>";
+  */
+
+
+    header("content-type: application/x-javascript");
+    echo @implode("\n",$f);
+
 }

@@ -149,7 +149,6 @@ if(isset($_GET["show-content-group"])){show_content_group();exit;}
 if(isset($_GET["caches-center"])){caches_center();exit;}
 if(isset($_GET["force-cache-status"])){squid_force_cache_status();exit;}
 if(isset($_GET["catzdb-changedir"])){catzdb_changedir();exit;}
-if(isset($_GET["ufdbclient"])){ufdbclient_tests();exit;}
 if(isset($_GET["squid-get-system-info"])){squid_get_system_info();exit;}
 if(isset($_GET["squid-get-storage-info"])){squid_get_storage_info();exit;}
 if(isset($_GET["MacToUidStats"])){MacToUidStats();exit;}
@@ -2451,18 +2450,7 @@ function backup_all_statistics(){
     shell_exec($cmd);
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 }
-function ufdbclient_tests(){
-    $unix=new unix();
-    $cmdline=base64_decode($_GET["ufdbclient"]);
 
-    $ufdbgclient=$unix->find_program("ufdbgclient");
-    $cmd="$ufdbgclient $cmdline 2>&1";
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    exec($cmd,$results);
-    writelogs_framework("$cmd ".count($results)." lines",__FUNCTION__,__FILE__,__LINE__);
-    echo "<articadatascgi>". base64_encode(trim(@implode("", $results)))."</articadatascgi>";
-
-}
 function catzdb_changedir(){
     $unix=new unix();
     $dir=base64_decode($_GET["catzdb-changedir"]);

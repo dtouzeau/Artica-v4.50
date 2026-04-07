@@ -57,50 +57,13 @@ function test(){
 	$_SESSION["UFDBT"]["WWW"]=$www;
 	if($user==null){$user="-";}
 	if($ipaddr==null){$ipaddr="-";}
-	$sock=new sockets();
-	$datas=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ufdbguardConfig"));
-	$UseRemoteUfdbguardService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseRemoteUfdbguardService"));
 
 
-	if(!isset($datas["remote_port"])){$datas["remote_port"]=3977;}
-	if(!isset($datas["remote_server"])){$datas["remote_server"]=null;}
-	if(!isset($datas["listen_addr"])){$datas["listen_addr"]="127.0.0.1";}
-	if(!isset($datas["listen_port"])){$datas["listen_port"]="3977";}
-	if(!isset($datas["tcpsockets"])){$datas["tcpsockets"]=1;}
-	if(!isset($datas["url_rewrite_children_concurrency"])){$datas["url_rewrite_children_concurrency"]=2;}
-	if(!isset($datas["url_rewrite_children_startup"])){$datas["url_rewrite_children_startup"]=5;}
-	if(!isset($datas["url_rewrite_children_idle"])){$datas["url_rewrite_children_idle"]=5;}
-	if(!is_numeric($datas["listen_port"])){$datas["listen_port"]="3977";}
-	if(!is_numeric($datas["tcpsockets"])){$datas["tcpsockets"]=1;}
-	if(!is_numeric($datas["remote_port"])){$datas["remote_port"]=3977;}
-	if(is_file("/etc/artica-postfix/UFDB_NO_SOCKETS")){$datas["tcpsockets"]=1;}
-
-	if($datas["remote_port"]==null){$UseRemoteUfdbguardService=0;}
-	if($datas["listen_addr"]==null){$datas["listen_addr"]="127.0.0.1";}
-	if($datas["listen_addr"]=="all"){$datas["listen_addr"]="127.0.0.1";}
-	$address=null;
-
-
-	if($UseRemoteUfdbguardService==1){
-		if(trim($datas["remote_server"]==null)){$datas["remote_server"]="127.0.0.1";}
-		$address="-S {$datas["remote_server"]} -p {$datas["remote_port"]} ";
-
-	}
-
-
-	if($address==null){
-		if($datas["tcpsockets"]==1){
-			$address="-S {$datas["listen_addr"]} -p {$datas["listen_port"]} ";
-				
-		}else{
-			$address="-S 127.0.0.1 -p {$datas["listen_port"]} ";
-		}
-	}
-	if($address==null){echo "<strong style='color:#d32d2d'>Cannot determine address</strong>\n";return;}
-
-	$cmdline="$address $www $ipaddr $user";
-	$cmdline=urlencode(base64_encode($cmdline));
-	$datas=base64_decode($sock->getFrameWork("squid.php?ufdbclient=$cmdline"));
+    $ipaddr=urlencode($ipaddr);
+    $user=urlencode($user);
+    $www=urlencode($www);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/check/$ipaddr/$user/$www"),true);
+    $datas=$json["Info"];
 
 	if(preg_match("#^http.*#", $www)){
 		$url_www=parse_url($www);
@@ -110,33 +73,49 @@ function test(){
 	}
 
 	$tpl=new template_admin();
-	$title_pass=$tpl->_ENGINE_parse_body("{access_to_internet}");
-	$redirected=$tpl->_ENGINE_parse_body("<strong class='text-danger'>{redirected}/{denied}</strong>");
-	$datas=trim($datas);
-	if($datas=="OK"){$datas=null;}
 
-	if(trim($datas)==null){
 
-		$catz=new mysql_catz();
-		$category_id=$catz->GET_CATEGORIES($url_host);
-		if($category_id>0){$category_text="<br>".$tpl->_ENGINE_parse_body($tpl->CategoryidToName($category_id));}
-		
-		$_SESSION["UFDB_TESTS_TRUE"]=false;
-		$_SESSION["UFDB_TESTS_RESULTS"]="<H1>$title_pass<H1>$category_text";
-		
+    $main=json_decode($datas,true);
 
-		return;}
+    if($main["cached"]){
+        $Cached="<br><strong style='font-size:12px'>{cached}</strong>";
+    }
+    $category_id=$main["category_id"];
+    $rule_name=$main["rule_name"];
 
+    $title_pass=$tpl->_ENGINE_parse_body("{access_to_internet}$Cached");
+    $redirected=$tpl->_ENGINE_parse_body("<strong class='text-danger'>{redirected}/{denied}$Cached</strong>");
+
+    if(!$main["blocked"]){
+        if($category_id==0) {
+            $catz = new mysql_catz();
+            $category_id = $catz->GET_CATEGORIES($url_host);
+        }
+        if($category_id>0){$category_text="<br>".$tpl->_ENGINE_parse_body($tpl->CategoryidToName($category_id));}
+        $_SESSION["UFDB_TESTS_TRUE"]=false;
+        $_SESSION["UFDB_TESTS_RESULTS"]="<H1>$title_pass<H1>$category_text";
+        return;
+    }
 
 
 
 	$HTTP_CODE="{http_status_code}: 302<br>";
-	if(preg_match('#status=([0-9]+)\s+url="(.*?)"#', $datas,$re)){$datas=$re[2];$HTTP_CODE="{http_status_code}: {$re[1]}<br>";}
+	if(preg_match('#status=([0-9]+)\s+url=(.*?)(\s|$)#', $main["redirect"],$re)){
+        $datas=$re[2];
+        $HTTP_CODE="{http_status_code}: $re[1]<br>";
+    }
+
 	$url=parse_url($datas);
 	if(!is_numeric($url["port"])){$url["port"]=80;}
 
 	$f[]="<h1>";
 	$f[]="$redirected</H1>";
+    if(!isset($url["scheme"])){
+        $url["scheme"]="http";
+    }
+    if(!isset($url["host"]) OR (strlen($url["host"])<3)){
+        $url["host"]="Unknown";
+    }
 	$f[]="<h3 class='font-bold no-margins'>{$url["scheme"]}://{$url["host"]}:{$url["port"]}</h3>";
 
 
