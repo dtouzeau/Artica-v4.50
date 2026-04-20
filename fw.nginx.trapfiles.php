@@ -28,6 +28,14 @@ function popup_enable():bool{
     $serviceid  = intval($_GET["enable-feature"]);
     $sock       = new socksngix($serviceid);
     $sock->SET_INFO("EnableTrapFiles",1);
+
+    $data       = json_decode($sock->GET_INFO("trap_files"),true);
+    if(!is_array($data)){$data=array();}
+
+    if(count($data)<5) {
+        $data = rule_defaults();
+        $sock->SET_INFO("trap_files", json_encode($data));
+    }
     $servicename=get_servicename($serviceid);
     header("content-type: application/x-javascript");
     echo "$function();\n";
@@ -103,7 +111,13 @@ function rule_enable():bool{
     $ruleid=base64_decode($_GET["pattern-enable"]);
     $serviceid=intval($_GET["serviceid"]);
     $sock       = new socksngix($serviceid);
-    $data       = json_decode($sock->GET_INFO("trap_files"),true);
+    $dataTxt=$sock->GET_INFO("trap_files");
+    VERBOSE($dataTxt,__LINE__);
+    $data       = json_decode($dataTxt,true);
+    if(!isset($data[$ruleid])){
+        $data[$ruleid]=1;
+    }
+
     if(intval($data[$ruleid])==1){
         $data[$ruleid]=0;
     }else{
@@ -207,9 +221,7 @@ function rule_save():bool{
     $enable=intval($_POST["enable"]);
     $sock       = new socksngix($serviceid);
     $data       = json_decode($sock->GET_INFO("trap_files"),true);
-    if (json_last_error()> JSON_ERROR_NONE) {
-        $data=rule_defaults();
-    }
+    if(!is_array($data)){$data=rule_defaults();}
 
     if(count($data)==0){
         $data=rule_defaults();
@@ -280,9 +292,7 @@ function popup_search():bool{
 ";
 
     $data       = json_decode($sock->GET_INFO("trap_files"),true);
-    if (json_last_error()> JSON_ERROR_NONE) {
-        $data=rule_defaults();
-    }
+    if(!is_array($data)){$data=rule_defaults();}
 
     if(count($data)==0){
         $data=rule_defaults();
@@ -323,4 +333,5 @@ function popup_search():bool{
         $html[]="\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } }); });";
         $html[]="</script>";
         echo $tpl->_ENGINE_parse_body($html);
+        return true;
         }

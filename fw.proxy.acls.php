@@ -7,6 +7,7 @@ include_once(dirname(__FILE__)."/ressources/class.squid.acls.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_POST["AclsUsePages"])){$tpl=new template_admin();$tpl->SAVE_POSTs();exit;}
 if(isset($_GET["search"])){table_builder();exit;}
+if(isset($_GET["toggle-items-search"])){toggle_items_search();exit;}
 if(isset($_GET["explain-this-rule"])){echo EXPLAIN_THIS_RULE($_GET["explain-this-rule"],$_GET["enabled"],$_GET["aclgroup"]);exit;}
 if(isset($_GET["opts"])){opts_js();exit;}
 if(isset($_GET["opts-popup"])){opts_popup();exit;}
@@ -729,23 +730,44 @@ function table():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     if(!isset($_SESSION["ACL_SEARCH"])){$_SESSION["ACL_SEARCH"]=null;}
+    if(!isset($_SESSION["ACL_SEARCH_ITEMS"])){$_SESSION["ACL_SEARCH_ITEMS"]=0;}
     $options["WRENCH"]="Loadjs('$page?opts=yes&function=%s')";
     echo $tpl->search_block($page,null,null,"value=".$_SESSION["ACL_SEARCH"],"&gprule=$gprule",$options);
+
+    $itemsChecked = intval($_SESSION["ACL_SEARCH_ITEMS"]) == 1 ? "checked" : "";
+    $checkboxHtml = "
+<div style=\"margin:0 15px 12px 15px;padding:10px 14px;background:#f3f8fc;border:1px solid #d7e3ec;border-radius:3px;\">
+    <label style=\"font-weight:normal;cursor:pointer;margin:0;display:flex;align-items:center;\">
+        <input type=\"checkbox\" id=\"acl-search-items-toggle\" $itemsChecked
+            onchange=\"aclToggleItemsSearch(this.checked);\" style=\"margin-right:10px;\">
+        <i class=\"fas fa-search-plus\" style=\"color:#1c84c6;margin-right:8px;\"></i>
+        <span>{search_inside_item_descriptions}</span>
+    </label>
+</div>
+<script>
+(function(){
+    var resDiv = document.querySelector('[id^=\"results-\"]');
+    if (resDiv) { window.__aclResultsDivId = resDiv.id; }
+})();
+window.aclToggleItemsSearch = function(checked){
+    \$.post('$page?toggle-items-search=yes', {v: checked ? 1 : 0}, function(){
+        if (!window.__aclResultsDivId) { return; }
+        var searchVal = '';
+        var inp = document.querySelector('.ibox-content input.form-control');
+        if (inp) { searchVal = inp.value; }
+        LoadAjax(window.__aclResultsDivId, '$page?search=' + encodeURIComponent(searchVal) + '&gprule=$gprule');
+    });
+};
+</script>";
+    echo $tpl->_ENGINE_parse_body($checkboxHtml);
     return true;
 }
-function  getCurrentRules():array{
-    $MAIN=array();
-    $f=explode("\n",@file_get_contents("/etc/squid3/http_access.conf"));
-    foreach ($f as $line){
-        if(!preg_match("#STATUS=\[(.+?)\]#",$line,$re)){continue;}
-        $HEADS=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($re[1]);
-        if(!isset($HEADS["STATUS_RULES"])){$HEADS["STATUS_RULES"]=array();}
-        foreach ($HEADS["STATUS_RULES"] as $ruleid=>$none){
-            $MAIN[$ruleid]=true;
-        }
 
-    }
-    return $MAIN;
+function toggle_items_search():void{
+    $v = intval($_POST["v"] ?? 0);
+    $_SESSION["ACL_SEARCH_ITEMS"] = $v == 1 ? 1 : 0;
+    header("content-type: application/json;charset=UTF-8");
+    echo json_encode(["ok"=>true,"items"=>$_SESSION["ACL_SEARCH_ITEMS"]]);
 }
 function TINY_PAGE($return=false):string{
     $tpl            = new template_admin();
@@ -810,23 +832,19 @@ function table_builder():bool{
 
     if(!isset($_GET["gprule"])){$_GET["gprule"]=0;}
     $tpl            = new template_admin();
-	$page           = CurrentPageName();
-	$eth_sql        = null;
-	$token          = null;
-	$class          = null;
-	$order          = $tpl->_ENGINE_parse_body("{order}");
-	$rulename       = $tpl->_ENGINE_parse_body("{rulename}");
-	$description    = $tpl->_ENGINE_parse_body("{description}");
-	$enabled        = $tpl->_ENGINE_parse_body("{enabled}");
+    $page           = CurrentPageName();
+    $order          = $tpl->_ENGINE_parse_body("{order}");
+    $rulename       = $tpl->_ENGINE_parse_body("{rulename}");
+    $description    = $tpl->_ENGINE_parse_body("{description}");
+    $enabledLabel   = $tpl->_ENGINE_parse_body("{enabled}");
     $gprule         = intval($_GET["gprule"]);
-    $search         = $_GET["search"];
-    $function       = $_GET["function"];
+    $search         = $_GET["search"] ?? "";
+    $function       = $_GET["function"] ?? "";
 
-	$class=null;
-    $getCurrentRules=getCurrentRules();
-	$t=md5(time()."{$_GET["gprule"]}".microtime(true));
-
+    $t=md5(time()."{$_GET["gprule"]}".microtime(true));
     $data1="class='text-capitalize' style='width:1%;text-align:center'";
+
+    $html = [];
     if($gprule>0){
         $html[]=TINY_PAGE(true);
     }
@@ -834,79 +852,72 @@ function table_builder():bool{
     $limit=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AclsUseRows"));
     if($limit==0){$limit=120;}
 
-
-    $TableClass="";
-    if($AclsUsePages==1){
-        $TableClass="footable ";
+    // Honor inline rows=/max=/limit= keyword — historic behavior.
+    if(preg_match("#(rows|max|limit)=([0-9]+)#i",$search,$re)){
+        $limit=intval($re[2]);
+        $search=trim(str_replace("$re[1]=$re[2]","",$search));
     }
+    $_SESSION["ACL_SEARCH"]=$search;
+    $includeItems = intval($_SESSION["ACL_SEARCH_ITEMS"] ?? 0);
+
+    // Single call into the Go backend replaces the 4-way SQL join, per-row
+    // REST explain, and http_access.conf parsing that used to run here.
+    $endpoint = "/proxy/webconsole/acls/table"
+        ."?gprule=$gprule"
+        ."&search=".urlencode($search)
+        ."&items=$includeItems"
+        ."&limit=$limit";
+    $raw = $GLOBALS["CLASS_SOCKETS"]->REST_API($endpoint);
+    $resp = json_decode($raw, true);
+
+    if(!is_array($resp) || empty($resp["success"])){
+        $msg = is_array($resp) ? ($resp["error"] ?? "unknown error") : "unreachable";
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{acls_backend_error}: ".htmlspecialchars($msg)));
+        return false;
+    }
+    $data      = $resp["data"] ?? [];
+    $rules     = is_array($data["rules"] ?? null) ? $data["rules"] : [];
+    $sGroups   = is_array($data["searchGroups"] ?? null) ? $data["searchGroups"] : [];
+    $activeArr = is_array($data["activeRuleIDs"] ?? null) ? $data["activeRuleIDs"] : [];
+    $activeSet = array_flip($activeArr);
+    $truncated = !empty($data["truncated"]);
+    $elapsedMs = intval($data["elapsedMs"] ?? 0);
+
+    $TableClass = $AclsUsePages==1 ? "footable " : "";
 
     $html[]="<table id='table-webfilter-rules-$t' class=\"{$TableClass}table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th $data1>$order</th>";
+    $html[]="<thead>";
+    $html[]="<tr>";
+    $html[]="<th $data1>$order</th>";
     $html[]="<th $data1>{status}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>$rulename</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$description}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>$rulename</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$description}</th>";
     $html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false>{copy}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center'>$enabled</th>";
-	$html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false></th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-	$jsAfter="LoadAjax('table-firewall-rules','$page?table=yes');";
-	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    if(!$q->FIELD_EXISTS("webfilters_sqacls","zExplain")){$q->QUERY_SQL("ALTER TABLE webfilters_sqacls ADD zExplain TEXT");}
-    if(!$q->FIELD_EXISTS("webfilters_sqacls","description")){$q->QUERY_SQL("ALTER TABLE webfilters_sqacls ADD description TEXT");}
-
-    VERBOSE("search:$search",__LINE__);
-    $_SESSION["ACL_SEARCH"]=$search;
-    if(preg_match("#(rows|max|limit)=([0-9]+)#i",$search,$re)){
-        $limit=$re[2];
-        $search=str_replace("$re[1]=$re[2]","",$search);
-    }
-    $sql="SELECT * FROM webfilters_sqacls WHERE aclgpid=$gprule ORDER BY xORDER LIMIT $limit";
-
-    if($search<>null){
-        if(strpos($search,"*")==0){
-            $search="*$search*";
-        }
-        if(strpos(" $search","*")>0){
-            $search=str_replace("*","%",$search);
-            $sql="SELECT * FROM webfilters_sqacls WHERE aclgpid=$gprule AND 
-                                      (aclname LIKE '$search') ORDER BY xORDER LIMIT $limit";
-
-        }
-
-        if(is_numeric($search)){
-            $sql="SELECT * FROM webfilters_sqacls WHERE aclgpid=$gprule AND ID=$search ORDER BY xORDER LIMIT $limit";
-        }
-
-    }
-    $results=array();
-    list($search2,$searchgroups)=search_all_items($search);
-
-    VERBOSE($sql,__LINE__);
-    $results = $q->QUERY_SQL($sql);
-
-    if(count($search2)>0){
-        foreach ($search2 as $index=>$ligne){
-            $results[]=$ligne;
-        }
-    }
-
+    $html[]="<th data-sortable=false>{copy}</th>";
+    $html[]="<th data-sortable=true class='text-capitalize center'>$enabledLabel</th>";
+    $html[]="<th data-sortable=false></th>";
+    $html[]="<th data-sortable=false></th>";
+    $html[]="<th data-sortable=false></th>";
+    $html[]="</tr>";
+    $html[]="</thead>";
+    $html[]="<tbody>";
 
     $TRCLASS=null;
     $nothing=$tpl->icon_nothing();
-    if(count($searchgroups)>0){
-        foreach ($searchgroups as $gpid=>$GroupName){
-            $ff[]="&laquo;".$tpl->td_href("$GroupName","Loadjs('fw.rules.items.php?groupid=$gpid$function',true);")."&raquo;&nbsp;";
+
+    if($truncated){
+        $html[]="<tr><td colspan='10' style='padding:6px 10px;'>"
+            .$tpl->div_warning("{search_truncated_explain}")."</td></tr>";
+    }
+
+    if(count($sGroups)>0){
+        $ff = [];
+        foreach ($sGroups as $g){
+            $gpid = intval($g["gpid"]);
+            $gname = htmlspecialchars($g["groupName"] ?? "");
+            $ff[]="&laquo;".$tpl->td_href($gname,"Loadjs('fw.rules.items.php?groupid=$gpid$function',true);")."&raquo;&nbsp;";
         }
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS = $TRCLASS=="footable-odd" ? null : "footable-odd";
         $html[]="<tr class='$TRCLASS' id='acl--1'>";
         $html[]="<td class=\"center\" style='width:1%' nowrap >$nothing</td>";
         $html[]="<td style='vertical-align:middle;width:1%'  nowrap>&nbsp;</td>";
@@ -914,71 +925,69 @@ function table_builder():bool{
         $html[]="<td class='left' style='width:99%'>".@implode(", ",$ff)."</td>";
         $html[]="<td class='center' style='width:1%' nowrap>$nothing</td>";
         $html[]="<td class='center' style='width:1%' nowrap>$nothing</td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
+        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</td>";
+        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</td>";
+        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</td>";
         $html[]="</tr>";
-
     }
 
+    $anyActive = count($activeArr) > 0;
+    $lastID    = 0;
 
-    $already_isset=array();
-	foreach($results as $index=>$ligne) {
-		$MUTED=null;
-		$ID=$ligne["ID"];
-        if(isset($already_isset[$ID])){continue;}
-        $already_isset[$ID]=true;
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $explain = EXPLAIN_THIS_RULE($ligne['ID'], $ligne["enabled"], $ligne["aclgroup"]);
-    	$delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')");
-		$js="Loadjs('$page?rule-id-js=$ID')";
-		if($ligne["enabled"]==0){$MUTED=" text-muted";}
-    	$up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');");
-		$down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');");
+    foreach($rules as $rule) {
+        $ID        = intval($rule["id"]);
+        $aclname   = (string)($rule["aclname"] ?? "");
+        $ruleEnabled = intval($rule["enabled"] ?? 0);
+        $aclgroup  = intval($rule["aclgroup"] ?? 0);
+        $xOrder    = intval($rule["xOrder"] ?? 0);
+        $explain   = base64_decode((string)($rule["explainHTML"] ?? ""));
+        $lastID    = $ID;
 
-        $rule_status="<span class='label label-default'>{inactive}</span>";
-        if(isset($getCurrentRules[$ID])){
-            $rule_status="<span class='label label-primary'>{active2}</span>";
-        }
-        if(count($getCurrentRules)==0){
-            $rule_status="<span class='label label-default'>{unknown}</span>";
-        }
-        if($ligne["aclgroup"]>0){
-            $rule_status="<span class='label label-primary'>{active2}</span>";
-            if($ligne["enabled"]==0){
-                $rule_status="<span class='label label-default'>{inactive}</span>";
-            }
+        $MUTED   = $ruleEnabled==0 ? " text-muted" : null;
+        $TRCLASS = $TRCLASS=="footable-odd" ? null : "footable-odd";
+
+        $delete = $tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')");
+        $js     = "Loadjs('$page?rule-id-js=$ID')";
+        $up     = $tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');");
+        $down   = $tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');");
+
+        if($aclgroup>0){
+            $rule_status = $ruleEnabled==0
+                ? "<span class='label label-default'>{inactive}</span>"
+                : "<span class='label label-primary'>{active2}</span>";
+        } else if(!$anyActive){
+            $rule_status = "<span class='label label-default'>{unknown}</span>";
+        } else if(isset($activeSet[$ID])){
+            $rule_status = "<span class='label label-primary'>{active2}</span>";
+        } else {
+            $rule_status = "<span class='label label-default'>{inactive}</span>";
         }
 
-        $aclname = $ligne["aclname"];
-        if(strlen($aclname)>50){
-            $aclname=substr($aclname,0,47)."...";
-        }
-		$row_order=$tpl->td_href(" <span class=\"label label-default\" id='acl-order-$ID'>{$ligne["xORDER"]}</span>",
+        if(strlen($aclname)>50){ $aclname = substr($aclname,0,47)."..."; }
+
+        $row_order=$tpl->td_href(" <span class=\"label label-default\" id='acl-order-$ID'>$xOrder</span>",
             null,"Loadjs('$page?change-order=$ID');");
 
+        $explainWrapped = "<span id='explain-this-rule-$ID' data='$page?explain-this-rule=$ID&enabled=$ruleEnabled&aclgroup=$aclgroup'>$explain</span>";
 
-
-		$html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
-		$html[]="<td class=\"center\" style='width:1%' nowrap >$row_order</td>";
+        $html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
+        $html[]="<td class=\"center\" style='width:1%' nowrap >$row_order</td>";
         $html[]="<td style='vertical-align:middle;width:1%'  nowrap>$rule_status</td>";
-		$html[]="<td style='vertical-align:middle;width:1%'  nowrap>". $tpl->td_href($aclname,"{click_to_edit}",$js)."</td>";
-		$html[]="<td style='vertical-align:middle'>$explain</td>";
-        $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_refresh("LoadAjaxTiny
-        ('explain-this-rule-$ID','$page?explain-this-rule=$ID&enabled={$ligne["enabled"]}&aclgroup={$ligne["aclgroup"]}')","AsDansGuardianAdministrator")."</td>";
+        $html[]="<td style='vertical-align:middle;width:1%'  nowrap>".$tpl->td_href(htmlspecialchars($aclname),"{click_to_edit}",$js)."</td>";
+        $html[]="<td style='vertical-align:middle'>$explainWrapped</td>";
+        $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_refresh("LoadAjaxTiny('explain-this-rule-$ID','$page?explain-this-rule=$ID&enabled=$ruleEnabled&aclgroup=$aclgroup')","AsDansGuardianAdministrator")."</td>";
         $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_copy("Loadjs('$page?duplicate-js=$ID')","AsDansGuardianAdministrator")."</td>";
-		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsDansGuardianAdministrator")."</td>";
-		$html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
-		$html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$delete</center></td>";
-		$html[]="</tr>";
-	
-	}
+        $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ruleEnabled,"Loadjs('$page?enable-js=$ID')",null,"AsDansGuardianAdministrator")."</td>";
+        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$up&nbsp;&nbsp;$down</td>";
+        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$delete</td>";
+        $html[]="</tr>";
+    }
 
-    $MUTED=null;
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+    $TRCLASS = $TRCLASS=="footable-odd" ? null : "footable-odd";
     $SquidAclFinishDeny=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidAclFinishDeny"));
+    $MUTED = null;
     if($SquidAclFinishDeny==1){$AclFinishDeny=0;$MUTED=" text-muted";}else{$AclFinishDeny=1;}
-    $html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
+    $html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$lastID-final'>";
     $html[]="<td class=\"center\" style='width:1%' nowrap ></td>";
     $html[]="<td class=\"center\" style='width:1%' nowrap ></td>";
     $html[]="<td style='vertical-align:middle;width:1%'  nowrap>{finally}</td>";
@@ -986,73 +995,35 @@ function table_builder():bool{
     $html[]="<td class='center' style='width:1%' nowrap>$nothing</td>";
     $html[]="<td class='center' style='width:1%' nowrap>$nothing</td>";
     $html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($AclFinishDeny,"Loadjs('$page?SquidAclFinishDeny=yes')",null,"AsDansGuardianAdministrator")."</td>";
-    $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
-    $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
+    $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</td>";
+    $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</td>";
     $html[]="</tr>";
-	
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='9'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
 
-
+    $html[]="</tbody>";
+    $html[]="<tfoot>";
+    $html[]="<tr>";
+    $html[]="<td colspan='9'>";
+    $html[]="<ul class='pagination pull-right'></ul>";
+    $html[]="</td>";
+    $html[]="</tr>";
+    $html[]="</tfoot>";
+    $html[]="</table>";
 
     $toTiny="Loadjs('$page?tiny-js=yes&gprule=$gprule&function=$function')";
     if($gprule>0){$toTiny=null;}
 
     $html[]="<script>";
     if($AclsUsePages==1){
-$html[]="$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
+        $html[]="$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
     }
-
     $html[]="$toTiny
+    console.log('ACL table elapsed=".intval($elapsedMs)."ms rules=".count($rules)."');
     NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
     LoadAjax('proxy-acls-bugs','$page?proxy-acls-bugs=yes');
 </script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+
+    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     return true;
-}
-
-function search_all_items($search){
-    if($search==null){return array(array(),array());}
-    if(strpos("  $search","*")==0){
-        $search="*$search*";
-    }
-    $search=str_replace("**","*",$search);
-    $search=str_replace("*","%",$search);
-    $search=str_replace("%%","%",$search);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sql="SELECT webfilters_sqacls.*,webfilters_sqgroups.GroupName,webfilters_sqgroups.ID as gpid FROM webfilters_sqacls,webfilters_sqacllinks,webfilters_sqgroups,webfilters_sqitems
-    WHERE webfilters_sqacllinks.aclid=webfilters_sqacls.ID
-    AND webfilters_sqacllinks.gpid=webfilters_sqgroups.ID
-    AND webfilters_sqitems.gpid=webfilters_sqgroups.ID
-    AND ( webfilters_sqitems.pattern LIKE '$search' OR webfilters_sqgroups.GroupName LIKE '$search')";
-
-
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){
-        return array(array(),array());
-    }
-    $COMPRESSRULES=array();
-    $COMPRESS_GROUPS=array();
-    foreach ($results as $index=>$ligne){
-        $ruleid=$ligne["ID"];
-        $gpid=$ligne["gpid"];
-        $COMPRESS_GROUPS[$gpid]=$ligne["GroupName"];
-        $COMPRESSRULES[$ruleid]=$ligne;
-    }
-
-    return array($COMPRESSRULES,$COMPRESS_GROUPS);
-
-
 }
 
 function fillthisRule(){
@@ -1099,18 +1070,17 @@ function EXPLAIN_THIS_RULE($ID,$enabled,$aclgroup){
     $acls=new squid_acls_groups();
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $FINAL=$acls->ACL_MULTIPLE_EXPLAIN($ID,$enabled,$aclgroup);
+    // force=true → Go side regenerates HTML and persists zExplain + advances
+    // zExplainCount, so a subsequent /proxy/webconsole/acls/table call hits
+    // the cache. The PHP-side UPDATE that used to live here wrote a wrongly
+    // base64-wrapped value — removed.
+    $FINAL=$acls->ACL_MULTIPLE_EXPLAIN($ID,$enabled,$aclgroup,null,true);
 
     if(isset($_GET["explain-this-rule"])){
-        $explain = base64_encode("<span id='explain-this-rule-$ID' data='$page?explain-this-rule=$ID&enabled=$enabled&aclgroup=$aclgroup'>$FINAL</span>");
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $q->QUERY_SQL("UPDATE webfilters_sqacls SET zExplain='$explain' WHERE ID=$ID");
         return $tpl->_ENGINE_parse_body($FINAL);
     }
 
     return  $tpl->_ENGINE_parse_body("<span id='explain-this-rule-$ID' data='$page?explain-this-rule=$ID&enabled=$enabled&aclgroup=$aclgroup'>$FINAL</span>");
-
-
 }
 
 function new_rule_group_save(){

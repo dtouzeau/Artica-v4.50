@@ -25,14 +25,6 @@ class modesctools{
 
     }
 
-    public function modsecurity_vers($verid){
-
-        $q=new postgres_sql();
-        $sql="SELECT * from modsecurity_vers WHERE id=$verid";
-        $ligne=$q->mysqli_fetch_array($sql);
-        return $ligne["version"];
-    }
-
     public function modsecurity_explains($explainid) {
         $q=new postgres_sql();
         $sql="SELECT report from modsecurity_explains WHERE id=$explainid";
@@ -48,12 +40,8 @@ class modesctools{
         if(isset($GLOBALS["reverse-proxy-service"][$ID])){
             return $GLOBALS["reverse-proxy-service"][$ID];
         }
-        $q                          = new lib_sqlite($this->NginxGetDB());
-        $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-        if(!isset($ligne["servicename"])){
-            $ligne["servicename"]="";
-        }
-        $GLOBALS["reverse-proxy-service"][$ID]=strval($ligne["servicename"]);
+        $sock=new socksngix($ID);
+        $GLOBALS["reverse-proxy-service"][$ID]=$sock->GetServiceName();
         return $GLOBALS["reverse-proxy-service"][$ID];
     }
     private function isHarmpID():bool{
@@ -74,43 +62,27 @@ class modesctools{
         return "/home/artica/SQLITE/nginx.$Gpid.db";
     }
 
-
-
-    public function modsecurity_reports($unique_id){
-        $q=new postgres_sql();
-        $sql="SELECT content from modsecurity_reports WHERE unique_id='$unique_id'";
-        $ligne=$q->mysqli_fetch_array($sql);
-        if(!$q->ok){return $q->mysql_error;}
-        return $ligne["content"];
-
-    }
-
     public function rule_is_global_white($ruleid):bool{
         $ruleid=intval($ruleid);
         if($ruleid==0){return false;}
-        $q=new lib_sqlite($this->NginxGetDB());
-        $sql="SELECT ID FROM modsecurity_whitelist WHERE wfrule=$ruleid AND serviceid=0 AND (spath IS NULL OR spath = '')";
-        $ligne=$q->mysqli_fetch_array($sql);
-        if(!isset($ligne["ID"])){return false;}
-        if(intval($ligne["ID"])==0){return false;}
-        return true;
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist?ruleid=$ruleid&serviceid=0"),true);
+        if(!is_array($json) || !$json["Status"]){return false;}
+        foreach($json["entries"] as $e){
+            if(strlen($e["spath"])==0){return true;}
+        }
+        return false;
     }
     function rule_is_serviceid_white($ruleid,$serviceid):bool{
         $ruleid=intval($ruleid);
         if($ruleid==0){return false;}
         $serviceid=intval($serviceid);
         if($serviceid==0){return false;}
-        $q=new lib_sqlite($this->NginxGetDB());
-        $sql="SELECT ID FROM modsecurity_whitelist WHERE wfrule=$ruleid AND serviceid=$serviceid AND (spath IS NULL OR spath = '')";
-        VERBOSE($sql,__LINE__);
-        $ligne=$q->mysqli_fetch_array($sql);
-        if(!$q->ok){
-            VERBOSE($q->mysql_error,__LINE__);
-            echo $q->mysql_error;
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist?ruleid=$ruleid&serviceid=$serviceid"),true);
+        if(!is_array($json) || !$json["Status"]){return false;}
+        foreach($json["entries"] as $e){
+            if(strlen($e["spath"])==0){return true;}
         }
-        if(!isset($ligne["ID"])){return false;}
-        if(intval($ligne["ID"])==0){return false;}
-        return true;
+        return false;
     }
     function rule_is_path_white($ruleid,$serviceid,$path){
         $ruleid=intval($ruleid);
@@ -118,52 +90,39 @@ class modesctools{
         $serviceid=intval($serviceid);
         if($serviceid==0){return false;}
         if(strlen($path)<1){return false;}
-        $q=new lib_sqlite($this->NginxGetDB());
-        $sql="SELECT ID FROM modsecurity_whitelist WHERE wfrule=$ruleid AND serviceid=$serviceid AND spath = '$path'";
-        VERBOSE($sql,__LINE__);
-        $ligne=$q->mysqli_fetch_array($sql);
-        if(!$q->ok){
-            VERBOSE($q->mysql_error,__LINE__);
-            echo $q->mysql_error;
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist?ruleid=$ruleid&serviceid=$serviceid&path=".urlencode($path)),true);
+        if(!is_array($json) || !$json["Status"]){return false;}
+        return count($json["entries"])>0;
+    }
+
+    private function modsecWhitelistAPI($action,$ruleid,$serviceid=0,$path=""):bool{
+        $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/modsec/whitelist", [
+            "action"    => $action,
+            "ruleid"    => intval($ruleid),
+            "serviceid" => intval($serviceid),
+            "path"      => $path
+        ]),true);
+        if(!is_array($result) || !$result["Status"]){
+            $this->mysql_error=is_array($result) ? $result["Error"] : "daemon unavailable";
+            return false;
         }
-        if(!isset($ligne["ID"])){return false;}
-        if(intval($ligne["ID"])==0){return false;}
         return true;
     }
 
     public function unwhite_global($ruleid):bool{
         $ruleid=intval($ruleid);
-        if($ruleid==0){
-            $this->mysql_error="Rule ID = 0 ??";
-            return false;
-        }
-        $q=new lib_sqlite($this->NginxGetDB());
-        $q->QUERY_SQL("DELETE FROM modsecurity_whitelist WHERE wfrule=$ruleid");
-        if(!$q->ok){
-            $this->mysql_error=$q->mysql_error;
-            return false;
-        }
+        if($ruleid==0){$this->mysql_error="Rule ID = 0 ??";return false;}
+        if(!$this->modsecWhitelistAPI("delete",$ruleid)){return false;}
         $sock=new sockets();
         $sock->REST_API_NGINX("/reverse-proxy/wafnohup");
         return admin_tracks("Remove WAF rule $ruleid To global whitelist");
     }
     public function unwhite_serviceid($ruleid,$serviceid):bool{
         $ruleid=intval($ruleid);
-        if($ruleid==0){
-            $this->mysql_error="Rule ID = 0 ??";
-            return false;
-        }
+        if($ruleid==0){$this->mysql_error="Rule ID = 0 ??";return false;}
         $serviceid=intval($serviceid);
-        if($serviceid==0){
-            $this->mysql_error="Service ID = 0 ??";
-            return false;
-        }
-        $q=new lib_sqlite($this->NginxGetDB());
-        $q->QUERY_SQL("DELETE FROM modsecurity_whitelist WHERE wfrule=$ruleid AND serviceid=$serviceid");
-        if(!$q->ok){
-            $this->mysql_error=$q->mysql_error;
-            return false;
-        }
+        if($serviceid==0){$this->mysql_error="Service ID = 0 ??";return false;}
+        if(!$this->modsecWhitelistAPI("delete",$ruleid,$serviceid)){return false;}
         $servicename=$this->get_servicename($serviceid);
         $sock=new sockets();
         $sock->REST_API_NGINX("/reverse-proxy/wafnohup");
@@ -171,25 +130,15 @@ class modesctools{
     }
     public function whitelist_global_rule($ruleid):bool{
         $ruleid=intval($ruleid);
-        if($ruleid==0){
-            $this->mysql_error="Rule ID = 0 ??";
-            return false;
-        }
-        $q=new lib_sqlite($this->NginxGetDB());
-        $q->QUERY_SQL("DELETE FROM modsecurity_whitelist WHERE wfrule=$ruleid");
-        $q->QUERY_SQL("INSERT INTO modsecurity_whitelist (wfrule,serviceid) VALUES($ruleid,0)");
-        if(!$q->ok){
-           $this->mysql_error=$q->mysql_error;
-           return false;
-        }
+        if($ruleid==0){$this->mysql_error="Rule ID = 0 ??";return false;}
+        if(!$this->modsecWhitelistAPI("add",$ruleid)){return false;}
         return admin_tracks("Add WAF rule $ruleid To global whitelist");
     }
     public function LoadAllWhitelists():array{
-        $q=new lib_sqlite($this->NginxGetDB());
         $MAIN=array();
-        $sql="SELECT * FROM modsecurity_whitelist";
-        $results=$q->QUERY_SQL($sql);
-        foreach ($results as $index=>$ligne){
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist"),true);
+        if(!is_array($json) || !$json["Status"]){return $MAIN;}
+        foreach ($json["entries"] as $ligne){
             $ruleid=intval($ligne["wfrule"]);
             $serviceid=intval($ligne["serviceid"]);
             $spath=$ligne["spath"];
@@ -200,81 +149,37 @@ class modesctools{
             $MAIN[$ruleid][$serviceid]=$spath;
         }
         return $MAIN;
-
     }
 
     public function whitelist_serviceid_rule($ruleid,$serviceid):bool{
         $ruleid=intval($ruleid);
         $serviceid=intval($serviceid);
-        if($ruleid==0){
-            $this->mysql_error="Rule ID = 0 ??";
-            return false;
-        }
-        if($serviceid==0){
-            $this->mysql_error="Service ID = 0 ??";
-            return false;
-        }
-        $q=new lib_sqlite($this->NginxGetDB());
-        $q->QUERY_SQL("DELETE FROM modsecurity_whitelist WHERE wfrule=$ruleid AND serviceid=$serviceid");
-        $q->QUERY_SQL("INSERT INTO modsecurity_whitelist (wfrule,serviceid) VALUES($ruleid,$serviceid)");
-        if(!$q->ok){
-            $this->mysql_error=$q->mysql_error;
-            return false;
-        }
+        if($ruleid==0){$this->mysql_error="Rule ID = 0 ??";return false;}
+        if($serviceid==0){$this->mysql_error="Service ID = 0 ??";return false;}
+        if(!$this->modsecWhitelistAPI("add",$ruleid,$serviceid)){return false;}
         $sitename=$this->get_servicename($serviceid);
         return admin_tracks("Add WAF rule $ruleid To $sitename");
     }
     function whitelist_path_rule($ruleid,$serviceid,$path):bool{
-        $ruleid = intval($ruleid);
-        $serviceid = intval($serviceid);
-        if ($ruleid == 0) {
-            $this->mysql_error = "Rule ID = 0 ??";
-            return false;
-        }
-        if ($serviceid == 0) {
-            $this->mysql_error = "Service ID = 0 ??";
-            return false;
-        }
-        if (strlen($path) == 0) {
-            $this->mysql_error = "Path ID = 0 ??";
-            return false;
-        }
-        $q = new lib_sqlite($this->NginxGetDB());
-        $q->QUERY_SQL("DELETE FROM modsecurity_whitelist WHERE wfrule=$ruleid AND serviceid=$serviceid AND spath='$path'");
-        $q->QUERY_SQL("INSERT INTO modsecurity_whitelist (wfrule,serviceid,spath) VALUES($ruleid,$serviceid,'$path')");
-
-        if (!$q->ok) {
-            $this->mysql_error = $q->mysql_error;
-            return false;
-        }
-        $sitename = $this->get_servicename($serviceid);
+        $ruleid=intval($ruleid);
+        $serviceid=intval($serviceid);
+        if($ruleid==0){$this->mysql_error="Rule ID = 0 ??";return false;}
+        if($serviceid==0){$this->mysql_error="Service ID = 0 ??";return false;}
+        if(strlen($path)==0){$this->mysql_error="Path = empty ??";return false;}
+        if(!$this->modsecWhitelistAPI("add",$ruleid,$serviceid,$path)){return false;}
+        $sitename=$this->get_servicename($serviceid);
         $sock=new sockets();
         $sock->REST_API_NGINX("/reverse-proxy/wafnohup");
         return admin_tracks("Add WAF rule $ruleid To $sitename [$path]");
     }
     function unwhite_path($ruleid,$serviceid,$path):bool{
-        $ruleid = intval($ruleid);
-        $serviceid = intval($serviceid);
-        if ($ruleid == 0) {
-            $this->mysql_error = "Rule ID = 0 ??";
-            return false;
-        }
-        if ($serviceid == 0) {
-            $this->mysql_error = "Service ID = 0 ??";
-            return false;
-        }
-        if (strlen($path) == 0) {
-            $this->mysql_error = "Path ID = 0 ??";
-            return false;
-        }
-        $q = new lib_sqlite($this->NginxGetDB());
-        $q->QUERY_SQL("DELETE FROM modsecurity_whitelist WHERE wfrule=$ruleid AND serviceid=$serviceid AND spath='$path'");
-
-        if (!$q->ok) {
-            $this->mysql_error = $q->mysql_error;
-            return false;
-        }
-        $sitename = $this->get_servicename($serviceid);
+        $ruleid=intval($ruleid);
+        $serviceid=intval($serviceid);
+        if($ruleid==0){$this->mysql_error="Rule ID = 0 ??";return false;}
+        if($serviceid==0){$this->mysql_error="Service ID = 0 ??";return false;}
+        if(strlen($path)==0){$this->mysql_error="Path = empty ??";return false;}
+        if(!$this->modsecWhitelistAPI("delete",$ruleid,$serviceid,$path)){return false;}
+        $sitename=$this->get_servicename($serviceid);
         $sock=new sockets();
         $sock->REST_API_NGINX("/reverse-proxy/wafnohup");
         return admin_tracks("Delete WAF rule $ruleid from $sitename [$path]");
@@ -298,42 +203,7 @@ class modesctools{
 
 
 
-    public function modsecurity_tags($unique_id){
-        $q=new postgres_sql();
-        $sql="SELECT modsecurity_tags.tag FROM modsecurity_linked_tags,modsecurity_tags
-        WHERE modsecurity_linked_tags.tagid=modsecurity_tags.id AND modsecurity_linked_tags.ruleid=$unique_id";
 
-        $results=$q->QUERY_SQL($sql);
-        $tags=array();
-        while($ligne=@pg_fetch_assoc($results)){
-            $tags[]=$ligne["tag"];
-        }
-        return $tags;
-    }
-
-    public function modsecurity_patterns($fileid){
-        $q=new postgres_sql();
-        $sql="SELECT filename from modsecurity_patterns WHERE id=$fileid";
-        $ligne=$q->mysqli_fetch_array($sql);
-        return $ligne["filename"];
-    }
-
-    public function modsecurity_uris($urlid)
-    {
-        if(!isset($GLOBALS["modsecurity_uris"][$urlid])){
-            $q=new postgres_sql();
-            $ligne=$q->mysqli_fetch_array("SELECT * FROM modsecurity_uris where id='$urlid'");
-            $GLOBALS["modsecurity_uris"][$urlid]=$ligne;
-        }else{
-            $ligne=$GLOBALS["modsecurity_uris"][$urlid];
-        }
-
-        if(strlen($ligne["uri"])>90){
-            $ligne["uri"]=substr($ligne["uri"],0,87)."...";
-        }
-        return $ligne["uri"];
-
-    }
     public function CountOfOccurenceSite($ruleid,$serviceid):int{
         $q=new postgres_sql();
         $ligne=$q->mysqli_fetch_array("SELECT count(*) as tcount FROM modsecurity_audit where ruleid='$ruleid' and serviceid=$serviceid");
@@ -475,14 +345,7 @@ class modesctools{
         return $ligne;
     }
 
-    public function modsecurity_explain($explainid):string{
-        $q=new postgres_sql();
-        $ligne=$q->mysqli_fetch_array("SELECT report FROM modsecurity_explains where id=$explainid");
-        if(!isset($ligne["report"])){
-            $ligne["report"]="{none}";
-        }
-        return $ligne["report"];
-    }
+
 
 
 

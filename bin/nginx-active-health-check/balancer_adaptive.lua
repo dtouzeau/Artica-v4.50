@@ -84,7 +84,7 @@
 
 local cjson = require "cjson"
 local _M = {
-    _VERSION = '2.10.0',  -- adaptive_round_robin now uses weighted_round_robin for good servers
+    _VERSION = '2.9.1',  -- Documentation polish
 }
 
 -- Configuration
@@ -589,7 +589,7 @@ function _M.adaptive_least_response(servers, upstream_name, options)
 
         local weight = (type(srv) == "table" and srv.weight) or 1
 
-        -- Apply slow start if configured
+        -- Apply slow start if configured (returns fractional weight during ramp)
         if type(srv) == "table" and srv.slow_start and srv.slow_start > 0 then
             local addr = srv.addr or (host .. ":" .. port)
             local ok, balancer = pcall(require, "balancer")
@@ -598,7 +598,8 @@ function _M.adaptive_least_response(servers, upstream_name, options)
             end
         end
 
-        weight = math.max(weight or 1, 1)
+        -- Preserve sub-integer ramp granularity; floor at 0.01 to avoid zero division below.
+        if not weight or weight < 0.01 then weight = 0.01 end
 
         -- v2.4.0: Normalize address for consistent EWMA lookup (ChatGPT)
         local raw_addr = host .. ":" .. port
@@ -784,41 +785,30 @@ function _M.adaptive_round_robin(servers, upstream_name, options)
         good_servers = servers
     end
 
-    -- Weighted round-robin on filtered servers (v2.10.0: respects dynamic weights)
-    -- Convert to balancer format and use weighted_round_robin for proper weight handling
-    local balancer_servers = {}
-    for _, srv in ipairs(good_servers) do
-        local h, p = extract_host_port(srv)
-        if h and p then
-            table.insert(balancer_servers, {
-                addr = h .. ":" .. p,
-                weight = (type(srv) == "table" and srv.weight) or 1,
-                slow_start = (type(srv) == "table" and srv.slow_start) or 0,
-            })
+    -- Standard round-robin on filtered servers
+    local selected_index = 1
+
+    if #good_servers == 1 then
+        selected_index = 1
+    else
+        if not counter_dict then
+            -- Fallback: use time-based
+            local now_ms = ngx.now() * 1000
+            selected_index = (math.floor(now_ms) % #good_servers) + 1
+        else
+            -- Atomic increment
+            local key = (upstream_name or "default") .. ":adaptive_rr_counter"
+            local counter, err = counter_dict:incr(key, 1, 0)
+            if not counter then
+                selected_index = 1
+            else
+                selected_index = (counter % #good_servers) + 1
+            end
         end
     end
 
-    local balancer = require "balancer"
-    local selected_addr = balancer.weighted_round_robin(balancer_servers, upstream_name)
-
-    if not selected_addr then
-        -- Fallback to first server
-        local h, p = extract_host_port(good_servers[1])
-        if h then
-            local result = {host = h, port = p}
-            ngx.ctx.balancer_server = result
-            ngx.ctx.balancer_upstream = upstream_name
-            return result
-        end
-        return nil
-    end
-
-    -- Parse selected address back to host:port
-    local host, port_str = selected_addr:match("^%[([^%]]+)%]:(%d+)$")  -- IPv6
-    if not host then
-        host, port_str = selected_addr:match("^([^:]+):(%d+)$")  -- IPv4
-    end
-    local port = tonumber(port_str)
+    local server = good_servers[selected_index]
+    local host, port = extract_host_port(server)
 
     if not host then
         return nil

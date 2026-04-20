@@ -246,11 +246,8 @@ function enable_fw_js():bool{
 }
 function disable_all_perform():bool{
     admin_tracks("Disable all web services");
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="UPDATE nginx_services SET enabled=0";
-    $q->QUERY_SQL($sql);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/sites/disable-all", []);
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?disable-all=yes");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
     return true;
 }
 function disable_fw_perform():bool{
@@ -333,95 +330,20 @@ function duplicate_js():bool{
 function duplicate_perform():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $tpl->CLEAN_POST();
-    $fromid=$_POST["duplicate-from"];
+    $fromid=intval($_POST["duplicate-from"]);
     $new_servicename=$_POST["duplicate-name"];
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$fromid");
-    $tempvalue=md5(time().$new_servicename);
-    $fkeys=array();
-    $fvalues=array();
-    $exclude["goodconftime"]=true;
-    $exclude["badconf"]=true;
-    $exclude["badconf_error"]=true;
-    $exclude["ID"]=true;
-    $exclude["BackendErrDetail"]=true;
-    $exclude["BackendErr"]=true;
-    $exclude["rebooted"]=true;
-    $exclude["BackendAnalyzed"]=true;
-    $exclude["BackendAnalyzedTime"]=true;
-    $exclude["MaintenanceSite"]=true;
-    $exclude["BackendStatus"]=true;
-    $exclude["FrontendErr"]=true;
-    $exclude["CompileTime"]=true;
-    $exclude["FrontendErrDetail"]=true;
-    $exclude["BackendAnalyzeLock"]=true;
-    $exclude["phpengine"]=true;
-    $exclude["slalatencyok"]=true;
-    $exclude["ResolvErrDetail"]=true;
-    $exclude["latestlatency"]=true;
-    $exclude["latencyscore"]=true;
 
-    foreach ($ligne as $key=>$value){
-        if(is_numeric($key)){continue;}
-        if($key=="servicename"){$value=$tempvalue;}
-        if(isset($exclude[$key])){continue;}
-        $fkeys[]=$key;
-        $fvalues[]="'".$q->sqlite_escape_string2($value)."'";
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$fromid/duplicate", [
+        "servicename" => $new_servicename
+    ]),true);
 
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        echo $err;
+        return false;
     }
-    $sql="INSERT INTO nginx_services (".@implode(",",$fkeys).") 
-    VALUES (".@implode(",",$fvalues).")";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error."\n$sql";return false;}
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM nginx_services WHERE servicename='$tempvalue'");
-    $new_serviceid=intval($ligne["ID"]);
-    if($new_serviceid==0){echo "Unable to find $tempvalue";return false;}
-    $new_servicename=$q->sqlite_escape_string2($new_servicename);
-    $q->QUERY_SQL("UPDATE nginx_services SET servicename='$new_servicename' WHERE ID=$new_serviceid");
-    if(!$q->ok){echo $q->mysql_error;return false;}
+    $new_serviceid=intval($result["ID"]);
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($new_serviceid);
-
-    $results=$q->QUERY_SQL("SELECT * FROM `service_parameters` WHERE serviceid=$fromid");
-    foreach ($results as $index=>$ligne){
-        $zkeyz=$ligne["zkey"];
-        $value=$q->sqlite_escape_string2($ligne["zvalue"]);
-        $q->QUERY_SQL("INSERT INTO `service_parameters` (serviceid,zkey,zvalue) VALUES('$new_serviceid','$zkeyz','$value')");
-        if(!$q->ok){echo "service_parameters:$q->mysql_error";return false;}
-    }
-    $results=$q->QUERY_SQL("SELECT * FROM `stream_ports` WHERE serviceid=$fromid");
-    foreach ($results as $index=>$ligne){
-        $interface=$ligne["interface"];
-        $port=$ligne["port"];
-        $options=$q->sqlite_escape_string2($ligne["options"]);
-        $md5=md5($ligne["interface"].$ligne["port"].$new_serviceid);
-
-        $sql="INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) 
-    VALUES ($new_serviceid,'$interface',$port,'$md5','$options');";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "stream_ports:$q->mysql_error\n$sql";return false;}
-    }
-
-
-    $results=$q->QUERY_SQL("SELECT * FROM `ngx_stream_access_module` WHERE serviceid=$fromid");
-    foreach ($results as $index=>$ligne) {
-
-        $item=$ligne["item"];
-        $allow=intval($ligne["allow"]);
-
-        $q->QUERY_SQL("INSERT OR IGNORE INTO ngx_stream_access_module(serviceid,item,allow) 
-				VALUES ($new_serviceid,'$item',$allow)");
-        if(!$q->ok){echo "ngx_stream_access_module:$q->mysql_error";return false;}
-    }
-
-    $results=$q->QUERY_SQL("SELECT * FROM `backends` WHERE serviceid=$fromid");
-    foreach ($results as $index=>$ligne) {
-        $hostname=$ligne["hostname"];
-        $port=intval($ligne["port"]);
-        $options=$q->sqlite_escape_string2($ligne["options"]);
-        $q->QUERY_SQL("INSERT OR IGNORE INTO backends(serviceid,hostname,port,options) 
-				VALUES ($new_serviceid,'$hostname',$port,'$options')");
-        if(!$q->ok){echo "backends:$q->mysql_error\n$sql";}
-    }
     return true;
 }
 
@@ -453,20 +375,17 @@ function extract_domains_js():bool{
 function enable():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
 
-    $ID=$_GET["enable"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename,enabled FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
-    if($ligne["enabled"]==0){
-        $text="Enable Web service $servicename";
-        $q->QUERY_SQL("UPDATE nginx_services SET `enabled`='1' WHERE ID=$ID");
-    }else{
-        $text="Disable Web service $servicename";
-        $q->QUERY_SQL("UPDATE nginx_services SET `enabled`='0' WHERE ID=$ID");
+    $ID=intval($_GET["enable"]);
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/enable", []),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        $tpl->js_mysql_alert($err);
+        return false;
     }
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
+    $sock=new socksngix($ID);
+    $servicename=$sock->GetServiceName();
+    $text=($result["enabled"]==1) ? "Enable Web service $servicename" : "Disable Web service $servicename";
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
     admin_tracks($text);
     echo td_row_clean($ID)."\n";
     echo "
@@ -621,55 +540,27 @@ function goodconf_popup(){
 }
 function goodconf_save(){
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_POST["goodconf_id"];
+    $ID=intval($_POST["goodconf_id"]);
     $tpl->CLEAN_POST();
     $goodconf=base64_encode($_POST["goodconf"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL("UPDATE nginx_services SET goodconftime=0,goodconf='$goodconf',badconf='' WHERE ID=$ID");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+        "goodconf" => $goodconf,
+        "goodconftime" => 0,
+        "badconf" => ""
+    ]);
 }
 
 function delete():bool{
+    $ID = intval($_POST["delete"]);
+    $sock=new socksngix($ID);
+    $servicename=$sock->GetServiceName();
 
-    $ID = $_POST["delete"];
-    $q  = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
-
-    $tables[] = "stream_ports";
-    $tables[] = "backends";
-    $tables[] = "service_parameters";
-    $tables[] = "ngx_stream_access_module";
-    $tables[] = "ngx_directories";
-    $tables[] = "ngx_subdir_items";
-    $tables[] = "httrack_sites";
-    $tables[] = "modsecurity_whitelist";
-    $tables[] = "directories_backends";
-
-    foreach ($tables as $tablename){
-        if(!$q->TABLE_EXISTS($tablename)) {continue;}
-         $q->QUERY_SQL("DELETE FROM $tablename WHERE serviceid='$ID'");
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/delete", []),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        echo $err;
+        return false;
     }
-
-    $q->QUERY_SQL("DELETE FROM nginx_services WHERE ID='$ID'");
-
-    if($q->TABLE_EXISTS("mod_security_rules")) {
-        $results = $q->QUERY_SQL("SELECT ID FROM mod_security_rules WHERE siteid='$ID'");
-        foreach ($results as $index => $ligne) {
-            $ruleid = $ligne["ruleid"];
-            if ($q->TABLE_EXISTS("mod_security_patterns")) {
-                $q->QUERY_SQL("DELETE FROM mod_security_patterns WHERE ruleid=$ruleid");
-            }
-            if ($q->TABLE_EXISTS("mod_security_rules")) {
-                $q->QUERY_SQL("DELETE FROM mod_security_rules WHERE ID=$ruleid");
-            }
-        }
-    }
-
-
-    if(!$q->ok){echo $q->mysql_error;return false;}
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/delete/$ID");
     admin_tracks("Removed reverse-proxy service $servicename");
     return true;
 }
@@ -2386,17 +2277,15 @@ function www_hosts_delete_perform():bool{
     $array=unserialize($svalue);
     $ID=$array["service-id"];
     $value=$array["value"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT `servicename`,`hosts` FROM nginx_services WHERE ID=$ID");
-    $Zhosts=explode("||",$ligne["hosts"]);
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
+    $Zhosts=explode("||",$ligne["Hosts"]);
     $MAIN=array();
-
 
     foreach ($Zhosts as $domain){
         $domain=trim(strtolower($domain));
         if($domain==null){continue;}
         $MAIN[$domain]=true;
-
     }
     unset($MAIN[$value]);
     $F=array();
@@ -2407,7 +2296,9 @@ function www_hosts_delete_perform():bool{
         $F[]=$domain;
     }
     $newval=trim(@implode("||",$F));
-    $q->QUERY_SQL("UPDATE nginx_services SET `hosts`='$newval',`goodconftime`=0 WHERE ID=$ID");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+        "hosts" => $newval, "goodconftime" => 0
+    ]);
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($ID);
     $servicename=get_servicename($ID);
     admin_tracks("Delete $value from reverse-proxy service $servicename");
@@ -2419,10 +2310,11 @@ function www_hosts_save():bool{
     $ID=$_POST["hosts-id"];
     $F=array();
     $tpl->CLEAN_POST();
-    $q=new lib_sqlite(NginxGetDB());
     if(!isset($_POST["redirect"])){$_POST["redirect"]="";}
-    $ligne=$q->mysqli_fetch_array("SELECT `servicename`,`hosts` FROM nginx_services WHERE ID=$ID");
-    $Zhosts=explode("||",$ligne["hosts"]);
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
+    $hosts=isset($ligne["Hosts"]) ? $ligne["Hosts"] : "";
+    $Zhosts=explode("||",$hosts);
 
     foreach ($Zhosts as $domain){
         $domain=trim(strtolower($domain));
@@ -2432,12 +2324,10 @@ function www_hosts_save():bool{
             continue;
         }
         $MAIN[$domain]="";
-
     }
     $domain=trim(strtolower($_POST["hosts"]));
     $redirect=trim(strtolower($_POST["redirect"]));
     $MAIN[$domain]=$redirect;
-
 
     foreach($MAIN as $domain=>$redirect){
         $domain=trim(strtolower($domain));
@@ -2450,8 +2340,9 @@ function www_hosts_save():bool{
     }
 
     $newval=trim(@implode("||",$F));
-    $q->QUERY_SQL("UPDATE nginx_services SET `hosts`='$newval',`goodconftime`=0 WHERE ID=$ID");
-    if(!$q->ok){echo $q->mysql_error;return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+        "hosts" => $newval, "goodconftime" => 0
+    ]);
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($ID);
     $servicename=get_servicename($ID);
     admin_tracks_post("Add/Edit domain for reverse-proxy service  $servicename");
@@ -2574,7 +2465,6 @@ function new_www_after():bool{
 
 function new_www_save():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $q=new lib_sqlite(NginxGetDB());
     $servicename=$_POST["servicename"];
     $_SESSION["NEWNGINXAFTER"]=array();
 
@@ -2590,143 +2480,40 @@ function new_www_save():bool{
     }
 
     $ztype=intval($_POST["ztype"]);
-    $port=443;
     if($ztype==0){
         echo $tpl->post_error("Please specify the web service type");
         return false;
     }
 
+    $result = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site", [
+        "servicename" => $servicename,
+        "type" => $ztype
+    ]), true);
 
-    if($ztype==14){
-        $results=$q->QUERY_SQL("SELECT ID FROM nginx_services WHERE isDefault=1");
-        foreach ($results as $index=>$xline){
-            $q->QUERY_SQL("UPDATE nginx_services SET isDefault=0 WHERE ID={$xline["ID"]}");
-            $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/{$xline["ID"]}");
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
-        }
-    }
-    if($ztype==16){
-        // Special META SERVER
+    if (!is_array($result) || !$result["Status"]) {
+        $err = is_array($result) ? $result["Error"] : "reverse-proxy daemon unavailable";
+        echo $tpl->post_error($err);
+        return false;
     }
 
-    if(preg_match("#^(http|https):\/\/(.+)#",$servicename)){
-        $zuri=parse_url($servicename);
-        $servicename=$zuri["host"];
-    }
-
-    $servicename=sqlite_escape_string2($servicename);
-    $TEMPKEY=md5(time().rand(0,time()));
-    $q->QUERY_SQL("INSERT INTO nginx_services (`type`,`servicename`,`enabled`,`rebooted`) VALUES ('$ztype','$TEMPKEY',1,0)");
-    if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM nginx_services WHERE servicename='$TEMPKEY'");
-    $ID=intval($ligne["ID"]);
-
-    new_www_defaults_ports($servicename,$ztype,$ID);
-    new_www_defaults_ports2($servicename,$ztype,$ID);
-    new_www_dnsports($servicename,$ztype,$ID);
-
-    // If service name is a domain ?
-    if(is_valid_domain_name($servicename)){
-        $q->QUERY_SQL("UPDATE nginx_services SET `hosts`='$servicename',`goodconftime`=0 WHERE ID=$ID");
-    }
-    $q->QUERY_SQL("UPDATE nginx_services SET `servicename`='$servicename' WHERE ID=$ID");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
+    $_SESSION["NEWNGINXAFTER"]["SITEID"] = intval($result["ID"]);
     return admin_tracks("Add new reverse-proxy site $servicename");
-}
-function new_www_defaults_ports($servicename,$servicetype,$ID):bool{
-    $port=443;
-    if($servicetype==14){return true;}
-    if($servicetype==5){return true;}
-    if($servicetype==16){$port=443;}
-    if(isHarmpID()) { return true;}
-    $options["ssl"]=1;
-    $options["http2"]=1;
-
-    if(preg_match("#^(http|https):\/\/(.+)#",$servicename)){
-        $zuri=parse_url($servicename);
-        $servicename=$zuri["host"];
-        if(isset($zuri["port"])){
-            $port=$zuri["port"];
-        }
-    }
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $q=new lib_sqlite(NginxGetDB());
-    // Try to found the best interface for default port
-    $nics = $tpl->list_interfaces(true);
-    foreach ($nics as $int => $none) {
-        $zn[] = $int;
-    }
-    $options=array();
-    if($port==443){
-        $options["ssl"]=1;
-        $options["http2"]=1;
-    }
-    $options=base64_encode(serialize($_POST));
-    $interface = $zn[0];
-    if (preg_match("#eth([0-9]+)#", $interface, $re)) {
-        $interface = "eth{$re[1]}";
-        $md5 = md5($interface . $port . $ID);
-        $q->QUERY_SQL("INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) 
-                    VALUES ($ID,'$interface',$port,'$md5','$options')");
-    }
-
-    return true;
-}
-function new_www_dnsports($servicename,$servicetype,$ID):bool{
-    if($servicetype<>14){return true;}
-    $port=443;
-    $q=new lib_sqlite(NginxGetDB());
-    if(preg_match("#^(.+?):([0-9]+)$#",$servicename,$re)){
-        $port=$re[2];
-    }
-    $md5 = md5($port . $ID);
-    if($port==443){
-        $options["ssl"]=1;
-        $options["http2"]=1;
-    }
-    $options=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($_POST);
-    $q->QUERY_SQL("INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) VALUES ($ID,'',$port,'$md5','$options')");
-
-    return true;
-}
-function new_www_defaults_ports2($servicename,$servicetype,$ID):bool{
-    if($servicetype==14){return true;}
-    if($servicetype==5){return true;}
-    if(!isHarmpID()) { return true;}
-    $port=443;
-
-    if(preg_match("#^(.+?):([0-9]+)$#",$servicename,$re)){
-        $port=$re[2];
-    }
-    $q=new lib_sqlite(NginxGetDB());
-
-    $md5 = md5($port . $ID);
-    if($port==443){
-        $options["ssl"]=1;
-        $options["http2"]=1;
-    }
-    $options=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($_POST);
-    $q->QUERY_SQL("INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) VALUES ($ID,'',$port,'$md5','$options')");
-
-    return true;
 }
 function www_save():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $tpl->CLEAN_POST_XSS();
-    $q=new lib_sqlite(NginxGetDB());
     $ID=intval($_POST["ID"]);
     if($ID==0){return new_www_save();}
     $isDefault=intval($_POST["isDefault"]);
 
-    if($ID>0){
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
-        $isDefaultOld=intval($ligne["isDefault"]);
-        if($isDefaultOld<>$isDefault){
-            $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/RemoveDefaults");
-        }
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
+    $isDefaultOld=intval($ligne["isDefault"]);
+    if($isDefaultOld<>$isDefault){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/RemoveDefaults");
     }
+
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($ID);
-    if(!$q->ok){echo $q->mysql_error;}
     $sockngix=new socksngix($ID);
 
     $pprotoFound=false;
@@ -2738,7 +2525,6 @@ function www_save():bool{
         $pprotoFound=true;
         $pproto[]=$re[1];
         unset($_POST[$key]);
-
     }
 
     if($pprotoFound) {
@@ -2746,13 +2532,15 @@ function www_save():bool{
     }
     foreach ($_POST as $key=>$value){
         $sockngix->SET_INFO($key, $value);
-
     }
 
+    $servicename=null;
     if(isset($_POST["servicename"])) {
-        $servicename = sqlite_escape_string2($_POST["servicename"]);
-        $q->QUERY_SQL("UPDATE nginx_services SET `servicename`='$servicename', isDefault=$isDefault WHERE ID=$ID");
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
+        $servicename = $_POST["servicename"];
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+            "servicename" => $servicename,
+            "isDefault" => $isDefault
+        ]);
     }
     if($ID>0) {
         $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
@@ -2850,28 +2638,22 @@ function td_row_waf($ID):string{
 function MaintenanceSite():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["MaintenanceSite"];
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT MaintenanceSite FROM nginx_services WHERE ID=$ID");
+    $ID=intval($_GET["MaintenanceSite"]);
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
     $MaintenanceSite=intval($ligne["MaintenanceSite"]);
-    if($MaintenanceSite==0){
-        $Text="enabled";
-        $q->QUERY_SQL("UPDATE nginx_services SET MaintenanceSite=1 WHERE ID=$ID");
-        if(!$q->ok){
-            $tpl->js_error($q->mysql_error);
-            return false;
-        }
+    $newVal=($MaintenanceSite==0) ? 1 : 0;
+    $Text=($newVal==1) ? "enabled" : "disabled";
 
-    }else{
-        $Text="disabled";
-        $q->QUERY_SQL("UPDATE nginx_services SET MaintenanceSite=0 WHERE ID=$ID");
-        if(!$q->ok){
-            $tpl->js_error($q->mysql_error);
-            return false;
-        }
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+        "MaintenanceSite" => $newVal
+    ]),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        $tpl->js_error($err);
+        return false;
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
     header("content-type: application/x-javascript");
     $Sitename=get_servicename($ID);
     echo "Loadjs('$page?td-row=$ID');\n";
@@ -3753,11 +3535,14 @@ function td_row_servicename($id=0):string{
         $id = intval($_GET["td-status"]);
     }
     if($id==0){
+        VERBOSE("ID==0 !!",__LINE__);
         return "";
     }
 
     $q                          = new lib_sqlite(NginxGetDB());
     $sockngix                   = new socksngix($id);
+
+
     $ligne=$q->mysqli_fetch_array("SELECT enabled,badconf,servicename FROM nginx_services WHERE ID=$id");
     $enabled=$ligne["enabled"];
     $badconflength=strlen($ligne["badconf"]);

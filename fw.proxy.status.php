@@ -626,7 +626,19 @@ function page_status(){
 	
 }
 function widget_cache():string{
+
+    $SquidMicrosoftConnectedCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMicrosoftConnectedCache"));
+    $SquidDisableMemoryCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableMemoryCache"));
+
+    if($SquidMicrosoftConnectedCache==1){
+        $SquidDisableMemoryCache=1;
+    }
     $tpl=new template_admin();
+    if($SquidDisableMemoryCache==1){
+        return $tpl->widget_h("grey","fas fa-hdd","{inactive2}","{used_cache}","minheight:150px");
+    }
+
+
     $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/mgrinfo"));
     $MgrInfo=$data->Info;
     $storage_swap_size=$MgrInfo->storage_swap_size;
@@ -646,9 +658,6 @@ function widget_cache():string{
     return $tpl->widget_h("grey","fas fa-hdd","{none}","{used_cache}","minheight:150px");
 
 }
-
-//
-
 function widget_cpus(){
     $tpl=new template_admin();
     $CPU=CountOfSNMP();
@@ -671,7 +680,6 @@ function widget_cpus(){
     return $tpl->widget_h("$color","fas fa-microchip","{$cpu_usage}%","CPUs $CPU/$CPU_NUMBER",
         "minheight:150px");
 }
-
 function  widget_latency():string{
     $tpl=new template_admin();
     $color="lazur";
@@ -707,7 +715,6 @@ function secondsToMinutes($seconds) {
     $remainingSeconds = intval($seconds) % 60;
     return [$minutes, $remainingSeconds];
 }
-
 function  widget_requests():string{
     $tpl=new template_admin();
     $Squid5minStorage=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Squid5minStorage"));
@@ -725,6 +732,17 @@ function  widget_requests():string{
 }
 function widget_memory():string{
     $tpl=new template_admin();
+
+    $SquidMicrosoftConnectedCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMicrosoftConnectedCache"));
+    $SquidDisableMemoryCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableMemoryCache"));
+
+    if($SquidMicrosoftConnectedCache==1){
+        $SquidDisableMemoryCache=1;
+    }
+    if($SquidDisableMemoryCache==1){
+        return $tpl->widget_h("grey", "fad fa-memory", "{inactive2}", "{memory_cache}", "minheight:150px");
+    }
+
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/monitor/filedesc"));
     if(!$json->Status){
         return $tpl->widget_h("red","fad fa-memory","{error}","{memory_cache}","minheight:150px");
@@ -837,6 +855,16 @@ function app_status(){
 		}
 		
 	}
+    $SquidMicrosoftConnectedCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMicrosoftConnectedCache"));
+    $SquidDisableMemoryCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableMemoryCache"));
+
+    if($SquidMicrosoftConnectedCache==1){
+        $SquidDisableMemoryCache=1;
+    }
+
+    if($SquidDisableMemoryCache==1){
+        $cache_capacity=$tpl->widget_h("grey","fas fa-database","{inactive2}","{caching}","minheight:150px");
+    }
 
 
     $widget_filedescriptors = widget_filedescriptors();

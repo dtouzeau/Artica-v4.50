@@ -315,10 +315,7 @@ function enable_js():bool{
     if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
     if(intval($ligne["enabled"])==0){$enable=1;}else{$enable=0;}
 
-    $sql="UPDATE httrack_sites SET enabled='$enable' WHERE ID='$ID'";
-    writelogs($sql,__FUNCTION__,__FILE__,__LINE__);
-    $q->QUERY_SQL("UPDATE httrack_sites SET enabled='$enable' WHERE ID='$ID'");
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"httrack_sites","set"=>["enabled"=>$enable],"where"=>["ID"=>$ID]]);
     admin_tracks("Set WebCopy enable=$enable for $enforceuri reversed website");
     return true;
 
@@ -413,7 +410,7 @@ function delete_perform(){
 
     $serviceid=intval($ligne["enforceuri"]);
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?webcopy-delete=$ID");
-    $q->QUERY_SQL("UPDATE httrack_sites SET actiondel=1 WHERE ID=$ID");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"httrack_sites","set"=>["actiondel"=>"1"],"where"=>["ID"=>$ID]]);
     admin_tracks("$serviceid mirrored website removed");
 }
 

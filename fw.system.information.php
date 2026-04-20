@@ -567,6 +567,23 @@ function table(){
         if($CHASSIS<>null){$tr[]=$CHASSIS;}
 
     }
+
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HYPERV_HOST"))==1){
+        $img="img/server-hyperv-256.png";
+    }
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NUTANIX_HOST"))==1){
+        $img="img/server-nutanix-256.png";
+    }
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("XEN_HOST"))==1){
+        $img="img/server-citrix-256.png";
+    }
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VMWARE_HOST"))==1){
+        $img="img/server-vmware-256.png";
+    }
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("QEMU_HOST"))==1){
+        $img="img/server-qemu-256.png";
+    }
+
     if($publicip==null){$publicip="x.x.x.x";}
     $bg_image="";
     $LINUX_INFO_ARRAY=array();

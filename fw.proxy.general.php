@@ -30,6 +30,7 @@ if(isset($_GET["section-identity-popup"])){section_identity_popup();exit;}
 if(isset($_GET["section-table1-js"])){table1_js();exit;}
 if(isset($_GET["section-table1-popup"])){table1_real();exit;}
 
+
 if(isset($_GET["section-ftp-js"])){section_ftp_js();exit;}
 if(isset($_GET["section-ftp-popup"])){section_ftp_popup();exit;}
 
@@ -55,6 +56,10 @@ if(isset($_GET["ntlm-js"])){ntlm_js();exit;}
 if(isset($_GET["ntlm-auth"])){ntlm_auth();exit;}
 if(isset($_GET["ntlm-auth-flat"])){ntlm_auth_flat();exit;}
 if(isset($_GET["ntlm-auth-popup"])){ntlm_auth_popup();exit;}
+
+if(isset($_GET["mmc-js"])){mmc_js();exit;}
+if(isset($_GET["mmc-popup"])){mmc_popup();exit;}
+if(isset($_POST["SquidMicrosoftConnectedCache"])){mmc_save();exit;}
 
 if(isset($_GET["dns-main"])){dns_settings();exit;}
 if(isset($_GET["dns"])){dns_settings();exit;}
@@ -1497,8 +1502,30 @@ function SquidNoAccessLogs_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
    return  $tpl->js_dialog("{access_events}","$page?SquidNoAccessLogs-popup=yes");
-
 }
+function mmc_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return  $tpl->js_dialog2("Microsoft Connected Cache","$page?mmc-popup=yes",650);
+}
+
+function mmc_popup():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $SquidMicrosoftConnectedCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMicrosoftConnectedCache"));
+    $html=$tpl->BigCircleCheckbox("SquidMicrosoftConnectedCache",
+        "Microsoft Connected Cache","{microsoft_connected_cache_explain}",
+        $SquidMicrosoftConnectedCache,
+        "LoadAjax('proxy-general-table','$page?table1=yes');dialogInstance2.close();");
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+function mmc_save():bool{
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidMicrosoftConnectedCache",$_POST["SquidMicrosoftConnectedCache"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/ccm");
+    return admin_tracks("Set Proxy Microsoft Connected Cache feature to {$_POST["SquidMicrosoftConnectedCache"]}");
+}
+
 function SquidNoAccessLogs_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -1540,18 +1567,27 @@ function section_pconnections_popup():bool{
     if($SquidPconnLifetime==0){$SquidPconnLifetime=7200;}
 
 
-
+    $SquidMicrosoftConnectedCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMicrosoftConnectedCache"));
     $SquidServerPersistentConnections=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidServerPersistentConnections"));
 
     $html[]=$tpl->div_explain("{persistent_connections_explain}");
 
 
     $form[]=$tpl->field_section("{clients}&nbsp;$arrow&nbsp;{APP_SQUID}","");
-    $form[]=$tpl->field_checkbox("SquidClientPersistentConnections","{client_persistent_connections}",$SquidClientPersistentConnections,false,"{client_persistent_connections_explain}");
+    if($SquidMicrosoftConnectedCache==0) {
+        $form[] = $tpl->field_checkbox("SquidClientPersistentConnections", "{client_persistent_connections}", $SquidClientPersistentConnections, false, "{client_persistent_connections_explain}");
+    }else{
+        $form[] = $tpl->field_hidden("SquidClientPersistentConnections",1);
+    }
     $form[]=$tpl->field_numeric("client_idle_pconn_timeout","{timeout} ({seconds})",$client_idle_pconn_timeout,false);
 
     $form[]=$tpl->field_section("{APP_SQUID}&nbsp;$arrow&nbsp;{domains}","");
-    $form[]=$tpl->field_checkbox("SquidServerPersistentConnections","{server_persistent_connections}",$SquidServerPersistentConnections,false,"{server_persistent_connections_explain}");
+
+    if($SquidMicrosoftConnectedCache==0) {
+        $form[] = $tpl->field_checkbox("SquidServerPersistentConnections", "{server_persistent_connections}", $SquidServerPersistentConnections, false, "{server_persistent_connections_explain}");
+    }else{
+        $form[] = $tpl->field_hidden("SquidServerPersistentConnections",1);
+    }
     $form[]=$tpl->field_numeric("server_idle_pconn_timeout","{timeout} ({seconds})",$server_idle_pconn_timeout,false);
     $form[]=$tpl->field_checkbox("detect_broken_pconn","{detect_broken_pconn}",$detect_broken_pconn,false);
     $form[]=$tpl->field_numeric("SquidPconnLifetime","{pconn_lifetime} ({seconds})",$SquidPconnLifetime,"{pconn_lifetime_text}");
@@ -1738,7 +1774,7 @@ function table1():bool{
     $SquidAnonymousBrowsing=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidAnonymousBrowsing"));
     $forwarded_for=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("forwarded_for"));
     if($forwarded_for==null){$forwarded_for="on";}
-
+    $SquidMicrosoftConnectedCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMicrosoftConnectedCache"));
 
     $SquidAddVersion=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidAddVersion"));
     $cache_mgr_user=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("cache_mgr_user");
@@ -1755,6 +1791,7 @@ function table1():bool{
     $myhostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
     $SquidDebug5=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDebug5"));
     $SquidDebugAcls=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDebugAcls"));
+    $SquidDisableMemoryCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableMemoryCache"));
 
     $tpl->table_form_field_js("Loadjs('$page?section-identity-js=yes')");
 
@@ -1763,6 +1800,14 @@ function table1():bool{
     $tpl->table_form_field_text("{visible_hostname}",$myhostname,ico_server);
     $tpl->table_form_field_text("{unique_hostname}",$uuid,ico_server);
     $tpl->table_form_field_text("{cache_mgr_user}",$cache_mgr_user,ico_message);
+
+    $tpl->table_form_field_js("Loadjs('$page?mmc-js=yes')");
+    $tpl->table_form_field_bool("Microsoft Connected Cache",$SquidMicrosoftConnectedCache,ico_microsoft);
+    if($SquidMicrosoftConnectedCache==1){
+        $SquidDisableMemoryCache=1;
+    }
+
+
 
 
     $tpl->table_form_field_js("Loadjs('$page?section-table1-js=yes')");
@@ -1803,7 +1848,7 @@ function table1():bool{
 
 
     if($maximum_object_size_in_memory==0){$maximum_object_size_in_memory=512;}
-    $SquidDisableMemoryCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableMemoryCache"));
+
     if($SquidDisableMemoryCache==0){$enable_memory_cache=1;}else{$enable_memory_cache=0;}
 
     $tpl->table_form_field_js("Loadjs('$page?section-memory-js=yes')");
@@ -1820,6 +1865,10 @@ function table1():bool{
         $tpl->table_form_field_text("{central_memory}",@implode(" ",$ttmem),ico_memory);
         
     }else{
+        if($SquidMicrosoftConnectedCache==1){
+            $tpl->table_form_field_js("");
+        }
+
         $tpl->table_form_field_bool("{central_memory}",0,ico_memory);
     }
 
@@ -1850,12 +1899,17 @@ function table1():bool{
     $PPCnx=array();
     $arrow="<i class=\"fa-solid fa-arrow-right-long-to-line\"></i>";
     $SquidClientPersistentConnections=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidClientPersistentConnections"));
+    $SquidMicrosoftConnectedCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMicrosoftConnectedCache"));
     $SquidServerPersistentConnections=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidServerPersistentConnections"));
+
+    if($SquidMicrosoftConnectedCache==1){
+        $SquidClientPersistentConnections=1;
+        $SquidServerPersistentConnections=1;
+    }
+
 
     $client_idle_pconn_timeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("client_idle_pconn_timeout"));
     $server_idle_pconn_timeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("server_idle_pconn_timeout"));
-    $detect_broken_pconn=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("detect_broken_pconn"));
-    $SquidPconnLifetime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidPconnLifetime"));
 
     if($client_idle_pconn_timeout==0){$client_idle_pconn_timeout=120;}
     if($server_idle_pconn_timeout==0){$server_idle_pconn_timeout=30;}

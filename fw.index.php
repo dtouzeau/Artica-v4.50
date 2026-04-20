@@ -1655,7 +1655,6 @@ function app_status(){
 	</thead>			
 	");
 	if($FW){echo suricata_status();}
-	if($FW){echo ip_audit_status();}
 	if($users->AsVPNManager){echo openvpn_status();}
 	echo "</table>";
 	echo "<script>LoadAjax('main-dashboard-status','fw.proxy.php?app-status=yes')</script>";
@@ -1663,26 +1662,6 @@ function app_status(){
 	
 	
 }
-
-
-
-
-function ip_audit_status(){
-	$sock=new sockets();
-	$tpl=new template_admin();
-	$users=new usersMenus();
-	if(!$users->IPAUDIT_INSTALLED){return $tpl->status_array("{APP_IPAUDIT}","{not_installed}",false,true);}
-	$IpAuditEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IpAuditEnabled"));
-	$IpAuditVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("IpAuditVersion");
-	if($IpAuditVersion<>null){$IpAuditVersion="v$IpAuditVersion";}
-	if($IpAuditEnabled==0){return $tpl->status_array("{APP_IPAUDIT}","$IpAuditVersion",false,true);}
-	
-	$sock->getFrameWork('ipaudit.php?status=yes');
-	$ini=new Bs_IniHandler("ressources/logs/web/ipaudit.status");
-	return $tpl->DAEMON_STATUS_ROW("APP_IPAUDIT",$ini,null);
-	
-}
-
 function suricata_status(){
 	$sock=new sockets();
 	$tpl=new template_admin();

@@ -31,9 +31,11 @@ function delete_js(){
 }
 function  delete():bool{
 	$ID=intval($_POST["delete"]);
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$q->QUERY_SQL("DELETE FROM `stream_ports` WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;return false;}
+	$result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/stream-ports/delete", ["ID"=>$ID]),true);
+	if(!is_array($result) || !$result["Status"]){
+	    $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+	    echo $err;return false;
+	}
     return admin_tracks("Remove reverse-proxy port #$ID");
 }
 
@@ -106,25 +108,25 @@ function port_popup(){
 function port_save():bool{
 	$tpl=new template_admin();$tpl->CLUSTER_CLI=true;
 	$tpl->CLEAN_POST();
-	$ID=$_POST["ID"];
+	$ID=intval($_POST["ID"]);
 	$serviceid=intval($_POST['serviceid']);
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$q->QUERY_SQL("DELETE FROM stream_ports WHERE serviceid=0");
-    $interface=$_POST["interface"];
-	$md5=md5($_POST["interface"].$_POST["port"]);
+	$interface=$_POST["interface"];
 	$port=intval($_POST["port"]);
 	$options=base64_encode(serialize($_POST));
-	if($ID==0){
-		$q->QUERY_SQL("INSERT OR IGNORE INTO stream_ports(serviceid,interface,port,zmd5,options) VALUES ($serviceid,'$interface',$port,'$md5','$options')");
-		if(!$q->ok){echo $q->mysql_error;}
-		return false;
+
+	$result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/stream-ports/save", [
+	    "ID"        => $ID,
+	    "serviceid" => $serviceid,
+	    "interface" => $interface,
+	    "port"      => $port,
+	    "options"   => $options
+	]),true);
+	if(!is_array($result) || !$result["Status"]){
+	    $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+	    echo $err;return false;
 	}
-	
-	$q->QUERY_SQL("DELETE FROM stream_ports WHERE interface='$interface' AND port='$port'");
-	$q->QUERY_SQL("INSERT OR IGNORE INTO stream_ports (serviceid,interface,port,zmd5,options) VALUES ($serviceid,'$interface',$port,'$md5','$options')");
-	if(!$q->ok){echo $q->mysql_error;}
+	if($ID==0){return false;}
 	return admin_tracks_post("Create a new reverse-proxy Port");
-	
 }
 
 function table():bool{

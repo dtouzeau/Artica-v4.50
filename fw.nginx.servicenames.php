@@ -125,10 +125,14 @@ function ArrayToHosts($MAIN=array()):string{
     return trim(@implode("||",$F));
 }
 function SaveHosts($HostsToArray=array(),$serviceid=0):bool{
-    $q=new lib_sqlite(NginxGetDB());
     $newval=ArrayToHosts($HostsToArray);
-    $q->QUERY_SQL("UPDATE nginx_services SET `hosts`='$newval',`goodconftime`=0 WHERE ID=$serviceid");
-    if(!$q->ok){echo $q->mysql_error;return false;}
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$serviceid/update-service", [
+        "hosts" => $newval, "goodconftime" => 0
+    ]),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        echo $err;return false;
+    }
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($serviceid);
     $servicename=get_servicename($serviceid);
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
@@ -149,13 +153,14 @@ function new_save():bool{
 }
 function www_hosts_save():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_POST["hosts-id"];
+    $ID=intval($_POST["hosts-id"]);
     $F=array();
     $tpl->CLEAN_POST();
-    $q=new lib_sqlite(NginxGetDB());
     if(!isset($_POST["redirect"])){$_POST["redirect"]="";}
-    $ligne=$q->mysqli_fetch_array("SELECT `servicename`,`hosts` FROM nginx_services WHERE ID=$ID");
-    $Zhosts=explode("||",$ligne["hosts"]);
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
+    $hosts=isset($ligne["Hosts"]) ? $ligne["Hosts"] : "";
+    $Zhosts=explode("||",$hosts);
 
     foreach ($Zhosts as $domain){
         $domain=trim(strtolower($domain));
@@ -165,12 +170,10 @@ function www_hosts_save():bool{
             continue;
         }
         $MAIN[$domain]="";
-
     }
     $domain=trim(strtolower($_POST["hosts"]));
     $redirect=trim(strtolower($_POST["redirect"]));
     $MAIN[$domain]=$redirect;
-
 
     foreach($MAIN as $domain=>$redirect){
         $domain=trim(strtolower($domain));
@@ -183,8 +186,13 @@ function www_hosts_save():bool{
     }
 
     $newval=trim(@implode("||",$F));
-    $q->QUERY_SQL("UPDATE nginx_services SET `hosts`='$newval',`goodconftime`=0 WHERE ID=$ID");
-    if(!$q->ok){echo $q->mysql_error;return false;}
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+        "hosts" => $newval, "goodconftime" => 0
+    ]),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        echo $err;return false;
+    }
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($ID);
     $servicename=get_servicename($ID);
     admin_tracks_post("Add/Edit domain for reverse-proxy service  $servicename");

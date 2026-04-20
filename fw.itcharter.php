@@ -42,15 +42,19 @@ function tabs(){
         echo $tpl->tabs_default($array);
         return true;
     }
-
+    $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
 
 
 
 
 	$array["{status}"]="$page?main-status=yes";
-	$array["{it_charters}"]="fw.itcharter.table.php";
+    if($Enablehacluster==0) {
+        $array["{it_charters}"] = "fw.itcharter.table.php";
+    }
     $array["{sessions}"]="fw.itcharter.sessions.php";
-	$array["{events}"]="fw.itcharter.events.php";
+    if($Enablehacluster==0) {
+        $array["{events}"] = "fw.itcharter.events.php";
+    }
 
 	
 	echo $tpl->tabs_default($array);
@@ -190,7 +194,7 @@ function itcharter_db_popup():bool{
     if($ITChartDatabaseSize==0){$ITChartDatabaseSize=50;}
 
     $form[]=$tpl->field_numeric("ITChartDatabaseSize","{squidguard_database_size} (MB)",$ITChartDatabaseSize);
-    $restart=$tpl->framework_buildjs("/itcharter/uninstall","ichart.progress","ichart.install.log","itchart-progress-install",
+    $restart=$tpl->framework_buildjs("/itcharter/restart","ichart.progress","ichart.install.log","itchart-progress-install",
         "dialogInstance2.close();LoadAjax('itcharter-config','$page?itcharter-config-static=yes');");
 
     $html[]="<div id='itchart-progress-install' style='margin-left: 10px;'></div>";
@@ -291,7 +295,8 @@ function itcharter_status():bool{
             return false;
         }
         $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/status"));
-        $bsini=new Bs_IniHandler($json->Info);
+        $bsini=new Bs_IniHandler();
+        $bsini->loadString($json->Info);
         $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ichart.restart.progress";
         $ARRAY["LOG_FILE"]=PROGRESS_DIR."/ichart.restart.log";
         $ARRAY["CMD"]="/itcharter/restart";
@@ -304,8 +309,10 @@ function itcharter_status():bool{
         return true;
 }
 function redis_status(){
-    $redis=new Redis();
     $tpl=new template_admin();
+
+    $redis=new Redis();
+
     try {
         $redis->connect('127.0.0.1','6123');
     } catch (Exception $e) {
@@ -315,7 +322,8 @@ function redis_status(){
 
     $MAIN=$redis->info();
     $perc=$MAIN["used_memory_human"];
-    echo $tpl->widget_vert("{memory_use}","{$perc}");
+    $cnx=$tpl->FormatNumber($MAIN["total_connections_received"]);
+    echo $tpl->widget_vert("{memory_use}","{$perc}<br><small style='color:white'>$cnx {connections}</small>");
 
 }
 function main_status():bool{

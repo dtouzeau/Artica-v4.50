@@ -108,7 +108,7 @@ function xstart(){
     build_progress("{reloading}",90);
 
     build_progress("{webfiltering_error_page} {done}",100);
-    system("$php5 /usr/share/artica-postfix/exec.nginx.single.php $service_id");
+
 
 
 }

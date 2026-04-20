@@ -49,22 +49,41 @@ class socksngix{
     }
 
     public function GetType():int{
-
-        $q=new lib_sqlite($this->NginxGetDB());
-        $ligne=$q->mysqli_fetch_array("SELECT type FROM nginx_services WHERE ID=$this->serviceid");
-        return intval($ligne["type"]);
+        $ligne=$this->GetCache();
+        if(isset($ligne["type"])){
+            return intval($ligne["type"]);
+        }
+        return 0;
     }
 	
 	public function GET_INFO($key):string{
-		
+
 		$this->localid=0;
 		$this->found=false;
 		if($key==null){return "";}
+
+		// For the main nginx.db, read via Go API to avoid direct SQL on WAL-mode DB.
+		// Uses /site/{id}/param/{key} which returns the raw service_parameters value
+		// (unlike GetCache which transforms field names and deserializes JSON fields).
+		// HARMPID databases keep direct SQL because SET_INFO needs localid.
+		if(!$this->isHarmpID()){
+			$resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/site/$this->serviceid/param/$key");
+			$json=json_decode($resp,true);
+			if(is_array($json) && $json["Status"]){
+				$val=strval($json["value"]);
+				if(strlen($val)>0){
+					$this->found=true;
+					return trim($val);
+				}
+			}
+			return "";
+		}
+
 		$q=new lib_sqlite($this->NginxGetDB());
 		$q->QUERY_SQL("CREATE TABLE IF NOT EXISTS `service_parameters` (`ID` INTEGER PRIMARY KEY AUTOINCREMENT,`serviceid` INTEGER,`zkey` text,`zvalue` text)");
 		$q->QUERY_SQL("CREATE INDEX IF NOT EXISTS KeyService ON service_parameters (serviceid,zkey)");
 		$ligne=$q->mysqli_fetch_array("SELECT ID,zvalue FROM `service_parameters` WHERE `zkey`='$key' AND serviceid=$this->serviceid");
-		
+
 		if(!$q->ok){
 			writelogs("FATAL! $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);
 		}
@@ -72,7 +91,7 @@ class socksngix{
         if(!isset($ligne["ID"])){
             $ligne["ID"]=0;
         }
-		
+
 		if(intval($ligne["ID"])>0){
 			$this->found=true;$this->localid=intval($ligne["ID"]);
 			return trim($ligne["zvalue"]);
@@ -130,6 +149,8 @@ class socksngix{
             writelogs("SET_MULTI_API error: $err",__FUNCTION__,__FILE__,__LINE__);
             return false;
         }
+        // Invalidate in-process cache so next GET_INFO re-fetches from Go API
+        unset($GLOBALS["/site/$this->serviceid"]);
         $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($this->serviceid);
         return true;
     }

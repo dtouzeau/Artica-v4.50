@@ -1879,6 +1879,10 @@ class left_menus{
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.backends.metrics.php",
             "ICO"=>"fas fa-chart-bar","TEXT"=>"{metrics}"));
 
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.proxy.status.minimal.statistics.php?hacluster=yes",
+            "ICO"=>"fas fa-chart-pie","TEXT"=>"{statistics}"));
+
+
         $EnableITChart=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableITChart");
         if($EnableITChart==1) {
             if($this->users->AsDansGuardianAdministrator) {
@@ -1886,6 +1890,13 @@ class left_menus{
                     "ICO" => "fa-file-signature", "TEXT" => "{it_charters}",));
             }
         }
+
+        $f[]=$tpl->LeftMenu(
+            array("PAGE"=>"fw.proxy.objects.list.php?hacluster=1",
+                "ICO"=>"fas fa-cubes","TEXT"=>"{firewall_objects}",
+            ) );
+
+
 
 
         if($Iperf3Installed==1){
@@ -2449,6 +2460,10 @@ class left_menus{
                 if($UseRemoteUfdbguardService==0) {
                     $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.rules.php", "ICO" => "fa fa-align-justify",
                         "TEXT" => "{filtering_rules}"));
+
+                    $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.statistics.php", "ICO" => ico_statistics,
+                        "TEXT" => "{statistics}"));
+
                     $c++;
                 }
             }

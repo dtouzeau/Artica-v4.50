@@ -47,8 +47,7 @@ if(isset($_GET["status"])){status_info2();exit;}
 if(isset($_GET["clean"])){clean();exit;}
 if(isset($_GET["events"])){events();exit;}
 if(isset($_GET["modsecurity-events"])){mod_security_events();exit;}
-if(isset($_GET["modsecurity-compile"])){modsecurity_compile();exit;}
-if(isset($_GET["modsecurity-compile-all"])){modsecurity_compile_all();exit;}
+
 if(isset($_GET["atomi-update"])){atomi_update();exit;}
 if(isset($_GET["atomi-enable"])){atomi_enable();exit;}
 if(isset($_GET["atomi-disable"])){atomi_disable();exit;}
@@ -333,14 +332,6 @@ function modesecurity_prepare_backup(){
     chgrp($tgz_path,"www-data");
 
 }
-function apply_template():bool{
-    $unix=new unix();
-    $tmplid=intval($_GET["apply-template"]);
-    $serviceid=intval($_GET["serviceid"]);
-    return $unix->framework_execute("exec.nginx.single.php --restore-template $tmplid $serviceid",
-        "nginx.replic.$serviceid.progress",
-        "nginx.replic.$serviceid.log");
-}
 
 function list_local_reverses(){
     $IDS=array();
@@ -355,23 +346,10 @@ function list_local_reverses(){
     @chown($dstf,"www-data");
 
 }
-function modsecurity_rules(){
-    $unix=new unix();
-    $unix->framework_execute("exec.nginx.single.php --modsec-rules",
-        "modsecurity-compile.progress",
-        "modsecurity-compile.log");
-
-}
-function debug_prepare(){
-    $unix=new unix();
-    $siteid=intval($_GET["debug-prepare"]);
-    $unix->framework_execute("exec.nginx.single.php --debug-prepare $siteid",
-        "nginx.debug.$siteid.progress",
-        "nginx.debug.$siteid.log"
-);
 
 
-}
+
+
 
 function modesecurity_delete_backup(){
     $ID=intval($_GET["delete-modsec-backup"]);
@@ -383,21 +361,7 @@ function modesecurity_delete_backup(){
     shell_exec("$nohup $rm -rf $tdir >/dev/null 2>&1 &");
 
 }
-function create_server_cert(){
-    $ID=intval($_GET["create-server-cert"]);
-    $unix=new unix();
-    $unix->framework_execute("exec.nginx.single.php --server-cert $ID", "nginx.servercert.progress",
-        "nginx.servercert.log");
 
-}
-function create_client_cert(){
-    $ID=intval($_GET["create-client-cert"]);
-    $unix=new unix();
-    $unix->framework_execute("exec.nginx.single.php --client-cert $ID",
-        "nginx.clientcert.progress",
-        "nginx.clientcert.log"
-    );
-}
 
 function modesecurity_modrep(){
     $unix=new unix();
@@ -460,44 +424,8 @@ function modesecurity_modsec(){
 
 
 
-function webcopy_sync(){
-    $unix=new unix();
-    $serviceid=intval($_GET["webcopy-sync"]);
-    $unix->framework_execute("exec.httptrack.php --single $serviceid","webcopy-$serviceid.progress","webcopy-$serviceid.log");
-}
-function webcopy_erase(){
-    $unix=new unix();
-    $serviceid=intval($_GET["erase-sync"]);
-    $unix->framework_execute("exec.httptrack.php --erase $serviceid","webcopy-$serviceid.progress","webcopy-$serviceid.log");
-}
 
-function webcopy_delete(){
-    $unix=new unix();
-    $ID=intval($_GET["webcopy-delete"]);
-    $unix->framework_exec("exec.httptrack.php --delete $ID");
-}
-function webcopy_sync_all(){
-    $unix=new unix();
-    $unix->framework_execute("exec.httptrack.php --sync-all",
-        "webcopy.synchronize.progress",
-        "webcopy.synchronize.log"
-    );
-}
-function modsecurity_compile(){
-    $unix=new unix();
-    $serviceid=intval($_GET["modsecurity-compile"]);
-    $unix->framework_execute("exec.nginx.single.php --modsecurity $serviceid",
-        "modsecurity-compile.progress",
-        "modsecurity-compile.log"
-    );
-}
-function modsecurity_compile_all(){
-    $unix=new unix();
-    $unix->framework_execute("exec.nginx.single.php --modsecurity",
-        "modsecurity-compile.progress",
-        "modsecurity-compile.log"
-    );
-}
+
 function atomi_update(){
     $unix=new unix();
     $unix->framework_execute("exec.ModSecurity.download.php --atomi --force",
@@ -626,69 +554,15 @@ function status_info2():bool{
 	$unix=new unix();
     return $unix->framework_exec("exec.status.php --nginx --nowachdog");
 }
-function remove_website(){
-	
-	$website=$_GET["remove-site"];
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.single.php --remove \"$website\" --output=yes >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.single.php --clean-reboot >/dev/null 2>&1 &";
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
 
 
 
-function build_main(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.php --main >/dev/null 2>&1 &";
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
-function clean(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-    $ID=$_GET["clean"];
-	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.single.php --clean-reboot >/dev/null 2>&1 &";
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.single.php --clean-single $ID >/dev/null 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
 
 
 
-function execute_wizard(){
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/nginx-wizard.progress";
-	$GLOBALS["CACHEFILE"]=$GLOBALS["PROGRESS_FILE"];
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/rnginx-wizard.log";
-	@unlink($GLOBALS["CACHEFILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["CACHEFILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["CACHEFILE"],0777);
-	@chmod($GLOBALS["LOGSFILES"],0777);
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.wizard.php >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
 
-function compile_single(){
-	$unix=new unix();
-    $unix->framework_execute("exec.nginx.single.php {$_GET["compile-single"]}","nginx-single.progress","nginx-single.log");
-	$GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($_GET["compile-single"]);
 
-}
+
 
 
 
@@ -847,33 +721,7 @@ function events_all(){
 	@chmod($output, 0755);
 }
 
-function conf_save(){
-	$unix=new unix();
-	$nginx=$unix->find_program("nginx");
-	$servername=$_GET["replic-conf"];
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.single.php ".escapeshellarg($servername)." --replic-conf >/dev/null 2>&1 &");
-	
-	writelogs_framework("$nginx -c /etc/nginx/nginx.conf -t 2>&1",__FUNCTION__,__FILE__,__LINE__);
-	exec("$nginx -c /etc/nginx/nginx.conf -t 2>&1",$results);
-	foreach ($results as $line){
-		writelogs_framework("$line",__FUNCTION__,__FILE__,__LINE__);
-		if(preg_match("#test is successful#", $line)){$OK=true;}
-	}
-	
-	if(!$OK){
-		writelogs_framework("FAILED",__FUNCTION__,__FILE__,__LINE__);
-		echo "<articadatascgi>".base64_encode(@implode("\n", $results))."</articadatascgi>";
-		return;
-	}
-	
-	writelogs_framework("SUCCESS",__FUNCTION__,__FILE__,__LINE__);
-	echo "<articadatascgi>".base64_encode("SUCCESS\n******************\n".@implode("\n", $results))."</articadatascgi>";
 
-	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.php --force-restart >/dev/null 2>&1 &");
-	
-}
 
 function conf_view(){
 	$sitename=$_GET["conf-view"];
@@ -957,13 +805,7 @@ function www_events(){
 	echo "<articadatascgi>".base64_encode(serialize($results))."</articadatascgi>";
 	
 }
-function mysqldb_restart(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	shell_exec("$php5 /usr/share/artica-postfix/exec.nginx-db.php --init");
-	shell_exec("$nohup /etc/init.d/nginx-db restart >/dev/null 2>&1");
-}
+
 function uncompress_nginx(){
 	$unix=new unix();
 	$php5=$unix->LOCATE_PHP5_BIN();
@@ -997,12 +839,7 @@ function reconfigure_single(){
 	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.php --reconfigure ".escapeshellarg($servername)." >>$cachefile 2>&1 &");
 }
 
-function clean_websites(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.wizard.php --check-http >/dev/null 2>&1 &");
-}
+
 
 
 function nginx_version(){
@@ -1025,24 +862,6 @@ function reconfigure_progress(){
 	
 }
 
-function compile_destination(){
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/nginx-destination.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/nginx-destination.log";
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOGSFILES"], 0755);
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.destinations.php {$_GET["cacheid"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-    $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($_GET["cacheid"]);
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-		
-}
 
 
 
@@ -1100,31 +919,4 @@ function access_real(){
 }
 
 
-function purge_cache(){
-	$unix=new unix();
-	$ID=$_GET["purge-cache"];
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.php --purge-cache $ID >/dev/null 2>&1 &");
-}
-
-function export(){
-    $unix=new unix();
-    $ID=intval($_GET["export"]);
-    $unix->framework_execute("exec.nginx.single.php --export $ID","nginx.export.$ID.progress","nginx.export.$ID.log");
-}
-
-function import(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	shell_exec("$php5 /usr/share/artica-postfix/exec.nginx.php --import-file >/usr/share/artica-postfix/ressources/logs/web/nginx.import.results 2>&1");	
-}
-
-function import_bulk(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	shell_exec("$php5 /usr/share/artica-postfix/exec.nginx.php --import-bulk >/usr/share/artica-postfix/ressources/logs/web/nginx.import-bulk.results 2>&1");
-}
 

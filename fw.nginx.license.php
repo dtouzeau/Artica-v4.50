@@ -17,6 +17,7 @@ function license(){
     $sock=new sockets();
     $data=$sock->REST_API_NGINX("/reverse-proxy/license");
     $json=json_decode($data);
+
     $tpl=new template_admin();
     if (json_last_error()> JSON_ERROR_NONE) {
         echo $tpl->post_error(json_last_error_msg());

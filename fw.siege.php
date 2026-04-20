@@ -295,6 +295,25 @@ function create_tests_popup():bool{
     $form[] = $tpl->field_array_hash($keepalive, "keepalive", "Keep-Alive", "1");
     $form[] = $tpl->field_text("user_agent", "User-Agent", "siege-daemon/1.1");
 
+    // Realistic load (v2): think-time distribution, VU stagger, UA pool.
+    // Leave fields blank to fall back to legacy uniform(0,delay) behavior.
+    // Realistic load (v2)
+    $thinkTimeOpts = [
+        ""          => "{think_time_distribution0}",
+        "lognormal" => "{think_time_distribution2}",
+        "uniform"   => "{think_time_distribution3}",
+        "none"      => "{think_time_distribution1}",
+    ];
+
+    $userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\nMozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\nMozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0\nMozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0\nMozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1\nMozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36\nMozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+    $form[] = $tpl->field_section("{realistic_load}");
+    $form[] = $tpl->field_array_hash($thinkTimeOpts, "think_time_distribution", "{think_time_distribution}", "");
+    $form[] = $tpl->field_text("think_time_mean_ms", "{think_time_median_ms}", "2000");
+    $form[] = $tpl->field_text("think_time_sigma_ms", "{think_time_sigma}", "0.5");
+    $form[] = $tpl->field_text("vu_startup_stagger", "{vu_startup_stagger}", "5s");
+    $form[] = $tpl->field_textarea_normal("user_agents", "{user_agents_pool}", $userAgent, "100%", 5);
+
     // Proxy settings (optional)
     $form[] = $tpl->field_section("{your_proxy}");
     $form[] = $tpl->field_text("proxy_address", "{proxy_address}", "");
@@ -305,7 +324,7 @@ function create_tests_popup():bool{
 
 
     $js = "dialogInstance1.close();$function";
-    echo $tpl->form_outside("{create_test}", @implode("\n", $form), null, "{create}", $js, "AsProxyMonitor");
+    echo $tpl->form_outside("", @implode("\n", $form), null, "{create}", $js, "AsProxyMonitor");
     return true;
 }
 
@@ -374,6 +393,10 @@ function create_tests_save():bool{
         'user_agent' => $_POST["user_agent"] ?? 'siege-daemon/1.1',
         'source_interface'=>$_POST["source_interface"] ?? '',
     ];
+
+    // Realistic-load fields (v2). Omit when blank so the daemon uses legacy
+    // uniform(0,delay) behavior instead.
+    siege_apply_realistic_load_post($config);
 
     // Add proxy settings if provided
     $proxyAddress = trim($_POST["proxy_address"] ?? '');
@@ -575,7 +598,20 @@ function edit_test_popup(){
     $timeout = $test['timeout'] ?? '30s';
     $source_interface=$test['source_interface'] ?? '';
     $keepalive = isset($test['keepalive']) && $test['keepalive'] ? '1' : '0';
-    $userAgent = $test['user_agent'] ?? 'siege-daemon/1.1';
+    $userAgent = $test['user_agent'];
+
+    if(strlen($userAgent)<20){
+        $userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\nMozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36\nMozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0\nMozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0\nMozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1\nMozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36\nMozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+    }
+
+    // Realistic-load (v2) values, defaulted for empty configs
+    $thinkDist  = $test['think_time']['distribution'] ?? '';
+    $thinkMean  = isset($test['think_time']['mean_ms'])  ? strval($test['think_time']['mean_ms'])  : '2000';
+    $thinkSigma = isset($test['think_time']['sigma_ms']) ? strval($test['think_time']['sigma_ms']) : '0.5';
+    $vuStagger  = $test['vu_startup_stagger'] ?? '5s';
+    $uaPoolText = isset($test['user_agents']) && is_array($test['user_agents'])
+        ? implode("\n", $test['user_agents'])
+        : '';
 
     // Extract proxy settings
     $proxyUrl = $test['proxy_url'] ?? '';
@@ -634,6 +670,22 @@ function edit_test_popup(){
     $form[] = $tpl->field_text("timeout", "{timeout}", $timeout);
     $form[] = $tpl->field_array_hash($keepaliveOpts, "keepalive", "Keep-Alive", $keepalive);
     $form[] = $tpl->field_text("user_agent", "User-Agent", $userAgent);
+
+    // Realistic load (v2)
+    $thinkTimeOpts = [
+        ""          => "{think_time_distribution0}",
+        "lognormal" => "{think_time_distribution2}",
+        "uniform"   => "{think_time_distribution3}",
+        "none"      => "{think_time_distribution1}",
+    ];
+    $form[] = $tpl->field_section("{realistic_load}");
+    $form[] = $tpl->field_array_hash($thinkTimeOpts,
+        "think_time_distribution",
+        "{think_time_distribution}", $thinkDist,false,"{think_time_distribution_explain}");
+    $form[] = $tpl->field_text("think_time_mean_ms", "{think_time_median_ms}", $thinkMean);
+    $form[] = $tpl->field_text("think_time_sigma_ms", "{think_time_sigma}", $thinkSigma);
+    $form[] = $tpl->field_text("vu_startup_stagger", "{vu_startup_stagger}", $vuStagger);
+    $form[] = $tpl->field_textarea_normal("user_agents", "{user_agents_pool}", $uaPoolText, "100%", 5);
 
     // Proxy settings
     $form[] = $tpl->field_section("{your_proxy}");
@@ -725,6 +777,9 @@ function edit_test_save(){
         'source_interface'=>$_POST["source_interface"] ?? '',
     ];
 
+    // Realistic-load fields (v2)
+    siege_apply_realistic_load_post($config);
+
     // Proxy settings
     $proxyAddress = trim($_POST["proxy_address"] ?? '');
     $proxyPort = intval($_POST["proxy_port"] ?? 3128);
@@ -787,13 +842,37 @@ function edit_test_kerberos_popup():bool{
         return false;
     }
     //$keytabPath = $test['proxy_auth']['keytab_path'] ?? '/etc/siege-daemon/siege.keytab';
-    $principal = $test['proxy_auth']['principal'] ?? php_uname("n");
+    // Default to the local FQDN (php_uname("n") returns shortname — we want the fully-qualified form)
+    $defaultHost = php_uname("n");
+    if(strpos($defaultHost, ".") === false){
+        $fqdn = gethostname();
+        $resolved = gethostbyname($fqdn);
+        if(!empty($resolved) && $resolved !== $fqdn){
+            $ptr = gethostbyaddr($resolved);
+            if(!empty($ptr) && strpos($ptr, ".") !== false){
+                $defaultHost = $ptr;
+            }
+        }
+    }
+    $principal = $test['proxy_auth']['principal'] ?? $defaultHost;
     $realm = $test['proxy_auth']['realm'] ?? '';
     $kdcHost = $test['proxy_auth']['kdc_host'] ?? '';
 
+    // Prominent warning about reusing existing AD accounts. Past incidents:
+    // entering a short username (e.g. "dtouzeau") caused msktutil to target an
+    // existing user whose Kerberos salt is derived from a pre-existing SPN,
+    // producing a keytab whose keys the KDC rejected as "Preauthentication failed".
+    $form[] = $tpl->div_warning("{kerberos_service_hostname_warning}");
+
     // Build form
     $form[] = $tpl->field_hidden("edit-test-kerberos", $testId);
-    $form[] = $tpl->field_text("hostname", "{hostname}", $principal, true,"The Kerberos principal for authentication, format: HTTP/hostname@REALM (e.g., HTTP/siegetest.mydomain.local@MYDOMAIN.LOCAL)");
+    $form[] = $tpl->field_text(
+        "hostname",
+        "{kerberos_service_hostname_fqdn}",
+        $principal,
+        true,
+        "{kerberos_service_hostname_tooltip}"
+    );
     $form[] = $tpl->field_text("realm", "{activedirectory_domain}", $realm, true);
     $form[] = $tpl->field_text("kdc_host", "{activedirectory_server}", $kdcHost);
 
@@ -825,12 +904,32 @@ function edit_test_kerberos_save():bool{
     $realm = trim($_POST["realm"] ?? '');
     $kdcHost = trim($_POST["kdc_host"] ?? '');
 
-    if(preg_match("#^HTTP:\/\/(.+?)@#i",$hostname,$re)){
-        $hostname=$re[1];
+    // Strip any of the formats we document/accept:
+    //   HTTP://host@REALM   (double slash, as the old tooltip showed)
+    //   HTTP/host@REALM     (SPN form, single slash)
+    //   host@REALM          (bare UPN)
+    // ...leaving just the hostname portion.
+    if(preg_match("#^HTTP:?/+([^@]+?)@#i", $hostname, $re)){
+        $hostname = $re[1];
+    } elseif(preg_match("#^([^@]+?)@#", $hostname, $re)){
+        $hostname = $re[1];
     }
 
     if(empty($hostname) || empty($realm)){
         echo "jserror:" . $tpl->javascript_parse_text("{error}: Hostname {and} Realm {required}");
+        return false;
+    }
+
+    // Enforce FQDN: prevents the classic failure where an operator types
+    // their own AD username (e.g. "dtouzeau"), msktutil collides with the
+    // existing user account, and kinit fails preauth because AD's stored
+    // key uses a salt derived from the pre-existing SPN rather than the
+    // name we claimed. Rejecting non-FQDN input makes that whole class of
+    // misconfiguration impossible at the form boundary.
+    if(strpos($hostname, ".") === false){
+        echo "jserror:" . $tpl->javascript_parse_text(
+            "{error}: {kerberos_fqdn_required}: $hostname"
+        );
         return false;
     }
 
@@ -857,7 +956,7 @@ function edit_test_kerberos_save():bool{
         // Try update instead
         $keytabResult = $siege->updateKeytab($msktutilConfig);
         if($keytabResult === null || !($keytabResult['success'] ?? false)){
-            $error = $keytabResult['error'] ?? $siege->getLastError();
+            $error = siege_format_daemon_error($keytabResult, $siege->getLastError());
             echo "jserror:" . $tpl->javascript_parse_text("{error}: msktutil {failed}: " . $error);
             return false;
         }
@@ -882,14 +981,23 @@ function edit_test_kerberos_save():bool{
     }
 
     if(!($validateResult['valid'] ?? false)){
-        // Build error message from failed checks
-        $failedChecks = [];
+        // Surface the full daemon response: each failed check's message AND the
+        // raw top-level error (which carries the underlying kinit stderr, e.g.
+        // "Preauthentication failed"). The previous code dropped the raw error
+        // whenever any checks were present, masking the actual Kerberos cause.
+        $parts = [];
         foreach(($validateResult['checks'] ?? []) as $check){
             if(!($check['passed'] ?? true)){
-                $failedChecks[] = $check['message'] ?? $check['name'];
+                $parts[] = $check['message'] ?? $check['name'] ?? 'unknown check';
             }
         }
-        $errorMsg = !empty($failedChecks) ? implode('; ', $failedChecks) : ($validateResult['error'] ?? 'Unknown error');
+        if(!empty($validateResult['error'])){
+            $parts[] = $validateResult['error'];
+        }
+        if(!empty($validateResult['stderr'])){
+            $parts[] = trim($validateResult['stderr']);
+        }
+        $errorMsg = !empty($parts) ? implode(' | ', $parts) : 'Unknown error';
         echo "jserror:" . $tpl->javascript_parse_text("{error}: Kerberos {validation} {failed}: " . $errorMsg);
         return false;
     }
@@ -905,7 +1013,7 @@ function edit_test_kerberos_save():bool{
     $kinitResult = $siege->kinit($principal . '@' . $realm, $keytabPath, '24h', '7d');
 
     if($kinitResult === null || !($kinitResult['success'] ?? false)){
-        $error = $kinitResult['error'] ?? $siege->getLastError();
+        $error = siege_format_daemon_error($kinitResult, $siege->getLastError());
         echo "jserror:" . $tpl->javascript_parse_text("{error}: kinit {failed}: " . $error);
         return false;
     }
@@ -1369,7 +1477,7 @@ function td_states(){
     $ids=explode("|",$_GET["status-ids"]);
     $siege=new SiegeDaemon();
     $runningTests = $siege->getRunningTests();
-
+    $f=array();
     foreach ($ids as $testId){
         if($testId==0){
             continue;
@@ -1675,9 +1783,21 @@ function create_keytab_popup(){
     $kdcHost = $test['proxy_auth']['kdc_host'] ?? '';
     $password = $test['proxy_auth']['password'] ?? '';
 
+    // Informational note about the SPN-salt pitfall (see create_keytab_save).
+    // If the target AD account has a servicePrincipalName, ktutil's default
+    // salt will not match AD's salt and kinit will fail preauthentication.
+    // We cannot detect this from the form alone, so warn the operator.
+    $form[] = $tpl->div_info("{create_keytab_user_account_hint}");
+
     // Build form
     $form[] = $tpl->field_hidden("create-keytab", $testId);
-    $form[] = $tpl->field_text("principal", "{username}", $principal, true,"");
+    $form[] = $tpl->field_text(
+        "principal",
+        "{username}",
+        $principal,
+        true,
+        "{create_keytab_username_tooltip}"
+    );
     $form[] = $tpl->field_password("password", "{password}", $password, true,"");
     $form[] = $tpl->field_text("realm", "{activedirectory_domain}", $realm, true);
     $form[] = $tpl->field_text("kdc_host", "{activedirectory_server}", $kdcHost);
@@ -1696,6 +1816,21 @@ function create_keytab_save():bool{
     $realm = isset($_POST['realm']) ? trim(strtoupper($_POST['realm'])) : '';
     $kdcHost = isset($_POST['kdc_host']) ? trim($_POST['kdc_host']) : '';
     $keytabPath = isset($_POST['keytab_path']) ? trim($_POST['keytab_path']) : "/etc/siege-daemon/$testId.keytab";
+
+    // Accept admin-friendly formats: bare username ("dtouzeau"),
+    // user@realm ("dtouzeau@ARTICATECH.INT"), or stray SPN prefix
+    // ("HTTP/dtouzeau" — copied from the msktutil popup).
+    if(preg_match("#^HTTP:?/+([^@]+)#i", $principal, $re)){
+        $principal = $re[1];
+    }
+    if(strpos($principal, '@') !== false){
+        $parts = explode('@', $principal, 2);
+        $principal = trim($parts[0]);
+        // If the realm field was left blank, borrow the one embedded in the username.
+        if(empty($realm) && !empty($parts[1])){
+            $realm = strtoupper(trim($parts[1]));
+        }
+    }
 
     // Validate required fields
     if(empty($principal)){
@@ -1735,7 +1870,7 @@ function create_keytab_save():bool{
     }
 
     if(!isset($result['success']) || !$result['success']){
-        $error = isset($result['error']) ? $result['error'] : 'Unknown error';
+        $error = siege_format_daemon_error($result, $siege->getLastError());
         echo $tpl->post_error($tpl->javascript_parse_text("{error}: " . $error));
         return false;
     }
@@ -1750,18 +1885,38 @@ function create_keytab_save():bool{
         );
 
         if($validateResult === null || !isset($validateResult['valid']) || !$validateResult['valid']){
-            $validationError = '';
-            if($validateResult !== null && isset($validateResult['checks'])){
+            // Concatenate every diagnostic field the daemon returns: per-check
+            // messages, raw `error`, and `stderr` (which carries the literal
+            // kinit failure like "Preauthentication failed"). The previous code
+            // dropped the raw error whenever any checks existed, hiding the
+            // specific Kerberos cause from the operator.
+            $parts = [];
+            if($validateResult !== null && !empty($validateResult['checks'])){
                 foreach($validateResult['checks'] as $check){
-                    if(!isset($check['passed']) || !$check['passed']){
-                        $validationError .= (isset($check['message']) ? $check['message'] : $check['name']) . '; ';
+                    if(empty($check['passed'])){
+                        $parts[] = $check['message'] ?? $check['name'] ?? 'unknown check';
                     }
                 }
             }
-            if(empty($validationError) && $validateResult !== null && isset($validateResult['error'])){
-                $validationError = $validateResult['error'];
+            if($validateResult !== null && !empty($validateResult['error'])){
+                $parts[] = $validateResult['error'];
             }
-            echo $tpl->post_error($tpl->javascript_parse_text("{warning}: Keytab created but validation failed: " . $validationError));
+            if($validateResult !== null && !empty($validateResult['stderr'])){
+                $parts[] = trim($validateResult['stderr']);
+            }
+            $validationError = !empty($parts) ? implode(' | ', $parts) : 'Unknown error';
+
+            // If the error points at a preauth salt mismatch, show the actionable
+            // hint up front so the operator knows this is not a wrong-password
+            // problem but an AD-side SPN/salting issue.
+            $hint = '';
+            if(stripos($validationError, 'preauthentication failed') !== false){
+                $hint = ' — ' . $tpl->javascript_parse_text("{kerberos_preauth_salt_hint}");
+            }
+
+            echo $tpl->post_error($tpl->javascript_parse_text(
+                "{warning}: Keytab created but validation failed: " . $validationError
+            ) . $hint);
             return false;
         }
     }
@@ -1892,5 +2047,63 @@ function kinit(){
     ));
 
     return true;
+}
+
+/**
+ * Build a human-readable error string from a daemon JSON response.
+ * Concatenates `error`, `stderr`, `stdout`, and `message` fields (whichever
+ * are present) so the UI surfaces the full underlying failure — for example
+ * the raw kinit stderr line "Preauthentication failed while getting initial
+ * credentials" which is critical for diagnosing Kerberos misconfiguration.
+ * Falls back to the last error from the SiegeDaemon class when the daemon
+ * did not return a usable body.
+ */
+function siege_format_daemon_error($response, string $fallback):string{
+    if(!is_array($response)){
+        return $fallback !== '' ? $fallback : 'Unknown error';
+    }
+    $parts = [];
+    foreach(['error', 'message', 'stderr', 'stdout'] as $k){
+        if(!empty($response[$k])){
+            $v = is_string($response[$k]) ? trim($response[$k]) : json_encode($response[$k]);
+            if($v !== ''){ $parts[] = $v; }
+        }
+    }
+    if(empty($parts) && $fallback !== ''){
+        $parts[] = $fallback;
+    }
+    return !empty($parts) ? implode(' | ', $parts) : 'Unknown error';
+}
+
+/**
+ * Map the v2 "realistic load" POST fields into a daemon test-config array.
+ * Empty fields are omitted so the daemon keeps its legacy defaults.
+ * Shared by create_tests_save() and edit_test_save().
+ */
+function siege_apply_realistic_load_post(array &$config):void{
+    $dist = trim($_POST["think_time_distribution"] ?? '');
+    if($dist !== ''){
+        $think = ['distribution' => $dist];
+        if($dist === 'lognormal'){
+            $mean  = floatval($_POST["think_time_mean_ms"]  ?? 0);
+            $sigma = floatval($_POST["think_time_sigma_ms"] ?? 0);
+            if($mean  > 0){ $think['mean_ms']  = $mean;  }
+            if($sigma > 0){ $think['sigma_ms'] = $sigma; }
+        }
+        $config['think_time'] = $think;
+    }
+
+    $stagger = trim($_POST["vu_startup_stagger"] ?? '');
+    if($stagger !== ''){
+        $config['vu_startup_stagger'] = $stagger;
+    }
+
+    $uaRaw = trim($_POST["user_agents"] ?? '');
+    if($uaRaw !== ''){
+        $uas = array_values(array_filter(array_map('trim', explode("\n", $uaRaw)), 'strlen'));
+        if(!empty($uas)){
+            $config['user_agents'] = $uas;
+        }
+    }
 }
 

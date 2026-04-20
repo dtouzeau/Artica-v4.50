@@ -1,23 +1,14 @@
 <?php
-$start = microtime(true);
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
-ExecTtime($start,__LINE__);
-$start = microtime(true);
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
-ExecTtime($start,__LINE__);
-$start = microtime(true);
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
-ExecTtime($start,__LINE__);
-$start = microtime(true);
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.cpu.percent.inc");
 $GLOBALS["LICENSE_EXPIRED"]=False;
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(!isset($_SESSION["uid"])){exit();}
-ExecTtime($start,__LINE__);
-$start = microtime(true);
+include_once(dirname(__FILE__)."/ressources/prefetch-info.inc"); __prefetchCommonSettings($GLOBALS["CLASS_SOCKETS"]);
 clean_xss_deep();
-ExecTtime($start,__LINE__);
 
 if(isset($_GET["notifs"])){notifs();exit;}
 if(isset($_GET["seen-updated"])){see_updated();exit;}
@@ -130,7 +121,11 @@ function notifs(){
     if(is_file("/etc/artica-postfix/ARTICA_REVERSE_PROXY_APPLIANCE")){$REVERSE_APPLIANCE=true;}
 
     $VM_DISK_SLOW=VM_DISK_SLOW();
+    $NEED_ZSWAP=NEED_ZSWAP();
+
     if($VM_DISK_SLOW<>null){$ERR[]=$VM_DISK_SLOW;}
+    if($NEED_ZSWAP<>null){$ERR[]=$NEED_ZSWAP;}
+
     $FOUND_AD_SERVER=FOUND_AD_SERVER();
     if($FOUND_AD_SERVER<>null){$ERR[]=$FOUND_AD_SERVER;}
 
@@ -373,22 +368,17 @@ function notifs(){
         }
     }
     $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
-
-
     if($Enablehacluster==1){
         $NOTIF_APP_HAPROXY_CLUSTER=NOTIF_APP_HAPROXY_CLUSTER($UPDATES_ARRAY);
         if($NOTIF_APP_HAPROXY_CLUSTER<>null){$ERR[]=$NOTIF_APP_HAPROXY_CLUSTER;}
         //APP_HAPROXY_CLUSTER
     }
-
     $NOTIF_X_TABLES_PACKAGE_INSTALLED=NOTIF_X_TABLES_PACKAGE_INSTALLED($UPDATES_ARRAY);
     if(count($NOTIF_X_TABLES_PACKAGE_INSTALLED)>0){
         foreach ($NOTIF_X_TABLES_PACKAGE_INSTALLED as $NGINX_NOTE){
             $ERR[]=$NGINX_NOTE;
         }
     }
-
-
 
     $NOTIF_AUTOFS=NOTIF_AUTOFS($UPDATES_ARRAY);
     if($NOTIF_AUTOFS<>null){$ERR[]=$NOTIF_AUTOFS;}
@@ -423,7 +413,7 @@ function notifs(){
     $NOTIF_APP_MSKTUTIL_VERSION=NOTIF_APP_MSKTUTIL_VERSION($UPDATES_ARRAY);
     if($NOTIF_APP_MSKTUTIL_VERSION<>null){$ERR[]=$NOTIF_APP_MSKTUTIL_VERSION;}
 
-    $NOTIF_APP_UFDBGUARD=NOTIF_APP_UFDBGUARD($UPDATES_ARRAY);
+    $NOTIF_APP_UFDBGUARD=NOTIF_APP_UFDBGUARD();
     if($NOTIF_APP_UFDBGUARD<>null){$ERR[]=$NOTIF_APP_UFDBGUARD;}
 
     $NOTIFS_UNBOUNDD=NOTIFS_UNBOUND($UPDATES_ARRAY);
@@ -559,7 +549,6 @@ function notifs(){
         $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/status"));
         $DEBIAN_VERSION = $json->DebianVersion;
     }
-
     if($DEBIAN_VERSION==10){
         $HideDebian10SupportMonths=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideDebian10SupportMonths"));
         if($HideDebian10SupportMonths==0) {
@@ -877,8 +866,6 @@ function notifs(){
         }
     }
 
-
-
     if(!$users->AsDockerWeb) {
         $NEEDRESTART = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NEEDRESTART"));
         if ($NEEDRESTART == 1) {
@@ -919,7 +906,6 @@ function notifs(){
             $ERR[] = "{WarninProftpdModSqlite}||js:Loadjs('fw.php7.0-ProftpdModSqlite.php')";
         }
     }
-
     if($AD_CARE) {
         $WindowsActiveDirectoryKerberos = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WindowsActiveDirectoryKerberos"));
         if ($WindowsActiveDirectoryKerberos == 1) {
@@ -928,7 +914,6 @@ function notifs(){
             }
         }
     }
-
 
     $PostfixEnable=intval($GLOBALS['CLASS_SOCKETS']->GET_INFO("EnablePostfix"));
     if($PostfixEnable==1) {
@@ -1047,29 +1032,23 @@ function notifs(){
         }
     }
 
-
-
-
-$class_text="text-danger";
-$icon=ico_emergency;
+    $class_text="text-danger";
+    $icon=ico_emergency;
     $CC=0;
     foreach ($ERR as $error) {
         $error = trim($error);
         if ($error == null) {continue;}
         $CC++;
-        }
+    }
 
-if($CC==0){return;}
+    if($CC==0){return;}
 
-echo "
-<a class=\"dropdown-toggle count-info\" data-toggle=\"dropdown\" href=\"#\">
-<i class=\"text-warning fa fa-bell\"></i>  <span class=\"label label-danger\">$CC</span>
-</a>
-<ul class=\"dropdown-menu dropdown-alerts\">";
+    echo "<a class=\"dropdown-toggle count-info\" data-toggle=\"dropdown\" href=\"#\">
+        <i class=\"text-warning fa fa-bell\"></i>  <span class=\"label label-danger\">$CC</span>
+    </a>
+    <ul class=\"dropdown-menu dropdown-alerts\">";
 
-
-
-foreach ($ERR as $error){
+    foreach ($ERR as $error){
 	$explain    = null;
     $button     = null;
     if($error==null){continue;}
@@ -1163,10 +1142,11 @@ echo "<li style='font-weight:bold;font-size:14px'>
 </li>
 <li class=\"divider\"></li>";
 }
-echo "</ul>";
-echo "<script>\n";
-echo "if(document.getElementById('WSUSOFFLINE-STATE') ){ LoadAjaxSilent('WSUSOFFLINE-STATE','fw.wsusoffline.php?status=yes');}";
-echo "</script>\n";
+    echo "</ul>\n";
+    echo "<script>\n";
+    echo "\tif(document.getElementById('WSUSOFFLINE-STATE') ){\n\t\tLoadAjaxSilent('WSUSOFFLINE-STATE','fw.wsusoffline.php?status=yes');\n\t}\n";
+    echo "Loadjs('fw.system.status.php?top-cpu=yes');\n";
+    echo "</script>\n";
 
 
 }
@@ -1922,30 +1902,42 @@ function NOTIFS_UNBOUND($UPDATES_ARRAY){
 
 }
 
-function NOTIF_APP_UFDBGUARD($UPDATES_ARRAY):string{
+function NOTIF_APP_UFDBGUARD():string{
     $tpl                = new template_admin();
     $page               = CurrentPageName();
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
+    $users=new usersMenus();
+    VERBOSE("AsDansGuardianAdministrator",__LINE__);
+    if(!$GLOBALS["CLASS_USERS"]->AsDansGuardianAdministrator) {return "";}
+    $EnableUfdbGuard=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUfdbGuard");
 
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_UFDBGUARDD",
-            "TOKEN_VER"=>"UFDBDaemonVersion",
-            "TOKEN_ENABLED"=>"EnableUfdbGuard")
-    );
-
-
-    if(!isset($RESULTS["NEW_VER"])){
+    if($EnableUfdbGuard==0){
+        VERBOSE("EnableUfdbGuard == 0",__LINE__);
         return "";
     }
+    $info=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/webfilter/latestver"),true);
 
-    $Token=$RESULTS["HIDE_TOKEN"];
+    if(!isset($info["Version"])){
+        VERBOSE("/webfilter/latestver Version == 0",__LINE__);
+        return "";
+    }
+    $NeVer=$info["Version"];
+
+    VERBOSE("/webfilter/latestver Version == $NeVer",__LINE__);
+
+    if($NeVer==""){
+        return "";
+    }
+    $Curver=$info["CurVer"];
+
+    $Token="DisableUfdbguardV$NeVer";
+    if($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token)){
+        return "";
+    }
     $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
     $STEXT = str_replace("%product", "{APP_UFDBGUARDD}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_UFDBGUARDD')||WARN||||js:Loadjs('$page?SetToken=$Token');";
+    $STEXT = str_replace("%ver", $Curver, $STEXT);
+    $STEXT = str_replace("%next", $NeVer, $STEXT);
+    return  "$STEXT||js:Loadjs('fw.ufdb.upgrade.php')||WARN||||js:Loadjs('$page?SetToken=$Token');";
 
 }
 
@@ -2379,6 +2371,28 @@ function FOUND_AD_SERVER():string{
     return  "{ad_discovered}||{ad_discovered}: <strong>$DiscoveredAD</strong>||MOREINFO||js:Loadjs('fw.activedirectory.discovered.php?js=yes');||js:Loadjs('$page?SetToken=DisableAdDiscover');";
 }
 
+
+function NEED_ZSWAP():string{
+    $page=CurrentPageName();
+    $EnableZram=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableZram"));
+    if($EnableZram==1){
+        return "";
+    }
+    $Token="DisableCheckZSwap";
+    $DisableCheckZSwap=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
+    if($DisableCheckZSwap==1){
+        return "";
+    }
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NeedZswap"),true);
+    if(!isset($json["NeedzSwap"])){
+        return "";
+    }
+    if($json["NeedzSwap"]==0){
+        return "";
+    }
+
+    return "{memory_pressure}||{need_zswap}||DANGER||js:document.location.href='/system-memory'||js:Loadjs('$page?SetToken=$Token');";
+}
 function VM_DISK_SLOW():string{
     $tpl=new template_admin();
     $page=CurrentPageName();

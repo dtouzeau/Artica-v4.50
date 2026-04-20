@@ -37,6 +37,17 @@ class sockets{
     public $mysql_error=null;
     public $REST_API_TIMEOUT=13;
 
+    // Per-request memoization for GET_INFO() results.
+    // STATIC so that the MANY sub-functions in WebConsole that do
+    // `$sock = new sockets()` in their bodies still share one cache.
+    // Class statics reset at request end, so values never leak between requests.
+    private static $info_cache=array();
+
+    // Persistent cURL handle reused across /getinfo/ calls so we avoid a
+    // curl_init()+socket-connect+curl_close() cycle for every one.
+    // Also static for the same cross-instance reason.
+    private static $rest_get_handle=null;
+
     function __construct(){
 
         if(isset($_GET["verbose"])){
@@ -71,6 +82,14 @@ class sockets{
         $this->EnableIntelCeleron=intval($this->GET_INFO("EnableIntelCeleron"));
 
     }
+
+    function __destruct(){
+        if (self::$rest_get_handle !== null) {
+            @curl_close(self::$rest_get_handle);
+            self::$rest_get_handle = null;
+        }
+    }
+
     function SPVersion():int{
         $main=json_decode($this->REST_API("/artica_version"),true);
         if(!isset($main["service_pack"])){
@@ -407,9 +426,60 @@ class sockets{
         }
         return $resp;
     }
+    // PREFETCH_INFO fetches many settings in ONE REST roundtrip and populates
+    // the static cache. Subsequent GET_INFO($key) calls for any of these keys
+    // hit the cache and do zero cURL work.
+    //
+    // Use this at the top of hot pages (fw.index.php, fw.system.status.php,
+    // dashboards, ...) with the list of keys you know you'll need. Saves
+    // ~10 ms per key over the cURL-init+connect+close cycle that GET_INFO
+    // otherwise does for each setting.
+    public function PREFETCH_INFO(array $keys): void {
+        // Drop already-cached keys so we don't round-trip for them.
+        $missing = array();
+        foreach ($keys as $k) {
+            $k = trim($k);
+            if ($k === "") { continue; }
+            if (!array_key_exists($k, self::$info_cache)) {
+                $missing[] = $k;
+            }
+        }
+        if (count($missing) === 0) { return; }
+
+        $resp = $this->REST_API_POST_JSON("/getinfos", array("keys" => $missing));
+        $json = json_decode($resp);
+        if (!is_object($json) || !property_exists($json, "Status") || !$json->Status) {
+            return;
+        }
+        if (!property_exists($json, "Data")) {
+            return;
+        }
+        // json_decode on an object gives stdClass; Data is a key->base64 map.
+        $encoded = property_exists($json, "Encoded") && $json->Encoded;
+        foreach ($json->Data as $key => $b64) {
+            $val = ($encoded && $b64 !== "") ? base64_decode($b64) : (string)$b64;
+            self::$info_cache[$key] = trim($val);
+        }
+    }
+
     public function HACLUSTERCLIENT_API($endpoint){
         $unixSocketPath="/usr/share/artica-postfix/bin/run/haclusterclient.sock";
+        // Fast-fail when the daemon is down or mid-restart — the HaClusterClient
+        // binary cycles every ~2 min; without this the WebConsole dashboard AJAX
+        // calls hang 13 s per request, exceeding the browser timeout.
+        if (!file_exists($unixSocketPath)) {
+            return json_encode(array(
+                "Status" => false,
+                "Error"  => "HaClusterClient daemon socket not present (daemon down or restarting)",
+                "JsonFailed" => true,
+                "Info"   => ""
+            ));
+        }
         $cURLConnection=$this->GENERIC_API_CLIENT($unixSocketPath,$endpoint);
+        // Local Unix-socket call — anything over a few seconds means the daemon
+        // is unresponsive. Override the 13 s default with 3 s total + 500 ms connect.
+        curl_setopt($cURLConnection, CURLOPT_CONNECTTIMEOUT_MS, 500);
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 3);
         return $this->GENERIC_API($endpoint,$cURLConnection);
     }
     public function MILTER_API($endpoint):string{
@@ -1784,25 +1854,35 @@ class sockets{
 
     function GET_INFO($key):string{
         $key=trim($key);
+        if (array_key_exists($key, self::$info_cache)) {
+            return self::$info_cache[$key];
+        }
         list($status,$value)=$this->GET_INFO_REST($key);
         if($status){
-            if($value=="!nil"){return "";}
-            return $value;
+            $result = ($value=="!nil") ? "" : $value;
+            self::$info_cache[$key] = $result;
+            return $result;
         }
 
         list($status,$value)=$this->GET_INFO_FILE($key);
-        if($value=="!nil"){return "";}
-        return $value;
+        $result = ($value=="!nil") ? "" : $value;
+        self::$info_cache[$key] = $result;
+        return $result;
     }
     private function GET_INFO_REST($key):array{
         $key=urlencode($key);
-        $json=json_decode($this->REST_API("/getinfo/$key"));
-        if(!$json->Status) {
-            writelogs("[$key]: Status failed $json->Error",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
+        $json=json_decode($this->REST_API_GET_FAST("/getinfo/$key"));
+        if(!is_object($json) || !property_exists($json, "Status") || !$json->Status) {
+            $err = is_object($json) && property_exists($json, "Error") ? $json->Error : "no Status";
+            if(function_exists("writelogs")) {
+                writelogs("[$key]: Status failed $err", __CLASS__."/".__FUNCTION__, __FILE__, __LINE__);
+            }
             return array(false,"");
         }
         if(!property_exists($json, "Data")) {
-            writelogs("[$key]: Data failed $json->Error",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
+            if(function_exists("writelogs")) {
+                writelogs("[$key]: Data failed", __CLASS__."/".__FUNCTION__, __FILE__, __LINE__);
+            }
             return array(false,"");
         }
         $value = trim($json->Data);
@@ -1812,6 +1892,64 @@ class sockets{
             }
         }
         return array(true,trim($value));
+    }
+
+    // Fast GET path for /getinfo/ — reuses a single cURL handle across calls
+    // to avoid repeated curl_init()+Unix-socket-connect+curl_close() overhead.
+    // PHP 7.3-compatible.
+    private function REST_API_GET_FAST($endpoint):string{
+        if(!function_exists("curl_init")){
+            return json_encode(array(
+                "Status" => false,
+                "Error"  => "curl_init not available",
+                "JsonFailed" => true,
+                "Info"   => ""
+            ));
+        }
+        if (self::$rest_get_handle === null) {
+            $h = curl_init();
+            curl_setopt($h, CURLOPT_UNIX_SOCKET_PATH, "/usr/share/artica-postfix/bin/run/articarest.sock");
+            curl_setopt($h, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($h, CURLOPT_TIMEOUT, $this->REST_API_TIMEOUT);
+            curl_setopt($h, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($h, CURLOPT_FORBID_REUSE, false);
+            curl_setopt($h, CURLOPT_FRESH_CONNECT, false);
+            // HTTP/1.1 keepalive is implicit; setting the header explicitly
+            // protects against upstream middleware stripping it.
+            curl_setopt($h, CURLOPT_HTTPHEADER, array("Connection: keep-alive"));
+            self::$rest_get_handle = $h;
+        }
+        $h = self::$rest_get_handle;
+        if (substr($endpoint, 0, 1) !== "/") { $endpoint = "/" . $endpoint; }
+        curl_setopt($h, CURLOPT_URL, "http://localhost" . $endpoint);
+
+        $resp = curl_exec($h);
+        $curl_error_num = curl_errno($h);
+        $HTTP_CODE = curl_getinfo($h, CURLINFO_HTTP_CODE);
+
+        if ($curl_error_num > 0) {
+            if(function_exists("writelogs")) {
+                writelogs("$endpoint Error $curl_error_num", __FUNCTION__, __FILE__, __LINE__);
+            }
+            // Socket may be in a bad state — drop the handle so the next call rebuilds it.
+            @curl_close(self::$rest_get_handle);
+            self::$rest_get_handle = null;
+            return json_encode(array(
+                "Status" => false,
+                "Error"  => "Error Connecting to the REST API server $curl_error_num",
+                "JsonFailed" => true,
+                "Info"   => ""
+            ));
+        }
+        if ($HTTP_CODE == 404) {
+            return json_encode(array(
+                "Status" => false,
+                "Error"  => "$endpoint<br>404 Not found, did you use the Correct version of the Web API service?",
+                "JsonFailed" => true,
+                "Info"   => ""
+            ));
+        }
+        return $resp;
     }
     function GET_INFO_FILE($key):array{
 
@@ -1877,6 +2015,12 @@ class sockets{
         }
         $key=str_replace("SET:SET:","",$key);
         $key=str_replace("SET:","",$key);
+        // Cache key stores the user-visible value; "!nil" round-trips as "" on GET.
+        $cached = ($TheValue === "!nil") ? "" : $TheValue;
+        if (array_key_exists($key, self::$info_cache) && self::$info_cache[$key] === $cached) {
+            return true;
+        }
+        self::$info_cache[$key] = $cached;
         $KeyEnc = urlencode(base64_encode((string)$key));
         $DataEnc = urlencode(base64_encode($TheValue));
         $data = json_decode($this->REST_API("/setinfo/$KeyEnc/$DataEnc"));
@@ -1888,6 +2032,8 @@ class sockets{
     }
 
     private function SET_INFO_FILE($key,$value):bool{
+        // Keep the in-memory cache aligned with what we write to disk.
+        self::$info_cache[$key] = (string)$value;
         $fname="/etc/artica-postfix/settings/Daemons/$key";
 
         if(is_file($fname)) {
@@ -1914,10 +2060,23 @@ class sockets{
     }
     function SET_INFO($key,$value):bool{
 
+        $cacheKey = trim($key);
+        $strVal   = (string)$value;
+        // Skip the REST roundtrip when we already cached this exact value.
+        // WebConsole code often rewrites unchanged settings on every page
+        // render (menu builders, config wizards); without this the cache
+        // was getting invalidated N times and the same key fetched N+1 times.
+        if (array_key_exists($cacheKey, self::$info_cache) && self::$info_cache[$cacheKey] === $strVal) {
+            return true;
+        }
+
         $keys["Keys"][]= array("key"=>$key,"value"=>$value);
 
         $payload = $keys;
         $json=json_decode($this->REST_API_PUT_JSON("/setinfo",$payload));
+        // Value changed — update cache with what we just wrote rather than
+        // unsetting it, so subsequent reads hit the cache without a refetch.
+        self::$info_cache[$cacheKey] = $strVal;
         if(!$json){return false;}
         if(!$json->Status){
             if(function_exists("writelogs")) {

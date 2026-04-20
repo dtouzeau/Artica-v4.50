@@ -220,7 +220,7 @@ function template_remove_perform():bool{
     $q=new lib_sqlite(NginxGetDB());
     $ligne=$q->mysqli_fetch_array("SELECT tpname FROM nginx_templates WHERE ID=$tplid");
     $tpname=$ligne["tpname"];
-    $q->QUERY_SQL("DELETE FROM nginx_templates WHERE ID=$tplid");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"nginx_templates","where"=>array("ID"=>"$tplid")));
     return admin_tracks("Removed reverse-proxy template $tpname configuration");
 }
 function template_import_popup():bool{

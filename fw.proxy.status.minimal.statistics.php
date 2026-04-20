@@ -61,10 +61,17 @@ function page(){
     $TINY_ARRAY["ICO"]     = "fa-solid fa-chart-pie";
     $TINY_ARRAY["EXPL"]    = "{microstats_explain}";
     $TINY_ARRAY["URL"]     = "proxy-status";
+    if(isset($_GET["hacluster"])){
+        $TINY_ARRAY["URL"]     = "hacluster-statistics";
+    }
     $TINY_ARRAY["BUTTONS"] = null;
     $jstiny = "Loadjs('fw.progress.php?tiny-page=" . urlencode(base64_encode(serialize($TINY_ARRAY))) . "');";
 
     $h=array();
+
+    echo $tpl->div_warning("{hacluster_no_statistics}");
+    echo "<script>$jstiny</script>";
+    return false;
 
     // Period buttons
     $periods=array('current'=>'{this_hour}','hourly'=>'{today}','daily'=>'{this_week}','weekly'=>'{this_month}','monthly'=>'{this_year}');

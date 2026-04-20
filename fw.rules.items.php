@@ -97,6 +97,7 @@ function category_clean_perform():bool{
     $groupid=$_POST["category-clean"];
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$groupid");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return admin_tracks("Removing all catgegories from acls group $groupid");
 }
 function category_nonproductive_js():bool{
@@ -125,7 +126,7 @@ function category_nonproductive_perform():bool{
         $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$groupid AND pattern='$category'");
         $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,enabled) VALUES ('$groupid','$category',1)");
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return admin_tracks("Adding Non-productive categories inside acls group $groupid");
 
 }
@@ -155,7 +156,7 @@ function category_polluate_perform():bool{
         $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$groupid AND pattern='$category'");
         $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,enabled) VALUES ('$groupid','$category',1)");
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return admin_tracks("Adding Polluate categories inside acls group $groupid");
 
 }
@@ -239,7 +240,7 @@ function category_all_perform():bool{
         $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$groupid AND pattern='$category'");
         $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,enabled) VALUES ('$groupid','$category',1)");
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return admin_tracks("Adding all categories inside acls group $groupid");
 
 }
@@ -252,7 +253,7 @@ function category_dangerous_perform():bool{
         $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$groupid AND pattern='$category'");
         $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,enabled) VALUES ('$groupid','$category',1)");
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return admin_tracks("Adding Dangerous categories inside acls group $groupid");
 
 }
@@ -335,7 +336,7 @@ function item_description(){
 
 
 
-function items_description_save(){
+function items_description_save():bool{
     header("content-type: application/x-javascript");
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
@@ -343,7 +344,9 @@ function items_description_save(){
     $ID=intval($_POST["item-description"]);
     $description=$q->sqlite_escape_string2($_POST["description"]);
     $q->QUERY_SQL("UPDATE webfilters_sqitems SET description='$description' WHERE ID='$ID'");
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);}
+    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
+    return true;
 }
 
 function URL_ADDONS(){
@@ -809,8 +812,9 @@ function group_save(){
 
     $q->QUERY_SQL("UPDATE webfilters_sqgroups SET ".@implode(",",$f)." WHERE ID='$gpid'");
     if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
-    admin_tracks("Update ACL object ".@implode("; ",$ll));
-    return true;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
+    return admin_tracks("Update ACL object ".@implode("; ",$ll));
+
 }
 function SaveGroupName(){
     $tpl=new template_admin();
@@ -853,6 +857,7 @@ function SaveGroupName(){
 
     admin_tracks("Updating ACL Group $GroupName to $GroupNameSave and other parameters $bulkimport");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/parse");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return true;
 }
 
@@ -881,6 +886,7 @@ function item_url_db_save(){
 
     admin_tracks("Updating ACL Group $GroupNameORG to $GroupName and other parameters");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/parse");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return true;
 }
 function item_url_db_uploaded(){
@@ -1104,6 +1110,7 @@ function categories_list(){
                 $ligne["pattern"]=$category_id;
                 $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE pattern='{$ligne["pattern"]}' AND gpid=$groupid");
                 $q->QUERY_SQL("INSERT INTO webfilters_sqitems (pattern,gpid) VALUES ('$category_id','$groupid')");
+                $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
             }
         }
 
@@ -1162,6 +1169,7 @@ function category_unlink(){
     $md=$_GET["md"];
     $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$groupid AND pattern='$category'");
     if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."')";return;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     echo "$('#$md').remove();\n";
 }
 
@@ -1180,6 +1188,7 @@ function categories_select_all(){
         $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,enabled) 
         VALUES ('$groupid','$category_id',1)");
     }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     $page=CurrentPageName();
     echo "LoadAjax('categories-list-$groupid','$page?categories-list=$groupid');\n";
     echo "dialogInstance2.close();\n";
@@ -1198,7 +1207,7 @@ function category_post_js(){
     $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$groupid AND pattern='$category'");
     $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,enabled) VALUES ('$groupid','$category',1)");
     if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."')";return;}
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     echo "LoadAjax('categories-list-$groupid','$page?categories-list=$groupid');\n";
     echo "$('#$md').remove();\n";
 
@@ -1369,7 +1378,7 @@ function time_save(){
     if($H2T<$H1T){
         $tpl=new templates();
         echo $tpl->javascript_parse_text("{ERROR_SQUID_TIME_ACL}");
-        return;
+        return false;
     }
 
 
@@ -1382,7 +1391,9 @@ function time_save(){
 
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error;}
+    if(!$q->ok){echo $q->mysql_error;return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
+    return true;
 }
 
 
@@ -1539,8 +1550,8 @@ function weekrange_save(){
     $newval=mysql_escape_string2($newval);
     $sql="UPDATE webfilters_sqgroups SET params='$newval' WHERE ID='$gpid'";
     $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error."\nin line:".__LINE__."\n".basename(__FILE__)."\n\n$sql\n";return;}
-
+    if(!$q->ok){echo $q->mysql_error."\nin line:".__LINE__."\n".basename(__FILE__)."\n\n$sql\n";return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
 }
 
 function ndpi_choose(){
@@ -1571,7 +1582,7 @@ function ndpi_choose(){
     if($jsafter<>null){
         echo $jsafter."\n";
     }
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
 
 }
 
@@ -1595,7 +1606,7 @@ function item_save():bool{
     }
 
     $q->QUERY_SQL("UPDATE webfilters_sqgroups SET GroupName='$GroupNameSave' WHERE ID='$gpid'");
-    if(!$q->ok){echo $q->mysql_error_html(true);}
+    if(!$q->ok){echo $q->mysql_error_html(true);return false;}
 
     $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
     if($EnableSuricata==1) {
@@ -1654,7 +1665,8 @@ function item_save():bool{
     $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid='$gpid'");
     $sql="INSERT INTO webfilters_sqitems (gpid,pattern,enabled) VALUES ".@implode(",", $SQ);
     $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "{$_POST["pattern"]}<br>".$q->mysql_error_html(false);}
+    if(!$q->ok){echo "{$_POST["pattern"]}<br>".$q->mysql_error_html(false);return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return true;
 
 }
@@ -1671,6 +1683,7 @@ function countries_dselectall(){
     if($function<>null){echo "$function()\n";}
     echo "LoadAjax('table-acls-items-$gpid','$page?countries-search=$gpid&js-after=$jsafter&function=$function');\n";
     echo "Loadjs('fw.proxy.acls.bugs.php?refresh=yes');\n";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
 }
 
 function countries_selectall(){
@@ -1697,7 +1710,7 @@ function countries_selectall(){
     if($jsafter<>null){ echo base64_decode($jsafter)."\n"; }
     if($function<>null){echo "$function()\n";}
     echo "LoadAjax('table-acls-items-$gpid','$page?countries-search=$gpid&js-after=$jsafter&function=$function');\n";
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
 }
 
 function spamc_val(){
@@ -1981,6 +1994,7 @@ function server_cert_fingerprint_save(){
     $q->QUERY_SQL($sql);
     if(!$q->ok){echo $tpl->post_error("$sql\n$q->mysql_error");}
     admin_tracks("Adding a new SSL fingerprint $Fingerprint ($description) in Proxy Object #$gpid");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return true;
 }
 function new_item_header($gpid,$GroupName):bool{
@@ -2158,6 +2172,7 @@ function item_enable():bool{
     header("content-type: application/x-javascript");
     echo "Loadjs('fw.proxy.acls.bugs.php?refresh=yes');";
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/parse");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return true;
 
 
@@ -2225,6 +2240,7 @@ function new_item_header_save():bool{
         echo $tpl->post_error($q->mysql_error);
         return false;
     }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return admin_tracks("Add a new SMTP Header acls $pattern for Acl object $GroupName");
 }
 
@@ -2320,6 +2336,7 @@ function new_item_save(){
     foreach ($AdminTrack as $line) {admin_tracks($line);}
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?explain-this-rule=$gpid");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/parse");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return true;
 }
 function item_table(){
@@ -2581,6 +2598,7 @@ function itype_save():bool{
         $q->QUERY_SQL($sql);
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/acls");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/replic");
     return true;
 
 }

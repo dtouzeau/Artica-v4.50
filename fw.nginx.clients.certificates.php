@@ -225,7 +225,7 @@ function delete_server_perform(){
 
     $ligne=$q->mysqli_fetch_array("SELECT CertificateName FROM nginx_servers_certs WHERE ID=$ID");
     $CertificateName=$ligne["CertificateName"];
-    $q->QUERY_SQL("DELETE FROM nginx_clients_certs WHERE certid='$ID'");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"nginx_clients_certs","where"=>array("certid"=>"$ID")));
 
     $results=$q->QUERY_SQL("SELECT serviceid FROM service_parameters WHERE zkey='ssl_client_certificate' AND zvalue='$ID'");
     foreach ($results as $index=>$ligne){
@@ -233,7 +233,7 @@ function delete_server_perform(){
         $sockngix->SET_INFO("EnableClientCertificate",0);
         $sockngix->SET_INFO("ssl_client_certificate",0);
     }
-    $q->QUERY_SQL("DELETE FROM nginx_servers_certs WHERE ID='$ID'");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"nginx_servers_certs","where"=>array("ID"=>"$ID")));
     admin_tracks("Deleted Server Certificate $CertificateName #$ID");
 }
 

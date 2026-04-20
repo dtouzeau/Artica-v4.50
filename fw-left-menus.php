@@ -141,7 +141,10 @@ function xgen(){
         $f[]="                    <a href='#' ><i class=\"fa fa-server\"></i> <span class=\"nav-label\">{your_system}</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
         $f[]="<!-- your_system ===  ".__LINE__." -->";
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.information.php","ICO"=>"fas fa-server","TEXT"=>"{system_information}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.information.php",
+            "ICO"=>"fas fa-server","TEXT"=>"{system_information}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.metrics.os.php",
+            "ICO"=>ico_statistics,"TEXT"=>"{metrics}"));
         if($users->AsSystemAdministrator) {
             if(!$users->AsDockerWeb) {
                 $f[] = $tpl->LeftMenu(
@@ -505,14 +508,6 @@ function xgen(){
                     }
                 }
             }
-
-          $IPAUDIT_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPAUDIT_INSTALLED"));
-            if($IPAUDIT_INSTALLED==1){
-                $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.network.ipaudit.php","ICO"=>ico_chart_line,"TEXT"=>"{APP_IPAUDIT}"));
-
-            }
-
 
             $NtopNGInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NtopNGInstalled"));
             if($NtopNGInstalled==1){

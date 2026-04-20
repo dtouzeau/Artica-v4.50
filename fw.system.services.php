@@ -110,7 +110,6 @@ function features():bool{
     $APP_IMAPBOX        = null;
     $KSRN               = null;
     $APP_SSHPROXY       = null;
-    $APP_IPAUDIT        = null;
     $APP_OSPFD          = null;
     $OPENSSH=$features->OPENSSH();
 
@@ -219,12 +218,6 @@ function features():bool{
     }
     if(method_exists($features,"PULSEREVERSE")) {
         $PULSEREVERSE=$features->PULSEREVERSE();
-    }
-    if(method_exists($features,"APP_IPAUDIT")) {
-        VERBOSE("APP_IPAUDIT: OK",__LINE__);
-        $APP_IPAUDIT=$features->APP_IPAUDIT();
-    }else{
-        VERBOSE("APP_IPAUDIT: NO METHOD",__LINE__);
     }
 
 
@@ -659,8 +652,6 @@ function features():bool{
     $network_security[]=$APP_DECISION_IP;
     $network_security[]=$FAIL2BAN;
     $network_security[]=$APP_NDPI;
-    VERBOSE("APP_IPAUDIT: ".strlen($APP_IPAUDIT),__LINE__);
-    $network_security[]=$APP_IPAUDIT;
     $network_security[]=$APP_NETMONIX;
     $network_security[]=$SURICATA;
     $network_security[]=$APP_CLAMAV;

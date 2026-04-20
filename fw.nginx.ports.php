@@ -38,8 +38,7 @@ function delete():bool{
     $ligne=$q->mysqli_fetch_array("SELECT serviceid,port FROM stream_ports WHERE ID=$ID");
     $serviceid=$ligne["serviceid"];
     $port=$ligne["port"];
-	$q->QUERY_SQL("DELETE FROM `stream_ports` WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;}
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"stream_ports","where"=>["ID"=>$ID]]);
     $ligne=$q->mysqli_fetch_array("SELECT serviceid FROM stream_ports WHERE ID=$ID");
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($ligne["serviceid"]);
     $servername=get_servicename($serviceid);
@@ -183,8 +182,7 @@ function port_save():bool{
 	$ID=intval($_POST["ID"]);
 	$serviceid=intval($_POST['serviceid']);
     $nginxsock2=new socksngix($serviceid);
-	$q=new lib_sqlite(NginxGetDB());
-	$q->QUERY_SQL("DELETE FROM stream_ports WHERE serviceid=0");
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"stream_ports","where"=>["serviceid"=>"0"]]);
     if(!isset($_POST["interface"])){$_POST["interface"]="";}
 
     $interface=$_POST["interface"];
@@ -207,11 +205,10 @@ function port_save():bool{
             }
         }
 
-        $q->QUERY_SQL("DELETE FROM stream_ports WHERE zmd5='$md5'");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"stream_ports","where"=>["zmd5"=>$md5]]);
 	    $sql="INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) VALUES ($serviceid,'$interface',$port,'$md5','$options')";
 	    writelogs($sql,__FUNCTION__,__FILE__,__LINE__);
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){echo $q->mysql_error;}
+		$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"insert","table"=>"stream_ports","values"=>["serviceid"=>$serviceid,"interface"=>$interface,"port"=>$port,"zmd5"=>$md5,"options"=>$options]]);
 		return false;
 	}
 
@@ -223,11 +220,8 @@ function port_save():bool{
         }
     }
 
-    $q->QUERY_SQL("DELETE FROM stream_ports WHERE zmd5='$md5'");
-	$sql="INSERT INTO stream_ports (serviceid,interface,port,zmd5,options) 
-VALUES ($serviceid,'$interface',$port,'$md5','$options')";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"stream_ports","where"=>["zmd5"=>$md5]]);
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"insert","table"=>"stream_ports","values"=>["serviceid"=>$serviceid,"interface"=>$interface,"port"=>$port,"zmd5"=>$md5,"options"=>$options]]);
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($serviceid);
     $servername=get_servicename($serviceid);
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");

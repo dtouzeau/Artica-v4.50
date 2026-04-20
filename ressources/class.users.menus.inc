@@ -332,7 +332,6 @@ class usersMenus {
 	public $SUGARCRM_INSTALLED=false;
 	public $GNUPLOT_PNG=false;
 	public $IOSTAT_INSTALLED=false;
-	public $IPAUDIT_INSTALLED=false;
 	public $IOSTAT_ARRAY=array();
 	public $PHP_BIN_PATH=null;
 	public $EXEC_NICE=null;
@@ -952,7 +951,7 @@ class usersMenus {
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DSTAT_INSTALLED"))==1){$this->DSTAT_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GNUPLOT_PNG"))==1){$this->GNUPLOT_PNG=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IOSTAT_INSTALLED"))==1){$this->IOSTAT_INSTALLED=true;}
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPAUDIT_INSTALLED"))==1){$this->IPAUDIT_INSTALLED=true;}
+
 
 
 

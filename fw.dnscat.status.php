@@ -171,7 +171,7 @@ function form_popup():bool{
 
     $jsrestart="dialogInstance1.close();".restart_js();
     $html[]="<div id='progress-ufdbcat-restart-$t'></div>";
-    $html[]=$tpl->form_outside("{parameters}", @implode("\n", $form),null,"{apply}","LoadAjax('table-ufdbcatstatus','$page?tabs=yes');$jsrestart","AsSystemAdministrator");
+    $html[]=$tpl->form_outside("", @implode("\n", $form),"{categoryserv_explain_dns}","{apply}","LoadAjax('table-ufdbcatstatus','$page?tabs=yes');$jsrestart","AsSystemAdministrator");
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }

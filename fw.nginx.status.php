@@ -1580,10 +1580,13 @@ function nginx_pagespeed():string{
         $sline=$q->mysqli_fetch_array("SELECT count(*) as tcount FROM wp_sites WHERE pagespeed=1");
         $CountOfSites=$CountOfSites+intval($sline["tcount"]);
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $sline=$q->mysqli_fetch_array("SELECT count(*) as tcount FROM service_parameters WHERE zkey='pagespeed' and zvalue='1'");
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    $CountOfSites=$CountOfSites+intval($sline["tcount"]);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/sites/list"),true);
+    if(is_array($json) && isset($json["sites"])){
+        foreach($json["sites"] as $site){
+            $sock=new socksngix(intval($site["ID"]));
+            if($sock->GET_INFO("pagespeed")=="1"){$CountOfSites++;}
+        }
+    }
 
     if($CountOfSites==0) {
         $WIDGET = $tpl->widget_h("gray", "fa-solid fa-gauge-circle-bolt", "0  {websites}", "{APP_MOD_PAGESPEED}",$button);

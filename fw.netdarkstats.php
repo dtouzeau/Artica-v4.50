@@ -18,7 +18,12 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors',1);ini_set('error_reporting',E_ALL);}
 $tpl=new template_admin();
 if(!$tpl->xPrivs()){exit();}
-
+if(isset($_GET["darkstats-db-status"])){darkstats_db_status();exit;}
+if(isset($_GET["remove-database-js"])){remove_database_js();exit;}
+if(isset($_GET["uninstall-js"])){uninstall_js();exit;}
+if(isset($_GET["install-js"])){install_js();exit;}
+if(isset($_POST["uninstall"])){uninstall_perform();exit;}
+if(isset($_POST["remove-database"])){remove_database_peform();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["tab-traffic"])){tab_traffic();exit;}
 if(isset($_GET["tab-top-hosts"])){tab_top_hosts();exit;}
@@ -107,8 +112,38 @@ function _ds_range_selector($divTarget,$chartAction,$currentRange,$extra=''):str
 function Start(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $html=$tpl->page_header("{network_traffic_statistics}","fas fa-chart-area","{network_traffic}","$page?tabs=yes");
+    $html=$tpl->page_header("{network_traffic_statistics}",
+        "fas fa-chart-area","{network_traffic}","$page?tabs=yes",
+        "darkstats","darkstats-progress",false,"darkstats-div");
     echo $tpl->_ENGINE_parse_body($html);
+}
+function remove_database_js(){
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $js="LoadAjax('darkstats-div','$page?tabs=yes');";
+    return $tpl->js_confirm_delete("{empty_database}","remove-database","yes",$js);
+}
+function uninstall_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $js="LoadAjax('darkstats-div','$page?tabs=yes');";
+    return $tpl->js_confirm_delete("{uninstall_feature}","uninstall","yes",$js);
+}
+function remove_database_peform():bool{
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/darkstats/empty",array());
+    return admin_tracks("Empty the DarkStats Database");
+}
+function install_js():bool{
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/darkstats/install");
+    header("content-type: application/x-javascript");
+    $page=CurrentPageName();
+    $js="LoadAjax('darkstats-div','$page?tabs=yes');";
+    echo $js;
+    return admin_tracks("Install the DarkStats Database");
+}
+function uninstall_perform():bool{
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/darkstats/uninstall");
+    return admin_tracks("Uninstall the DarkStats Database");
 }
 
 // ─── Tabs ───
@@ -124,7 +159,45 @@ function tabs(){
         "{hosts}"              =>"$page?tab-hosts=yes",
         "{status}"             =>"$page?tab-status=yes",
     ];
+
+
+    $TINY_ARRAY["TITLE"]="{network_traffic_statistics}";
+    $TINY_ARRAY["ICO"]="fas fa-chart-area";
+    $TINY_ARRAY["EXPL"]="{network_traffic}: <span id='darkstats-db-status'></span><br>{IPAUDIT_EXPLAIN}";
+
+    $DisableDarkStats=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableDarkStats"));
+
+    if($DisableDarkStats==0) {
+        $topbuttons[] = array("Loadjs('$page?remove-database-js=yes')", ico_trash, "{empty_database}");
+        $topbuttons[] = array("Loadjs('$page?uninstall-js=yes')", ico_trash, "{uninstall_feature}");
+    }else{
+        $topbuttons[] = array("Loadjs('$page?install-js=yes')", ico_cd, "{install_feature}");
+    }
+
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
     echo $tpl->_ENGINE_parse_body($tpl->tabs_default($array));
+    $refresh=$tpl->RefreshInterval_js("darkstats-db-status",$page,"darkstats-db-status=yes");
+    echo "<script>$jstiny;$refresh</script>";
+}
+
+function darkstats_db_status():bool{
+    $tpl=new template_admin();
+    $raw=$GLOBALS["CLASS_SOCKETS"]->REST_API("/darkstats/health");
+    $json=json_decode($raw);
+
+    if(!is_object($json)||!property_exists($json,'success')||!$json->success){
+        $status="<span class='badge' style='background:#c0392b;color:#fff'>DarkStats Offline</span>";
+    }else{
+        $d=$json->data;
+        $color=$d->running?'#27ae60':'#c0392b';
+        $statusText=$d->running?'{running}':'{stopped}"';
+        $size="{database_size}: $d->file_path ".FormatBytes( $d->real_file_size/1024);
+        $status="<span class='badge' style='background:$color;color:white'>$statusText $size</span>";
+    }
+    echo $tpl->_ENGINE_parse_body($status);
+    return true;
 }
 
 // ─── Tab: Traffic overview ───
@@ -224,8 +297,8 @@ function health_widget(){
     $raw=$GLOBALS["CLASS_SOCKETS"]->REST_API("/darkstats/health");
     $json=json_decode($raw);
     if(!is_object($json)||!property_exists($json,'success')||!$json->success){
-        echo "<span class='badge' style='background:#c0392b;color:#fff'>DarkStats Offline</span>";
-        echo "<p class='text-muted' style='margin-top:8px'>{service_not_running}</p>";
+        echo $tpl->_ENGINE_parse_body("<span class='badge' style='background:#c0392b;color:#fff'>{offline}</span>");
+        echo $tpl->_ENGINE_parse_body("<p class='text-muted' style='margin-top:8px'>{stopped}</p>");
         return;
     }
     $d=$json->data;

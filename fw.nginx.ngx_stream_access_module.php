@@ -1,5 +1,9 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+
+$GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["container-move"])){container_move();exit;}
@@ -12,17 +16,16 @@ if(isset($_POST["delete"])){delete();exit;}
 
 table_start();
 function container_move():bool{
-    $q=new lib_sqlite(NginxGetDB());
 	$tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-	$ID=$_GET["container-move"];
+	$ID=intval($_GET["container-move"]);
 	$dir=$_GET["dir"];
 	$table="ngx_stream_access_module";
     $serviceid=intval($_GET["serviceid"]);
-	$sql="SELECT serviceid,zorder FROM `$table` WHERE ID='$ID'";
 
-	$results=$q->QUERY_SQL($sql);$ligne=$results[0];
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
-	$CurrentOrder=$ligne["zorder"];
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/$table/ID/$ID"),true);
+    if(!is_array($json) || !$json["Status"] || count($json["rows"])==0){return false;}
+    $ligne=$json["rows"][0];
+	$CurrentOrder=intval($ligne["zorder"]);
     $serviceid=intval($ligne["serviceid"]);
 
 	if($dir==0){
@@ -31,24 +34,18 @@ function container_move():bool{
 		$NextOrder=$CurrentOrder+1;
 	}
 
-	$sql="UPDATE `$table` SET zorder='$CurrentOrder' WHERE zorder='$NextOrder' AND serviceid=$serviceid";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return false;}
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>$table,"set"=>["zorder"=>$CurrentOrder],"where"=>["zorder"=>$NextOrder,"serviceid"=>$serviceid]]);
 
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>$table,"set"=>["zorder"=>$NextOrder],"where"=>["ID"=>$ID]]);
 
-	$sql="UPDATE `$table` SET zorder=$NextOrder WHERE ID='$ID'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return false;}
-
-	$results=$q->QUERY_SQL("SELECT ID FROM `$table` WHERE serviceid=$serviceid ORDER by zorder");
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return false;}
+	$json2=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/$table/serviceid/$serviceid"),true);
 	$c=1;
-	foreach ($results as $index=>$ligne){
-		$ID=$ligne["ID"];
-		$sql="UPDATE `$table` SET zorder='$c' WHERE ID='$ID'";
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return false;}
-		$c++;
+	if(is_array($json2) && $json2["Status"]){
+		foreach ($json2["rows"] as $ligne){
+			$rid=intval($ligne["ID"]);
+			$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>$table,"set"=>["zorder"=>$c],"where"=>["ID"=>$rid]]);
+			$c++;
+		}
 	}
     echo "Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');";
     return true;
@@ -65,22 +62,24 @@ function table_start():bool{
 }
 function delete_js():bool{
 	$tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-	$ID=$_GET["delete"];
+	$ID=intval($_GET["delete"]);
 	$md5=$_GET["md5"];
-    $q=new lib_sqlite(NginxGetDB());
-	$ligne=$q->mysqli_fetch_array("SELECT item,serviceid FROM ngx_stream_access_module WHERE ID=$ID");
-    $serviceid=$ligne["serviceid"];
-	return $tpl->js_confirm_delete("{$ligne["item"]}", "delete", "$ID","$('#$md5').remove();Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/ngx_stream_access_module/ID/$ID"),true);
+    $item=""; $serviceid=0;
+    if(is_array($json) && $json["Status"] && !empty($json["rows"])){
+        $item=$json["rows"][0]["item"]; $serviceid=intval($json["rows"][0]["serviceid"]);
+    }
+	return $tpl->js_confirm_delete("$item", "delete", "$ID","$('#$md5').remove();Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');");
 }
 function delete():bool{
-    $ID=$_POST["delete"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT item,serviceid FROM ngx_stream_access_module WHERE ID=$ID");
-    $serviceid=$ligne["serviceid"];
-    $item=$ligne["item"];
+    $ID=intval($_POST["delete"]);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/ngx_stream_access_module/ID/$ID"),true);
+    $serviceid=0; $item="";
+    if(is_array($json) && $json["Status"] && !empty($json["rows"])){
+        $serviceid=intval($json["rows"][0]["serviceid"]); $item=$json["rows"][0]["item"];
+    }
 
-	$q->QUERY_SQL("DELETE FROM `ngx_stream_access_module` WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;return false;}
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"ngx_stream_access_module","where"=>["ID"=>$ID]]);
     $servicename=get_servicename($serviceid);
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
     return admin_tracks("Remove Access item $item from $servicename");
@@ -111,13 +110,13 @@ function id_popup():bool{
 	$title="{new_item}";
 	
 	$btname="{add}";
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
+	$ligne=array();
 	if($ID>0){
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM ngx_stream_access_module WHERE ID=$ID");
+		$json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/ngx_stream_access_module/ID/$ID"),true);
+		if(is_array($json) && $json["Status"] && !empty($json["rows"])){$ligne=$json["rows"][0];}
 		$btname="{apply}";
-		$title="{$ligne["item"]}";
-		$serviceid=$ligne["serviceid"];
-		
+		$title=isset($ligne["item"]) ? "{$ligne["item"]}" : "";
+		$serviceid=isset($ligne["serviceid"]) ? intval($ligne["serviceid"]) : $serviceid;
 	}
 	$js="dialogInstance3.close();LoadAjax('ngx_stream_access_module-$serviceid','$page?table=$serviceid');Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');";
 	
@@ -139,11 +138,8 @@ function id_popup():bool{
 function id_save():bool{
 	$tpl=new template_admin();$tpl->CLUSTER_CLI=true;
 	$tpl->CLEAN_POST_XSS();
-	$md5=$_POST["md5"];
 	$ID=$_POST["ID"];
 	$serviceid=intval($_POST['serviceid']);
-    $q=new lib_sqlite(NginxGetDB());
-	
 	if($serviceid==0){echo "Service ID missing or null\n";}
 	
 	$item=trim($_POST["ipaddr"]);
@@ -160,18 +156,15 @@ function id_save():bool{
 	
 	
 	if($ID==0){
-		$q->QUERY_SQL("INSERT OR IGNORE INTO ngx_stream_access_module(serviceid,item,allow) 
-				VALUES ($serviceid,'$item',$allow)");
-		if(!$q->ok){echo $q->mysql_error;}
+		$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"insert","table"=>"ngx_stream_access_module","values"=>["serviceid"=>$serviceid,"item"=>$item,"allow"=>$allow]]);
         $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($serviceid);
 		return false;
 	}
-	
-	$q->QUERY_SQL("UPDATE ngx_stream_access_module SET item='$item',allow='$allow' WHERE ID=$ID");
+
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"ngx_stream_access_module","set"=>["item"=>$item,"allow"=>$allow],"where"=>["ID"=>$ID]]);
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($serviceid);
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
-	if(!$q->ok){echo $q->mysql_error;return false;}
-    return  admin_tracks_post("Set Access item for site #$serviceid");
+    return  admin_tracks_post("Set Access item $item for site #$serviceid");
 
 	
 }
@@ -195,18 +188,8 @@ function table():bool{
 
 	
 
-	$q=new lib_sqlite(NginxGetDB());
-	
-	
-	$sql="CREATE TABLE IF NOT EXISTS `ngx_stream_access_module` ( `ID` INTEGER PRIMARY KEY AUTOINCREMENT, `zorder` INTEGER, `serviceid` INTEGER, `allow` INTEGER, `item` text )";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "$q->mysql_error (".__LINE__.")\n$sql\n";}
-	$q->QUERY_SQL("CREATE INDEX IF NOT EXISTS KeyService ON ngx_stream_access_module (serviceid,zorder)");
-	
-	
-	
-	$results=$q->QUERY_SQL("SELECT * FROM ngx_stream_access_module WHERE serviceid='$serviceid' ORDER BY zorder");
-	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return false;}
+	$json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/ngx_stream_access_module/serviceid/$serviceid"),true);
+	$results=(is_array($json) && $json["Status"]) ? $json["rows"] : array();
 
 	$STATUS[0]="<span class='label label-danger'>{deny}</span>";
 	$STATUS[1]="<span class='label label-primary'>{allow}</span>";
@@ -253,20 +236,4 @@ function table():bool{
     return true;
 
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
 
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}

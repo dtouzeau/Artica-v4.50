@@ -3088,12 +3088,14 @@ if($forceFunc<>null){
             return "";
         }
 
-        if( strpos($js,"zoom-ip-js=")>0){
-            if(!isset($GLOBALS["CLASS_SOCKETS_EnableDecisionIP"])){
-                $GLOBALS["CLASS_SOCKETS_EnableDecisionIP"]=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDecisionIP"));
-            }
-            if($GLOBALS["CLASS_SOCKETS_EnableDecisionIP"]==1){
-                return $this->td_ipaddr_DecisionIP($text,$js);
+        if(!is_null($js)) {
+            if (strpos($js, "zoom-ip-js=") > 0) {
+                if (!isset($GLOBALS["CLASS_SOCKETS_EnableDecisionIP"])) {
+                    $GLOBALS["CLASS_SOCKETS_EnableDecisionIP"] = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDecisionIP"));
+                }
+                if ($GLOBALS["CLASS_SOCKETS_EnableDecisionIP"] == 1) {
+                    return $this->td_ipaddr_DecisionIP($text, $js);
+                }
             }
         }
 
@@ -7445,7 +7447,7 @@ if(typeof dialogInstance == 'object'){
         $id=md5("$name$this->suffixid");
         $this->DISABLE_ALL[]=$id;
         $this->XHR[]="XHR.appendData('$name',  encodeURIComponent(document.getElementById('$id').value));";
-        return $this->_field_intr2($label,"<textarea id='$id' name='$id' style='width:$width;min-height: {$height};font-size: 15px;'>$value</textarea>");
+        return $this->_field_intr2($label,"<textarea id='$id' name='$id' style='width:$width;min-height: {$height};font-size: 12px;'>$value</textarea>");
     }
     public function field_textarea($name,$label,$value=null,$width="100%",$height="450px"):string{
         $id=md5("$name$this->suffixid");
@@ -7679,10 +7681,8 @@ if(typeof dialogInstance == 'object'){
         if(isset($GLOBALS["NGINX_ID_TO_HOSTNAME"][$ID])){
             return $GLOBALS["NGINX_ID_TO_HOSTNAME"][$ID];
         }
-        $q = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-        $sql = "SELECT servicename FROM nginx_services WHERE ID=$ID";
-        $ligne=$q->mysqli_fetch_array($sql);
-        $GLOBALS["NGINX_ID_TO_HOSTNAME"][$ID]=strval($ligne["servicename"]);
+        $sock=new socksngix($ID);
+        $GLOBALS["NGINX_ID_TO_HOSTNAME"][$ID]=$sock->GetServiceName();
         return $GLOBALS["NGINX_ID_TO_HOSTNAME"][$ID];
     }
 
@@ -7690,28 +7690,35 @@ if(typeof dialogInstance == 'object'){
         $strsearch=trim(strtolower($strsearch));
         if(isset($GLOBALS["NGINX_HOSTNAME_TO_ID"][$strsearch])){return $GLOBALS["NGINX_HOSTNAME_TO_ID"][$strsearch];}
         if($strsearch==null){return 0;}
-        $q = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-        $sql = "SELECT ID,hosts FROM nginx_services ORDER BY zorder";
-        $results=$q->QUERY_SQL($sql);
-        foreach ($results as $index=>$ligne) {
-            $hosts = $ligne["hosts"];
+        $this->_loadNginxHostMap();
+        if(isset($GLOBALS["NGINX_HOSTNAME_TO_ID"][$strsearch])){return $GLOBALS["NGINX_HOSTNAME_TO_ID"][$strsearch];}
+        return 0;
+    }
+
+    private function _loadNginxHostMap(){
+        if(isset($GLOBALS["_nginxHostMapLoaded"])){return;}
+        $GLOBALS["_nginxHostMapLoaded"]=true;
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/sites/list"),true);
+        if(!is_array($json) || !isset($json["sites"])){return;}
+        foreach($json["sites"] as $ligne){
+            $hosts=isset($ligne["Hosts"]) ? $ligne["Hosts"] : "";
             $ID=intval($ligne["ID"]);
-            if (strpos($hosts, "||") > 0) {
-                $Zhosts = explode("||", $hosts);
-                foreach ($Zhosts as $www) {
+            if(strlen($hosts)==0){continue;}
+            if(strpos($hosts,"||")>0){
+                $Zhosts=explode("||",$hosts);
+                foreach($Zhosts as $www){
                     $www=trim(strtolower($www));
                     if(preg_match("#^(.+?)>(.+)#",$www,$re)){$www=$re[1];}
-                    if($www==null){continue;}
+                    if(strlen($www)==0){continue;}
                     $GLOBALS["NGINX_HOSTNAME_TO_ID"][$www]=$ID;
-                    if ($www == $strsearch){return $ID;}
+                    $GLOBALS["nginxHostToInt"][$www]=$ID;
                 }
                 continue;
             }
             $www=trim(strtolower($hosts));
             $GLOBALS["NGINX_HOSTNAME_TO_ID"][$www]=$ID;
-            if ($www == $strsearch){return $ID;}
+            $GLOBALS["nginxHostToInt"][$www]=$ID;
         }
-        return 0;
     }
 
     public function
@@ -7740,30 +7747,8 @@ if(typeof dialogInstance == 'object'){
 
     public function nginxHostToInt($sitename){
         $sitename=trim(strtolower($sitename));
-        if(!isset($GLOBALS["nginxHostToInt"])){
-            $q = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-            $sql = "SELECT ID,hosts,servicename FROM nginx_services ORDER BY zorder";
-            $results=$q->QUERY_SQL($sql);
-            foreach ($results as $index=>$ligne){
-                $ID=$ligne["ID"];
-                $Hosts=strtolower(trim($ligne["hosts"]));
-                if($Hosts==null){continue;}
-
-                if (strpos($Hosts, "||") > 0) {
-                    $Zhosts = explode("||", $Hosts);
-                    foreach ($Zhosts as $www) {
-                        $www=trim($www);
-                        VERBOSE("$www == > $ID",__LINE__);
-                        $GLOBALS["nginxHostToInt"][$www]=$ID;
-                    }
-                    continue;
-                }
-                VERBOSE("$Hosts == > $ID",__LINE__);
-                $GLOBALS["nginxHostToInt"][$Hosts]=$ID;
-            }
-        }
+        $this->_loadNginxHostMap();
         if(isset($GLOBALS["nginxHostToInt"][$sitename])){return intval($GLOBALS["nginxHostToInt"][$sitename]);}
-        VERBOSE("DID NOT FOUND IN [$sitename]",__LINE__);
         return 0;
     }
 
@@ -8280,9 +8265,10 @@ if(typeof dialogInstance == 'object'){
         if(isset($_SERVER["HTTP_X_META_PREFIX"])){
             $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_META_PREFIX"]."/";
         }
-
-        if(substr($url,0,1)<>"/"){
-            $url="/".$url;
+        if(!is_null($url)) {
+            if (substr($url, 0, 1) <> "/") {
+                $url = "/" . $url;
+            }
         }
         $rpgressPage="$HTTP_X_ARTICA_SUBFOLDER/fw.progress.php";
         $rpgressPage=str_replace("//","/",$rpgressPage);
@@ -8299,10 +8285,12 @@ if(typeof dialogInstance == 'object'){
         $html[]="<div class='row'>";
         $html[]="<div id='progress-$t'></div>";
 
-        if(strpos($force_progress,",")>0){
-            $tb=explode(",",$force_progress);
-            $force_progress=$tb[0];
-            $additional_progress=$tb[1];
+        if(!is_null($force_progress)) {
+            if (strpos($force_progress, ",") > 0) {
+                $tb = explode(",", $force_progress);
+                $force_progress = $tb[0];
+                $additional_progress = $tb[1];
+            }
         }
 
         if($force_progress<>null){
@@ -9007,9 +8995,43 @@ if(typeof dialogInstance == 'object'){
 		</tr>
 		";
     }
+    public function field_text_info_button($label,$value,$buttonName,$js){
+        $label=trim($label);
+        $labelstr=strlen($label);
+        $padding="padding-left:19px";
+        $width_right="70%";
+        if($label==null){
+            $width_right="100%";
+            $padding="padding-left:0";
+            return " <!-- _field_intr 2 --><tr><td style='width:100%;padding-bottom:10px;$padding;'>$label</td></tr>";
+        }
 
+        $trace=@debug_backtrace();
+        $last=$trace[1]["function"];
+
+        $right[]="<table style='width:100%;padding:0;margin:0'>";
+        $right[]="<tr>";
+        $right[]="<td style='width:99%'><strong>$value</strong></td>";
+
+        $pointers="OnMouseOver=\";this.style.cursor='pointer';\" OnMouseOut=\";this.style.cursor='default';\" ";
+        $bt_js="OnClick=\"$js\"";
+        $button="<span class=\"label label-primary\" $pointers $bt_js>$buttonName</span>";
+        $right[]="<td style='width:1%' nowrap>$button</td>";
+        $right[]="</table>";
+        $rightText=implode("",$right);
+        return "
+            <!-- _field_intr 3 -->
+            <!-- Label: $labelstr $last -->
+			<tr>
+				<td style='width:30%;text-align:right;vertical-align:middle;padding-bottom:10px;' nowrap><span class=labelform id='$id' style='text-transform:capitalize !important'>$label</span></td>
+				<td style='width:$width_right;padding-bottom:10px;$padding'>$rightText</td>
+			</tr>
+			 <!-- END Label: $labelstr -->";
+
+    }
     public function field_email($name,$label,$value,$notnull=false,$explain=null,$disabled=false):string{
         $id=md5("$name$this->suffixid");
+
         $this->DISABLE_ALL[]=$id;
         if(!is_null($value)) {
             $value = str_replace('"', '\"', $value);
@@ -9079,7 +9101,40 @@ if(typeof dialogInstance == 'object'){
         return $this->_field_intr($label,$F,$explain);
 
     }
+    public function field_ad_suffix_ad_conns($name,$cnxid,$label,$value,$notnull=false,$explain=null,$disabled=false){
+        $id=md5("$name$this->suffixid");
+        $this->DISABLE_ALL[]=$id;
+        $value=str_replace('"', '\"', $value);
+        $label_text=$this->javascript_parse_text($label);
+        $label_text=str_ireplace("<small>","",$label_text);
+        $label_text=str_ireplace("</small>","",$label_text);
+        $labeljs=$this->javascript_parse_text($label_text);
 
+        $js="Loadjs('fw.browse-suffix.php?js=yes&field-id=$id&title=$labeljs&suffixid=$this->suffixid&cnxid=$cnxid')";
+        $F="<div class='input-group'><input type='text' class='form-control' id='$id' value='$value' disabled>
+		<span class='input-group-btn'> <button class='btn btn-primary' type='button' OnClick=\"$js\">{browse}...</button> </span>
+		</div>";
+
+        if($disabled){$notnull=false;}
+
+        if($notnull){
+            $cannot_be_a_null_value=$this->javascript_parse_text("{cannot_be_a_null_value}");
+            $this->XHR[]="var F$id=document.getElementById('$id').value;";
+            $this->XHR[]="if(F$id.length==0){ FieldHTMLError('$id'); document.getElementById('inside-form-alert').innerHTML='<div class=\"alert alert-danger\"><strong>$label</strong> $cannot_be_a_null_value</div>';NoSpinner();return;}";
+            $this->XHR[]="XHR.appendData('$name',  encodeURIComponent(F$id));";
+            return $this->_field_intr($label,$F,$explain);
+        }
+
+        if($disabled){
+            $this->FormStartupScripts[]="document.getElementById('$id').disabled=true;";
+            return $this->_field_intr($label,$F,$explain);
+        }
+
+        $this->XHR[]="XHR.appendData('$name',  encodeURIComponent(document.getElementById('$id').value));";
+        return $this->_field_intr($label,$F,$explain);
+
+
+    }
     public function field_ad_suffix($name,$label,$value,$notnull=false,$explain=null,$disabled=false){
         $id=md5("$name$this->suffixid");
         $this->DISABLE_ALL[]=$id;

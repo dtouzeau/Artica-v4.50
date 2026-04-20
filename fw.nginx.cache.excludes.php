@@ -64,7 +64,7 @@ function rule_remove():bool{
     $q=new lib_sqlite(NginxGetDB());
     $ligne=$q->mysqli_fetch_array("SELECT pattern FROM bypass_cache WHERE ID=$ID");
     $pattern=$ligne["pattern"];
-    $q->QUERY_SQL("DELETE FROM bypass_cache WHERE ID=$ID");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"bypass_cache","where"=>array("ID"=>"$ID")));
     $site=get_servicename($serviceid);
     echo "$('#$md').remove();\n";
     echo refresh_global_no_close($serviceid);
@@ -102,9 +102,9 @@ function rule_enable():bool{
     $ligne=$q->mysqli_fetch_array("SELECT pattern,enabled FROM bypass_cache WHERE ID=$ID");
     $pattern=$ligne["pattern"];
     if(intval($ligne["enabled"])==1){
-       $q->QUERY_SQL("UPDATE bypass_cache SET enabled=0 WHERE ID=$ID");
+       $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"bypass_cache","set"=>array("enabled"=>"0"),"where"=>array("ID"=>"$ID")));
     }else{
-        $q->QUERY_SQL("UPDATE bypass_cache SET enabled=1 WHERE ID=$ID");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"bypass_cache","set"=>array("enabled"=>"1"),"where"=>array("ID"=>"$ID")));
     }
     $get_servicename=get_servicename($serviceid);
     echo refresh_global_no_close($serviceid);
@@ -191,18 +191,12 @@ function rule_save():bool{
         return false;
     }
 
-    $sql="INSERT INTO bypass_cache (serviceid,pattern,regex) VALUES ('$serviceid','$pattern','$regex');)";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"insert","table"=>"bypass_cache","values"=>array("serviceid"=>"$serviceid","pattern"=>"$pattern","regex"=>"$regex")));
 
     }else{
-        $sql="UPDATE bypass_cache SET pattern='$pattern', regex='$regex' WHERE ID=$ruleid;";
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"bypass_cache","set"=>array("pattern"=>"$pattern","regex"=>"$regex"),"where"=>array("ID"=>"$ruleid")));
     }
 
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
-        return false;
-    }
     $get_servicename=get_servicename($serviceid);
     return admin_tracks("Add or edit cache exclusion rule {$_POST["pattern"]} for reverse-proxy $get_servicename");
 
@@ -268,8 +262,7 @@ function rule_disable_all():bool{
     $function=$_GET["function"];
     $serviceid=$_GET["serviceid"];
 
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL("UPDATE bypass_cache SET enabled=0 WHERE serviceid=$serviceid");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"bypass_cache","set"=>array("enabled"=>"0"),"where"=>array("serviceid"=>"$serviceid")));
     $get_servicename=get_servicename($serviceid);
     echo refresh_global_no_close($serviceid);
     echo "$function();";
@@ -278,8 +271,7 @@ function rule_disable_all():bool{
 function rule_enable_all():bool{
     $function=$_GET["function"];
     $serviceid=$_GET["serviceid"];
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL("UPDATE bypass_cache SET enabled=1 WHERE serviceid=$serviceid");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"bypass_cache","set"=>array("enabled"=>"1"),"where"=>array("serviceid"=>"$serviceid")));
     $get_servicename=get_servicename($serviceid);
     echo refresh_global_no_close($serviceid);
     echo "$function();";

@@ -33,8 +33,13 @@ function step0():bool{
 function step2():bool{
     $tpl  = new template_admin();
     $page = CurrentPageName();
+
+    $js_help="s_PopUpFull('https://wiki.articatech.com/en/active-directory/grant-proxy-user','1024','900');";
+    $btnWiki=$tpl->button_autnonome("wiki.articatech.com", $js_help, ico_support,"AsSystemAdministrator",335);
     $html[]="<H2>{welcome_ad_wizard}</H2>";
-    $html[]="<div style='font-size:16px'>{welcome_ad_wizard2}</div>";
+    $html[]="<div style='font-size:16px'>{welcome_ad_wizard2}<br>{welcome_ad_wizard_wiki}";
+    $html[]="<div style='margin-top:20px;text-align:right;margin-right:20px'>$btnWiki</div>";
+    $html[]="</div>";
 
     $admin="";
 

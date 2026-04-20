@@ -270,10 +270,15 @@ function popup_table2():bool{
         }
 function GetDataSource($id):string{
     $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
+    $q->QUERY_SQL("PRAGMA wal_autocheckpoint=0");
     $ligne=$q->mysqli_fetch_array("SELECT description FROM mod_security_patterns WHERE ID='$id'");
     return strval($ligne["description"]);
 }
 function SetDataSource($id,$value){
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $q->QUERY_SQL("UPDATE mod_security_patterns SET operator='Countries',fields='',description='$value' WHERE ID='$id'");
+    $id=intval($id);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+        "action"=>"update","table"=>"mod_security_patterns",
+        "set"=>["operator"=>"Countries","fields"=>"","description"=>$value],
+        "where"=>["ID"=>$id]
+    ]);
 }

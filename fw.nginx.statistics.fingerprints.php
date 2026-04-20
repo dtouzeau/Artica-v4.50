@@ -62,29 +62,16 @@ function status_save():bool{
     $tpl=new template_admin();
     $fingerprint=$_POST["fingerprint"];
     $ztype=intval($_POST["ztype"]);
-    $q=new postgres_sql();
 
     if($ztype==5){
-        $q->QUERY_SQL("DELETE FROM fingerprints WHERE fingerprint='$fingerprint'");
-        if(!$q->ok){
-            echo $tpl->post_error($q->mysql_error);
-            return false;
-        }
-        $q->QUERY_SQL("DELETE FROM fingerprints_events WHERE fingerprint='$fingerprint'");
-        if(!$q->ok){
-            echo $tpl->post_error($q->mysql_error);
-            return false;
-        }
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"fingerprints","where"=>["fingerprint"=>$fingerprint]]);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"fingerprints_events","where"=>["fingerprint"=>$fingerprint]]);
         return admin_tracks("Remove fingerprint Web console access $fingerprint");
 
     }
 
 
-    $q->QUERY_SQL("UPDATE fingerprints SET status=$ztype WHERE fingerprint='$fingerprint'");
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
-        return false;
-    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"fingerprints","set"=>["status"=>$ztype],"where"=>["fingerprint"=>$fingerprint]]);
     return admin_tracks("Save fingerprint Web console access $fingerprint status to $ztype");
 }
 function status_popup(){

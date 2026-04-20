@@ -27,21 +27,16 @@ function switchsitename():bool{
 	$ligne=$q->mysqli_fetch_array("SELECT ID FROM adminprivs WHERE serviceid=$serverid AND item='$group'");
     $ID=intval($ligne["ID"]);
     if($ID>0){
-        $q->QUERY_SQL("DELETE FROM adminprivs WHERE ID=$ID");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"adminprivs","where"=>["ID"=>$ID]]);
         return true;
     }
-    $q->QUERY_SQL("INSERT INTO adminprivs (serviceid,item) VALUES ('$serverid','$group')");
-    if(!$q->ok){
-        return $tpl->js_error($q->mysql_error);
-    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"insert","table"=>"adminprivs","values"=>["serviceid"=>$serverid,"item"=>$group]]);
     return admin_tracks("Add $group privileges for service $serverid");
 
 }
 function delete():bool{
     $ID=$_POST["delete"];
-    $q=new lib_sqlite(NginxGetDB());
-	$q->QUERY_SQL("DELETE FROM `adminprivs` WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"adminprivs","where"=>["ID"=>$ID]]);
     return true;
 }
 

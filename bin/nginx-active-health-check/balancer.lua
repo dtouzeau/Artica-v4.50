@@ -55,8 +55,26 @@ local _M = {
 local stats_dict = ngx.shared.balancer_stats
 local counter_dict = ngx.shared.balancer_counters
 
+-- Internal scale factor for sub-integer weight precision during slow_start ramp.
+-- Callers needing integer arithmetic (counter_dict:incr, math.random bounds) multiply
+-- the fractional weight by this before use. Lets weight=1 servers ramp smoothly.
+local WEIGHT_SCALE = 100
+
 -- Random seed initialized flag (per worker)
 local random_initialized = false
+local function ensure_seeded()
+    if not random_initialized then
+        math.randomseed(ngx.now() * 1000 + (ngx.worker.pid() or 0))
+        random_initialized = true
+    end
+end
+
+-- Forward declarations for slow_start helpers. Callers like round_robin,
+-- ip_hash, uri_hash, and hash appear earlier than the helper definitions,
+-- so without these forward decls the closures would resolve the names as
+-- globals (nil) and error at call time.
+local should_skip_for_ramp
+local apply_ramp_skip_to_hash_selection
 ---
 -- Helper: extract host and port from server object
 ---
@@ -166,7 +184,23 @@ function _M.round_robin(servers, upstream_name)
         end
     end
 
-    -- Extract address from table or use string directly
+    -- Probabilistic slow_start skip: if the chosen server is ramping,
+    -- skip with probability (1 - progress) and advance to the next server.
+    -- This gives recovering servers a partial share even though plain RR
+    -- doesn't honor weights.
+    for attempt = 0, #servers - 1 do
+        local idx = ((selected_index - 1 + attempt) % #servers) + 1
+        local server = servers[idx]
+        if not should_skip_for_ramp(server, upstream_name) then
+            local addr = type(server) == "table" and server.addr or server
+            ngx.ctx.balancer_server = addr
+            ngx.ctx.balancer_upstream = upstream_name
+            return addr
+        end
+    end
+
+    -- Every server hit a ramp-skip (very unlikely). Fall back to originally
+    -- selected server to preserve availability.
     local server = servers[selected_index]
     local addr = type(server) == "table" and server.addr or server
 
@@ -243,11 +277,23 @@ function _M.weighted_round_robin(servers, upstream_name, options)
         end
     end
 
-    -- Calculate total weight
+    -- Precompute effective weights (with slow start adjustments).
+    -- All weights are scaled by WEIGHT_SCALE so fractional ramp values
+    -- (e.g. 0.5 for a weight=1 server at 50% ramp) become integer-precise.
+    local effective_weights = {}
     local total_weight = 0
-    for _, server in ipairs(servers) do
+    for i, server in ipairs(servers) do
+        local addr = type(server) == "table" and server.addr or server
         local weight = type(server) == "table" and (server.weight or 1) or 1
-        total_weight = total_weight + weight
+
+        -- Apply slow start if configured
+        if type(server) == "table" and server.slow_start and server.slow_start > 0 then
+            weight = _M.apply_slow_start(addr, weight, server.slow_start, upstream_name)
+        end
+
+        local scaled = math.max(1, math.floor(weight * WEIGHT_SCALE + 0.5))
+        effective_weights[i] = scaled
+        total_weight = total_weight + scaled
     end
 
     -- Smooth weighted round-robin algorithm (nginx algorithm)
@@ -258,12 +304,7 @@ function _M.weighted_round_robin(servers, upstream_name, options)
 
     for i, server in ipairs(servers) do
         local addr = type(server) == "table" and server.addr or server
-        local weight = type(server) == "table" and (server.weight or 1) or 1
-
-        -- Apply slow start if configured
-        if type(server) == "table" and server.slow_start and server.slow_start > 0 then
-            weight = _M.apply_slow_start(addr, weight, server.slow_start, upstream_name)
-        end
+        local weight = effective_weights[i]
 
         local current_key = key_prefix .. addr .. ":current"
 
@@ -307,37 +348,65 @@ end
 
 ---
 -- Slow Start Implementation
--- Gradually increases server weight from 1 to full weight over specified time
--- Returns effective weight based on time since server became healthy
+-- Gradually increases server weight from a small fraction to full weight over
+-- the configured time. Returns two values:
+--   effective_weight (number, may be fractional) — scaled 1/WEIGHT_SCALE .. target_weight
+--   progress (number) — 0..1 during ramp, 1 when ramp is complete or disabled
+-- Callers that need integer arithmetic should multiply by WEIGHT_SCALE.
 ---
 function _M.apply_slow_start(server_addr, target_weight, slow_start_seconds, upstream_name)
-    if not counter_dict or slow_start_seconds <= 0 then
-        return target_weight
+    if not counter_dict or not slow_start_seconds or slow_start_seconds <= 0 then
+        return target_weight, 1
     end
 
     local key = (upstream_name or "default") .. ":ss:" .. server_addr .. ":start_time"
 
-    -- Get when server started (became healthy)
-    local start_time = counter_dict:get(key)
-
-    if not start_time then
-        -- First time seeing this server, record start time
-        start_time = ngx.now()
-        counter_dict:set(key, start_time, slow_start_seconds + 60)  -- TTL: slow_start + buffer
+    -- Atomically set start time if not already set (prevents multi-worker race)
+    local start_time = ngx.now()
+    local ok = counter_dict:add(key, start_time, slow_start_seconds + 60)
+    if not ok then
+        -- Key already exists (another worker set it first, or previous recovery)
+        start_time = counter_dict:get(key)
+        if not start_time then
+            -- Shouldn't happen, but handle defensively
+            start_time = ngx.now()
+            counter_dict:set(key, start_time, slow_start_seconds + 60)
+        end
     end
 
     local elapsed = ngx.now() - start_time
 
     if elapsed >= slow_start_seconds then
-        -- Slow start period complete, use full weight
-        return target_weight
+        return target_weight, 1
     end
 
-    -- Calculate ramped weight: linearly increase from 1 to target_weight
     local progress = elapsed / slow_start_seconds
-    local effective_weight = math.max(1, math.floor(1 + (target_weight - 1) * progress))
+    -- Linear ramp from 1/WEIGHT_SCALE up to target_weight.
+    -- Using a sub-integer floor ensures weight=1 servers still visibly ramp
+    -- when callers scale by WEIGHT_SCALE.
+    local min_weight = 1 / WEIGHT_SCALE
+    local effective_weight = min_weight + (target_weight - min_weight) * progress
 
-    return effective_weight
+    return effective_weight, progress
+end
+
+---
+-- Probabilistic slow_start skip for balancer methods that don't natively
+-- respect weights (round_robin, ip_hash, uri_hash, hash).
+-- A server at ramp progress p is kept with probability p. Side-effect:
+-- initializes the slow_start timer on first call so the ramp clock starts
+-- even if the server is never "selected" via a weight-aware path.
+---
+should_skip_for_ramp = function(server, upstream_name)
+    if type(server) ~= "table" or not server.slow_start or server.slow_start <= 0 then
+        return false
+    end
+    local _, progress = _M.apply_slow_start(server.addr, server.weight or 1, server.slow_start, upstream_name)
+    if not progress or progress >= 1 then
+        return false
+    end
+    ensure_seeded()
+    return math.random() > progress
 end
 
 ---
@@ -350,6 +419,50 @@ function _M.reset_slow_start(server_addr, upstream_name)
 
     local key = (upstream_name or "default") .. ":ss:" .. server_addr .. ":start_time"
     counter_dict:delete(key)
+end
+
+---
+-- Get slow start ramp-up status for a server (observability)
+-- Returns table with progress info, or nil if not in ramp-up
+---
+function _M.get_slow_start_status(server_addr, target_weight, slow_start_seconds, upstream_name)
+    if not counter_dict or not slow_start_seconds or slow_start_seconds <= 0 then
+        return nil
+    end
+
+    local key = (upstream_name or "default") .. ":ss:" .. server_addr .. ":start_time"
+    local start_time = counter_dict:get(key)
+
+    if not start_time then
+        return nil  -- Not in ramp-up
+    end
+
+    local elapsed = ngx.now() - start_time
+    local completed = elapsed >= slow_start_seconds
+
+    if completed then
+        return {
+            in_progress = false,
+            elapsed = elapsed,
+            remaining = 0,
+            progress = 1.0,
+            effective_weight = target_weight,
+            target_weight = target_weight,
+        }
+    end
+
+    local progress = elapsed / slow_start_seconds
+    local min_weight = 1 / WEIGHT_SCALE
+    local effective_weight = min_weight + (target_weight - min_weight) * progress
+
+    return {
+        in_progress = true,
+        elapsed = math.floor(elapsed),
+        remaining = math.ceil(slow_start_seconds - elapsed),
+        progress = math.floor(progress * 100) / 100,
+        effective_weight = math.floor(effective_weight * 100 + 0.5) / 100,
+        target_weight = target_weight,
+    }
 end
 
 ---
@@ -446,6 +559,40 @@ local function find_server_on_ring(ring, client_hash)
 end
 
 ---
+-- Apply probabilistic slow_start skip to a hash-based selection.
+-- If the hashed server is ramping and the probabilistic check says "skip",
+-- fall through to the first non-ramping peer in the servers list. This
+-- trades sticky consistency for correct ramp-up while the server recovers;
+-- after ramp completes, routing returns to pure hash-based.
+---
+apply_ramp_skip_to_hash_selection = function(selected_addr, servers, upstream_name)
+    -- Find the selected server's table entry
+    local selected_server = nil
+    for _, s in ipairs(servers) do
+        local addr = type(s) == "table" and s.addr or s
+        if addr == selected_addr then
+            selected_server = s
+            break
+        end
+    end
+
+    if not should_skip_for_ramp(selected_server, upstream_name) then
+        return selected_addr
+    end
+
+    -- Walk the servers list for a non-ramping fallback
+    for _, s in ipairs(servers) do
+        local addr = type(s) == "table" and s.addr or s
+        if addr ~= selected_addr and not should_skip_for_ramp(s, upstream_name) then
+            return addr
+        end
+    end
+
+    -- No non-ramping peer available; stick with original selection
+    return selected_addr
+end
+
+---
 -- IP Hash - same client IP always goes to same backend (consistent hashing)
 -- Provides session stickiness based on client IP
 --
@@ -506,6 +653,9 @@ function _M.ip_hash(servers, upstream_name, options)
         local server = servers[index]
         selected_addr = type(server) == "table" and server.addr or server
     end
+
+    -- Probabilistic slow_start reroute for ramping servers
+    selected_addr = apply_ramp_skip_to_hash_selection(selected_addr, servers, upstream_name)
 
     -- Store for connection release
     ngx.ctx.balancer_server = selected_addr
@@ -596,13 +746,17 @@ function _M.least_conn(servers, upstream_name, options)
 
         local weight = (type(srv) == "table" and srv.weight) or 1
 
-        -- Apply slow start if configured
+        -- Apply slow start if configured (returns fractional weight during ramp)
         if type(srv) == "table" and srv.slow_start and srv.slow_start > 0 then
             local addr = srv.addr or (host .. ":" .. port)
             weight = _M.apply_slow_start(addr, weight, srv.slow_start, upstream_name)
         end
 
-        weight = math.max(weight or 1, 1)
+        -- Floor at 1/WEIGHT_SCALE to preserve sub-integer ramp granularity
+        -- while avoiding division by zero in the ratio below.
+        if not weight or weight < (1 / WEIGHT_SCALE) then
+            weight = 1 / WEIGHT_SCALE
+        end
 
         local key = (upstream_name or "default") .. ":conn:" .. host .. ":" .. port
         local conn_count = stats_dict:get(key) or 0
@@ -693,42 +847,41 @@ function _M.random(servers, upstream_name)
         -- Check if servers have weights
         local has_weights = type(servers[1]) == "table" and servers[1].weight
 
-        -- Initialize random seed once per worker
-        if not random_initialized then
-            math.randomseed(ngx.now() * 1000 + (ngx.worker.pid() or 0))
-            random_initialized = true
-        end
+        ensure_seeded()
 
         if not has_weights then
-            -- Simple random
-            local index = math.random(1, #servers)
-            selected_addr = type(servers[index]) == "table" and servers[index].addr or servers[index]
+            -- Simple random with probabilistic slow_start skip
+            for _ = 1, #servers do
+                local index = math.random(1, #servers)
+                local server = servers[index]
+                if not should_skip_for_ramp(server, upstream_name) then
+                    selected_addr = type(server) == "table" and server.addr or server
+                    break
+                end
+            end
+            if not selected_addr then
+                local server = servers[math.random(1, #servers)]
+                selected_addr = type(server) == "table" and server.addr or server
+            end
         else
-            -- Weighted random
+            -- Weighted random: compute once, scale by WEIGHT_SCALE so
+            -- fractional ramp weights (e.g. 0.5) become integer-precise.
+            local scaled_weights = {}
             local total_weight = 0
-            for _, server in ipairs(servers) do
+            for i, server in ipairs(servers) do
                 local weight = server.weight or 1
-
-                -- Apply slow start if configured
                 if server.slow_start and server.slow_start > 0 then
                     weight = _M.apply_slow_start(server.addr, weight, server.slow_start, upstream_name)
                 end
-
-                total_weight = total_weight + weight
+                local scaled = math.max(1, math.floor(weight * WEIGHT_SCALE + 0.5))
+                scaled_weights[i] = scaled
+                total_weight = total_weight + scaled
             end
 
             local random_weight = math.random(0, total_weight - 1)
-
             local cumulative = 0
-            for _, server in ipairs(servers) do
-                local weight = server.weight or 1
-
-                -- Apply slow start if configured
-                if server.slow_start and server.slow_start > 0 then
-                    weight = _M.apply_slow_start(server.addr, weight, server.slow_start, upstream_name)
-                end
-
-                cumulative = cumulative + weight
+            for i, server in ipairs(servers) do
+                cumulative = cumulative + scaled_weights[i]
                 if random_weight < cumulative then
                     selected_addr = server.addr
                     break
@@ -795,6 +948,9 @@ function _M.uri_hash(servers, upstream_name, options)
         selected_addr = type(server) == "table" and server.addr or server
     end
 
+    -- Probabilistic slow_start reroute for ramping servers
+    selected_addr = apply_ramp_skip_to_hash_selection(selected_addr, servers, upstream_name)
+
     -- Store for connection release
     ngx.ctx.balancer_server = selected_addr
     ngx.ctx.balancer_upstream = upstream_name
@@ -857,6 +1013,9 @@ function _M.hash(servers, key, upstream_name, options)
         local server = servers[index]
         selected_addr = type(server) == "table" and server.addr or server
     end
+
+    -- Probabilistic slow_start reroute for ramping servers
+    selected_addr = apply_ramp_skip_to_hash_selection(selected_addr, servers, upstream_name)
 
     -- Store for connection release
     ngx.ctx.balancer_server = selected_addr

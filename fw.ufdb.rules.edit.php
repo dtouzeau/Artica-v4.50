@@ -53,18 +53,14 @@ function popup(){
 	$tpl=new template_admin();
 	$tpl->CLUSTER_CLI=true;
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-	if(!$q->FIELD_EXISTS("webfilter_rules", "UseSecurity")){$q->QUERY_SQL("ALTER TABLE `webfilter_rules` ADD `UseSecurity` smallint(1),ADD INDEX ( `UseSecurity` )");}
+
 	$groupmode[0]="{banned}";
 	$groupmode[1]="{filtered}";
 	$groupmode[2]="{exception}";
 	$button_name="{apply}";
 	$close=null;
 	if($ID<0){$button_name="{add}";}
-	$sock=new sockets();
-	$EnableGoogleSafeSearch=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableGoogleSafeSearch"));
-	if(!is_numeric($EnableGoogleSafeSearch)){$EnableGoogleSafeSearch=1;}
 
-	
 	$ENDOFRULES[null]="{select}";
 	$ENDOFRULES["any"]="{ufdb_any}";
 	$ENDOFRULES["none"]="{ufdb_none}";
@@ -78,7 +74,6 @@ function popup(){
 	
 	}else{
 		if($ID==0){
-			$sock=new sockets();
 			$ligne=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DansGuardianDefaultMainRule"));
 			$ligne["groupname"]="default";
 			$DefaultPosition=$ligne["defaultPosition"];

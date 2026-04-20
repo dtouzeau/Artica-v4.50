@@ -132,13 +132,7 @@ function www_events(){
 	echo "<articadatascgi>".base64_encode(serialize($results))."</articadatascgi>";
 	
 }
-function mysqldb_restart(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	shell_exec("$php5 /usr/share/artica-postfix/exec.nginx-db.php --init");
-	shell_exec("$nohup /etc/init.d/nginx-db restart >/dev/null 2>&1");
-}
+
 function events(){
     $unix=new unix();
     $grep=$unix->find_program("grep");

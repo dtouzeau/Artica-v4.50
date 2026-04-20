@@ -91,13 +91,6 @@ function clean_postgres_perform($InfluxAdminRetentionTime=0){
         $qPostgres->QUERY_SQL("DELETE FROM ipaudit WHERE constartdate < NOW() - INTERVAL '$InfluxAdminRetentionTime days'");
     }
 
-    if($InfluxAdminRetentionTime>$IpAuditRetention) {
-        build_progress_vacuumdb("Cleaning ipaudit...",$prc++);
-        $qPostgres->QUERY_SQL("DELETE FROM ipaudit WHERE constartdate < NOW() - INTERVAL '$IpAuditRetention days'");
-        if (!$qPostgres->ok) {
-            echo "Fatal $qPostgres->mysql_error\n";
-        }
-    }
 
     $LIST_TABLES=$qPostgres->LIST_TABLES("public");
     foreach ($LIST_TABLES as $tablename=>$none){

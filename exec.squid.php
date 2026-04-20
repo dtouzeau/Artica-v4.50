@@ -372,8 +372,6 @@ function disable_cache(){
 		squid_admin_mysql(0, "Enable the cache system (by Web Interface)", null,__FILE__,__LINE__);
 	}
     system("/usr/sbin/artica-phpfpm-service -proxy-build-caches");
-	$squid_refresh_pattern=new squid_refresh_pattern();
-	$squid_refresh_pattern->build();
     system("/usr/sbin/artica-phpfpm-service -proxy-parents");
 	$HyperCacheSquid=new HyperCacheSquid();
 	$HyperCacheSquid->build();

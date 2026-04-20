@@ -1225,9 +1225,7 @@ function table(){
         }
 
         if(!$GOLDKEY) {
-            if(!$REMOVE_LIC_STATUS) {
-                $tpl->table_form_button($button_text, "RegisterSave()", "AsSystemAdministrator", ico_refresh);
-            }
+            $tpl->table_form_button($button_text, "RegisterSave()", "AsSystemAdministrator", ico_refresh);
             $tpl->table_form_field_info("{license_status}", $LicenseInfos["license_status"],ico_infoi);
         }
 

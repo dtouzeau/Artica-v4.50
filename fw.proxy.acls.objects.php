@@ -97,7 +97,10 @@ function build_page()
     if (!isset($_GET["IDS"])) {
         $_GET["IDS"] = 0;
     }
-
+    if (!isset($_GET["hacluster"])) {
+        $_GET["hacluster"] = 0;
+    }
+    $hacluster="&hacluster={$_GET["hacluster"]}";
     $suffix = build_suffix();
     echo "<div style='margin-top:5px' id='div-proxy-object-id'></div>";
     echo "<div style='margin-top:5px;margin-bottom: 5px;' id='div-proxy-button-$ID'></div>";

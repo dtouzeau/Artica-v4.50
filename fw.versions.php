@@ -638,13 +638,6 @@ function table():bool{
 
     $html[]=APP_NTOPNG($UPDATES_ARRAY);
 
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPAUDIT_INSTALLED"))==1){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%;text-align:right' nowrap><strong>{APP_IPAUDIT}:</strong></td>";
-        $html[]="<td nowrap>".$GLOBALS["CLASS_SOCKETS"]->GET_INFO("IpAuditVersion")."</td>";
-        $html[]="<td>&nbsp;</td>";
-        $html[]="</tr>";
-    }
 
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NMAPInstalled"))==1){
         $html[]="<tr>";

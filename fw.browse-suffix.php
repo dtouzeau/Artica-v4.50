@@ -12,26 +12,23 @@ js();
 function js_popup(){
     $tpl=new template_admin();
     $page=CurrentPageName();
+    $cnxid="";
     $_GET["password"]=urlencode($_GET["password"]);
     $_GET["username"]=urlencode($_GET["username"]);
     $_GET["hostname"]=urlencode($_GET["hostname"]);
+    if(isset($_GET["cnxid"])){
+        $cnxid="&cnxid=".intval($_GET["cnxid"]);
+    }
     $title=$tpl->javascript_parse_text("{browse} {active_directory} {ldap_suffix}");
-    $tpl->js_dialog5($title, "$page?popup=yes&field-id={$_GET["field-id"]}&password={$_GET["password"]}&username={$_GET["username"]}&hostname={$_GET["hostname"]}&ssl={$_GET["ssl"]}",650);
+    $tpl->js_dialog5($title, "$page?popup=yes&field-id={$_GET["field-id"]}&password={$_GET["password"]}&username={$_GET["username"]}&hostname={$_GET["hostname"]}&ssl={$_GET["ssl"]}$cnxid",650);
 }
 
 function content(){
-    $page=CurrentPageName();
-
-
-
-
     $html[]="<div id='browsesuffixdiv'></div>";
     $html[]="<script>";
     $html[]="alert('ok');";
     $html[]="";
     $html[]="</script>";
-
-
     echo @implode("\n",$html);
 
 
@@ -120,11 +117,18 @@ function jsdiv(){
     $html[]="\tpassword=pass$t();";
     $html[]="\thostname=host$t();";
     $html[]="\tuse_ssl=ssl$t();";
-    $html[]="\tif( username.length==0 ){ alert('$please_fill_username'); return; }";
-    $html[]="\tif( password.length==0 ){ alert('$please_fill_password'); return; }";
-    $html[]="\tif( hostname.length==0 ){ alert('$please_fill_hostname'); return; }";
 
-    $html[]="\tLoadjs('$page?js-popup=yes&field-id={$_GET["field-id"]}&username='+username+'&password='+password+'&hostname='+hostname+'&ssl='+use_ssl);";
+    if(!isset($_GET["cnxid"])){
+        $html[]="\tif( username.length==0 ){ alert('$please_fill_username'); return; }";
+        $html[]="\tif( password.length==0 ){ alert('$please_fill_password'); return; }";
+        $html[]="\tif( hostname.length==0 ){ alert('$please_fill_hostname'); return; }";
+
+    }else{
+        $cnxid="&cnxid=".intval($_GET["cnxid"]);
+    }
+
+
+    $html[]="\tLoadjs('$page?js-popup=yes&field-id={$_GET["field-id"]}$cnxid&username='+username+'&password='+password+'&hostname='+hostname+'&ssl='+use_ssl);";
     $html[]="}";
     $html[]="final$t();";
     echo @implode("\n",$html);
@@ -152,12 +156,93 @@ function UsSSLToInt($value):int{
     return $UseSSL;
 
 }
+
+function getCredentials($ID):array{
+
+    $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+
+    if($ID==0){
+        $array = $ActiveDirectoryConnections[$ID] ?? DefaultConnection();
+    }
+    if($ID<9999999999999){
+        if($ID>0){
+            $array=$ActiveDirectoryConnections[$ID];
+        }
+    }
+    if(!isset($array["LDAP_SERVER2"])){$array["LDAP_SERVER2"]="";}
+    if(!isset($array["LDAP_PORT"])){$array["LDAP_PORT"]=389;}
+    if(!isset($array["LDAP_DN"])){$array["LDAP_DN"]="";}
+    if(!isset($array["LDAP_PASSWORD"])){$array["LDAP_PASSWORD"]="";}
+    if(!isset($array["ADNETIPADDR"])){$array["ADNETIPADDR"]="";}
+    if(!isset($array["LDAP_SSL"])){$array["LDAP_SSL"]="0";}
+    if(!isset($array["ADUserCanConnect"])){$array["ADUserCanConnect"]="0";}
+    if(preg_match("#^(.+?)@(.+?)@$#",trim($array["LDAP_DN"]),$re)){$array["LDAP_DN"]="$re[1]@$re[2]";}
+    return array($array["LDAP_DN"],$array["LDAP_PASSWORD"]);
+
+}
+function DefaultConnection():array{
+    $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
+
+    if($Enablehacluster==1){
+        $haClusterAD=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAD"));
+        $KerberosUsername=$haClusterAD["KerberosUsername"];
+        $KerberosPassword=$haClusterAD["KerberosPassword"];
+        $kerberosActiveDirectoryHost=$haClusterAD["kerberosActiveDirectoryHost"];
+        $kerberosActiveDirectorySuffix=trim($haClusterAD["kerberosActiveDirectorySuffix"]);
+        $KerberosLDAPS=intval($haClusterAD["KerberosLDAPS"]);
+        if(!isset($haClusterAD["kerberosActiveDirectory2Host"])){
+            $haClusterAD["kerberosActiveDirectory2Host"]="";
+        }
+        $ldap_port=389;
+        if($KerberosLDAPS==1){
+            $ldap_port=636;
+        }
+        $array["LDAP_DN"]=$KerberosUsername;
+        $array["LDAP_SUFFIX"]=$kerberosActiveDirectorySuffix;
+        $array["LDAP_SERVER"]=$kerberosActiveDirectoryHost;
+        $array["LDAP_PORT"]=$ldap_port;
+        $array["LDAP_PASSWORD"]=$KerberosPassword;
+        $array["LDAP_SSL"]=$KerberosLDAPS;
+        $array["LDAP_SERVER2"]=$haClusterAD["kerberosActiveDirectory2Host"];
+        return $array;
+
+    }
+    $active=new ActiveDirectory();
+    $array=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
+    if(!is_array($array)){$array=array();}
+    if(!isset($array["LDAP_SERVER2"])){$array["LDAP_SERVER2"]=null;}
+    if(!isset($array["LDAP_PORT"])){$array["LDAP_PORT"]=389;}
+    if(!isset($array["LDAP_DN"])){$array["LDAP_DN"]=null;}
+    if(!isset($array["LDAP_PASSWORD"])){$array["LDAP_PASSWORD"]=null;}
+    if(!isset($array["LDAP_DN"])){$array["LDAP_DN"]=$array["WINDOWS_SERVER_ADMIN"];}
+    if(!isset($array["ADNETIPADDR"])){$array["ADNETIPADDR"]=null;}
+    if($array["LDAP_PASSWORD"]==null){
+        if(isset($array["WINDOWS_SERVER_PASS"])) {
+            $array["LDAP_PASSWORD"] = $array["WINDOWS_SERVER_PASS"];
+        }
+    }
+
+    if($array["ADNETIPADDR"]==null){$array["ADNETIPADDR"]=$active->ldap_ipaddr;}
+    if($array["LDAP_DN"]==null){$array["LDAP_DN"]=$active->ldap_dn_user;}
+    if($array["LDAP_SUFFIX"]==null){$array["LDAP_SUFFIX"]=$active->suffix;}
+    if($array["LDAP_SERVER"]==null){$array["LDAP_SERVER"]=$active->ldap_host;}
+    if($array["LDAP_PORT"]==null){$array["LDAP_PORT"]=$active->ldap_port;}
+    if($array["LDAP_PASSWORD"]==null){$array["LDAP_PASSWORD"]=$active->ldap_password;}
+    if($array["LDAP_SSL"]==null){$array["LDAP_SSL"]=$active->ldap_ssl;}
+    if($array["LDAP_SERVER"]==null){$array["LDAP_SERVER"]=$array["fullhosname"];}
+    $array["connection"]=0;
+    return $array;
+}
+
 function popup(){
 
     $tpl=new template_admin();
     $t=time();
-
     $fieldid=$_GET["field-id"];
+    if(isset($_GET["cnxid"])){
+        list($_GET["username"],$_GET["password"])=getCredentials($_GET["cnxid"]);
+    }
+
     $username=$_GET["username"];
     $password=url_decode_special_tool($_GET["password"]);
     $hostname=$_GET["hostname"];

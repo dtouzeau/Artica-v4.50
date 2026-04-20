@@ -166,7 +166,7 @@ function rows_ping(){
     $tb=explode(",",$_GET["rows-ping"]);
     $f=array();
     $page=CurrentPageName();
-
+    $MAIN_RT_USERS=array();
     if(!isset($GLOBALS["MAIN_RT_USERS"])){
         $ThisInf=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/metrics/realtime/clients/counts"),true);
         if(isset($ThisInf["services"])){
@@ -176,6 +176,7 @@ function rows_ping(){
             }
             $GLOBALS["MAIN_RT_USERS"]=$MAIN_RT_USERS;
         }else{
+            $GLOBALS["MAIN_RT_USERS"]=array();
             VERBOSE("MAIN_RT_USERS: NO!!",__LINE__);
         }
     }
@@ -189,8 +190,19 @@ function rows_ping(){
         $f[]="\ttempdata=base64_decode('$ServerStats');";
         $f[]="\tdocument.getElementById('rcolorStats-$ID').innerHTML=tempdata;";
         $f[]="}";
+
+        $f[]="if(document.getElementById('destination-$ID-builded')){";
+        $f[]="\tLoadjs('$page?td-destinations=$ID&function=');";
+        $f[]="}else{";
+        $f[]="if(document.getElementById('backend-analyze-$ID')){";
+        $f[]="\tLoadjs('$page?td-destinations=$ID&function=');";
+        $f[]="}";
+        $f[]="}";
+
         $f[]="Loadjs('$page?td-row=$ID&no-destinations=yes');";
     }
+
+
     echo @implode("\n",$f);
 }
 
@@ -274,11 +286,7 @@ function enable_fw_js():bool{
 }
 function disable_all_perform():bool{
     admin_tracks("Disable all web services");
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="UPDATE nginx_services SET enabled=0";
-    $q->QUERY_SQL($sql);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?disable-all=yes");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/sites/disable-all", []);
     return true;
 }
 function disable_fw_perform():bool{
@@ -361,95 +369,20 @@ function duplicate_js():bool{
 function duplicate_perform():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $tpl->CLEAN_POST();
-    $fromid=$_POST["duplicate-from"];
+    $fromid=intval($_POST["duplicate-from"]);
     $new_servicename=$_POST["duplicate-name"];
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$fromid");
-    $tempvalue=md5(time().$new_servicename);
-    $fkeys=array();
-    $fvalues=array();
-    $exclude["goodconftime"]=true;
-    $exclude["badconf"]=true;
-    $exclude["badconf_error"]=true;
-    $exclude["ID"]=true;
-    $exclude["BackendErrDetail"]=true;
-    $exclude["BackendErr"]=true;
-    $exclude["rebooted"]=true;
-    $exclude["BackendAnalyzed"]=true;
-    $exclude["BackendAnalyzedTime"]=true;
-    $exclude["MaintenanceSite"]=true;
-    $exclude["BackendStatus"]=true;
-    $exclude["FrontendErr"]=true;
-    $exclude["CompileTime"]=true;
-    $exclude["FrontendErrDetail"]=true;
-    $exclude["BackendAnalyzeLock"]=true;
-    $exclude["phpengine"]=true;
-    $exclude["slalatencyok"]=true;
-    $exclude["ResolvErrDetail"]=true;
-    $exclude["latestlatency"]=true;
-    $exclude["latencyscore"]=true;
 
-    foreach ($ligne as $key=>$value){
-        if(is_numeric($key)){continue;}
-        if($key=="servicename"){$value=$tempvalue;}
-        if(isset($exclude[$key])){continue;}
-        $fkeys[]=$key;
-        $fvalues[]="'".$q->sqlite_escape_string2($value)."'";
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$fromid/duplicate", [
+        "servicename" => $new_servicename
+    ]),true);
 
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        echo $err;
+        return false;
     }
-    $sql="INSERT INTO nginx_services (".@implode(",",$fkeys).") 
-    VALUES (".@implode(",",$fvalues).")";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error."\n$sql";return false;}
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM nginx_services WHERE servicename='$tempvalue'");
-    $new_serviceid=intval($ligne["ID"]);
-    if($new_serviceid==0){echo "Unable to find $tempvalue";return false;}
-    $new_servicename=$q->sqlite_escape_string2($new_servicename);
-    $q->QUERY_SQL("UPDATE nginx_services SET servicename='$new_servicename' WHERE ID=$new_serviceid");
-    if(!$q->ok){echo $q->mysql_error;return false;}
+    $new_serviceid=intval($result["ID"]);
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($new_serviceid);
-
-    $results=$q->QUERY_SQL("SELECT * FROM `service_parameters` WHERE serviceid=$fromid");
-    foreach ($results as $index=>$ligne){
-        $zkeyz=$ligne["zkey"];
-        $value=$q->sqlite_escape_string2($ligne["zvalue"]);
-        $q->QUERY_SQL("INSERT INTO `service_parameters` (serviceid,zkey,zvalue) VALUES('$new_serviceid','$zkeyz','$value')");
-        if(!$q->ok){echo "service_parameters:$q->mysql_error";return false;}
-    }
-    $results=$q->QUERY_SQL("SELECT * FROM `stream_ports` WHERE serviceid=$fromid");
-    foreach ($results as $index=>$ligne){
-        $interface=$ligne["interface"];
-        $port=$ligne["port"];
-        $options=$q->sqlite_escape_string2($ligne["options"]);
-        $md5=md5($ligne["interface"].$ligne["port"].$new_serviceid);
-
-        $sql="INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) 
-    VALUES ($new_serviceid,'$interface',$port,'$md5','$options');";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "stream_ports:$q->mysql_error\n$sql";return false;}
-    }
-
-
-    $results=$q->QUERY_SQL("SELECT * FROM `ngx_stream_access_module` WHERE serviceid=$fromid");
-    foreach ($results as $index=>$ligne) {
-
-        $item=$ligne["item"];
-        $allow=intval($ligne["allow"]);
-
-        $q->QUERY_SQL("INSERT OR IGNORE INTO ngx_stream_access_module(serviceid,item,allow) 
-				VALUES ($new_serviceid,'$item',$allow)");
-        if(!$q->ok){echo "ngx_stream_access_module:$q->mysql_error";return false;}
-    }
-
-    $results=$q->QUERY_SQL("SELECT * FROM `backends` WHERE serviceid=$fromid");
-    foreach ($results as $index=>$ligne) {
-        $hostname=$ligne["hostname"];
-        $port=intval($ligne["port"]);
-        $options=$q->sqlite_escape_string2($ligne["options"]);
-        $q->QUERY_SQL("INSERT OR IGNORE INTO backends(serviceid,hostname,port,options) 
-				VALUES ($new_serviceid,'$hostname',$port,'$options')");
-        if(!$q->ok){echo "backends:$q->mysql_error\n$sql";}
-    }
     return true;
 }
 
@@ -481,20 +414,17 @@ function extract_domains_js():bool{
 function enable():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
 
-    $ID=$_GET["enable"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename,enabled FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
-    if($ligne["enabled"]==0){
-        $text="Enable Web service $servicename";
-        $q->QUERY_SQL("UPDATE nginx_services SET `enabled`='1' WHERE ID=$ID");
-    }else{
-        $text="Disable Web service $servicename";
-        $q->QUERY_SQL("UPDATE nginx_services SET `enabled`='0' WHERE ID=$ID");
+    $ID=intval($_GET["enable"]);
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/enable", []),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        $tpl->js_mysql_alert($err);
+        return false;
     }
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
+    $sock=new socksngix($ID);
+    $servicename=$sock->GetServiceName();
+    $text=($result["enabled"]==1) ? "Enable Web service $servicename" : "Disable Web service $servicename";
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
     admin_tracks($text);
     echo td_row_clean($ID)."\n";
     echo "
@@ -649,55 +579,27 @@ function goodconf_popup(){
 }
 function goodconf_save(){
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_POST["goodconf_id"];
+    $ID=intval($_POST["goodconf_id"]);
     $tpl->CLEAN_POST();
     $goodconf=base64_encode($_POST["goodconf"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL("UPDATE nginx_services SET goodconftime=0,goodconf='$goodconf',badconf='' WHERE ID=$ID");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+        "goodconf" => $goodconf,
+        "goodconftime" => 0,
+        "badconf" => ""
+    ]);
 }
 
 function delete():bool{
+    $ID = intval($_POST["delete"]);
+    $sock=new socksngix($ID);
+    $servicename=$sock->GetServiceName();
 
-    $ID = $_POST["delete"];
-    $q  = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
-
-    $tables[] = "stream_ports";
-    $tables[] = "backends";
-    $tables[] = "service_parameters";
-    $tables[] = "ngx_stream_access_module";
-    $tables[] = "ngx_directories";
-    $tables[] = "ngx_subdir_items";
-    $tables[] = "httrack_sites";
-    $tables[] = "modsecurity_whitelist";
-    $tables[] = "directories_backends";
-
-    foreach ($tables as $tablename){
-        if(!$q->TABLE_EXISTS($tablename)) {continue;}
-         $q->QUERY_SQL("DELETE FROM $tablename WHERE serviceid='$ID'");
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/delete", []),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        echo $err;
+        return false;
     }
-
-    $q->QUERY_SQL("DELETE FROM nginx_services WHERE ID='$ID'");
-
-    if($q->TABLE_EXISTS("mod_security_rules")) {
-        $results = $q->QUERY_SQL("SELECT ID FROM mod_security_rules WHERE siteid='$ID'");
-        foreach ($results as $index => $ligne) {
-            $ruleid = $ligne["ruleid"];
-            if ($q->TABLE_EXISTS("mod_security_patterns")) {
-                $q->QUERY_SQL("DELETE FROM mod_security_patterns WHERE ruleid=$ruleid");
-            }
-            if ($q->TABLE_EXISTS("mod_security_rules")) {
-                $q->QUERY_SQL("DELETE FROM mod_security_rules WHERE ID=$ruleid");
-            }
-        }
-    }
-
-
-    if(!$q->ok){echo $q->mysql_error;return false;}
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/delete/$ID");
     admin_tracks("Removed reverse-proxy service $servicename");
     return true;
 }
@@ -1443,21 +1345,20 @@ function www_parameters2_BotChecker_save():bool{
     return admin_tracks("Set reverse-proxy Botnets checking to $Enabled for $servicename");
 }
 function www_parameters2_auditFrontend_save():bool{
-    $q=new lib_sqlite(NginxGetDB());
     $ID=intval($_GET["monitored-frontend"]);
-    $ligne=$q->mysqli_fetch_array("SELECT servicename,monitored FROM nginx_services WHERE ID=$ID");
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
     $monitored=intval($ligne["monitored"]);
-    $servicename=$ligne["servicename"];
-    if($monitored==0){
-        $monitored=1;
-    }else{
-        $monitored=0;
-    }
+    $servicename=$sock->GetServiceName();
+    $monitored=($monitored==0) ? 1 : 0;
 
-    $q->QUERY_SQL("UPDATE nginx_services SET monitored=$monitored WHERE ID=$ID");
-    if(!$q->ok){
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+        "monitored" => $monitored
+    ]),true);
+    if(!is_array($result) || !$result["Status"]){
         $tpl=new template_admin();
-        return $tpl->js_error($q->mysql_error);
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        return $tpl->js_error($err);
     }
     $page=CurrentPageName();
     header("content-type: application/x-javascript");
@@ -1531,6 +1432,7 @@ function www_parameters2_trap_files($tpl,$ID){
         return $tpl;
     }
     $data       = json_decode($sockngix->GET_INFO("trap_files"),true);
+    if(!is_array($data)){$data=array();}
     $tpl->table_form_field_text("{trap_files}",count($data)." {files}",ico_file);
 
     return $tpl;
@@ -2396,8 +2298,6 @@ function isAlready14():bool{
 function new_www():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $DOHServerEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DOHServerEnabled"));
-    $EnableAptMirror=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableAptMirror"));
     $PHPReverseEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PHPReverseEnabled"));
     $NgxStreamJS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NgxStreamJS"));
     $EnableDebianAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDebianAgent"));
@@ -2502,7 +2402,6 @@ function new_www_after():bool{
 }
 function new_www_save():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $q=new lib_sqlite(NginxGetDB());
     $servicename=$_POST["servicename"];
     $_SESSION["NEWNGINXAFTER"]=array();
 
@@ -2518,144 +2417,40 @@ function new_www_save():bool{
     }
 
     $ztype=intval($_POST["ztype"]);
-    $port=443;
     if($ztype==0){
         echo $tpl->post_error("Please specify the web service type");
         return false;
     }
 
+    $result = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site", [
+        "servicename" => $servicename,
+        "type" => $ztype
+    ]), true);
 
-    if($ztype==14){
-        $results=$q->QUERY_SQL("SELECT ID FROM nginx_services WHERE isDefault=1");
-        foreach ($results as $index=>$xline){
-            $q->QUERY_SQL("UPDATE nginx_services SET isDefault=0 WHERE ID={$xline["ID"]}");
-            $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/{$xline["ID"]}");
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
-        }
-    }
-    if($ztype==16){
-        // Special META SERVER
+    if (!is_array($result) || !$result["Status"]) {
+        $err = is_array($result) ? $result["Error"] : "reverse-proxy daemon unavailable";
+        echo $tpl->post_error($err);
+        return false;
     }
 
-    if(preg_match("#^(http|https):\/\/(.+)#",$servicename)){
-        $zuri=parse_url($servicename);
-        $servicename=$zuri["host"];
-    }
-
-    $servicename=sqlite_escape_string2($servicename);
-    $TEMPKEY=md5(time().rand(0,time()));
-    $q->QUERY_SQL("INSERT INTO nginx_services (`type`,`servicename`,`enabled`,`rebooted`) VALUES ('$ztype','$TEMPKEY',1,0)");
-    if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM nginx_services WHERE servicename='$TEMPKEY'");
-    $ID=intval($ligne["ID"]);
-
-    new_www_defaults_ports($servicename,$ztype,$ID);
-    new_www_defaults_ports2($servicename,$ztype,$ID);
-    new_www_dnsports($servicename,$ztype,$ID);
-
-    // If service name is a domain ?
-    if(is_valid_domain_name($servicename)){
-        $q->QUERY_SQL("UPDATE nginx_services SET `hosts`='$servicename',`goodconftime`=0 WHERE ID=$ID");
-    }
-    $q->QUERY_SQL("UPDATE nginx_services SET `servicename`='$servicename' WHERE ID=$ID");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/writeconfigs/flush");
+    $_SESSION["NEWNGINXAFTER"]["SITEID"] = intval($result["ID"]);
     return admin_tracks("Add new reverse-proxy site $servicename");
-}
-function new_www_defaults_ports($servicename,$servicetype,$ID):bool{
-    $port=443;
-    if($servicetype==14){return true;}
-    if($servicetype==5){return true;}
-    if($servicetype==16){$port=443;}
-    if(isHarmpID()) { return true;}
-    $options["ssl"]=1;
-    $options["http2"]=1;
-
-    if(preg_match("#^(http|https):\/\/(.+)#",$servicename)){
-        $zuri=parse_url($servicename);
-        $servicename=$zuri["host"];
-        if(isset($zuri["port"])){
-            $port=$zuri["port"];
-        }
-    }
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $q=new lib_sqlite(NginxGetDB());
-    // Try to found the best interface for default port
-    $nics = $tpl->list_interfaces(true);
-    foreach ($nics as $int => $none) {
-        $zn[] = $int;
-    }
-    $options=array();
-    if($port==443){
-        $options["ssl"]=1;
-        $options["http2"]=1;
-    }
-    $options=base64_encode(serialize($_POST));
-    $interface = $zn[0];
-    if (preg_match("#eth([0-9]+)#", $interface, $re)) {
-        $interface = "eth{$re[1]}";
-        $md5 = md5($interface . $port . $ID);
-        $q->QUERY_SQL("INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) 
-                    VALUES ($ID,'$interface',$port,'$md5','$options')");
-    }
-
-    return true;
-}
-function new_www_dnsports($servicename,$servicetype,$ID):bool{
-    if($servicetype<>14){return true;}
-    $port=443;
-    $q=new lib_sqlite(NginxGetDB());
-    if(preg_match("#^(.+?):([0-9]+)$#",$servicename,$re)){
-        $port=$re[2];
-    }
-    $md5 = md5($port . $ID);
-    if($port==443){
-        $options["ssl"]=1;
-        $options["http2"]=1;
-    }
-    $options=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($_POST);
-    $q->QUERY_SQL("INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) VALUES ($ID,'',$port,'$md5','$options')");
-
-    return true;
-}
-function new_www_defaults_ports2($servicename,$servicetype,$ID):bool{
-    if($servicetype==14){return true;}
-    if($servicetype==5){return true;}
-    if(!isHarmpID()) { return true;}
-    $port=443;
-
-    if(preg_match("#^(.+?):([0-9]+)$#",$servicename,$re)){
-        $port=$re[2];
-    }
-    $q=new lib_sqlite(NginxGetDB());
-
-    $md5 = md5($port . $ID);
-    if($port==443){
-        $options["ssl"]=1;
-        $options["http2"]=1;
-    }
-    $options=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($_POST);
-    $q->QUERY_SQL("INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) VALUES ($ID,'',$port,'$md5','$options')");
-
-    return true;
 }
 function www_save():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $tpl->CLEAN_POST_XSS();
-    $q=new lib_sqlite(NginxGetDB());
     $ID=intval($_POST["ID"]);
     if($ID==0){return new_www_save();}
     $isDefault=intval($_POST["isDefault"]);
 
-    if($ID>0){
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
-        $isDefaultOld=intval($ligne["isDefault"]);
-        if($isDefaultOld<>$isDefault){
-            $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/RemoveDefaults");
-        }
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
+    $isDefaultOld=intval($ligne["isDefault"]);
+    if($isDefaultOld<>$isDefault){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/RemoveDefaults");
     }
+
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($ID);
-    if(!$q->ok){echo $q->mysql_error;}
     $sockngix=new socksngix($ID);
 
     $pprotoFound=false;
@@ -2667,7 +2462,6 @@ function www_save():bool{
         $pprotoFound=true;
         $pproto[]=$re[1];
         unset($_POST[$key]);
-
     }
 
     if($pprotoFound) {
@@ -2675,13 +2469,15 @@ function www_save():bool{
     }
     foreach ($_POST as $key=>$value){
         $sockngix->SET_INFO($key, $value);
-
     }
 
+    $servicename=null;
     if(isset($_POST["servicename"])) {
-        $servicename = sqlite_escape_string2($_POST["servicename"]);
-        $q->QUERY_SQL("UPDATE nginx_services SET `servicename`='$servicename', isDefault=$isDefault WHERE ID=$ID");
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
+        $servicename = $_POST["servicename"];
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+            "servicename" => $servicename,
+            "isDefault" => $isDefault
+        ]);
     }
     if($ID>0) {
         $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
@@ -2794,6 +2590,10 @@ function td_row_waf($ID):string{
 
     $sockngix                   = new socksngix($ID);
     $Type=$sockngix->GetType();
+    $Data=$sockngix->GetCache();
+    if(intval($Data["enabled"])==0){
+        return $tpl->icon_shield();
+    }
     if($Type==14){
         return "&nbsp;";
     }
@@ -2815,57 +2615,56 @@ function td_row_waf($ID):string{
 function MaintenanceSite():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["MaintenanceSite"];
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT MaintenanceSite FROM nginx_services WHERE ID=$ID");
+    $ID=intval($_GET["MaintenanceSite"]);
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
     $MaintenanceSite=intval($ligne["MaintenanceSite"]);
-    if($MaintenanceSite==0){
-        $Text="enabled";
-        $q->QUERY_SQL("UPDATE nginx_services SET MaintenanceSite=1 WHERE ID=$ID");
-        if(!$q->ok){
-            $tpl->js_error($q->mysql_error);
-            return false;
-        }
+    $newVal=($MaintenanceSite==0) ? 1 : 0;
+    $Text=($newVal==1) ? "enabled" : "disabled";
 
-    }else{
-        $Text="disabled";
-        $q->QUERY_SQL("UPDATE nginx_services SET MaintenanceSite=0 WHERE ID=$ID");
-        if(!$q->ok){
-            $tpl->js_error($q->mysql_error);
-            return false;
-        }
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$ID/update-service", [
+        "MaintenanceSite" => $newVal
+    ]),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        $tpl->js_error($err);
+        return false;
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$ID");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
     header("content-type: application/x-javascript");
     $Sitename=get_servicename($ID);
     echo "Loadjs('$page?td-row=$ID');\n";
     return admin_tracks("Set maintenance reverse-proxy website of $Sitename to $Text");
 }
-function td_destinations():bool{
+function td_destinations($return=false):string{
     $ID=$_GET["td-destinations"];
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
     $latency="<div id='peity-start-$ID'></div>";
 
+    VERBOSE("-------> socksngix",__LINE__);
     $sockngix                   = new socksngix($ID);
+    VERBOSE("-------> GetCache",__LINE__);
     $ligne=$sockngix->GetCache();
+    VERBOSE("-------> GetCache -> OK",__LINE__);
     $idDiv="rcolor9-$ID";
     if(!isset($ligne["type"])){$ligne["type"]=0;}
 
     if(($ligne["type"]==8) OR ($ligne["type"]==19) OR ($ligne["type"]==6) OR ($ligne["type"]==1) or ($ligne["type"]==10)){
-        $destination=base64_encode($tpl->_ENGINE_parse_body("{local}"));
+        $destination=base64_encode($tpl->_ENGINE_parse_body("<div id='destination-$ID-builded'>{local}</div>"));
         VERBOSE("This is a local website",__LINE__);
         $f[]="if( document.getElementById('$idDiv') ){";
         $f[]="\ttempdata=base64_decode('$destination');";
         $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
         $f[]="}";
-        echo @implode("\n",$f);
-        return true;
+        if(!$return) {
+            echo @implode("\n", $f);
+        }
+        return @implode("\n", $f);
     }
     if($ligne["type"]==14 or $ligne["type"]==9 or $ligne["type"]==1){
         VERBOSE("$ID: Type 14 OR 9",__LINE__);
-        $destination=base64_encode($tpl->_ENGINE_parse_body("{local}"));
+        $destination=base64_encode($tpl->_ENGINE_parse_body("<div id='destination-$ID-builded'>{local}</div>"));
         if($ligne["type"]==9){
             $WebDavEnabled=$ligne["WebDavEnabled"];
             if($WebDavEnabled==1){
@@ -2880,48 +2679,52 @@ function td_destinations():bool{
         $f[]="\ttempdata=base64_decode('$destination');";
         $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
         $f[]="}";
-        echo @implode("\n",$f);
-        return true;
+        if(!$return) {
+            echo @implode("\n", $f);
+        }
+        return @implode("\n", $f);
 
     }
     if($ligne["type"]==7){
         $doh_subfolder=$ligne["doh_subfolder"];
         if($doh_subfolder==null){$doh_subfolder="dns-query";}
-        $destination=base64_encode($tpl->_ENGINE_parse_body("{local_dns_service}"));
+        $destination=base64_encode($tpl->_ENGINE_parse_body("<div id='destination-$ID-builded'>{local_dns_service}</div>"));
         $f[]="if( document.getElementById('$idDiv') ){";
         $f[]="\ttempdata=base64_decode('$destination');";
         $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
         $f[]="}";
-        echo @implode("\n",$f);
-        return true;
+        if(!$return) {
+            echo @implode("\n", $f);
+        }
+        return @implode("\n", $f);
     }
     if($ligne["type"]==5){
         $destination=@implode("<br>",$ligne["backendsOf"]);
-        $destination=base64_encode($tpl->_ENGINE_parse_body($destination).$latency);
+        $destination=base64_encode("<div id='destination-$ID-builded'>".$tpl->_ENGINE_parse_body($destination).$latency."</div>");
         $f[]="if( document.getElementById('$idDiv') ){";
         $f[]="\ttempdata=base64_decode('$destination');";
         $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
         $f[]="}";
-        echo @implode("\n",$f);
-        return true;
+        if(!$return) {
+            echo @implode("\n", $f);
+        }
+        return @implode("\n", $f);
     }
 
     $mouses="onMouseOver=\"this.style.cursor='pointer'\" OnMouseOut=\"this.style.cursor='default'\"";
-
-
 
     if($ligne["type"]==2 OR $ligne["type"]==13 OR $ligne["type"]==15){
         $destination="{unknown}";
         $backends=extract_backends($ID);
         $tootips="";
-        $fname="/usr/share/artica-postfix/ressources/databases/ReverseProxy/$ID.json";
-        $json=json_decode(file_get_contents($fname));
+        $json=@json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/site/$ID"));
+        if(is_object($json) && isset($json->config)){$json=$json->config;}else{$json=null;}
 
         $ActiveHealthCheck=intval($sockngix->GET_INFO("ActiveHealthCheckEnabled"));
         if($ActiveHealthCheck==0){
 
-            $BackendAnalyzed=$json->BackendAnalyzed;
-            $BackendErr=$json->BackendErr;
+            $BackendAnalyzed=is_object($json) ? intval($json->backend_analyzed) : 0;
+            $BackendErr=is_object($json) ? intval($json->backend_err) : 0;
 
             if($ligne["enabled"]==1) {
                 if($BackendAnalyzed==1) {
@@ -2935,7 +2738,7 @@ function td_destinations():bool{
 
 
         $latencyscore_text="";
-        $latencyscore=$json->LatencyScore;
+        $latencyscore=is_object($json) ? floatval($json->LatencyScore) : 0;
         if($latencyscore>0){
             $latencyscore=MillisToText($latencyscore);
             if(file_exists("img/squid/nginxbackendslatency$ID-hourly.png")) {
@@ -2953,31 +2756,36 @@ function td_destinations():bool{
         $f[]="\ttempdata=base64_decode('$destination');";
         $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
         $f[]="}";
-        echo @implode("\n",$f);
-        return true;
+        if(!$return) {
+            echo @implode("\n", $f);
+        }
+        return @implode("\n", $f);
     }
 
-    $destination="<div class='center'>".$tpl->icon_nothing()."</div>";
+    $destination="<div class='center' id='destination-$ID-builded'>".$tpl->icon_nothing()."</div>";
     $destination=base64_encode($tpl->_ENGINE_parse_body($destination));
     $f[]="if( document.getElementById('$idDiv') ){";
     $f[]="\ttempdata=base64_decode('$destination');";
     $f[]="\tdocument.getElementById('$idDiv').innerHTML=tempdata;";
     $f[]="}";
 
-
-    $f[]="function LatenciesPeity(){";
-    $f[]="  $(\"[id^='peity-latencies-']\").each(function () {";
-    $f[]="      let fullId = this.id;";
-    $f[]="      let match = fullId.match(/^peity-latencies-(\d+)$/);";
-    $f[]="      if (match && match[1]) {";
-    $f[]="          let id = match[1];";
-    $f[]="          ";
-    $f[]="      }";
-    $f[]="  });";
-    $f[]="";
-    $f[]="LatenciesPeity();";
-    echo @implode("\n",$f);
-    return true;
+    if($ligne["enabled"]==1) {
+        $f[] = "function LatenciesPeity(){";
+        $f[] = "  $(\"[id^='peity-latencies-']\").each(function () {";
+        $f[] = "      let fullId = this.id;";
+        $f[] = "      let match = fullId.match(/^peity-latencies-(\d+)$/);";
+        $f[] = "      if (match && match[1]) {";
+        $f[] = "          let id = match[1];";
+        $f[] = "          ";
+        $f[] = "      }";
+        $f[] = "  });";
+        $f[] = "";
+        $f[] = "LatenciesPeity();";
+    }
+    if(!$return) {
+        echo @implode("\n", $f);
+    }
+    return @implode("\n", $f);
 }
 function td_row_latencies($ID):array{
 
@@ -3089,8 +2897,9 @@ function backend2_js():bool{
     return true;
 }
 function td_row_clean($id):string{
-    $b64=base64_encode(@file_get_contents("img/wait.gif"));
-    $content=base64_encode("<img src='data:image/gif;base64,$b64' alt=''>");
+
+
+    $content=base64_encode("<i class='".ico_refresh_animate."'></i>");
     $f[]="tempdata=base64_decode('$content');";
     $f[]="if( document.getElementById('status-$id') ){";
     $f[]="\tdocument.getElementById('status-$id').innerHTML=tempdata;";
@@ -3150,12 +2959,15 @@ function td_row_serverstats($QueryID,$MAIN_RT_USERS):string{
             return "L.".__LINE__;
         }
         $Class = $json->Stats;
-        $Rules = $Class->rules;
-        foreach ($Rules as $domain => $id) {
-            $DOMS[$domain] = $id;
+        $DOMS=array();
+        if (property_exists($Class, "rules") && is_iterable($Class->rules)) {
+            $Rules = $Class->rules;
+            foreach ($Rules as $domain => $id) {
+                $DOMS[$domain] = $id;
+            }
         }
         $STATS=array();
-        if (property_exists($Class, "serverZones")) {
+        if (property_exists($Class, "serverZones") && is_iterable($Class->serverZones)) {
             foreach ($Class->serverZones as $Domain => $jclass) {
                 if (isset($DOMS[$Domain])) {
                     $STATS[$DOMS[$Domain]] = $jclass;
@@ -3222,6 +3034,7 @@ function td_row_status($id=0):bool{
     if(!isset($GLOBALS["MAIN_RT_USERS"])){
         $ThisInf=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/metrics/realtime/clients/counts"),true);
         if(isset($ThisInf["services"])){
+            $MAIN_RT_USERS=array();
             foreach ($ThisInf["services"] as $num=>$ligneUsers){
                 VERBOSE("MAIN_RT_USERS: {$ligneUsers["service_id"]} = {$ligneUsers["clients_count"]}",__LINE__);
                 $MAIN_RT_USERS[$ligneUsers["service_id"]]=$ligneUsers["clients_count"];
@@ -3234,7 +3047,7 @@ function td_row_status($id=0):bool{
 
 
     $WAF=base64_encode(td_row_waf($id));
-    $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne,$sockngix,$MAIN_REVERSED)));
+    $status=base64_encode($tpl->_ENGINE_parse_body(td_status($id,$MAIN_REVERSED)));
     $td_saved=base64_encode($tpl->_ENGINE_parse_body(td_saved($ligne,$sockngix)));
     $BtnAction=base64_encode($tpl->_ENGINE_parse_body(td_btnAction($id)));
     $servicename=base64_encode(td_row_servicename($id,$MAIN_REVERSED));
@@ -3309,9 +3122,11 @@ function td_row_status($id=0):bool{
         $f[]="}";
 
     }
-    if(!isset($_GET["no-destinations"])){
-        $f[]="Loadjs('$page?td-destinations=$id&function=');";
-    }
+    $_GET["td-destinations"]=$id;
+    VERBOSE("-------> td_destinations",__LINE__);
+    $f[]=td_destinations(true);
+
+
     $peity_conf="{ width:150,height:25,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
     //return array($peity_div,@implode(",",$max_ms));
     list($div,$data)=td_row_latencies($id);
@@ -3336,14 +3151,16 @@ function td_row_status($id=0):bool{
 
 function getTenantID($id){
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-
+    $tenantID=0;
     //Check Service Tenant
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/site/$id"),true);
     $ligne=$json["config"];
     $hosts=$ligne["hosts"];
 
     $jsonTenant=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/edgeguard/service/tenant/$hosts"),true);
-    $tenantID=intval($jsonTenant["Tenant"]);
+    if(isset($jsonTenant["Tenant"])) {
+        $tenantID = intval($jsonTenant["Tenant"]);
+    }
     $style="";
     $TenantMessage="";
     if($tenantID==0) {
@@ -3647,7 +3464,7 @@ function table():bool{
         }
 
 
-        $pleasewait="<i class=\"fas fa-sync fa-spin\" style='width:35%' ></i>&nbsp;{analyze}...</span>";
+        $pleasewait="<i class=\"fas fa-sync fa-spin\" style='width:35%' id='backend-analyze-$ID'></i>&nbsp;{analyze}...</span>";
         if($enabled==0 OR intval($ligne["type"])==14){
             $pleasewait="";
         }
@@ -3764,8 +3581,7 @@ function td_row_sslcertificate($id):string{
     $tpl->CLUSTER_CLI=true;
     $ssl_certificate = $sockngix->GET_INFO("ssl_certificate");
     $labeldanger="label-danger";
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM nginx_services WHERE ID=$id");
+    $ligne=$sockngix->GetCache();
     $enabled=intval($ligne["enabled"]);
     if($enabled==0){
         $labeldanger="label-default";
@@ -3889,10 +3705,8 @@ function td_row_servicename($id=0,$MAIN_REVERSED=array()):string{
     if($id==0){
         return "";
     }
-
-    $q                          = new lib_sqlite(NginxGetDB());
     $sockngix                   = new socksngix($id);
-    $ligne=$q->mysqli_fetch_array("SELECT enabled,badconf,servicename FROM nginx_services WHERE ID=$id");
+    $ligne=$sockngix->GetCache();
     $enabled=$ligne["enabled"];
     $badconflength=0;
     if(!is_null($ligne["badconf"])) {
@@ -3940,9 +3754,10 @@ function td_row_servicename($id=0,$MAIN_REVERSED=array()):string{
         $badconf=$badconf."&nbsp;<span class='label $labelfanger'>{deny_access}</span>";
     }
 
-
-
-    $ssl_certificate=td_row_sslcertificate($id);
+    $ssl_certificate="";
+    if($enabled==1) {
+        $ssl_certificate = td_row_sslcertificate($id);
+    }
     return $tpl->_ENGINE_parse_body("<span $style>$jssite$badconf$ssl_certificate$debug_ico</span>");
 
 }
@@ -4060,15 +3875,22 @@ function MAIN_REVERSED():array{
 
 
 
-function td_status($ligne,$sockngix,$MAIN_REVERSED=array()):string{
-    VERBOSE("-------------------------- START STATUS --------------------------", __LINE__);
+function td_status($ID,$MAIN_REVERSED=array()):string{
+    VERBOSE("-------------------------- START STATUS $ID--------------------------", __LINE__);
+    $sock=new socksngix($ID);
+    $ligne=$sock->GetCache();
+    if (intval($ligne["enabled"]) == 0) {
+        VERBOSE("------- $ID DISABLED",__LINE__);
+        return "<span class='label label-default'>#$ID {disabled}</span>";
+    }
+    VERBOSE("------- $ID ACTIVE",__LINE__);
     $page = CurrentPageName();
     $ssl_certificate="";
     if(isset($ligne["ssl_certificate"])) {
         $ssl_certificate = $ligne["ssl_certificate"];
     }
     $tpl = new template_admin();
-    $ID = $ligne["ID"];
+
 
     if (!isset($GLOBALS["SSLCERTIFICATES"])) {
         $squid_reverse = new squid_reverse();
@@ -4079,26 +3901,16 @@ function td_status($ligne,$sockngix,$MAIN_REVERSED=array()):string{
     $sslcertificates = $GLOBALS["SSLCERTIFICATES"];
     $sslcertificates["__DEFAULT__"] = true;
 
-    if ($ligne["enabled"] == 0) {
-        return "<span class='label label-default'>#$ID {disabled}</span>";
-    }
+
     if(count($MAIN_REVERSED)==0) {
         $MAIN_REVERSED = MAIN_REVERSED();
     }
-
-
-
-
     if($MaintenanceSite==1){
         if (!isset($MAIN_REVERSED[$ID])) {
             return $tpl->td_href("<span class='label label-danger'>#$ID {not_saved}</span>", null, $goodconf_js);
         }
-
         return $tpl->td_href("<span class='label label-warning'>#$ID {maintenance}</span>", null, $goodconf_js);
     }
-
-
-
     if ($ligne["type"] == 13) {
         if ($ssl_certificate == null) {
             $js = "Loadjs('fw.nginx.sites.php?www-parameters-ssl-js=$ID')";
@@ -4541,28 +4353,23 @@ function destinations_prepare():bool{
     $function=$_GET["function"];
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    header("content-type: application/x-javascript");
+
     $data=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($_GET["destinations-prepare"]);
     $t=time();
     $Timeout=1000;
     $f=array();
+
+
+
     foreach ($data as $ID=>$md){
         $Timeout=$Timeout+50;
         $idDiv="rcolor9-$ID";
+        $sock=new socksngix($ID);
+        $ligne=$sock->GetCache();
+        $Type=$ligne["type"];
 
-        $fname="/usr/share/artica-postfix/ressources/databases/ReverseProxy/$ID.json";
-        if(!is_file($fname)){
-            continue;
-        }
-        $json=json_decode(file_get_contents($fname));
-        if(!is_object($json)){
-            continue;
-        }
-        if(!property_exists($json,"Type")){
-            continue;
-        }
-        $f[]="// $ID Type = $json->Type";
-        if($json->Type==4){
+        $f[]="// $ID Type = $Type";
+        if($Type==4){
             $text=base64_encode(destinations_artica());
             $f[]="tempdata=base64_decode('$text');";
             $f[]="\tif( document.getElementById('$idDiv') ){";
@@ -4570,7 +4377,7 @@ function destinations_prepare():bool{
             $f[]="}\n";
             continue;
         }
-        if($json->Type==19){
+        if( $Type==19 OR $Type==14 ){
             $text=base64_encode($tpl->_ENGINE_parse_body("{local}"));
             $f[]="tempdata=base64_decode('$text');";
             $f[]="\tif( document.getElementById('$idDiv') ){";
@@ -4578,7 +4385,6 @@ function destinations_prepare():bool{
             $f[]="}\n";
             continue;
         }
-
 
         $pl="<i class=\"fas fa-sync fa-spin\" style='color: #1ab394'></i>&nbsp;{please_wait}...";
         $text=base64_encode($tpl->_ENGINE_parse_body($pl));
@@ -4593,7 +4399,7 @@ function destinations_prepare():bool{
         $f[]="";
     }
 
-
+    header("content-type: application/x-javascript");
     echo @implode("\n",$f);
     return true;
 }

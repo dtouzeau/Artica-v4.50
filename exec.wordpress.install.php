@@ -1640,7 +1640,7 @@ function nginx_pagespeed($ID=0){
     if(!nginx_pagespeed_global()){
         $unix=new unix();
         $php=$unix->LOCATE_PHP5_BIN();
-        shell_exec("$php /usr/share/artica-postfix/exec.nginx.php --restart-build");
+
         if(!nginx_pagespeed_global()){
             return "# Unable to set main configuration...!\n";
         }

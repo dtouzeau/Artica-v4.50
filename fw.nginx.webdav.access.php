@@ -40,23 +40,16 @@ function container_move():bool{
 		$NextOrder=$CurrentOrder+1;
 	}
 
-	$sql="UPDATE `$table` SET zorder='$CurrentOrder' WHERE zorder='$NextOrder' AND serviceid=$serviceid";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return false;}
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>$table,"set"=>["zorder"=>$CurrentOrder],"where"=>["zorder"=>$NextOrder,"serviceid"=>$serviceid]]);
 
-
-	$sql="UPDATE `$table` SET zorder=$NextOrder WHERE ID='$ID'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return false;}
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>$table,"set"=>["zorder"=>$NextOrder],"where"=>["ID"=>$ID]]);
 
 	$results=$q->QUERY_SQL("SELECT ID FROM `$table` WHERE serviceid=$serviceid ORDER by zorder");
 	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return false;}
 	$c=1;
 	foreach ($results as $index=>$ligne){
 		$ID=$ligne["ID"];
-		$sql="UPDATE `$table` SET zorder='$c' WHERE ID='$ID'";
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return false;}
+		$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>$table,"set"=>["zorder"=>$c],"where"=>["ID"=>$ID]]);
 		$c++;
 	}
     echo "Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');";
@@ -83,9 +76,7 @@ function delete_js():bool{
 }
 function delete():bool{
     $ID=$_POST["delete"];
-    $q=new lib_sqlite(NginxGetDB());
-	$q->QUERY_SQL("DELETE FROM `webdav_access` WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"webdav_access","where"=>["ID"=>$ID]]);
     return true;
 }
 
@@ -139,8 +130,7 @@ function id_save():bool{
 	$md5=$_POST["md5"];
 	$ID=$_POST["ID"];
 	$serviceid=intval($_POST['serviceid']);
-    $q=new lib_sqlite(NginxGetDB());
-	
+
 	if($serviceid==0){echo "Service ID missing or null\n";}
 	
 	$item=trim($_POST["ipaddr"]);
@@ -157,16 +147,13 @@ function id_save():bool{
 	
 	
 	if($ID==0){
-		$q->QUERY_SQL("INSERT OR IGNORE INTO webdav_access(serviceid,item,allow) 
-				VALUES ($serviceid,'$item',$allow)");
-		if(!$q->ok){echo $q->mysql_error;}
+		$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"insert","table"=>"webdav_access","values"=>["serviceid"=>$serviceid,"item"=>$item,"allow"=>$allow]]);
         $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($serviceid);
 		return false;
 	}
-	
-	$q->QUERY_SQL("UPDATE webdav_access SET item='$item',allow='$allow' WHERE ID=$ID");
+
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"webdav_access","set"=>["item"=>$item,"allow"=>$allow],"where"=>["ID"=>$ID]]);
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($serviceid);
-	if(!$q->ok){echo $q->mysql_error;return false;}
     return  admin_tracks_post("Set Access item for site #$serviceid");
 
 	

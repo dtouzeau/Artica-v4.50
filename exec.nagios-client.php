@@ -106,7 +106,7 @@ function install():bool{
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableNagiosClient",1);
     $unix->create_service("ncpa",__FILE__);
     build_progress(40, "{installing} {reconfiguring}");
-    shell_exec("$php /usr/share/artica-postfix/exec.nginx.single.php --web-error-pages");
+
     build_progress(50, "{installing} {starting_service}");
     start(true);
     return build_progress(100, "{installing} {success}");

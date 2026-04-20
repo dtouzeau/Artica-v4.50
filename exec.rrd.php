@@ -13,11 +13,9 @@ $internal_load=$array_load[0];
 if(isset($argv[1])) {
 
     if ($argv[1] == "--nginx") {
-        nginx();
         exit;
     }
     if ($argv[1] == "--load") {
-        scan_load();
         exit;
     }
     if ($argv[1] == "--monit") {
@@ -36,16 +34,9 @@ if(isset($argv[1])) {
     }
     if($argv[1]=="--php"){
         if(system_is_overloaded()){exit;}
-        scan_wordpress_phpfpm();
-        exit;
-    }
-    if($argv[1]=="--vts"){
-        if(system_is_overloaded()){exit;}
-        nginx_vts();
         exit;
     }
     if($argv[1]=="--nginx-requests"){
-        CreateGraphsRequests();
         exit;
     }
 
@@ -124,45 +115,7 @@ function ArticaRRDBase():string{
 }
 
 
-function nginx($aspid=false){
-    $unix=new unix();
-    $TimePID = "/etc/artica-postfix/pids/exec.rrd.php.nginx.pid";
-    if($aspid) {
-        $pid = $unix->get_pid_from_file($TimePID);
-        if ($unix->process_exists($pid)) {
-            $unix->ToSyslog("nginx(): Already Artica process running pid $pid", false, "rrd");
-            return false;
-        }
-    }
-    @file_put_contents($TimePID,getmygid());
-    $TimeExec = "/etc/artica-postfix/pids/exec.rrd.php.nginx.time";
-    $Stime=$unix->file_time_min($TimeExec);
-    if($Stime==0){
-        rrd_syslog("nginx: Current {$Stime}mn, need 2 minutes at least, aborting");
-        return false;
-    }
-    @unlink($TimeExec);
-    @file_put_contents($TimeExec,time());
 
-    $EnableNginx=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNginx"));
-    if($EnableNginx==0){
-        if(is_file("/etc/cron.d/nginx-rrd")){
-            @unlink("/etc/cron.d/nginx-rrd");
-            shell_exec("/etc/init.d/cron reload");
-        }
-        rrd_syslog("nginx: EnableNginx = 0");
-        return true;
-    }
-
-
-    $unix->Popuplate_cron_delete("nginx-rrd");
-
-    nginx_caches();
-    include_once(dirname(__FILE__)."/ressources/class.ccurl.inc");
-    scan_wordpress_phpfpm();
-    return true;
-
-}
 
 function nginxvtsIS(){
 
@@ -243,10 +196,6 @@ function rrd_pictures(){
     foreach ($periods as $period) {
         CreateGraphSquid($period);
         CreateGraphSquid($period,true);
-        CreateGraphNginx($period);
-        CreateGraphNginxHosts($period);
-        CreateGraphNginxHosts($period,true);
-        CreateGraphNginx($period,true);
         CreateGraphCron($period);
         CreateGraphCron($period,true);
     }
@@ -658,8 +607,6 @@ function scan_squid(){
     foreach ($periods as $period) {
         if($SQUIDEnable==1){CreateGraphSquid($period);}
         if($SQUIDEnable==1){CreateGraphSquid($period,true);}
-        CreateGraphNginx($period);
-        CreateGraphNginx($period,true);
         CreateGraphCron($period);
         CreateGraphCron($period,true);
     }
@@ -698,103 +645,8 @@ function rrd_syslog($text){
     syslog(LOG_INFO, $text);
     closelog();
 }
-function CreateGraphsRequests(){
-    $base=ArticaRRDBase();
-    $nginx_requests="$base/nginx_requests.rrd";
-    $period="hourly";
-    $flat=false;
-    echo "Simplegraph...\n";
-    simple_graph($period,$flat,$nginx_requests,"nginx_requests","requests",
-        "Number of requests over the last $period","Requests");
-}
-function CreateGraphNginxHosts($period,$flat=false):bool{
-    $unix=new unix();
-    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("nginxVTSModule"))==0){
-        return false;
-    }
-
-    $old_requests=unserialize(@file_get_contents("/etc/postfix/nginx-vts.old.requests"));
-    if(!is_array($old_requests)){return false;}
-    $base=ArticaRRDBase();
-    foreach ($old_requests as $hostname=>$none){
-        $rrd_base="$base/nginx_host_$hostname.rrd";
-        if(!is_file("$rrd_base")) {continue;}
-
-        simple_graph($period,$flat,$rrd_base,"nginx_requests_$hostname","requests",
-            "Number of requests over the last $period","Requests");
-
-        simple_graph($period,$flat,$rrd_base,"nginx_bandwidth_$hostname","bandwidth",
-            "Use bandwidth over the last $period","KB");
-    }
-    return true;
-
-}
-function CreateGraphNginx($period,$flat=false):bool{
-    $EnableNginx=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNginx"));
-    if($EnableNginx==0){return false;}
-    $base=ArticaRRDBase();
-    $nginx_requests="$base/nginx_requests.rrd";
-    $nginx_cnxs="$base/nginx_cnx.rrd";
-    if(is_file($nginx_requests)) {
-        simple_graph($period,$flat,$nginx_requests,"nginx_requests","requests",
-            "Number of requests over the last $period","Requests");
-
-    }
-    if(is_file($nginx_cnxs)) {
-        simple_graph($period,$flat,"$nginx_cnxs","nginx-cnxs","connections",
-            "Number of active connections over the last $period","Connections");
-
-    }
 
 
-    if(is_file("$base/fpm-wordpress.rrd")){
-        simple_graph($period,$flat,"$base/fpm-wordpress.rrd","fpm-wordpress","requests",
-            "Number of PHP Engine requests over the last $period","Requests");
-    }
-
-    return true;
-}
-function scan_wordpress_phpfpm(){
-    if(isset($GLOBALS["scan_wordpress_phpfpm"])){return true;}
-    $GLOBALS["scan_wordpress_phpfpm"]=true;
-    if(!is_file("/etc/init.d/wordpress-fpm")){return true;}
-    $unix=new unix();
-    $rrdtool=$unix->find_program("rrdtool");
-    $stampfile="/etc/postfix/fpm-wordpress.old.requests";
-    include_once(dirname(__FILE__)."/ressources/class.ccurl.inc");
-    $curl=new ccurl("http://127.0.0.1:1842/fpm-wordpress-status?json",true,"127.0.0.1");
-    $curl->NoHTTP_POST=true;
-    $curl->interface="127.0.0.1";
-    if(!$curl->get()){return false;}
-    $json = $curl->data;
-    $decoded=json_decode($json);
-    $current_requests=intval($decoded->{'accepted conn'});
-    //$active_processes=$decoded->{'active_processes'};
-    $old_requests=intval(@file_get_contents($stampfile));
-    $base=ArticaRRDBase();
-    if($old_requests>$current_requests){
-        $old_requests=$current_requests;
-    }
-    $rest=$current_requests-$old_requests;
-    @file_put_contents($stampfile,$current_requests);
-
-    if(!is_file($rrdtool)){return true;}
-    if(!is_dir($base)){@mkdir($base,0755);}
-
-    if(!is_file("$base/fpm-wordpress.rrd")) {
-        echo "-------> Creating $base/fpm-wordpress.rrd\n";
-        shell_exec("$rrdtool create $base/fpm-wordpress.rrd -s 300"
-            . " DS:requests:GAUGE:600:0:90000"
-            . " RRA:AVERAGE:0.5:1:576"
-            . " RRA:AVERAGE:0.5:6:672"
-            . " RRA:AVERAGE:0.5:24:732"
-            . " RRA:AVERAGE:0.5:144:1460");
-    }
-    rrd_syslog("Wordpress-FPM: requests: $rest");
-    shell_exec("$rrdtool update $base/fpm-wordpress.rrd -t requests N:$rest");
-    return true;
-
-}
 function CreateGraphSquid2($period,$flat=false):bool{
     if(!is_file("/etc/init.d/squid")){return true;}
     $base=ArticaRRDBase();

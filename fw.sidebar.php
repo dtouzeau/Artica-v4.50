@@ -12,12 +12,17 @@ $SquidDisableHyperCacheDedup=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDi
 $HyperCacheStoreID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HyperCacheStoreID"));
 $SquidDisableCaching=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableCaching"));
 $PostfixEnable=intval($GLOBALS['CLASS_SOCKETS']->GET_INFO("EnablePostfix"));
+$SQUID_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUID_INSTALLED"));
+$SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
+    if($SQUID_INSTALLED==0){
+        $SQUIDEnable=0;
+    }
 
 $UFDB=false;
 
 if($PostfixEnable==1){
     $users->APP_UFDBGUARD_INSTALLED=false;
-    $users->SQUID_INSTALLED=false;
+    $SQUIDEnable=0;
 }
 
 if($users->APP_UFDBGUARD_INSTALLED){
@@ -30,7 +35,7 @@ $f[]="<ul class='sidebar-list'>";
 
 $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
 $SquidCachesProxyEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidCachesProxyEnabled"));
-if($SQUIDEnable==0){$users->SQUID_INSTALLED=false;}
+
 
 // https://www.googleapis.com/youtube/v3/search?part=id%2Csnippet&channelId=UC2NZbd1F9HcnSHSc7F40W1g&q=Tutorials+about+managing&key=AIzaSyBs04_Fectn-vvp5dvF93m7A1wU1CgdZ_U
 
@@ -53,27 +58,26 @@ if($users->AsAnAdministratorGeneric){
 
 
 }
-if(!$users->SQUID_INSTALLED){
-	$Query=false;
-	
+$Query=false;
+
+if(!$SQUIDEnable==0){
+
 	$EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
 	$RemoteUfdbCat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteUfdbCat"));
-    $Query=true;
 
-	if($Query){
+
+	if($EnableLocalUfdbCatService==1 OR $RemoteUfdbCat==1 OR $EnableUfdbGuard==1){
 		$f[]=line_icon("Loadjs('fw.ufdb.categorize.php?js-simple=yes')",
 				"fas fa-map-marker-question",
 				"{test_categories}",
 				"btn-primary"
 		);
-			
-			
-	}
-	
+        $Query=true;
+    }
 }
 
 
-if($users->SQUID_INSTALLED){
+if($SQUIDEnable==1){
 	if($users->AsProxyMonitor){
 		$f[]="<li>";
 		$f[]="<div><h4 style='font-weight:bold;font-size:19px;margin-bottom:0px;margin-top:0px'>{your_proxy}</H4></div>";
@@ -89,11 +93,11 @@ if($users->SQUID_INSTALLED){
 
         $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
 		$RemoteUfdbCat=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteUfdbCat"));
-		$Query=true;
+
 
 		
-		if($Query){
-			$f[]=line_icon("Loadjs('fw.ufdb.categorize.php?js-simple=yes')",
+		if(!$Query){
+            $f[]=line_icon("Loadjs('fw.ufdb.categorize.php?js-simple=yes')",
 					"fas fa-map-marker-question",
 					"{test_categories}",
 					"btn-primary"
@@ -154,8 +158,12 @@ if($users->SQUID_INSTALLED){
 		
 		$f[]="</li>";
 			
-	}
+	}else{
+        $f[]="<!-- AsProxyMonitor -> FALSE -->";
+    }
 	
+}else{
+    $f[]="<!-- PROXY DISABLED -->";
 }
 
 $POSTFIX_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_INSTALLED"));
@@ -185,7 +193,7 @@ if($users->AsAnAdministratorGeneric){
 
 	$f[]="<li>";
 	$f[]="<div><h4 style='font-weight:bold;font-size:19px;margin-bottom:0px;margin-top:0px'>{system}</H4></div>";
-	
+    $f[]="</li>";
 	if($users->AsAnAdministratorGeneric){
 		
 		

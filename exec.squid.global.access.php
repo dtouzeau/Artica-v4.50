@@ -682,9 +682,7 @@ function configure_cache(){
     build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",15);
     system("/usr/sbin/artica-phpfpm-service -proxy-build-caches");
 
-    build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",20);
-    $squid_refresh_pattern=new squid_refresh_pattern();
-    $squid_refresh_pattern->build();
+
 
     build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",30);
     $HyperCacheSquid=new HyperCacheSquid();
@@ -709,8 +707,6 @@ function install_cache(){
     $php=$unix->LOCATE_PHP5_BIN();
     system("$php /usr/share/artica-postfix/exec.squid.verify.caches.php");
     build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",20);
-    $squid_refresh_pattern=new squid_refresh_pattern();
-    $squid_refresh_pattern->build();
 
     build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",30);
     $HyperCacheSquid=new HyperCacheSquid();
@@ -759,10 +755,6 @@ function enable_cache(){
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisableAnyCache", 0);
     system("/usr/sbin/artica-phpfpm-service -proxy-build-caches");
 
-    build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",20);
-    $squid_refresh_pattern=new squid_refresh_pattern();
-    $squid_refresh_pattern->build();
-
     build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",30);
     $HyperCacheSquid=new HyperCacheSquid();
     $HyperCacheSquid->build();
@@ -787,8 +779,7 @@ function disable_cache(){
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HyperCacheStoreID", 0);
 
     build_progress("{PROXY_CACHE_FEATURE} {disable_feature}",20);
-    $squid_refresh_pattern=new squid_refresh_pattern();
-    $squid_refresh_pattern->build();
+
 
     build_progress("{PROXY_CACHE_FEATURE} {disable_feature}",30);
     $HyperCacheSquid=new HyperCacheSquid();
@@ -1704,8 +1695,7 @@ function cache_tweaks():bool{
     $fs1 = get_filedescriptors();
 
     system("/usr/sbin/artica-phpfpm-service -proxy-build-caches");
-    $squid_refresh_pattern=new squid_refresh_pattern();
-    $squid_refresh_pattern->build();
+
 
     $md52=global_md5_dir();
     if($md51 == $md52){
@@ -1954,11 +1944,6 @@ function xstart(){
     $GLOBALS["ACLS_UFDBCLIENT"]=true;
     $ufdbgclient=new squid_url_rewrite();
     $ufdbgclient->build();
-
-
-    build_progress("{starting} {refresh_patterns}",90);
-    $squid_refresh_pattern=new squid_refresh_pattern();
-    $squid_refresh_pattern->build();
 
     build_progress("{starting} {tcp_outgoing_interface}",91);
     $tcp_outgoing_interface=new tcp_outgoing_interface();

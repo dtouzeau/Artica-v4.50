@@ -1341,7 +1341,7 @@ function table_form(){
 
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/fpm.reload.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/fpm.reload.progress.txt";
-    $ARRAY["CMD"]="nginx.php?reconfigre-php-fpm=yes";
+    $ARRAY["CMD"]="/webconsole/phpini";
     $ARRAY["TITLE"]="{apply_parameters}";
     $prgress=base64_encode(serialize($ARRAY));
     $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-articaweb-restart')";

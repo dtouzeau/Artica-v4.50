@@ -108,14 +108,8 @@ function content():bool{
 function Save():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $tpl->CLEAN_POST();
-    $q=new lib_sqlite(NginxGetDB());
     $ID=intval($_POST["ID"]);
-    $sql=sprintf("UPDATE nginx_services SET WebDirectory='%s',WebDirectoryChmod='%s' WHERE ID=%s",$_POST["WebDirectory"],$_POST["WebDirectoryChmod"],$ID);
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
-        return false;
-    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"nginx_services","set"=>["WebDirectory"=>$_POST["WebDirectory"],"WebDirectoryChmod"=>$_POST["WebDirectoryChmod"]],"where"=>["ID"=>$ID]]);
     $nginxSock=new socksngix($ID);
     $nginxSock->SET_INFO("WebDavEnabled",$_POST["WebDavEnabled"]);
     $nginxSock->SET_INFO("WebDavUser",$_POST["WebDavUser"]);
@@ -177,12 +171,7 @@ function file_uploaded(){
     $function=$_GET["function"];
     $refreshjs="";
 
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL("UPDATE nginx_services SET WebContent='$data', WebContentSize='$filelenght' WHERE ID=$ID");
-    if(!$q->ok){
-        $tpl->js_mysql_alert($q->mysql_error);
-        return false;
-    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"nginx_services","set"=>["WebContent"=>$data,"WebContentSize"=>$filelenght],"where"=>["ID"=>$ID]]);
 
     header("content-type: application/x-javascript");
     $jsCompile="Loadjs('fw.nginx.apply.php?serviceid=$ID&function=$function&addjs=$refreshjs');";

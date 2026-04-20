@@ -532,9 +532,7 @@ function www_parameters3(){
 
     $service_reconfigure="LoadAjax('optimize-nginx-$ID','$page?www-parameters2=$ID');Loadjs('fw.nginx.sites.php?td-row=$ID');Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$ID');";
 
-    if(isHarmpID()){
-        $service_reconfigure="";
-    }
+
     $t=time();
     $form_final="<div class=center><img src='img/2778963.png?t=$t' alt=''></div>";
 
@@ -561,7 +559,7 @@ function www_proxy_buffering_widgets():bool{
     return true;
 }
 function nginx_pagespeed_enabled():int{
-    if(isHarmpID()) {return 1;}
+
     $nginx_pagespeed_installed = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("nginx_pagespeed_installed"));
     if($nginx_pagespeed_installed==0){return 0;}
     return  intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("nginx_pagespeed_enabled"));
@@ -595,7 +593,7 @@ function widget_Cache($ID):string{
         return widget_Cache_disk($ID);
     }
 
-    if(!isHarmpID()){
+
         $nginxsock=new socksngix(0);
         $nginxCachesDir=intval($nginxsock->GET_INFO("nginxCachesDir"));
         $NginxCacheRedis=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxCacheRedis"));
@@ -611,7 +609,7 @@ function widget_Cache($ID):string{
         if($NginxCacheRedis==0){
             return $tpl->widget_grey("{caching_using_redis}","{feature_disabled} ({global})",ico_disabled);
         }
-    }
+
 
     $title="{caching_using_redis}";
     if($nginxCachesDir==1){
@@ -689,7 +687,7 @@ function EnableProxyBuffering():bool{
 function widget_pagespeed($ID):string{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    if(!isHarmpID()){
+
 
         $nginx_pagespeed_installed = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("nginx_pagespeed_installed"));
         if($nginx_pagespeed_installed==0){
@@ -698,7 +696,7 @@ function widget_pagespeed($ID):string{
         if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("nginx_pagespeed_enabled"))==0){
             return $tpl->widget_grey("{enable_mod_pagespeed}","{feature_disabled} ({global})",ico_disabled);
         }
-    }
+
 
     $sock=new socksngix($ID);
     $pagespeed=intval($sock->GET_INFO("pagespeed"));
@@ -743,23 +741,8 @@ function Save():bool{
     return admin_tracks("Update Optimization settings for reverse-proxy $servicename ( ".@implode(", ",$trck).")");
 
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
 
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
+
 function www_proxy_buffering():bool{
     $page = CurrentPageName();
     $ID = intval($_GET["www-proxy-buffering"]);
@@ -778,9 +761,6 @@ function www_proxy_buffering2():bool{
     $proxy_buffering=intval($socknginx->GET_INFO("proxy_buffering"));
     $service_reconfigure="Loadjs('fw.nginx.apply.php?serviceid=$ID&function=NgixSitesReload&addjs=');";
 
-    if(isHarmpID()){
-        $service_reconfigure="";
-    }
 
 
     if($proxy_buffering==1){

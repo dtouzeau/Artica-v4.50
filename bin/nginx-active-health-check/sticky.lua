@@ -48,17 +48,18 @@ local function get_chash_ring(servers)
 
     -- Build new ring
     -- resty.chash:new() expects {node_name = weight} format (dictionary, not array)
+    -- Weights scaled by 100 to preserve sub-integer slow_start ramp granularity
     local nodes = {}
     for _, server in ipairs(servers) do
         local weight = server.weight or 1
 
-        -- Apply slow start if configured
+        -- Apply slow start if configured (may return a fractional weight during ramp)
         if server.slow_start and server.slow_start > 0 then
             local balancer = require "balancer"
             weight = balancer.apply_slow_start(server.address, weight, server.slow_start, "sticky")
         end
 
-        nodes[server.address] = weight
+        nodes[server.address] = math.max(1, math.floor((weight or 1) * 100 + 0.5))
     end
 
     local chash_instance = resty_chash:new(nodes)
@@ -162,38 +163,34 @@ function _M.select_with_cookie(servers, cookie_name)
         return servers[1], false
     end
 
-    -- No cookie: select new server using weighted round-robin
+    -- No cookie: select new server using weighted round-robin.
+    -- Precompute scaled weights (x100) once so fractional slow_start ramps
+    -- are integer-precise under math.random bounds.
+    local scaled_weights = {}
     local total_weight = 0
-    for _, server in ipairs(servers) do
+    for i, server in ipairs(servers) do
         local weight = server.weight or 1
 
-        -- Apply slow start if configured
+        -- Apply slow start if configured (may return fractional weight during ramp)
         if server.slow_start and server.slow_start > 0 then
             local balancer = require "balancer"
             weight = balancer.apply_slow_start(server.address, weight, server.slow_start, "sticky")
         end
 
-        total_weight = total_weight + weight
+        local scaled = math.max(1, math.floor((weight or 1) * 100 + 0.5))
+        scaled_weights[i] = scaled
+        total_weight = total_weight + scaled
     end
 
     local random_weight = math.random(total_weight)
     local cumulative_weight = 0
 
-    for _, server in ipairs(servers) do
-        local weight = server.weight or 1
-
-        -- Apply slow start if configured
-        if server.slow_start and server.slow_start > 0 then
-            local balancer = require "balancer"
-            weight = balancer.apply_slow_start(server.address, weight, server.slow_start, "sticky")
-        end
-
-        cumulative_weight = cumulative_weight + weight
+    for i, server in ipairs(servers) do
+        cumulative_weight = cumulative_weight + scaled_weights[i]
         if random_weight <= cumulative_weight then
             -- Note: We don't set cookie here anymore
             -- Application manages cookie (set_cookie=false mode)
             -- Or use sticky_response.lua in header_filter_by_lua_block for set_cookie=true
-            -- ngx.log(ngx.INFO, "New sticky session: selected server ", server.address)
             return server, true  -- true = new session
         end
     end

@@ -54,7 +54,7 @@ function set_data($array=array(),$ID){
         $q->QUERY_SQL("ALTER TABLE ngx_directories ADD replace TEXT");
     }
 
-    $q->QUERY_SQL("UPDATE ngx_directories set replace='$NEWDATA' WHERE ID=$ID");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"ngx_directories","set"=>array("replace"=>"$NEWDATA"),"where"=>array("ID"=>"$ID")));
 
 }
 

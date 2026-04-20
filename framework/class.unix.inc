@@ -7897,95 +7897,9 @@ class unix {
     }
 
     //##############################################################################
-    public function IS_CITRIXXEN_HOST(){
-        if($GLOBALS["VERBOSE"]){echo "Exec IS_CITRIXXEN_HOST()\n";}
-        if(is_file("/etc/artica-postfix/XENSERVER_NOHOST")){
-            @unlink("/etc/artica-postfix/XENSERVER_HOST");
-            @unlink("/etc/artica-postfix/XENSERVER_NOHOST");
-        }
-
-        if(is_file("/etc/artica-postfix/XENSERVER_HOST")){
-            $xtime=$this->file_time_get("/etc/artica-postfix/XENSERVER_HOST");
-            if($xtime>120){@unlink("/etc/artica-postfix/XENSERVER_HOST");}
-        }
-        if(is_file("/etc/artica-postfix/XENSERVER_HOST")){
-            $data=trim(@file_get_contents("/etc/artica-postfix/XENSERVER_HOST"));
-            if(is_numeric($data)){return intval($data);}
-        }
-
-        if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-            $xtime=$this->file_time_get("/etc/artica-postfix/dmidecode-type-1.cache");
-            if($xtime>480){@unlink("/etc/artica-postfix/dmidecode-type-1.cache");}
-        }
-        if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-            if($GLOBALS["VERBOSE"]){echo "Open /etc/artica-postfix/dmidecode-type-1.cache\n";}
-            $results=unserialize(@file_get_contents("/etc/artica-postfix/dmidecode-type-1.cache"));
-
-        }else{
-            $dmidecode=$this->find_program('dmidecode');
-            if (!is_file("$dmidecode")){return 0;}
-            if($GLOBALS["VERBOSE"]){echo "Exec $dmidecode --type 1 2\n";}
-            exec("$dmidecode --type 1 2>&1",$results);
-            @file_put_contents("/etc/artica-postfix/dmidecode-type-1.cache", serialize($results));
-        }
-
-        foreach($results as $line){
-            if(preg_match("#Manufacturer: Xen#",$line)){
-                @file_put_contents("/etc/artica-postfix/XENSERVER_HOST",1);
-                return 1;
-            }
-
-            if(preg_match("#Xen#",$line)){
-                @file_put_contents("/etc/artica-postfix/XENSERVER_HOST",1);
-                return 1;
-            }
-        }
-        if($GLOBALS["VERBOSE"]){echo "IS_CITRIXXEN_HOST()\n";}
-        @file_put_contents("/etc/artica-postfix/XENSERVER_HOST",0);
-        return 0;
-    }
-    //##############################################################################
-
-    public function IS_NUTANIX_HOST(){
-        if($GLOBALS["VERBOSE"]){echo "Exec IS_NUTANIX_HOST()\n";}
 
 
-        if(is_file("/etc/artica-postfix/NUTANIX_HOST")){
-            $xtime=$this->file_time_get("/etc/artica-postfix/NUTANIX_HOST");
-            if($xtime>120){@unlink("/etc/artica-postfix/NUTANIX_HOST");}
-        }
-        if(is_file("/etc/artica-postfix/NUTANIX_HOST")){
-            $data=trim(@file_get_contents("/etc/artica-postfix/NUTANIX_HOST"));
-            if(is_numeric($data)){return intval($data);}
-        }
 
-        if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-            $xtime=$this->file_time_get("/etc/artica-postfix/dmidecode-type-1.cache");
-            if($xtime>480){@unlink("/etc/artica-postfix/dmidecode-type-1.cache");}
-        }
-        if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-            if($GLOBALS["VERBOSE"]){echo "Open /etc/artica-postfix/dmidecode-type-1.cache\n";}
-            $results=unserialize(@file_get_contents("/etc/artica-postfix/dmidecode-type-1.cache"));
-
-        }else{
-            $dmidecode=$this->find_program('dmidecode');
-            if (!is_file("$dmidecode")){return 0;}
-            if($GLOBALS["VERBOSE"]){echo "Exec $dmidecode --type 1 2\n";}
-            exec("$dmidecode --type 1 2>&1",$results);
-            @file_put_contents("/etc/artica-postfix/dmidecode-type-1.cache", serialize($results));
-        }
-
-        foreach($results as $line){
-            if(preg_match("#Manufacturer:\s+Nutanix#",$line)){
-                @file_put_contents("/etc/artica-postfix/NUTANIX_HOST",1);
-                return 1;
-            }
-        }
-        if($GLOBALS["VERBOSE"]){echo "IS_NUTANIX_HOST()\n";}
-        @file_put_contents("/etc/artica-postfix/NUTANIX_HOST",0);
-        return 0;
-    }
-    //##############################################################################
 
 
 

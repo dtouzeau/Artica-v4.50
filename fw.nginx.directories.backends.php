@@ -105,9 +105,7 @@ function  delete():bool{
     $servicename=get_servicename($serviceid);
     $dirname=get_directoryname($directory_id);
     admin_tracks("delete backend $hostname from path $dirname on site $servicename");
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL("DELETE FROM `directories_backends` WHERE ID=$ID");
-    if(!$q->ok){echo $q->mysql_error;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"directories_backends","where"=>array("ID"=>"$ID")));
     return true;
 }
 
@@ -208,18 +206,11 @@ function id_save():bool{
     admin_tracks_post("Save/edit backend for path $dirname in site $servicename");
 
     if($ID==0){
-        $sql="INSERT OR IGNORE INTO directories_backends (serviceid,directory_id,hostname,port,options,root) 
-    	VALUES ($serviceid,$directory_id,'$hostname',$port,'$options','$root')";
-
-        $q->QUERY_SQL($sql);
-        writelogs($sql);
-        if(!$q->ok){echo $tpl->post_error($q->mysql_error);}
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"insert","table"=>"directories_backends","values"=>array("serviceid"=>"$serviceid","directory_id"=>"$directory_id","hostname"=>"$hostname","port"=>"$port","options"=>"$options","root"=>"$root")));
         return true;
     }
 
-    $q->QUERY_SQL("UPDATE directories_backends SET hostname='$hostname',
-    port='$port',root='$root', options='$options' WHERE ID=$ID");
-    if(!$q->ok){echo $tpl->post_error($q->mysql_error);}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"directories_backends","set"=>array("hostname"=>"$hostname","port"=>"$port","root"=>"$root","options"=>"$options"),"where"=>array("ID"=>"$ID")));
     return true;
 
 }

@@ -4,6 +4,9 @@ include_once(dirname(__FILE__) . "/ressources/class.ActiveDirectory.inc");
 include_once(dirname(__FILE__)."/ressources/class.ActiveDirectoryRootDSE.inc");
 if(isset($_POST["connection"])){connection_save();exit;}
 if(isset($_GET["connection-js"])){connection_js();exit;}
+if(isset($_GET["connection-password-js"])){connection_password_js();exit;}
+if(isset($_GET["connection-password-popup"])){connection_password_popup();exit;}
+if(isset($_POST["connection-password"])){connection_password_save();exit;}
 if(isset($_GET["connection-popup"])){connection_popup();exit;}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -355,6 +358,77 @@ function ADUserCanConnect_save():bool{
     return admin_tracks("Save User Can Connect AD={$array["ADUserCanConnect"]} on Active Directory connection #$RealKey");
 }
 
+function connection_password_popup():bool{
+    $page=CurrentPageName();
+    $ID=intval($_GET["connection-password-popup"]);
+    $tpl=new template_admin();
+    $btname="{apply}";
+    $jsafter=null;
+    $title="";
+    $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+
+    if($ID==0){
+        $array = $ActiveDirectoryConnections[$ID] ?? DefaultConnection();
+        $jsafter="LoadAjaxSilent('active_directory_ldap_connections','$page?table=yes');";
+
+    }
+    if($ID==9999999999999){
+        $tpl=new template_admin();
+        echo $tpl->div_error("$ID ??");
+        return false;
+    }
+
+    if($ID<9999999999999){
+        if($ID>0){
+            $array=$ActiveDirectoryConnections[$ID];
+            $jsafter="LoadAjaxSilent('active_directory_ldap_connections','$page?table=yes');";
+        }
+    }
+
+    if(!isset($array["LDAP_DN"])){$array["LDAP_DN"]="";}
+    if(!isset($array["LDAP_PASSWORD"])){$array["LDAP_PASSWORD"]="";}
+
+    $form[]=$tpl->field_hidden("connection-password",$ID);
+    $form[]=$tpl->field_email("LDAP_DN", "{username}","{$array["LDAP_DN"]}",true);
+    $form[]=$tpl->field_password2("LDAP_PASSWORD", "{password}", $array["LDAP_PASSWORD"]);
+
+    $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
+    $ClusterNotReplicateAD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterNotReplicateAD"));
+    $LOCK=false;
+    if($PowerDNSEnableClusterSlave==1){
+        $LOCK=true;
+    }
+    if($ClusterNotReplicateAD==1){
+        $LOCK=false;
+    }
+    echo $tpl->form_outside("", @implode("\n", $form),null,$btname,"dialogInstance5.close();$jsafter","AsSystemAdministrator",true,$LOCK);
+    return true;
+
+}
+
+function connection_password_js():bool{
+    $page=CurrentPageName();
+    $users=new usersMenus();
+    $tpl=new template_admin();
+    if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return false;}
+    $ID=intval($_GET["connection-password-js"]);
+    $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+    if($ID==0){
+        $array = $ActiveDirectoryConnections[$ID] ?? DefaultConnection();
+        $title="{default}: {$array["LDAP_SERVER"]} / {$array["LDAP_DN"]}";
+        return $tpl->js_dialog5($title, "$page?connection-password-popup=$ID");
+    }
+
+    if($ID==9999999999999){
+        $title=$tpl->_ENGINE_parse_body("{new_connection}");
+        return $tpl->js_dialog2($title, "$page?connection-password-popup=$ID");
+    }
+    $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+    $array=$ActiveDirectoryConnections[$ID];
+    $title="{$array["LDAP_SERVER"]} / {$array["LDAP_DN"]}";
+    return $tpl->js_dialog5($title, "$page?connection-password-popup=$ID");
+}
+
 function connection_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -373,6 +447,7 @@ function connection_js(){
         $tpl->js_dialog2($title, "$page?connection-popup=$ID");
         return;
     }
+    //
     $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
     $array=$ActiveDirectoryConnections[$ID];
     $title="{$array["LDAP_SERVER"]} / {$array["LDAP_DN"]}";
@@ -593,10 +668,11 @@ function table():bool{
 
             $default="&nbsp;<span class='label label-default'>{default}</span>$failed";
             $delete = $tpl->icon_nothing();
+            $jsUser="Loadjs('$page?connection-password-js=0')";
             $html[] = "<tr class='$TRCLASS'>";
             $html[] = "<td $row1prc>$label</td>";
             $html[] = "<td >" . $tpl->td_href($array["LDAP_SERVER"] . " $default", "{click_to_edit}", $js) . "</td>";
-            $html[] = "<td >" . $tpl->td_href($array["LDAP_DN"], "{click_to_edit}", $js) . "</td>";
+            $html[] = "<td >" . $tpl->td_href($array["LDAP_DN"], "{click_to_edit}", $jsUser) . "</td>";
             $md5=md5(serialize($array).time()+rand(1,100));
             $td_UserADCanConnect=td_UserADCanConnect($array,0,$md5);
             $html[] = "<td $row1prc><span id='ADUserCanConnect$md5'>$td_UserADCanConnect</span>";
@@ -699,11 +775,11 @@ function table():bool{
             $delete=$tpl->icon_delete("");
             $default="&nbsp;&nbsp;<span class='label label-default'>{default}</span>$failed";
         }
-
+        $jsUser="Loadjs('$page?connection-password-js=$VirtualKey')";
         $html[]="<tr class='$TRCLASS'>";
         $html[]="<td $row1prc>$label</td>";
         $html[]="<td >". $tpl->td_href($ligne["LDAP_SERVER"].$default,"{click_to_edit}",$js)."$failed$RootDSE</td>";
-        $html[]="<td >". $tpl->td_href($ligne["LDAP_DN"],"{click_to_edit}",$js)."</td>";
+        $html[]="<td >". $tpl->td_href($ligne["LDAP_DN"],"{click_to_edit}",$jsUser)."</td>";
 
         $md5=md5(serialize($ligne).time()."".rand(1,100));
         $td_UserADCanConnect=td_UserADCanConnect($ligne,$VirtualKey,$md5);
@@ -776,7 +852,69 @@ function CleanArray($ActiveDirectoryConnections):array{
     return $NewArray;
 
 }
+function connection_password_save():bool{
+    $tpl    = new template_admin();
+    $tpl->CLEAN_POST();
+    $ID     = intval($_POST["connection-password-popup"]);
+    $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
+    $ActiveDirectoryConnectionsTemp=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections");
+    if(strlen($ActiveDirectoryConnectionsTemp)<4) {
+        $ActiveDirectoryConnectionsTemp=serialize(array());
+    }
+    writelogs("Save Active Directory credentials ID:$ID",__FUNCTION__,__FILE__
+        ,__LINE__);
+    $ActiveDirectoryConnections=CleanArray(unserialize($ActiveDirectoryConnectionsTemp));
+    if(isset($_POST["LDAP_DN"])) {
+        $_POST["WINDOWS_SERVER_ADMIN"] = $_POST["LDAP_DN"];
+    }
+    if($ID==0) {
+        if ($Enablehacluster == 1) {
+            $haClusterAD = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAD"));
 
+            if (isset($_POST["LDAP_DN"])) {
+                $haClusterAD["KerberosUsername"] = $_POST["LDAP_DN"];
+            }
+            if (isset($_POST["LDAP_PASSWORD"])) {
+                $haClusterAD["KerberosPassword"] = $_POST["LDAP_PASSWORD"];
+            }
+            $datas = base64_encode(serialize($haClusterAD));
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterAD", $datas);
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/reset/cache");
+        }
+        $array = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
+        foreach ($_POST as $key => $val) {
+            $array[$key] = $val;
+        }
+        $datas = base64_encode(serialize($array));
+        $ActiveDirectoryConnections[0] = $array;
+        $GLOBALS["CLASS_SOCKETS"]->SaveConfigFile($datas, "KerbAuthInfos");
+        $datas = serialize($ActiveDirectoryConnections);
+        $GLOBALS["CLASS_SOCKETS"]->SaveConfigFile($datas, "ActiveDirectoryConnections");
+
+        if ($Enablehacluster == 1) {
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+        }
+        return admin_tracks_post("Default Active Directory credentials {$_POST["LDAP_DN"]}");
+    }
+    $ID=$ID-1;
+    if($ID<1){$ID=1;}
+
+    $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+
+    foreach ($_POST as $key=>$val){$array[$key]=$val;}
+
+    $ActiveDirectoryConnections[$ID]=$array;
+    $datas=serialize($ActiveDirectoryConnections);
+    $GLOBALS["CLASS_SOCKETS"]->SaveConfigFile($datas, "ActiveDirectoryConnections");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/templates");
+    $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
+    if($Enablehacluster==1) {
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+    }
+
+    return admin_tracks_post("Default Active Directory credentials {$_POST["LDAP_DN"]}");
+
+}
 function connection_save():bool{
     $tpl    = new template_admin();
     $tpl->CLEAN_POST();
@@ -790,14 +928,20 @@ function connection_save():bool{
     writelogs("Save Active Directory Connection ID:$ID",__FUNCTION__,__FILE__
             ,__LINE__);
     $ActiveDirectoryConnections=CleanArray(unserialize($ActiveDirectoryConnectionsTemp));
-    $_POST["WINDOWS_SERVER_ADMIN"]=$_POST["LDAP_DN"];
+    if(isset($_POST["LDAP_DN"])) {
+        $_POST["WINDOWS_SERVER_ADMIN"] = $_POST["LDAP_DN"];
+    }
     if($ID==0){
         if($Enablehacluster==1){
             $haClusterAD=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAD"));
             $haClusterAD["kerberosActiveDirectoryHost"]=$_POST["LDAP_SERVER"];
             $haClusterAD["kerberosActiveDirectory2Host"]=$_POST["LDAP_SERVER2"];
-            $haClusterAD["KerberosUsername"]=$_POST["LDAP_DN"];
-            $haClusterAD["KerberosPassword"]=$_POST["LDAP_PASSWORD"];
+            if(isset($_POST["LDAP_DN"])) {
+                $haClusterAD["KerberosUsername"] = $_POST["LDAP_DN"];
+            }
+            if(isset($_POST["LDAP_PASSWORD"])) {
+                $haClusterAD["KerberosPassword"] = $_POST["LDAP_PASSWORD"];
+            }
             $haClusterAD["kerberosActiveDirectorySuffix"]=$_POST["LDAP_SUFFIX"];
             $haClusterAD["KerberosLDAPS"]=$_POST["LDAP_SSL"];
             $datas=base64_encode(serialize($haClusterAD));
@@ -957,11 +1101,20 @@ function connection_popup():bool{
     $form[]=$tpl->field_numeric("LDAP_PORT", "{ldap_port}","{$array["LDAP_PORT"]}");
     $form[]=$tpl->field_checkbox("LDAP_SSL", "{enable_ssl} (port 636)","{$array["LDAP_SSL"]}");
     $form[]=$tpl->field_section("{credentials}");
-    $form[]=$tpl->field_email("LDAP_DN", "{username}","{$array["LDAP_DN"]}",true);
-    $form[]=$tpl->field_password2("LDAP_PASSWORD", "{password}", $array["LDAP_PASSWORD"]);
+
+    if(strlen($array["LDAP_PASSWORD"])==0){
+        echo $tpl->div_warning("{must_type_password_for_connection}");
+        $form[]=$tpl->field_email("LDAP_DN", "{username}","{$array["LDAP_DN"]}",true);
+        $form[]=$tpl->field_password2("LDAP_PASSWORD", "{password}", $array["LDAP_PASSWORD"]);
+    }else{
+        $form[]=$tpl->field_text_info_button("{credentials}",$array["LDAP_DN"],
+            "{change_password}","Loadjs('$page?connection-password-js=$ID')");
+    }
+
+
     $form[]=$tpl->field_checkbox("ADUserCanConnect","{ADUserCanConnect}",intval($array["ADUserCanConnect"]),false,"{ADUserCanConnect_explain}");
     $form[]=$tpl->field_section("{suffix}");
-    $form[]=$tpl->field_ad_suffix("LDAP_SUFFIX", "{ldap_suffix}","{$array["LDAP_SUFFIX"]}",true);
+    $form[]=$tpl->field_ad_suffix_ad_conns("LDAP_SUFFIX",$ID, "{ldap_suffix}","{$array["LDAP_SUFFIX"]}",true);
 
     $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
     $ClusterNotReplicateAD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterNotReplicateAD"));

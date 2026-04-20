@@ -628,6 +628,7 @@ function delete_site(){
     $q->QUERY_SQL("DELETE FROM $table WHERE sitename='$sitename'");
     admin_tracks("Remove $sitename FROM $table category $category_id");
     if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/category/flush/$category_id");
     echo "$('#$md5').remove();$function;";
 
 }
@@ -1396,7 +1397,8 @@ function category_items_delete_sql_perform():bool{
     }
 
     $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error;}
+    if(!$q->ok){echo $q->mysql_error;return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/category/flush/$category_id");
     return true;
 }
 function category_items():bool{
@@ -1420,10 +1422,14 @@ function category_step_buttons():bool{
 
     $topbuttons=array();
 
+    $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/category/cacheinfo/$categorykey"),true);
 
     $jsrestart=$tpl->framework_buildjs("/category/compile/$categorykey",
     "ufdbcat.compile.progress","ufdbcat.compile.txt",
-        "compile-category-single","document.getElementById('compile-category-single').innerHTML=''");
+        "compile-category-single","$function();document.getElementById('compile-category-single').innerHTML=''");
+
+
+
 
 
     $jsDelete="Loadjs('$page?sql-delete=yes&id=$categorykey&function=$function');";
@@ -1438,10 +1444,8 @@ function category_step_buttons():bool{
             }
         }
     }
+    $topbuttons[] = array("$jsrestart", "fa fa-download", "{compile_category}");
 
-    if($categorykey>0) {
-        $topbuttons[] = array("$jsrestart", "fa fa-download", "{compile_category}");
-    }
 
 
     if($PowerDNSEnableClusterSlave==0) {
@@ -1454,6 +1458,30 @@ function category_step_buttons():bool{
 
     
     echo $tpl->_ENGINE_parse_body($tpl->th_buttons($topbuttons));
+
+    if(isset($data["TimeStamp"])){
+        if($data["TimeStamp"]>0){
+            $distantce=distanceOfTimeInWords($data["TimeStamp"],time());
+            $f[]="<div style='margin-top:5px;margin-bottom:5px;padding-right:8px;text-align:right'>";
+            $f[]="{compile_time}: ".$tpl->time_to_date($data["TimeStamp"],true)." - $distantce";
+
+            if($data["RepoEnabled"]==1){
+                $class="text-muted";
+                if($data["RepoTimeStamp"]>0) {
+                    if($data["RepoFileMint"]>$data["FileMin"]+5){
+                        $class="text-warning font-bold";
+                    }
+
+                    $distantce = distanceOfTimeInWords($data["RepoTimeStamp"], time());
+                    $f[] = "<span class='$class'>{published}: " . $tpl->time_to_date($data["RepoTimeStamp"], true) . " - $distantce</span>";
+                }
+            }
+
+            $f[]="</div>";
+            echo $tpl->_ENGINE_parse_body($f);
+        }
+    }
+
     return true;
 }
 function category_security(){
@@ -1547,7 +1575,7 @@ function category_step1(){
 
     $t=time();
     $html[]="<div id='compile-category-single' style='margin-top:10px'></div>";
-    $html[]="<div id='compile-category-buttons' style='margin-bottom:10px'></div>";
+    $html[]="<div id='compile-category-buttons-$categorykey' style='margin-bottom:10px'></div>";
     $html[]=$tpl->search_block($page,"","","","&category-items-table=yes&t=$t&categorykey=$categorykey");
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 }
@@ -1562,7 +1590,9 @@ function category_items_table(){
     $meta=intval($ligne["meta"]);
     $search=trim($_GET["search"]);
     $search=$q->SearchAntiXSS($search);
-    $jsbuttons="LoadAjaxSilent('compile-category-buttons','$page?compile-category-buttons=yes&function={$_GET["function"]}&categorykey=$category_id&meta=$meta');";
+
+    $jsbuttons=$tpl->RefreshInterval_js("compile-category-buttons-$category_id",$page,"compile-category-buttons=yes&function={$_GET["function"]}&categorykey=$category_id&meta=$meta");
+
     $_SESSION["CATEGORY_SEARCH"]=$search;
     $LIMIT=250;
     $ORDER=null;
@@ -1670,7 +1700,7 @@ function category_items_table(){
     $html[]="</table>";
     $html[]="<small></small>";
 	$html[]="<script>";
-    $html[]="LoadAjaxSilent('compile-category-buttons','$page?compile-category-buttons=yes&function={$_GET["function"]}&categorykey=$category_id&meta=$meta');";
+    $html[]=$jsbuttons;
     $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$(document).ready(function() { $('#table-persocats-items').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";

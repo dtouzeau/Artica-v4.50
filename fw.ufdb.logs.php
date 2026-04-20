@@ -204,14 +204,19 @@ function search(){
         $RULE=$JsonLine["aclName"];
         $CLIENT_IP=$JsonLine["clientIP"];
 		$color="black";
-        $timeStamp=strtotime($JsonLine["timestamp"]);
+        $timeStamp=0;
+        if(isset($JsonLine["timestamp"])){
+            $timeStamp = strtotime($JsonLine["timestamp"]);
+        }
 		$date=date("Y-m-d", $timeStamp);
         $TIME=date("H:i:s", $timeStamp);
-
+        $URI="";
 		$ALLOW=$JsonLine["action"];
-		$CLIENT=$JsonLine["username"];
+		$CLIENT=urldecode($JsonLine["username"]);
         $CATEGORY=categoryCodeTocatz($JsonLine["category"]);
-		$URI=$JsonLine["url"];
+        if(isset($JsonLine["url"])) {
+            $URI = $JsonLine["url"];
+        }
 		$PROTO=$JsonLine["method"];
 
 		$parse=parse_url($URI);

@@ -218,22 +218,30 @@ function  search(){
     $ID=intval($_GET["srvid"]);
     $t=time();
 
-    $q=new lib_sqlite(NginxGetDB());
     $MAIN=$tpl->format_search_protocol($_GET["search"]);
-
     if($MAIN["MAX"]>1500){$MAIN["MAX"]=1500;}
-    $max=$MAIN["MAX"];
     $query=$MAIN["TERM"];
     $TRCLASS=null;
-    if($query<>null){
-        if(is_numeric($query)){
-            $WHERE=" AND (wfrule=$query)";
-        }else{
-            $WHERE=" AND (spath LIKE '%$query%')";
+
+    // Fetch whitelist via Go API
+    $apiUrl="/modsec/whitelist";
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX($apiUrl),true);
+    $results=array();
+    if(is_array($json) && $json["Status"]){
+        foreach($json["entries"] as $e){
+            // Filter: only entries for this service or global (serviceid=0)
+            if($e["serviceid"]!=0 && $e["serviceid"]!=$ID){continue;}
+            // Search filter
+            if($query!=null){
+                if(is_numeric($query)){
+                    if($e["wfrule"]!=intval($query)){continue;}
+                }else{
+                    if(stripos($e["spath"],$query)===false){continue;}
+                }
+            }
+            $results[]=$e;
         }
     }
-    $sql="SELECT * FROM modsecurity_whitelist WHERE ((serviceid=0 OR serviceid=$ID) $WHERE) ORDER BY spath LIMIT $max";
-    $results=$q->QUERY_SQL($sql);
 
     $html[]="<table id='table-$t' class=\"footable table table-stripped\" style='margin-top:10px' data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";
@@ -263,9 +271,8 @@ function  search(){
         }
 
         if($serviceid>0){
-            $sql = "SELECT servicename FROM nginx_services WHERE ID=$serviceid";
-            $WebService=$q->mysqli_fetch_array($sql);
-            $www=$WebService["servicename"];
+            $sockSvc=new socksngix($serviceid);
+            $www=$sockSvc->GetServiceName();
         }
 
 
@@ -343,12 +350,9 @@ function www_parameters2():bool{
 
     $ModSecurityAction=trim($sock->GET_INFO("ModSecurityAction"));
 
-    $ModSecurityBackupReport=intval($sock->GET_INFO("ModSecurityBackupReport"));
+
+    VERBOSE("ModSecurityAction From site $ID:  = $ModSecurityAction",__LINE__);
     if($ModSecurityAction==null){$ModSecurityAction=$ModSecurityDefaultAction;}
-    $modSecDisabled=modSecDisabled($ID);
-
-
-
 
     $tpl->table_form_section("Web Application Firewall","{ModSecurityExplain}");
     $tpl->table_form_field_js("Loadjs('$page?section-general-js=yes&serviceid=$ID')");
@@ -797,20 +801,4 @@ function mod_security_save():bool{
 
 
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
 
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}

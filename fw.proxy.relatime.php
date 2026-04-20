@@ -972,7 +972,7 @@ function search(){
         $xADDONS=$array["xADDONS"];
         $XMAC=$array["XMAC"];
         $SOURCE_URL=$array["SOURCE_URL"];
-        $XUSER=$array["XUSER"];
+        $XUSER=urldecode($array["XUSER"]);
         $URL=$array["URL"];
         $DESTINATION=$array["DESTINATION"];
         $PROTO=$array["PROTO"];
@@ -1206,20 +1206,15 @@ function search(){
 
         if (isset($xTAGS["srcurl"])) {
             $URL = urldecode($xTAGS["srcurl"]);
-            $URL_XTAG = $URL;
         }
-
         if (isset($xTAGS["haclustertests"])) {
             $accessrule="<strong style='color:#18a689'><i class=\"fad fa-balance-scale\"></i>&nbsp;HaCluster Checks</strong>";
         }
-
         if (isset($xTAGS["authmec"])) {
             $id = trim($xTAGS["authmec"]);
             $ico_auth = $tpl->td_href("<i class='fas fa-user'></i>", null, "Loadjs('fw.proxy.auth_schemes.php?rule-id-js=$id')") . "&nbsp;";
         }
-        //
         if (isset($xTAGS["accessrule"])) {
-
             $accessrule = trim($xTAGS["accessrule"]);
             VERBOSE("accessrule = $accessrule",__LINE__);
             if ($accessrule == "authwhite") {
@@ -1241,7 +1236,6 @@ function search(){
                 $accessrule = null;
             }
         }
-
         if (isset($xTAGS["acl_peer"])) {
             $acl_peer_id = intval(trim($xTAGS["acl_peer"]));
             $peer_rule_from_id = peer_rule_from_id($acl_peer_id);
@@ -1251,16 +1245,12 @@ function search(){
             VERBOSE("RuleNumber: $RuleNumber",__LINE__);
             $simplerule=$SIMPLERULES[$RuleNumber];
         }
-
-
         if (isset($xTAGS["bandwidth"])) {
             $bandwidth = "&nbsp;<i class='text-warning fas fa-sort-amount-down'></i>";
         }
-
         if (isset($xTAGS["category-name"])) {
             $zcategory = trim($xTAGS["category-name"]);
         }
-
         if (isset($xTAGS["webfiltering"])) {
             if (preg_match("#block,([0-9]+),(.+)#", $xTAGS["webfiltering"], $re)) {
                 $zCode0 = "WEBFILTER";
@@ -1282,7 +1272,6 @@ function search(){
                 $color = "#D0080A";
             }
         }
-
         if (isset($xTAGS["srn"])) {
             $theshield_ico = null;
             $xval = trim($xTAGS["srn"]);
@@ -1317,20 +1306,17 @@ function search(){
 
 
         }
-
         if (isset($xTAGS["GeoIPBlock"])) {
             $xTAGS["GeoIPBlock"] = trim($xTAGS["GeoIPBlock"]);
             $zCode0 = "BLOCK ({$xTAGS["GeoIPBlock"]})";
             $codeToString = "";
             $color = "#D0080A";
         }
-
         if (isset($xTAGS["RBLBLOCK"])) {
             $color = "#D0080A";
             $id = microtime();
             $theshield_ico = $tpl->td_href("<i class='text-danger fas fa-shield' id='$id'></i>", null) . "&nbsp;";
         }
-
         if (isset($xTAGS["rblpass"])) {
             VERBOSE("RBLPASS = TRUE", __LINE__);
             $color = "#1ab394";
@@ -1341,18 +1327,15 @@ function search(){
             $zCode0 = "Google Hearth - $whitelist_text";
 
         }
-
         if (isset($xTAGS["rblcache"])) {
             $zCode0 = "NO CACHE - RBL";
         }
-
         if (isset($xTAGS["rblcache"])) {
             if (isset($xTAGS["rblpass"])) {
                 $zCode0 = "NO CACHE ALLOW - RBL";
                 $color = "#1ab394";
             }
         }
-
         if (isset($xTAGS["itchart"])) {
             if (trim($xTAGS["itchart"]) == "ASK") {
                 $zCode0 = "ITChart";
@@ -1365,13 +1348,11 @@ function search(){
                 $hotspot = "ITChart Pass";
             }
         }
-
         if (isset($xTAGS["message"])) {
             if (!isset($xTAGS["hotspot"])) {
                 $message = "<div class=small>{$xTAGS["message"]}</div>";
             }
         }
-
         if (isset($xTAGS["first"])) {
             VERBOSE("xTAGS[first]=[{$xTAGS["first"]}]", __LINE__);
             if (trim($xTAGS["first"]) == "ERROR") {
@@ -1382,7 +1363,6 @@ function search(){
                 }
             }
         }
-
         if (isset($xTAGS["clog"])) {
             if (preg_match("#cinfo:([0-9]+)-(.*?);#", $xTAGS["clog"], $re)) {
                 $category_id = intval($re[1]);

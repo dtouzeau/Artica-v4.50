@@ -58,11 +58,11 @@ function enable_js(){
     $title=$ligne["cachename"];
     $enabled=$ligne["enabled"];
     if($enabled==1){
-        $q->QUERY_SQL("UPDATE caches_center SET enabled=0 WHERE ID='$ID'");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"caches_center","set"=>array("enabled"=>"0"),"where"=>array("ID"=>"$ID")));
         admin_tracks("Disable reverse-Proxy cache $ID $title");
         return true;
     }
-    $q->QUERY_SQL("UPDATE caches_center SET enabled=1 WHERE ID='$ID'");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"caches_center","set"=>array("enabled"=>"1"),"where"=>array("ID"=>"$ID")));
     admin_tracks("Enable reverse-Proxy cache $ID $title");
     return true;
 }

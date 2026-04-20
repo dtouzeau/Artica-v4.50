@@ -99,7 +99,7 @@ function search():bool{
   	</thead>
 	<tbody>
 ";
-	var_dump($json);
+
 
 	if(count($json->Logs)>3){$_SESSION["HACLUSTER_BACKENDS_SEARCH"]=$_GET["search"];}
 

@@ -27,7 +27,6 @@ include_once(dirname(__FILE__)."/class.squid.external.ldap.inc");
 include_once(dirname(__FILE__)."/class.squid.ssl.inc");
 include_once(dirname(__FILE__)."/class.squid.hypercache.inc");
 include_once(dirname(__FILE__)."/class.squid.checks.inc");
-include_once(dirname(__FILE__)."/class.squid.refresh_patterns.inc");
 include_once(dirname(__FILE__)."/class.squid.ntlm.inc");
 include_once(dirname(__FILE__)."/class.squid.externals.acls.childrens.inc");
 include_once(dirname(__FILE__)."/class.squid.ports.inc");

@@ -140,7 +140,7 @@ function GlobalSearchEngine(e){
         if($Enablehacluster==1) {
             $f[] = "<!-- L.".__LINE__." -->";
             $f[] = "<li>";
-            $f[] = "<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.relatime.php')\">";
+            $f[] = "<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.hacluster.realtime.php')\">";
             $f[] = "<i class=\"fa fa-eye\"></i> {requests}";
             $f[] = "</a>";
             $f[] = "</li>";
@@ -391,12 +391,20 @@ function GlobalSearchEngine(e){
     $EnableActiveDirectoryFeature=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableActiveDirectoryFeature"));
     $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
     $EnableExternalACLADAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableExternalACLADAgent"));
+    $HaClusterDoNotUseAD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDoNotUseAD"));
+    $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
     if(!is_array($ActiveDirectoryConnections)){$ActiveDirectoryConnections=array();}
+
 
     if($EnableActiveDirectoryFeature==0){
         $ActiveDirectoryConnections=array();
         $EnableKerbAuth=0;
         $EnableExternalACLADAgent=0;
+    }
+    if($Enablehacluster==1){
+        if($HaClusterDoNotUseAD==0){
+            $EnableKerbAuth=1;
+        }
     }
 
 

@@ -4152,3 +4152,4 @@ Beispiel: 127.0.0.1,192.168.1.0/24,::1,2001:db8::/32,zabbix.example.com</ZabbixA
 <zones>Zonen</zones>
 <zone_name>Zonenname</zone_name>
 
+

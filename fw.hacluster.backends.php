@@ -52,14 +52,18 @@ if(isset($_GET["backend-enable-js"])){backends_enable();exit;}
 if(isset($_GET["backend-delete-js"])){backend_delete_js();exit;}
 if(isset($_GET["backend-reboot-js"])){backend_reboot_js();exit;}
 if(isset($_GET["backend-iperf3-js"])){backend_iperf3_js();exit;}
+if(isset($_GET["backend-cluster-force-js"])){backend_cluster_force_js();exit;}
+
 if(isset($_GET["backend-reconfigure-js"])){backend_reconfigure_js();exit;}
 if(isset($_GET["backend-dnsreconfigure-js"])){backend_reconfiguredns_js();exit;}
+if(isset($_GET["checkCurStatus"])){checkCurStatus();exit;}
 
 if(isset($_POST["backend-reconfiguredns"])){backend_reconfiguredns();exit;}
 if(isset($_POST["backend-reconfigure"])){backend_reconfigure();exit;}
 if(isset($_POST["backend-reboot"])){backend_reboot();exit;}
 if(isset($_POST["backend-delete"])){backend_delete();exit;}
 if(isset($_POST["backend-speed"])){backend_speed();exit;}
+if(isset($_POST["backend-cluster"])){backend_cluster_perform();exit;}
 if(isset($_GET["backend-scope"])){backend_scope();exit;}
 if(isset($_GET["backend-scope-js"])){backend_scope_js();exit;}
 if(isset($_GET["backend-scope-popup"])){backend_scope_popup();exit;}
@@ -72,9 +76,7 @@ if(isset($_GET["graph-popup"])){graphs_popup();exit;}
 if(isset($_GET["metrics-popup"])){metrics_popup();exit;}
 if(isset($_GET["notify-backend"])){notify_backend();exit;}
 if(isset($_POST["notify-backend"])){notify_backend_log();exit;}
-if(isset($_GET["sysevnts"])){events_backend_js();exit;}
-if(isset($_GET["sysevnts-form"])){events_backend_page();exit;}
-if(isset($_GET["sysevnts-search"])){events_backend_search();exit;}
+
 if(isset($_GET["hacluster-client-error-js"])){hacluster_client_error_js();exit;}
 
 
@@ -232,126 +234,9 @@ function start_tabs(){
 echo $html;
 
 }
-function events_backend_js(){
-    $page       = CurrentPageName();
-    $tpl        = new template_admin();
-    $hostname=$_GET["sysevnts"];
-    $tpl->js_dialog3("{events}: $hostname","$page?sysevnts-form=$hostname",850);
-}
-function events_backend_page(){
-    $hostname=$_GET["sysevnts-form"];
-    $page       = CurrentPageName();
-    $tpl        = new template_admin();
-    $t=time();
-
-    $html[]="<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["HACLUSTER_BACKENDS_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
-      		<span class=\"input-group-btn\">
-       		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"ss$t();\">Go!</button>
-      	    </span>
-      	    </div>
-      	    <div id='table-$t'></div>";
-
-    $html[]="<script>";
-	$html[]="function Search$t(e){";
-    $html[]="if(!checkEnter(e) ){return;}";
-    $html[]="ss$t();";
-    $html[]="}";
-
-    $html[]="function ss$t(){";
-    $html[]="var ss=encodeURIComponent(document.getElementById('search-this-$t').value);";
-    $html[]="LoadAjax('table-$t','$page?sysevnts-search='+ss+'&hostname=$hostname');";
-    $html[]="}";
-
-    $html[]="function Start$t(){";
-    $html[]="var ss=document.getElementById('search-this-$t').value;";
-    $html[]="ss$t();";
-    $html[]="}";
-    $html[]="Start$t();";
-    $html[]="</script>";
-
-    echo $tpl->_ENGINE_parse_body($html);
-}
-function events_backend_search(){
-    $page       = CurrentPageName();
-    $tpl        = new template_admin();
-    $MAIN=$tpl->format_search_protocol($_GET["sysevnts-search"]);
-    $hostname=$_GET["hostname"];
 
 
-    $rp=intval($MAIN["MAX"]);
-    $search=trim($MAIN["TERM"]);
-    if(strlen($search)<3){$search="NONE";}
 
-    $data=$GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/events/$hostname/$rp/$search");
-
-    $json=json_decode($data);
-    if (json_last_error()> JSON_ERROR_NONE) {
-        echo $tpl->div_error("{error}<hr>".json_last_error_msg());
-    }
-    if(!$json->Status){
-        echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
-    }
-
-    // /hacluster/client/events/{hostname}/{max}/{search}
-
-
-    $filename=PROGRESS_DIR."/hacluster-$hostname.syslog";
-    $date_text=$tpl->_ENGINE_parse_body("{date}");
-    $events=$tpl->_ENGINE_parse_body("{events}");
-    $html[]="
-<table class=\"table table-hover\">
-	<thead>
-    	<tr>
-        	<th>$date_text</th>
-        	<th>PID</th>
-        	<th>{backend}</th>
-        	<th>$events</th>
-        </tr>
-  	</thead>
-	<tbody>
-";
-
-
-    if(count($json->Logs)>3){$_SESSION["HACLUSTER_BACKENDS_SEARCH"]=$_GET["search"];}
-    $tpl=new template_admin();
-
-    foreach ($json->Logs as $line){
-        $line=trim($line);
-        if(!preg_match("#^([A-Za-z]+)\s+([0-9]+)\s+([0-9:]+)\s+(.+?)\s+hacluster-client\[([0-9]+)\]:(.+)#", $line,$re)){
-            echo "<strong style='color:red'>$line</strong><br>";
-            continue;}
-
-        $xtime=strtotime($re[1] ." ".$re[2]." ".$re[3]);
-        $FTime=date("Y-m-d H:i:s",$xtime);
-        $curDate=date("Y-m-d");
-        $FTime=trim(str_replace($curDate, "", $FTime));
-        $hostname=$re[4];
-        $pid=$re[5];
-        $line=trim($re[6]);
-
-        if(preg_match("#success#i", $line)){
-            $line="<span class='text-success'>$line</span>";
-        }
-
-        if(preg_match("#(fatal|corrupted|copy_failed|unable_to_copy|missing|failed|Cannot contact)#i", $line)){
-            $line="<span class='text-danger'>$line</span>";
-        }
-
-        $line=$tpl->_ENGINE_parse_body($line);
-        $html[]="<tr>
-				<td style='width:1%' nowrap>$FTime</td>
-				<td style='width:1%' nowrap>$pid</td>
-				<td style='width:1%' nowrap>{$hostname}</td>
-				<td>$line</td>
-				</tr>";
-
-    }
-
-    $html[]="</tbody></table>";
-    $html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/hacluster-clients.syslog.query")."</i></div>";
-    echo $tpl->_ENGINE_parse_body($html);
-}
 function weight_js(){
     $page       = CurrentPageName();
     $tpl        = new template_admin();
@@ -478,6 +363,52 @@ function backup_status_start():bool{
     echo "<script>LoadAjaxSilent('backend-status-$ID','$page?backend-status-popup=$ID&function=$function');</script>";
     return true;
 }
+function MetricsArray($ID):array{
+    $workdir="ressources/logs/hacluster/$ID";
+    $workfile="$workdir/HaClusterMetrics.array";
+    if(!is_file($workfile)){
+        VERBOSE("$workfile does not exist",__LINE__);
+        return array();
+    }
+
+    $serialized=$GLOBALS["CLASS_SOCKETS"]->unserializeb64(file_get_contents($workfile));
+    if(!$serialized){
+        return array();
+    }
+    if(!is_array($serialized)){
+        return array();
+    }
+    return $serialized;
+}
+function backup_status_clusterP($ID,$tpl){
+    $MyCluster=__LocalClusterInfo();
+
+    if(intval($MyCluster["MasterID"])==0){
+        $tpl->table_form_field_bool("{cluster_package} <small>No master</small>",0,ico_file_zip);
+        return $tpl;
+    }
+    if($MyCluster["MasterID"]==$ID){
+        $tpl->table_form_field_text("{cluster_package}","{master_server}",ico_file_zip);
+        return $tpl;
+    }
+
+    $MetricsArray=MetricsArray($ID);
+
+    if(!isset($MetricsArray["CLUSTER_SLAVE_INFO"])) {
+        $tpl->table_form_field_bool("{cluster_package} <small>No metrics</small>",0,ico_file_zip);
+        return $tpl;
+    }
+    $Locaver=$MyCluster["ClusterVersion"];
+    $ClusterInfo = json_decode($MetricsArray["CLUSTER_SLAVE_INFO"], true);
+    $PackageVersion=$ClusterInfo["PackageVersion"];
+    if( version_is_lower($Locaver,$PackageVersion)) {
+        $tpl->table_form_field_text("{cluster_package}",$PackageVersion,ico_file_zip,true);
+        return $tpl;
+    }
+    $tpl->table_form_field_text("{cluster_package}",$PackageVersion,ico_file_zip);
+    return $tpl;
+
+}
 function backup_status():bool{
     $function="";
     if(isset($_GET["function"])) {
@@ -539,12 +470,8 @@ function backup_status():bool{
         $tpl=backend_status_farm($ligne,$tpl);
     }
     $tpl->table_form_field_text("{last_com}","$date$TimeDiff",ico_clock);
-    $replictime=intval($ligne["replictime"]);
-    if($replictime>0){
-        $tdate=date("Y-m-d H:i:s",$replictime);
-        $tpl->table_form_field_text("{cluster_package}",$tdate,ico_file_zip);
-    }
 
+    $tpl=backup_status_clusterP($ID,$tpl);
 
 
     $HaClusterNodesPings=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterNodesPings");
@@ -936,47 +863,50 @@ function start_js():bool{
     echo "Loadjs('$page?td-row=$ID');";
     return admin_tracks("hacluster: Start backend $pname");
 }
+
+function checkCurStatus():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $HACLUSTER_CONFIG_FAILED=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HACLUSTER_CONFIG_FAILED"));
+    if(strlen($HACLUSTER_CONFIG_FAILED)<5) {
+        return false;
+    }
+
+    $prgress=$tpl->framework_buildjs("/hacluster/server/reconfigure",
+        "hacluster.progress",
+        "hacluster.progress.txt",
+        "squid-bungled-explain",
+        "LoadAjaxSilent('checkCurStatus','$page?checkCurStatus=yes');"
+    );
+    $CheckAgbtn=$tpl->button_autnonome("{check_again}",$prgress,ico_refresh,"AsSquidAdministrator",
+        250,"btn-danger");
+    $HACLUSTER_CONFIG_FAILED_TEXT=base64_decode($HACLUSTER_CONFIG_FAILED);
+    $HACLUSTER_CONFIG_FAILED_TEXT= str_replace("\n", "<br>",$HACLUSTER_CONFIG_FAILED_TEXT);
+    $explain= $tpl->div_error("<strong>{squid_bungled_explain}:</strong>
+        <p>$HACLUSTER_CONFIG_FAILED_TEXT
+        <div style='margin-top:10px;margin-right:20px'>$CheckAgbtn</div>
+        </p>");
+    $html[]="<div id='squid-bungled-explain'>$explain</div>";
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
 function page(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $explain=null;
-
-    $HACLUSTER_CONFIG_FAILED=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HACLUSTER_CONFIG_FAILED"));
-    if(strlen($HACLUSTER_CONFIG_FAILED)>5) {
-        $explain= $tpl->div_error("<strong>{squid_bungled_explain}:</strong><p>" . str_replace("\n", "<br>", base64_decode($HACLUSTER_CONFIG_FAILED))."</p>");
-    }
-
-    $html="
-<div class=\"row border-bottom white-bg dashboard-header\">
-	<div class=\"col-sm-12\"><h1 class=ng-binding>{backends}</h1>
-	<p>$explain</p>
-	
-	</div>
-</div>                    
-<div class='row'><div id='hacluster-backend-restart' class='white-bg'></div>
-	<div class='ibox-content'>
-		<div id='backend-list'></div>
-     </div>
-</div>
-<script>
-	$.address.state('/');
-	$.address.value('/hacluster-backends');
-	LoadAjax('backend-list','$page?table=yes');
-</script>";
-
-if($explain==null){
     $html="               
 <div class='row'><div id='hacluster-backend-restart' class='white-bg'></div>
 	<div class='ibox-content'>
+	    <div id='checkCurStatus'></div>
 		<div id='backend-list'></div>
      </div>
 </div>
 <script>
 	$.address.state('/');
 	$.address.value('/hacluster-backends');
-	LoadAjax('backend-list','$page?table=yes');
+    LoadAjax('backend-list','$page?table=yes');
+    LoadAjaxSilent('checkCurStatus','$page?checkCurStatus=yes');
 </script>";
-}
+
 
     if(isset($_GET["main-page"])){
         $tpl=new template_admin("{backends}",$html);
@@ -1067,6 +997,18 @@ function backend_iperf3_js():bool{
     $title="{$ligne["backendname"]}";
     return $tpl->js_confirm_execute("{speed_test} $title" , "backend-speed", $ID);
 }
+function backend_cluster_force_js():bool{
+    $tpl=new template_admin();
+    $ID=intval($_GET["backend-cluster-force-js"]);
+    if($ID==0){
+        return $tpl->js_error("ID == 0 ???");
+    }
+    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
+    $title="{$ligne["backendname"]}";
+    return $tpl->js_confirm_execute("{cluster_package} > {force_synchronization} > $title" , "backend-cluster", $ID);
+
+}
 
 
 function backend_reconfigure_js():bool{
@@ -1131,60 +1073,8 @@ function backend_register():bool{
 }
 
 
-function backend_zoom(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $ID=intval($_GET["backend-zoom"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
 
 
-    $reconfigure_node=$tpl->framework_buildjs("/hacluster/server/notify/node/$ID",
-        "hacluster.connect.$ID.progress",
-        "hacluster.connect.txt",
-        "reconfigure-progress-$ID");
-
-
-
-    $html[]="<H2>$title</H2><hr>";
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:250px;vertical-align: top'><div id='hacluster-client-$ID'></div></td>";
-    $html[]="<td style='width:95%;vertical-align: top;padding-left:15px'>";
-    $html[]="<div id='reconfigure-progress-$ID'></div>";
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:33%'>".$tpl->button_autnonome("{reconfigure}",$reconfigure_node,"fas fa-sync-alt")."</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    $html[]="<script>LoadAjax('hacluster-client-$ID','$page?hacluster-client-status=$ID');</script>";
-    echo $tpl->_ENGINE_parse_body($html);
-
-}
-function client_snmp($listen_ip){
-    if(!extension_loaded('snmp')){return array("ERROR_TEXT"=>"{checking_php_snmp} {failed}","ERROR"=>true);}
-    if(!class_exists("SNMP")){return array("ERROR_TEXT"=>"{checking_php_snmp} {failed} (2)","ERROR"=>true);}
-    $session = new SNMP(SNMP::VERSION_1, "$listen_ip:3401", "public",2);
-    $session->valueretrieval = SNMP_VALUE_PLAIN;
-    $Walk=$session->walk(".1.3.6.1.4.1.3495.1.3",true);
-    if(!$Walk){
-        if(isset($_SESSION["HACLUSTER_SNMP_REMOTE"][$listen_ip])){return $_SESSION["HACLUSTER_SNMP_REMOTE"][$listen_ip];}
-        return array("ERROR_TEXT"=>$session->getError(),"ERROR"=>true);
-    }
-
-    $ClientLoad=$Walk["1.5.0"];
-    $NumberoFClients=$Walk["2.1.15.0"];
-    $scvTime=$Walk["2.2.1.2.1"];
-    $resquests=$Walk["2.1.1.0"];
-    $_SESSION["HACLUSTER_SNMP_REMOTE"][$listen_ip]=array("ERROR"=>false,"CPU"=>$ClientLoad,"Client"=>$NumberoFClients,"HTTPS"=>$scvTime,"RQS"=>$resquests);
-    return $_SESSION["HACLUSTER_SNMP_REMOTE"][$listen_ip];
-
-
-}
 
 function backend_reconfigure():bool{
     $tpl=new template_admin();
@@ -1295,6 +1185,29 @@ function backend_speed():bool{
     }
     echo $tpl->_ENGINE_parse_body("{success}");
     return admin_tracks("HaCluster: Notify $title for test the speed between $title and the HaCluster ");
+}
+function backend_cluster_perform():bool{
+    $tpl=new template_admin();
+    $ID=$_POST["backend-cluster"];
+    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
+    $title="{$ligne["backendname"]}";
+
+
+    $q->QUERY_SQL("UPDATE hacluster_backends SET orderqueue=6 WHERE ID=$ID");
+    if(!$q->ok){
+        echo $q->mysql_error;
+        return false;
+    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
+    $res=backend_common_notify($ID);
+
+    if(strlen($res)>0){
+        echo $res;
+        return true;
+    }
+    echo $tpl->_ENGINE_parse_body("{success}");
+    return admin_tracks("HaCluster: Notify $title for synchronizing cluster package between $title and the HaCluster ");
 }
 function backend_popup():bool{
 	$page=CurrentPageName();
@@ -1522,8 +1435,14 @@ function table(){
         $html[]="<label class=\"btn btn btn-primary\" OnClick=\"$jsDeploy\">";
         $html[]="<i class='$ico_down'></i> {updates} </label>";
     }
+
+    $zip=ico_file_zip;
+    $html[]="<label class=\"btn btn btn-default\" OnClick=\"zBlur();\" id='masterPackageStatus-btn'>";
+    $html[]="<i class='$zip' id='masterPackageStatus-ico'></i> <span id='masterPackageStatus-text'>{cluster_package}</span> </label>";
+
     $html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?refresh-table=yes');\">";
     $html[]="<i class='fal fa-sync-alt'></i> {refresh} {table} </label>";
+
 
 	$html[]="</div>";
 	$html[]="<table id='table-haproxy-backends' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
@@ -1790,7 +1709,7 @@ function td_btnAction($ligne):string{
 
     $realname=clean_host($ligne["realname"]);
     if($realname<>null) {
-        $filters["{events}"]="fas fa-list-ul:color:black||Loadjs('$page?sysevnts=$realname');";
+        $filters["{events}"]="fas fa-list-ul:color:black||Loadjs('fw.hacluster.backends.events.php?sysevnts=$ID');";
     }
 
 
@@ -1798,6 +1717,15 @@ function td_btnAction($ligne):string{
 
     $md="MDBackendID{$ligne["ID"]}";
     $filters["SPACER"]=true;
+    $MyCluster=__LocalClusterInfo();
+    $MyClusterID=0;
+    if(intval($MyCluster["MasterID"])>0){
+        $MyClusterID=intval($MyCluster["MasterID"]);
+    }
+    if($MyClusterID>0 && $MyClusterID<>intval($ligne["ID"])){
+        $filters["{force_synchronize}"] = ico_file_zip . ":color:black||Loadjs('$page?backend-cluster-force-js=$ID&md=$md')";
+    }
+
 
     $EnableIperf3=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableIperf3"));
     $Iperf3Installed=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Iperf3Installed"));
@@ -1816,9 +1744,7 @@ function td_btnAction($ligne):string{
     }
 
     $filters["{reconfigure}"]=ico_cd.":color:black||Loadjs('$page?backend-reconfigure-js=$ID&md=$md')";
-
     $filters["{reboot}"]=ico_refresh.":color:red||Loadjs('$page?backend-reboot-js=$ID&md=$md')";
-
     $filters["{delete}"]=ico_trash.":color:red||Loadjs('$page?backend-delete-js=$ID&md=$md')";
     return $tpl->button_dropdown_table("{actions}",$filters,"AsProxyMonitor");
 }
@@ -1844,11 +1770,14 @@ function is_backend_iperf($ID):bool{
 
 function td_hostname($ligne):string{
     $function="";
+    $HaClusterUseHaClient=0;
     if(isset($_GET["function"])) {
         $function = $_GET["function"];
     }
     $HaClusterGBConfig = unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
-    $HaClusterUseHaClient=intval($HaClusterGBConfig["HaClusterUseHaClient"]);
+    if(isset($HaClusterGBConfig["HaClusterUseHaClient"])) {
+        $HaClusterUseHaClient = intval($HaClusterGBConfig["HaClusterUseHaClient"]);
+    }
     $snmps_status=null;
     $proxyversion=trim($ligne["proxyversion"]);
     $proxyversionWarn=null;
@@ -1949,7 +1878,9 @@ function td_hostname($ligne):string{
     if ($orderqueue==5){
         $ToolTips[]="<span class='label $labelDanger'>{dns_settings}</span>";
     }
-
+    if ($orderqueue==6){
+        $ToolTips[]="<span class='label $labelDanger'>{force_synchronize}</span>";
+    }
 
     if($isMaster==0){
         if($replicmaster==1){
@@ -1985,6 +1916,18 @@ function td_hostname($ligne):string{
             $ToolTips[]="<span class='label label-primary'>{WEB_ERROR_PAGE}</span>";
         }
     }
+    $MyCluster=__LocalClusterInfo();
+    if($MyCluster["MasterID"]>0){
+        $Locaver=$MyCluster["ClusterVersion"];
+        $MetricsArray=MetricsArray($ID);
+        if(isset($MetricsArray["CLUSTER_SLAVE_INFO"])) {
+            $ClusterInfo = json_decode($MetricsArray["CLUSTER_SLAVE_INFO"], true);
+            $PackageVersion=$ClusterInfo["PackageVersion"];
+            if( version_is_lower($Locaver,$PackageVersion)){
+                $ToolTips[]="<span class='label label-warning'>{cluster_package} $PackageVersion</span>";
+            }
+        }
+    }
 
 
     $ToolTipsText="";
@@ -1998,8 +1941,16 @@ function td_hostname($ligne):string{
         $bname="$bname <small>(<strong>$bits_per_second</strong>)</small>";
     }
 
-    $backendname=$proxyversionWarn.$tpl->td_href("$bname","$listen_ip:$listen_port","Loadjs('$page?backend-js=$ID&function=$function')").$optname;
+
+
+    $backendname=$proxyversionWarn.$tpl->td_href("$bname","$listen_ip:$listen_port",
+            "Loadjs('$page?backend-js=$ID&function=$function')").$optname;
     return $tpl->_ENGINE_parse_body("<strong>$snmps_status$backendname</strong>&nbsp;$ToolTipsText");
+}
+$a = "20260321-0902";
+$b = "20260121-0902";
+function version_is_lower($b, $a) {
+    return (int)str_replace('-', '', $b) < (int)str_replace('-', '', $a);
 }
 
 function iperf3Report($ID):array{
@@ -2540,10 +2491,10 @@ function td_prepare(){
     }
 
     $_SESSION["inprod"]=$json->Info;
-    if(property_exists($json,"Stats")) {
+    if(property_exists($json,"Stats") && isset($json->Stats)) {
         $_SESSION["jsonstats"] = base64_encode(json_encode($json->Stats));
     }
-    if(property_exists($json,"Sessions")) {
+    if(property_exists($json,"Sessions") && isset($json->Sessions)) {
         $_SESSION["backendsSess"] = base64_encode(json_encode($json->Sessions));
     }
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/clients"));
@@ -3209,7 +3160,73 @@ function RefreshTableRows(){
 
     echo @implode("\n", $f);
 }
+function __LocalClusterInfo():array{
+    if(isset($GLOBALS["__LocalClusterInfo"])){
+        return $GLOBALS["__LocalClusterInfo"];
+    }
+    $GLOBALS["__LocalClusterInfo"]["ClusterVersion"]="";
 
+    $nodes_status=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/nodes/status"),true);
+    if(!isset($nodes_status["MasterID"])){
+        VERBOSE("No MasterID",__LINE__);
+        $GLOBALS["__LocalClusterInfo"]["MasterID"]=0;
+        return $GLOBALS["__LocalClusterInfo"];
+    }
+    $master_id=intval($nodes_status["MasterID"]);
+    if($master_id==0){
+        VERBOSE("MasterID == 0",__LINE__);
+        $GLOBALS["__LocalClusterInfo"]["MasterID"]=0;
+        return $GLOBALS["__LocalClusterInfo"];
+    }
+
+    $ClusterVersion=$nodes_status["ClusterVersion"];
+    if(strlen($ClusterVersion)<5) {
+        VERBOSE("$ClusterVersion len <5",__LINE__);
+        $GLOBALS["__LocalClusterInfo"]["MasterID"]=0;
+        $GLOBALS["__LocalClusterInfo"]["ClusterVersion"]="";
+        return $GLOBALS["__LocalClusterInfo"];
+    }
+    VERBOSE("$master_id --> $ClusterVersion",__LINE__);
+    $GLOBALS["__LocalClusterInfo"]["MasterID"]=$master_id;
+    $GLOBALS["__LocalClusterInfo"]["ClusterVersion"]=$ClusterVersion;
+    return $GLOBALS["__LocalClusterInfo"];
+}
+
+function __td_button_master():string{
+    $tpl=new template_admin();
+    $nodes_status= __LocalClusterInfo();
+    $f[]="$('#masterPackageStatus-btn').removeClass();";
+    $f[]="$('#masterPackageStatus-btn').removeAttr('onclick');";
+    $Inactive=base64_encode($tpl->_ENGINE_parse_body('{cluster_package} {inactive}'));
+
+    $master_id=intval($GLOBALS["__LocalClusterInfo"]["MasterID"]);
+    if($master_id==0){
+        $f[]="$('#masterPackageStatus-btn').addClass('btn btn-default');";
+        $f[]="$('#masterPackageStatus-text').html(base64_decode('$Inactive'))";
+        return @implode("\n",$f);
+    }
+
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+
+    $ClusterVersion=$GLOBALS["__LocalClusterInfo"]["ClusterVersion"];
+    if(strlen($ClusterVersion)<5) {
+        $f[]="$('#masterPackageStatus-btn').addClass('btn btn-default');";
+        $text ="{cluster_package} ({none})";
+        $bs64=base64_encode($tpl->_ENGINE_parse_body($text));
+        $f[]="$('#masterPackageStatus-text').html(base64_decode('$bs64'))";
+        return @implode("\n",$f);
+    }
+
+    $f[]="$('#masterPackageStatus-btn').addClass('btn btn-blue');";
+    $text ="{cluster_package} $ClusterVersion";
+    $bs64=base64_encode($tpl->_ENGINE_parse_body($text));
+    $f[]="$('#masterPackageStatus-text').html(base64_decode('$bs64'))";
+    $f[]="$('#masterPackageStatus-btn').on('click', function () {";
+    $f[]=" Loadjs('$page?masterPackageStatus-js=yes');";
+     $f[]="});";
+    return @implode("\n",$f);
+}
 function td_rows():bool{
     $f=array();
     $ids=explode(",",$_GET["td-row-implode"]);
@@ -3222,6 +3239,10 @@ function td_rows():bool{
         $f[]=td_row(intval($id));
         ExecTAtime($start,"Server id $id",__LINE__);
     }
+
+    $f[]=__td_button_master();
+    //
+
     ExecTAtime($startA1,"<H3>FINAL</H3>",__LINE__);
     header("content-type: application/x-javascript");
     echo @implode("\n", $f);
@@ -3277,9 +3298,6 @@ function td_row($ReturnID=0):string{
     }
 
 
-
-    // $mode=base64_encode($tpl->_ENGINE_parse_body(td_btnAction($ligne)));
-    //  $f[] = "document.getElementById('STATUS-MODE-$ID').innerHTML=base64_decode('$mode');";
 
     list($btnClass,$status_text)=td_status_text($ligne);
     $triangle=td_status_warningDB($ligne);

@@ -40,8 +40,7 @@ function client_certificate_client_delete_perform():bool{
     $certid             = $ligne["certid"];
     $ligneCert          = $q->mysqli_fetch_array("SELECT CertificateName FROM nginx_servers_certs WHERE ID='$certid'");
     $certificate_server = $ligneCert["CertificateName"];
-    $q->QUERY_SQL("DELETE FROM nginx_clients_certs WHERE ID='$ID'");
-    if(!$q->ok){echo $q->mysql_error."\n";return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"nginx_clients_certs","where"=>["ID"=>$ID]]);
     admin_tracks("Remove Client Certificate $CertificateName from $certificate_server");
     return true;
 }

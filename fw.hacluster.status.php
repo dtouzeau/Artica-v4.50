@@ -865,12 +865,7 @@ function widget_connections($json):string{
 function status_top():bool{
     $tpl=new template_admin();
     $page=currentPageName();
-    $HACLUSTER_CONFIG_FAILED=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HACLUSTER_CONFIG_FAILED"));
-    if(strlen($HACLUSTER_CONFIG_FAILED)>4) {
-        $explain = $tpl->div_error("<strong>{squid_bungled_explain}:</strong><p>" . str_replace("\n", "<br>", base64_decode($HACLUSTER_CONFIG_FAILED)) . "</p>");
-        echo $tpl->_ENGINE_parse_body($explain);
-        return true;
-    }
+
     $HaClusterInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterInterface"));
     if(strlen($HaClusterInterface)<3) {
         $button="<div style='text-align:right;margin:10px'>".
@@ -889,7 +884,7 @@ function status_top():bool{
     $widget_connections=widget_connections($json);
 
     $widget_latency=widget_latency();
-
+    $html[]="<div id='checkCurStatus'></div>";
     $html[]="<table style='width:100%;margin-top:-7px'>";
     $html[]="<tr>";
     $html[]="<td style='vertical-align:top;width:25%'>$widget_backends</td>";
@@ -898,6 +893,9 @@ function status_top():bool{
     $html[]="<td style='$stylePad'>$widget_connections</td>";
     $html[]="</tr>";
     $html[]="</table>";
+    $html[]="<script>";
+    $html[]="LoadAjaxSilent('checkCurStatus','fw.hacluster.backends.php?checkCurStatus=yes');";
+    $html[]="</script>";
 
     //
 echo @implode("", $html);

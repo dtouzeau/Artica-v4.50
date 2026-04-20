@@ -328,6 +328,19 @@ Enable this option reconfigure ports and restart the proxy service just after th
 <Overcommiting_Memory_0>Free to overcommit memory</Overcommiting_Memory_0>
 <Overcommiting_Memory_1>Always overcommit memory</Overcommiting_Memory_1>
 <Overcommiting_Memory_2>Not overcommit memory</Overcommiting_Memory_2>
+<zram_compressed_swap>Compressed Swap (zRam)</zram_compressed_swap>
+<zram_enable>Enable zRam compressed swap</zram_enable>
+<zram_size_percent>RAM percentage for zRam</zram_size_percent>
+<zram_compression_ratio>Compression ratio</zram_compression_ratio>
+<zram_space_saved>Space saved</zram_space_saved>
+<zram_original_data>Original data</zram_original_data>
+<zram_swap_usage>zRam swap usage</zram_swap_usage>
+<zram_mem_efficiency>Memory efficiency</zram_mem_efficiency>
+<zram_not_active>zRam is not active</zram_not_active>
+<zram_explain>zRam creates a compressed swap device in RAM.[br]Data is compressed before being stored, effectively increasing available memory.[br]Typical compression ratios are 2:1 to 4:1.</zram_explain>
+<committed_memory>Committed Memory</committed_memory>
+<committed_amount>Committed amount</committed_amount>
+<memory_usage>Memory Usage</memory_usage>
 <Total_amount_of_memory>Total amount of memory</Total_amount_of_memory>
 <Total_amount_of_memoryr>Total amount of memory required</Total_amount_of_memoryr>
 <amount>Amount</amount>
@@ -4203,5 +4216,62 @@ Manually create the computer object for this Artica server in your Active Direct
 <welcome_ad_wizard3>Artica uses an LDAP connection to retrieve user groups.[br]This connection can be configured in plain mode (port 389) or in secure mode (port 636).[br]
 Check the box below if you want Artica to use a secure connection.</welcome_ad_wizard3>
 <welcome_ad_wizard4>Validate the Active Directory suffix that defines the user directory realm, and specify the organizational unit (OU) that hosts or will host the Artica server.</welcome_ad_wizard4>
+<welcome_ad_wizard_wiki>Using a standard user account requires assigning specific permissions on the proxy computer object.[br]Please refer to the following wiki page:</welcome_ad_wizard_wiki>
 <filtered_members>Filtered members</filtered_members>
-
+<top_blocked_domains>Top blocked domains</top_blocked_domains>
+<passed>Passed</passed>
+<block_rate>Block rate</block_rate>
+<total_events>Total events</total_events>
+<analysis>Analysis</analysis>
+<top_blocked_users>TOP Blocked users</top_blocked_users>
+<blocked_categories>Blocked categories</blocked_categories>
+<check_again>Check again</check_again>
+<zram_explain>zRam creates a compressed swap area directly in your system's RAM instead of using the hard disk.
+[br]When the system needs to free memory, pages are compressed and stored in this reserved RAM area rather than being written to the slow disk-based swap partition.[br]
+Because data is compressed before storage, zRam typically achieves a 2:1 to 4:1 compression ratio.[br]
+This means 1 GB of RAM reserved for zRam can effectively hold 2 to 4 GB of swapped data, giving your system significantly more usable memory.[br]
+The main benefits are faster swap operations since RAM is hundreds of times faster than disk, reduced disk I/O which extends SSD lifespan, and improved overall system responsiveness under memory pressure.[br]
+The CPU cost for compression is minimal with the LZ4 algorithm.[br]
+zRam is particularly useful for systems running memory-intensive services like proxy caches, databases, or web filtering engines.[br]
+It allows the system to handle temporary memory spikes without the severe performance degradation that disk-based swapping causes.
+</zram_explain>
+<advanced_caching>Advanced caching</advanced_caching>
+<microsoft_connected_cache_explain>
+Runs the Proxy service in a [b]pass-through (no-cache) mode[/b].[br]
+All requests are forwarded directly to origin servers without storing content.[br]
+Recommended for compatibility with reverse-proxy-based solutions such as Microsoft Connected Cache (MCC).
+</microsoft_connected_cache_explain>
+<need_zswap>No swap is configured, so the system relies only on RAM.[br]
+Memory is low and the system is trying hard to free space.[br]
+Enable zswap to reduce memory pressure and avoid potential crashes.</need_zswap>
+<memory_pressure>Memory pressure</memory_pressure>
+<categoryserv_explain_dns>This section allows Artica servers to query a domain in order to identify its category.[br]The listening port simulates the DNS protocol for this purpose.</categoryserv_explain_dns>
+<compile_time>Compile time</compile_time>
+<published>Published</published>
+<hacluster_no_statistics>In an HaCluster environment, statistics are transferred and centralized on the load balancer.[br]Connect to the load balancer to view access statistics.</hacluster_no_statistics>
+<must_type_password_for_connection>You must specify a valid password for this connection to work.</must_type_password_for_connection>
+<ufdb_users_no_items_why>No users were found in the database.[br]Keeping this source is unnecessary, as it consumes system resources without any benefit, and your filtering rule will never be applied.</ufdb_users_no_items_why>
+<errors_was_disapears>The errors have since disappeared.</errors_was_disapears>
+<total_query_budget>Total query budget</total_query_budget>
+<per_connection_budget>Per-connection budget</per_connection_budget>
+<retries>Retries</retries>
+<search_inside_item_descriptions>Search inside item descriptions</search_inside_item_descriptions>
+<new_stress_test>New stress test</new_stress_test>
+<realistic_load>Realistic load</realistic_load>
+<think_time_distribution>Think time distribution</think_time_distribution>
+<think_time_distribution_explain>Think time is the pause a virtual user takes between one request and the next.[br]
+It models how real humans don't hammer servers non-stop — they click, wait, read, click again.[br]
+The distribution determines how those pauses are spread across your VUs</think_time_distribution_explain>
+<think_time_distribution0>I want the legacy 1.x behavior</think_time_distribution0>
+<think_time_distribution1>What's the max this proxy can do?</think_time_distribution1>
+<think_time_distribution2>How will it behave with real users?</think_time_distribution2>
+<think_time_distribution3>I want to test with a simple fixed-range pause</think_time_distribution3>
+<think_time_median_ms>Median pause between requests (ms)</think_time_median_ms>
+<think_time_sigma>Pause variability</think_time_sigma>
+<vu_startup_stagger>Ramp-up duration</vu_startup_stagger>
+<user_agents_pool>User-Agent pool (one per line)</user_agents_pool>
+<create_keytab_user_account_hint>Creates a keytab from an Active Directory user account and its password.[br]
+Use this flow to test proxy authentication as a real user.[br]
+If the target account has a servicePrincipalName (SPN) registered in AD,validation will fail with "Preauthentication failed" — the Kerberos salt AD uses for an SPN-bearing account does not match ktutil's default.
+[br]In that case, use the service-account flow with a dedicated FQDN instead.</create_keytab_user_account_hint>
+<create_keytab_username_tooltip>Active Directory username.[br]Accepted formats: user, user@REALM.EXAMPLE.COM, or HTTP/user.[br]If a realm is included, it is extracted automatically and populates the Realm field</create_keytab_username_tooltip>

@@ -59,57 +59,25 @@ function delete_js(){
 function move(){
     $tpl=new template_admin();
     $ID=intval($_GET["backend-move"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="SELECT hostname,zOrder,serviceid FROM backends WHERE ID=$ID";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $serviceid=intval($ligne["serviceid"]);
-    if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["zOrder"]};\n";}
-    $xORDER_ORG=intval($ligne["zOrder"]);
-    $xORDER=$xORDER_ORG;
-
-
-    if($_GET["acl-rule-dir"]==1){$xORDER=$xORDER_ORG-1;}
-    if($_GET["acl-rule-dir"]==0){$xORDER=$xORDER_ORG+1;}
-    if($xORDER<0){$xORDER=0;}
-    $sql="UPDATE backends SET zOrder=$xORDER WHERE ID=$ID";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-    if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-    if($_GET["acl-rule-dir"]==1){
-        $xORDER2=$xORDER+1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE backends SET zOrder=$xORDER2 WHERE ID<>$ID AND zOrder=$xORDER AND serviceid=$serviceid";
-        $q->QUERY_SQL($sql);
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
+    $serviceid=intval($_GET["serviceid"]);
+    $direction=intval($_GET["acl-rule-dir"]);
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/backends/reorder", [
+        "ID"        => $ID,
+        "serviceid" => $serviceid,
+        "direction" => $direction
+    ]),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        echo "alert('".$tpl->javascript_parse_text($err)."');";
     }
-    if($_GET["acl-rule-dir"]==0){
-        $xORDER2=$xORDER-1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE backends SET zOrder=$xORDER2 WHERE ID<>$ID AND zOrder=$xORDER AND serviceid=$serviceid";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-    }
-
-    $c=0;
-    $sql="SELECT ID FROM backends ORDER BY zOrder AND serviceid=$serviceid";
-    $results = $q->QUERY_SQL($sql);
-
-    foreach($results as $index=>$ligne) {
-        $q->QUERY_SQL("UPDATE backends SET zOrder=$c WHERE `ID`={$ligne["ID"]}");
-        if($GLOBALS["VERBOSE"]){echo "UPDATE backends SET zOrder=$c WHERE `ID`={$ligne["ID"]}\n";}
-        $c++;
-    }
-
-
 }
 function  delete():bool{
 	$ID=intval($_POST["delete"]);
-	$q=new lib_sqlite(NginxGetDB());
-	$q->QUERY_SQL("DELETE FROM backends WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;return false;}
+	$result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/backends/delete", ["ID"=>$ID]),true);
+	if(!is_array($result) || !$result["Status"]){
+	    $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+	    echo $err;return false;
+	}
     return admin_tracks("Removed #$ID backend from reverse-proxy rule");
 }
 function isHarmpID():bool{
@@ -661,25 +629,19 @@ function backends_keepalive_save():bool{
 }
 function id_enable():bool{
     $page=CurrentPageName();
-    $q=new lib_sqlite(NginxGetDB());
     $tpl=new template_admin();
     $ID=intval($_GET["backend-enable"]);
-    $ligne=$q->mysqli_fetch_array("SELECT serviceid,hostname,enabled FROM backends WHERE ID=$ID");
-    $enabled_src=intval($ligne["enabled"]);
-    $hostname=$ligne["hostname"];
-    $serviceid=intval($ligne["serviceid"]);
-    if($enabled_src==1){
-        $admint="Disabled";
-        $q->QUERY_SQL("UPDATE backends SET enabled='0' WHERE ID=$ID");
-    }else{
-        $admint="Enabled";
-        $q->QUERY_SQL("UPDATE backends SET enabled='1' WHERE ID=$ID");
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/backends/enable", ["ID"=>$ID]),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        $tpl->js_mysql_alert($err);return false;
     }
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
+    $admint=($result["enabled"]==1) ? "Enabled" : "Disabled";
+    $serviceid=intval($result["serviceid"]);
     header("content-type: application/x-javascript");
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
     echo "Loadjs('$page?td=$ID');";
-    return admin_tracks("Set $hostname reverse-proxy backend to $admint");
+    return admin_tracks("Set backend #$ID to $admint");
 }
 function id_popup():bool{
 	$page=CurrentPageName();
@@ -788,17 +750,15 @@ function id_popup():bool{
 function id_save():bool{
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$ID=$_POST["BackendSave"];
+	$ID=intval($_POST["BackendSave"]);
 	$serviceid=intval($_POST['serviceid']);
-	$q=new lib_sqlite(NginxGetDB());
-	
+
 	if($serviceid==0){
         echo $tpl->post_error("Service ID missing or null");
         return false;
     }
-	
-	$hostname=trim($_POST["hostname"]);
 
+	$hostname=trim($_POST["hostname"]);
     if(preg_match("#^http.*?:#i",$hostname)){
         $parse_url=parse_url($hostname);
         $hostname=$parse_url["host"];
@@ -807,44 +767,44 @@ function id_save():bool{
 	$options=base64_encode(serialize($_POST));
     $get_servicename=get_servicename($serviceid);
     $Type=get_ServiceType($serviceid);
-    writelogs("Saving Reverse-proxy Backend $hostname:$port for service $get_servicename",__FUNCTION__,__FILE__,__LINE__);
     $weight = intval($_POST["weight"]);
     if ($weight==0){$weight=1;}
     $backup=intval($_POST["backup"]);
-
     $down= intval($_POST["down"]);
     $fail_timeout=$_POST["fail_timeout"];
     $max_fails=intval($_POST["max_fails"]);
     $ssl=intval($_POST["CheckSsl"]);
     $proxyproto=intval($_POST["proxyproto"]);
 
-    if($Type==13){
-        $ssl=1;
-    }
-    if($Type==15){
-        $ssl=0;
-    }
-    
-    if($port==443) {
-        if($ssl==0){
-            echo $tpl->post_error("Port 443 But no SSL checked ?");
-            return false;
-        }
+    if($Type==13){$ssl=1;}
+    if($Type==15){$ssl=0;}
+
+    if($port==443 && $ssl==0){
+        echo $tpl->post_error("Port 443 But no SSL checked ?");
+        return false;
     }
 
-	if($ID==0){
-		$q->QUERY_SQL("INSERT OR IGNORE INTO backends(serviceid,hostname,port,options,weight,backup,fail_timeout,max_fails,down,ssl,proxyproto) 
-				VALUES ($serviceid,'$hostname',$port,'$options','$weight','$backup','$fail_timeout','$max_fails','$down','$ssl','$proxyproto')");
-		if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
-		return admin_tracks("Saving New Reverse-proxy Backend $hostname:$port for service $get_servicename");
-	}
-
-
-    $sql="UPDATE backends SET hostname='$hostname',port='$port',options='$options',weight='$weight',backup='$backup',fail_timeout='$fail_timeout',max_fails='$max_fails',down='$down', ssl='$ssl',proxyproto='$proxyproto' WHERE ID=$ID";
-
-
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){ echo $tpl->post_error($q->mysql_error);return false;}
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/backends/save", [
+        "ID"           => $ID,
+        "serviceid"    => $serviceid,
+        "hostname"     => $hostname,
+        "port"         => $port,
+        "options"      => $options,
+        "weight"       => $weight,
+        "backup"       => $backup,
+        "fail_timeout" => $fail_timeout,
+        "max_fails"    => $max_fails,
+        "down"         => $down,
+        "ssl"          => $ssl,
+        "proxyproto"   => $proxyproto
+    ]),true);
+    if(!is_array($result) || !$result["Status"]){
+        $err=is_array($result) ? $result["Error"] : "daemon unavailable";
+        echo $tpl->post_error($err);return false;
+    }
+    if($ID==0){
+        return admin_tracks("Saving New Reverse-proxy Backend $hostname:$port for service $get_servicename");
+    }
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
     return admin_tracks("Modify Reverse-proxy Backend $hostname:$port for service $get_servicename");
 

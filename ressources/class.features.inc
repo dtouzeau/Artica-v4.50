@@ -636,20 +636,7 @@ class features{
         $config["LOG_FILE"]=PROGRESS_DIR."/tcpmultipath.progress.log";
         return $this->build_paragraph($config);
     }
-    function APP_IPAUDIT():string{
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_IPAUDIT}";
-        $config["TOKEN_INSTALLED"]="IPAUDIT_INSTALLED";
-        $config["TOKEN"]="IpAuditEnabled";
-        $config["EXPLAIN"]="{IPAUDIT_EXPLAIN}";
-        $config["CMD_ON"]="/ipaudit/install";
-        $config["CMD_OFF"]="/ipaudit/uninstall";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/ipaudit.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/ipaudit.progress.log";
-        $text=$this->build_paragraph($config);
-        VERBOSE("APP_IPAUDIT: ".strlen($text)."bytes",__LINE__);
-        return $text;
-    }
+
 
 
     function APP_MUNIN():string{

@@ -108,11 +108,26 @@ local function sync_from_file()
         return
     end
 
+    -- Resolve balancer module once for ramp-up reset on recovery transitions.
+    -- Without this, a missed real-time POST from the Go notifier leaves the
+    -- old slow_start timer intact — a recovered server would skip ramp-up.
+    local balancer_ok, balancer = pcall(require, "balancer")
+
     -- Update shared dict with file data
     local count = 0
     for upstream_name, upstream_data in pairs(state.upstreams) do
         if upstream_data.servers then
             for server_addr, server_data in pairs(upstream_data.servers) do
+                -- Detect unhealthy→healthy transition and reset slow_start timer
+                -- so ramp-up restarts cleanly even when the real-time notifier
+                -- POST didn't reach us.
+                if server_data.healthy and balancer_ok and balancer.reset_slow_start then
+                    local prev_healthy = get_server_health(upstream_name, server_addr)
+                    if prev_healthy ~= true then
+                        balancer.reset_slow_start(server_addr, upstream_name)
+                    end
+                end
+
                 if set_server_health(upstream_name, server_addr, server_data.healthy, server_data.last_check) then
                     count = count + 1
                 end
@@ -140,7 +155,7 @@ local function start_sync_timer()
         sync_from_file()
 
         -- Schedule next run (every 5 seconds)
-        local ok, err = ngx.timer.at(1, timer_callback)
+        local ok, err = ngx.timer.at(5, timer_callback)
         if not ok then
             ngx.log(ngx.ERR, "Failed to create timer: ", err)
             sync_timer = nil
@@ -148,7 +163,7 @@ local function start_sync_timer()
     end
 
     -- Start the timer
-    local ok, err = ngx.timer.at(1, timer_callback)
+    local ok, err = ngx.timer.at(5, timer_callback)
     if not ok then
         ngx.log(ngx.ERR, "Failed to start sync timer: ", err)
     else
@@ -254,27 +269,16 @@ function _M.get_healthy_servers_with_config(upstream_name)
             is_healthy = server.healthy
         end
 
-  if is_healthy and not server.down then
-      -- Check for dynamic weight in shared dict
-      local dynamic_weight = nil
-      local weight_key = upstream_name .. ":" .. addr .. ":weight"
-      local weight_value = health_dict:get(weight_key)
-      if weight_value then
-          local wok, wdata = pcall(cjson.decode, weight_value)
-          if wok and wdata.weight then
-              dynamic_weight = wdata.weight
-          end
-      end
-
-      table.insert(healthy, {
-          addr = addr,
-          weight = dynamic_weight or server.weight or 1,
-          slow_start = server.slow_start or 0,
-          max_fails = server.max_fails or 0,
-          fail_timeout = server.fail_timeout or 0,
-          backup = server.backup or false
-      })
-  end
+        if is_healthy and not server.down then
+            table.insert(healthy, {
+                addr = addr,
+                weight = server.weight or 1,
+                slow_start = server.slow_start or 0,  -- in seconds
+                max_fails = server.max_fails or 0,
+                fail_timeout = server.fail_timeout or 0,
+                backup = server.backup or false
+            })
+        end
     end
 
     return healthy
@@ -342,6 +346,30 @@ function _M.get_all_servers(upstream_name)
     return servers
 end
 
+-- Public API: Get slow start ramp-up status for all servers in an upstream
+-- Returns map of server_addr -> ramp-up status (only servers currently in ramp-up)
+function _M.get_ramp_up_status(upstream_name)
+    local balancer_ok, balancer = pcall(require, "balancer")
+    if not balancer_ok or not balancer.get_slow_start_status then
+        return {}
+    end
+
+    local servers = _M.get_healthy_servers_with_config(upstream_name)
+    local status = {}
+
+    for _, server in ipairs(servers) do
+        if server.slow_start and server.slow_start > 0 then
+            local info = balancer.get_slow_start_status(
+                server.addr, server.weight, server.slow_start, upstream_name)
+            if info then
+                status[server.addr] = info
+            end
+        end
+    end
+
+    return status
+end
+
 -- Public API: Handle real-time update from health checker
 function _M.handle_update(upstream_name, server_addr, healthy, timestamp)
     local ok = set_server_health(upstream_name, server_addr, healthy, timestamp)
@@ -349,34 +377,20 @@ function _M.handle_update(upstream_name, server_addr, healthy, timestamp)
     if ok then
         local status = healthy and "HEALTHY" or "UNHEALTHY"
         ngx.log(ngx.INFO, "Real-time update: ", upstream_name, "/", server_addr, " is ", status)
+
+        -- Reset slow start timer when server becomes healthy
+        -- This ensures proper ramp-up on recovery (fixes missing reset_slow_start call)
+        if healthy then
+            local balancer_ok, balancer = pcall(require, "balancer")
+            if balancer_ok and balancer.reset_slow_start then
+                balancer.reset_slow_start(server_addr, upstream_name)
+                ngx.log(ngx.DEBUG, "Reset slow_start timer for ", upstream_name, "/", server_addr)
+            end
+        end
     end
 
     return ok
 end
-
-  -- Public API: Handle real-time weight update from health checker
-  function _M.handle_weight_update(upstream_name, server_addr, weight, timestamp)
-      if not health_dict then
-          ngx.log(ngx.ERR, "Shared dict 'healthcheck_status' not configured!")
-          return false
-      end
-
-      local key = upstream_name .. ":" .. server_addr .. ":weight"
-      local value = cjson.encode({
-          weight = weight,
-          timestamp = timestamp or ngx.time()
-      })
-
-      local ok, err = health_dict:set(key, value)
-      if not ok then
-          ngx.log(ngx.ERR, "Failed to set weight: ", err)
-          return false
-      end
-
-      ngx.log(ngx.INFO, "Weight update: ", upstream_name, "/", server_addr, " -> ", weight)
-      return true
-  end
-
 
 -- Initialize: called in init_by_lua phase
 function _M.init()

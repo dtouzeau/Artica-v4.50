@@ -276,7 +276,7 @@ class system_tasks{
         $this->tasks_processes[19]="exec.status.php --all";
         $this->tasks_processes[20]="exec.apt-get.php --pkg-upgrade";
         $this->tasks_processes[22]="exec.pdns.php --replic-artica";
-        $this->tasks_processes[23]="exec.httptrack.php";
+
         //$this->tasks_processes[24]="exec.xapian.index.php";
         //$this->tasks_processes[28]="exec.lighttpd.nets.php --restart";
         $this->tasks_processes[29]="exec.freeweb.rdcube-replic.php --all";
@@ -324,7 +324,7 @@ class system_tasks{
         $this->tasks_processes[80]="exec.backup.artica.php --snapshot --force --meta-ping";
         $this->tasks_processes[81]="/usr/sbin/artica-phpfpm-service -freshexec";
         $this->tasks_processes[82]="exec.pdns.php --export --scheduled";
-        $this->tasks_processes[83]="exec.nightly.php --update-now";
+        //$this->tasks_processes[83]="exec.nightly.php --update-now";
         $this->tasks_processes[84]="exec.backup.ldap.php --backup";
         $this->tasks_processes[85]="/usr/sbin/artica-phpfpm-service -msktutils-restart";
         $this->tasks_processes[86]="/usr/sbin/artica-phpfpm-service -restart-3proxy";
@@ -384,7 +384,7 @@ class system_tasks{
         $this->task_disabled[53]=true;
         $this->task_disabled[56]=true;
         $this->task_disabled[59]=true;
-        $this->task_disabled[53]=true;
+
         $this->task_disabled[65]=true;
         $this->task_disabled[41]=true;
         $this->task_disabled[71]=true;
@@ -393,6 +393,7 @@ class system_tasks{
         $this->task_disabled[75]=true;
         $this->task_disabled[76]=true;
         $this->task_disabled[79]=true;
+        $this->task_disabled[83]=true;
 
         if($EnableIntelCeleron==1){
             $this->task_disabled[51]=true;

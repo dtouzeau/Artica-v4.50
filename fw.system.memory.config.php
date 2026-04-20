@@ -1,6 +1,9 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
+if(isset($_GET["zram-js"])){zram_js();exit;}
+if(isset($_GET["zram-popup"])){zram_popup();exit;}
+if(isset($_POST["EnableZram"])){zram_save();exit;}
 if(isset($_POST["overcommit_memory"])){table_save();exit;}
 if(isset($_GET["form-popup"])){form_popup();exit;}
 if(isset($_GET["form-js"])){form_js();exit;}
@@ -9,6 +12,8 @@ if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["memory-graph"])){memory_graph();exit;}
 if(isset($_GET["memory-graph2"])){memory_graph2();exit;}
+if(isset($_GET["zram-section"])){zram_section();exit;}
+if(isset($_GET["zram-status-chart"])){zram_status_chart();exit;}
 if(isset($_GET["MemoryCacheCleaning-js"])){MemoryCacheCleaning_js();exit;}
 if(isset($_GET["MemoryCacheCleaning-popup"])){MemoryCacheCleaning_popup();exit;}
 if(isset($_POST["MemoryCacheCleaning"])){MemoryCacheCleaning_save();exit;}
@@ -26,6 +31,11 @@ function page(){
     if(isset($_GET["main-page"])){$tpl=new template_admin(null,$html);echo $tpl->build_firewall();return;}
     echo $tpl->_ENGINE_parse_body($html);
 
+}
+function zram_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return  $tpl->js_dialog1("{zram_compressed_swap}","$page?zram-popup=yes",650);
 }
 function tabs():bool{
     $page=CurrentPageName();
@@ -169,6 +179,7 @@ function table(){
         $html[]="<div style='margin-top:10px;padding:5px'><img src='img/squid/system_memory-day.flat.png?t=$t'></div>";
         $html[]="<div style='margin-top:10px;padding:5px'><img src='img/squid/system_memory-month.flat.png?t=$t'></div>";
     }
+    $html[]="<div id='zram-section' style='margin-top:10px'></div>";
 
     $TINY_ARRAY["TITLE"]="{memory_info}";
     $TINY_ARRAY["ICO"]="fad fa-memory";
@@ -186,17 +197,17 @@ function table(){
     $html[]=$tpl->RefreshInterval_js("overcommit-progress",$page,"flat=yes");
     $html[]="Loadjs('$page?memory-graph=yes');";
     $html[]="Loadjs('$page?memory-graph2=yes');";
+    $html[]="LoadAjax('zram-section','$page?zram-section=yes');";
     $html[]=$jstiny;
     $html[]="</script>";
     echo $tpl->_ENGINE_parse_body($html);
 }
 
 function memory_graph(){
-
-
-
+    header("content-type: application/x-javascript");
     $meminfo=explode("\n",@file_get_contents("/proc/meminfo"));
     $ratio=intval(@file_get_contents("/proc/sys/vm/overcommit_ratio"));
+    $behavior=intval(@file_get_contents("/proc/sys/vm/overcommit_memory"));
 
     foreach ($meminfo as $line){
         if(preg_match("#^(.+?):\s+([0-9]+)#",$line,$re)){
@@ -208,43 +219,42 @@ function memory_graph(){
 
     $MemTotal=intval($MAIN["memtotal"]);
     $MemFree=intval($MAIN["memfree"]);
-    $MemUsed=$MemTotal-$MemFree;
-    $SwapTotal=intval($MAIN["swaptotal"]);
-    $CommitLimit=intval($MAIN["commitlimit"]);
-    $Committed_AS=intval($MAIN["committed_as"]);
-    $CommitRest=$CommitLimit-$Committed_AS;
-    $calculated=($SwapTotal+$MemTotal)*($ratio/100);
+    $Buffers=intval($MAIN["buffers"]);
+    $Cached=intval($MAIN["cached"]);
+    $MemAvailable=intval($MAIN["memavailable"]);
+    $tpl=new template_admin();
+    $chart=new Chartjs();
+    $chart->container="memory-graph";
+    $chart->DataToSize=true;
 
-
-
-    $CommitLimit_text=FormatBytes($CommitLimit);
-    $Committed_AS_text=FormatBytes($Committed_AS);
-
-    $PieData["{amount}"]=$CommitRest;
-    $PieData["{amountr}"]=$Committed_AS;
-
-    $tpl=new templates();
-    $highcharts=new highcharts();
-    $highcharts->TitleFontSize="14px";
-    $highcharts->AxisFontsize="12px";
-    $highcharts->container="memory-graph";
-    $highcharts->PieDatas=$PieData;
-    $highcharts->LegendSuffix="Kb";
-    $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle="$Committed_AS_text / $CommitLimit_text";
-    $highcharts->PieRedGreen=true;
-    $highcharts->Title=$tpl->_ENGINE_parse_body("{Overcommiting_Memory_behavior} {$ratio}% $Committed_AS_text / $CommitLimit_text");
-    $highcharts->RemoveLock=true;
-    echo $highcharts->BuildChart();
-
-
-
+    if($behavior==1){
+        // overcommit=1: commit limit is meaningless, show actual RAM usage
+        $MemUsed=$MemTotal-$MemAvailable;
+        $MemTotal_text=FormatBytes($MemTotal);
+        $MemUsed_text=FormatBytes($MemUsed);
+        $pct=($MemTotal>0)?round(($MemUsed/$MemTotal)*100,1):0;
+        $chart->Title=$tpl->_ENGINE_parse_body("{RAM} {$pct}% $MemUsed_text / $MemTotal_text");
+        $chart->PieDatas=array(
+            $tpl->_ENGINE_parse_body($tpl->javascript_parse_text("{available_commit}"))=>$MemAvailable,
+            $tpl->_ENGINE_parse_body($tpl->javascript_parse_text("{used}"))=>$MemUsed,
+        );
+    }else{
+        $CommitLimit=intval($MAIN["commitlimit"]);
+        $Committed_AS=intval($MAIN["committed_as"]);
+        $CommitRest=max(0,$CommitLimit-$Committed_AS);
+        $CommitLimit_text=FormatBytes($CommitLimit);
+        $Committed_AS_text=FormatBytes($Committed_AS);
+        $chart->Title=$tpl->_ENGINE_parse_body("{committed_memory} ({$ratio}%) $Committed_AS_text / $CommitLimit_text");
+        $chart->PieDatas=array(
+            $tpl->javascript_parse_text("{available_commit}")=>$CommitRest,
+            $tpl->javascript_parse_text("{committed_amount}")=>$Committed_AS,
+        );
+    }
+    echo $chart->Doughnut2rows();
 }
 
 function memory_graph2(){
-
-    $ratio=intval(@file_get_contents("/proc/sys/vm/overcommit_ratio"));
-    $behavior=intval(@file_get_contents("/proc/sys/vm/overcommit_memory"));
+    header("content-type: application/x-javascript");
     $meminfo=explode("\n",@file_get_contents("/proc/meminfo"));
 
     foreach ($meminfo as $line){
@@ -264,34 +274,138 @@ function memory_graph2(){
 
     $AllMemory=$MemTotal+$SwapTotal;
     $AllUsed=$MemUsed+$swapused;
-    $percentuse=round(($AllUsed/$AllMemory)*100,2);
+    $percentuse=($AllMemory>0)?round(($AllUsed/$AllMemory)*100,2):0;
     $AllMemory_text=FormatBytes($AllMemory);
     $AllUsed_text=FormatBytes($AllUsed);
-    $highcharts=new highcharts();
-    $highcharts->PieRedGreen=true;
-    $PieData["{free}"]=$MemFree;
-    $PieData["{used}"]=$MemUsed;
 
-    if($SwapTotal>0) {
-        $highcharts->PieRedGreen=false;
-        $PieData["{swap} {free}"] = $SwapFree;
-        $PieData["{swap} {used}"] = $swapused;
-
+    $tpl=new template_admin();
+    $PieData=array();
+    $PieData[$tpl->javascript_parse_text("{free}")]=$MemFree;
+    $PieData[$tpl->javascript_parse_text("{used}")]=$MemUsed;
+    if($SwapTotal>0){
+        $PieData[$tpl->javascript_parse_text("SWAP {free}")]=$SwapFree;
+        $PieData[$tpl->javascript_parse_text("SWAP {used}")]=$swapused;
     }
-    $tpl=new templates();
 
-    $highcharts->TitleFontSize="14px";
-    $highcharts->AxisFontsize="12px";
-    $highcharts->container="memory-graph2";
-    $highcharts->PieDatas=$PieData;
-    $highcharts->LegendSuffix="Kb";
-    $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle="{memory} {$percentuse}% $AllUsed_text/$AllMemory_text";
-    $highcharts->Title=$tpl->_ENGINE_parse_body("{memory} {$percentuse}% $AllUsed_text/$AllMemory_text");
-    $highcharts->RemoveLock=true;
-    echo $highcharts->BuildChart();
+    $chart=new Chartjs();
+    $chart->container="memory-graph2";
+    $chart->Title=$tpl->_ENGINE_parse_body("{memory_usage} {$percentuse}% $AllUsed_text / $AllMemory_text");
+    $chart->PieDatas=$PieData;
+    $chart->DataToSize=true;
+    echo $chart->Pie();
+}
+
+function zram_section(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $EnableZram=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableZram"));
+    $ZramSizePercent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZramSizePercent"));
+    if($ZramSizePercent==0){$ZramSizePercent=50;}
 
 
+
+    $tpl->table_form_section("{zram_compressed_swap}","{zram_explain}");
+    $tpl->table_form_field_js("Loadjs('$page?zram-js=yes')","AsSystemAdministrator");
+    if($EnableZram==0) {
+        $tpl->table_form_field_bool("zRam", $EnableZram, ico_mem);
+    }else{
+        $tpl->table_form_field_text("zRam","{active2} $ZramSizePercent%");
+    }
+
+    $html[]=$tpl->table_form_compile();
+
+
+    if($EnableZram==1){
+        $html[]="<div id='zram-status-chart' style='margin-top:10px'></div>";
+        $html[]="<script>LoadAjax('zram-status-chart','$page?zram-status-chart=yes');</script>";
+    }
+    echo $tpl->_ENGINE_parse_body($html);
+}
+
+function zram_save(){
+    $tpl=new template_admin();
+    $tpl->SAVE_POSTs();
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/zmem/reconfigure");
+    admin_tracks_post("Saving zRam settings");
+}
+function zram_popup():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $EnableZram=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableZram"));
+    $ZramSizePercent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ZramSizePercent"));
+    if($ZramSizePercent==0){$ZramSizePercent=50;}
+
+    $percOptions=array();
+    for($i=10;$i<=80;$i+=5){
+        $percOptions[$i]="$i%";
+    }
+
+    $form[]=$tpl->field_checkbox("EnableZram","{enable_feature}",$EnableZram);
+    $form[]=$tpl->field_array_hash($percOptions,"ZramSizePercent","{zram_size_percent}",$ZramSizePercent);
+
+    $js_after[]="dialogInstance1.close();LoadAjax('zram-section','$page?zram-section=yes');";
+    $html[]=$tpl->form_outside("",$form,null,"{apply}",implode(";",$js_after));
+
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+function zram_status_chart(){
+    $tpl=new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/zmem/status"));
+
+    if(!is_object($json) || !isset($json->success) || !$json->success){
+        $err=is_object($json) && isset($json->error)?$json->error:"Cannot reach zMem API";
+        echo $tpl->div_error($err);
+        return;
+    }
+    $d=$json->data;
+    if(!$d->enabled){
+        echo "<div style='text-align:center;padding:20px;color:#999'><i class='fa fa-info-circle'></i>&nbsp;{inactive2}</div>";
+        echo $tpl->_ENGINE_parse_body("");
+        return;
+    }
+
+    $html[]="<table style='width:100%'><tr>";
+    $html[]="<td style='width:350px;vertical-align:top'><div id='zram-doughnut' style='height:300px'></div></td>";
+    $html[]="<td style='vertical-align:top;padding-left:15px'>";
+
+    $comprRatio=round($d->compression_ratio,2);
+    $spaceSaved=round($d->space_saving_pct,1);
+    $memEff=round($d->mem_efficiency_pct,1);
+    $origMB=round($d->orig_data_mb,1);
+    $comprMB=round($d->compr_data_mb,1);
+    $memUsedMB=round($d->mem_used_mb,1);
+    $swapUsedMB=round($d->swap_used_mb,1);
+    $swapTotalMB=round($d->swap_total_mb,1);
+    $swapPct=round($d->swap_used_pct,1);
+    $algo=strtoupper($d->comp_algorithm);
+    $diskMB=$d->disksize_mb;
+
+    $tpl->table_form_field_text("{zram_algorithm}",$algo,"fa-solid fa-compress");
+    $tpl->table_form_field_text("{zram_compression_ratio}","{$comprRatio}:1","fa-solid fa-chart-line");
+    $tpl->table_form_field_text("{zram_space_saved}","{$spaceSaved}%","fa-solid fa-arrow-down");
+    $tpl->table_form_field_text("{zram_mem_efficiency}","{$memEff}%","fa-solid fa-gauge-high");
+    $tpl->table_form_field_text("{zram_original_data}","{$origMB} MB","fa-solid fa-database");
+    $tpl->table_form_field_text("{zram_compressed_data}","{$comprMB} MB","fa-solid fa-file-zipper");
+    $tpl->table_form_field_text("{zram_swap_usage}","{$swapUsedMB} MB / {$swapTotalMB} MB ({$swapPct}%)","fa-solid fa-hard-drive");
+    $html[]=$tpl->table_form_compile();
+
+    $html[]="</td></tr></table>";
+
+    // Doughnut chart: original vs compressed data
+    if($origMB>0){
+        $chart=new Chartjs();
+        $chart->container="zram-doughnut";
+        $chart->Title=$tpl->_ENGINE_parse_body("{zram_compressed_swap} - {$diskMB} MB");
+        $chart->PieDatas=array(
+            $tpl->_ENGINE_parse_body("{zram_compressed_data}")=>$comprMB,
+            $tpl->_ENGINE_parse_body("{zram_space_saved}")=>round($origMB-$comprMB,1),
+        );
+        $chart->LegendSuffix="MB";
+        $html[]="<script>".$chart->Doughnut2rows()."</script>";
+    }
+
+    echo $tpl->_ENGINE_parse_body($html);
 }
 
 function Save(){

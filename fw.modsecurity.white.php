@@ -53,18 +53,19 @@ function rule_js(){
 function active_enable():bool{
     $page=CurrentPageName();
     $ID=intval($_GET["active-enable"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne = $q->mysqli_fetch_array("SELECT * FROM modsecurity_whitelist WHERE ID='$ID'");
-    $wfrule=$ligne["wfrule"];
-    $serviceid=$ligne["serviceid"];
-    $enabled=$ligne["enabled"];
-    if($enabled==0){
-        $q->QUERY_SQL("UPDATE modsecurity_whitelist SET enabled=1 WHERE ID=$ID");
-        admin_tracks("Enable white rule $ID $wfrule/$serviceid");
-    }else{
-        $q->QUERY_SQL("UPDATE modsecurity_whitelist SET enabled=0 WHERE ID=$ID");
-        admin_tracks("Disable white rule $ID $wfrule/$serviceid");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist"),true);
+    $entry=null;
+    if(is_array($json) && $json["Status"]){
+        foreach($json["entries"] as $e){if($e["ID"]==$ID){$entry=$e;break;}}
     }
+    if($entry==null){return false;}
+    $newEnabled=($entry["enabled"]==0) ? 1 : 0;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+        "action"=>"update","table"=>"modsecurity_whitelist",
+        "set"=>["enabled"=>$newEnabled],"where"=>["ID"=>$ID]
+    ]);
+    $text=($newEnabled==1) ? "Enable" : "Disable";
+    admin_tracks("$text white rule $ID {$entry["wfrule"]}/{$entry["serviceid"]}");
     echo "Loadjs('$page?reconfigure=yes&silent=yes');\n";
     return true;
 }
@@ -74,11 +75,13 @@ function rule_popup(){
     $tpl=new template_admin();
     $ID=intval($_GET["ruleid-popup"]);
     $bt="{apply}";
-     $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $ligne["enabled"]=1;
     $error=null;
     if($ID>0) {
-        $ligne = $q->mysqli_fetch_array("SELECT * FROM modsecurity_whitelist WHERE ID='$ID'");
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist"),true);
+        if(is_array($json) && $json["Status"]){
+            foreach($json["entries"] as $e){if($e["ID"]==$ID){$ligne=$e;break;}}
+        }
         $title="{rule}: $ID";
     }
     if($ID==0) {
@@ -105,15 +108,13 @@ function rule_popup(){
                 $ligne["wfrule"]=intval($_GET["rid"]);
             }
 
-            $zligne = $q->mysqli_fetch_array("SELECT ID FROM modsecurity_whitelist WHERE wfrule={$ligne["wfrule"]} AND serviceid={$ligne["serviceid"]} AND spath LIKE '{$ligne["spath"]}%'");
-            if($zligne["ID"]>0){
-                $ID=$zligne["ID"];
-                $title="{rule}: $ID";
-                $bt="{apply}";
+            $zjson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist?ruleid={$ligne["wfrule"]}&serviceid={$ligne["serviceid"]}"),true);
+            if(is_array($zjson) && $zjson["Status"]){
+                foreach($zjson["entries"] as $e){
+                    if(strpos($e["spath"],$ligne["spath"])===0){$ID=$e["ID"];$title="{rule}: $ID";$bt="{apply}";break;}
+                }
             }
         }
-
-
     }
     $serviceid=intval($ligne["serviceid"]);
     if($ligne["serviceid"]==0) {
@@ -163,31 +164,26 @@ function rule_save(){
     $ID=intval($_POST["ruleid"]);
     unset($_POST["ruleid"]);
     if($_POST["serviceid"]==null){$_POST["serviceid"]=0;}
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $edit=array();
+
+    $data=array();
+    $zkeys=array();
     foreach ($_POST as $key=>$val){
-        $val=$q->sqlite_escape_string2($val);
-        $edit[]="`$key`='$val'";
-        $keys[]="`$key`";
-        $vals[]="'$val'";
+        $data[$key]=strval($val);
         $zkeys[]="$key=$val";
     }
 
-    // $sql="CREATE TABLE IF NOT EXISTS `modsecurity_whitelist`
-    //        ( `ID` INTEGER PRIMARY KEY AUTOINCREMENT, wfrule INTEGER,`serviceid` INTEGER, spath TEXT)";
-
     if($ID>0){
-        $sql="UPDATE modsecurity_whitelist SET ".@implode(",",$edit)." WHERE ID=$ID";
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+            "action"=>"update","table"=>"modsecurity_whitelist",
+            "set"=>$data,"where"=>["ID"=>$ID]
+        ]);
         $admin_track="Update Web Application whitelist rule ".@implode(",",$zkeys);
     }else{
-        $sql="INSERT INTO modsecurity_whitelist (".@implode(",",$keys).") VALUES (".@implode(",",$vals).")";
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+            "action"=>"insert","table"=>"modsecurity_whitelist",
+            "values"=>$data
+        ]);
         $admin_track="Create a new Web Application whitelist rule ".@implode(",",$zkeys);
-    }
-    writelogs($sql,__FUNCTION__,__FILE__,__LINE__);
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        $tpl->post_error($q->mysql_error);
-        return false;
     }
     admin_tracks($admin_track);
     return true;
@@ -238,20 +234,14 @@ function delete_by_rule_perform():bool{
 
 
 function get_disabled_ruleid($ruleid,$serviceid,$path){
-    $ss=array();
-
-    if($serviceid>0) {
-        $ss[] = "AND serviceid=$serviceid";
+    $url="/modsec/whitelist?ruleid=$ruleid";
+    if($serviceid>0){$url.="&serviceid=$serviceid";}
+    if($path!=null){$url.="&path=".urlencode($path);}
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX($url),true);
+    if(is_array($json) && $json["Status"] && count($json["entries"])>0){
+        return intval($json["entries"][0]["ID"]);
     }
-    if($path<>null) {
-        $ss[] = "AND spath='$path'";
-    }
-
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $sql="SELECT ID FROM `modsecurity_whitelist` WHERE wfrule=$ruleid ". @implode(" ",$ss);
-    $ligne=$q->mysqli_fetch_array($sql);
-    return intval($ligne["ID"]);
-
+    return 0;
 }
 
 
@@ -283,36 +273,37 @@ function reconfigure_waf():bool{
 function active_remove():bool{
     $tpl=new template_admin();
     $ID=intval($_GET["active-remove"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT wfrule,serviceid FROM modsecurity_whitelist WHERE ID=$ID");
-
-    $serviceid=$ligne["serviceid"];
+    $entry=null;
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist"),true);
+    if(is_array($json) && $json["Status"]){
+        foreach($json["entries"] as $e){if($e["ID"]==$ID){$entry=$e;break;}}
+    }
+    if($entry==null){return false;}
+    $serviceid=$entry["serviceid"];
     $reconfigure_js=reconfigure_js($serviceid);
     $md=$_GET["md"];
-    $rulename=rulename($ligne["wfrule"]);
-    echo $tpl->js_confirm_delete("{whitelist}<br>$rulename<br>{$ligne["wfrule"]}","active-remove",$ID,"$('#$md').remove();$reconfigure_js");
+    $rulename=rulename($entry["wfrule"]);
+    echo $tpl->js_confirm_delete("{whitelist}<br>$rulename<br>{$entry["wfrule"]}","active-remove",$ID,"$('#$md').remove();$reconfigure_js");
     return true;
 }
 
 function active_remove_perform():bool{
     $tpl=new template_admin();
     $ID=intval($_POST["active-remove"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT wfrule FROM modsecurity_whitelist WHERE ID=$ID");
-    $rulename=rulename($ligne["wfrule"]);
-    $q->QUERY_SQL("DELETE FROM modsecurity_whitelist WHERE ID=$ID");
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
-    admin_tracks("DELETE WAF white-list Number $ID for rule $rulename");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+        "action"=>"delete","table"=>"modsecurity_whitelist","where"=>["ID"=>$ID]
+    ]);
+    admin_tracks("DELETE WAF white-list Number $ID");
     return true;
 }
 
 function table() {
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $TRCLASS=null;
     $t=time();
-    $results=$q->QUERY_SQL("SELECT * FROM modsecurity_whitelist");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist"),true);
+    $results=(is_array($json) && $json["Status"]) ? $json["entries"] : array();
     $html[]="<table id='table-$t' class=\"footable table table-stripped\" style='margin-top:10px' data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";
     $html[]="<tr>";
@@ -347,9 +338,8 @@ function table() {
         }
         $compile_tb=$tpl->icon_run($compile);
         if($serviceid>0){
-            $sql = "SELECT servicename FROM nginx_services WHERE ID=$serviceid";
-            $WebService=$q->mysqli_fetch_array($sql);
-            $www=$WebService["servicename"];
+            $sockSvc=new socksngix($serviceid);
+            $www=$sockSvc->GetServiceName();
         }
 
 

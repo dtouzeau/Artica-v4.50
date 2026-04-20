@@ -2,6 +2,7 @@
 $GLOBALS["CLUSTER_PORT_FEATURE"]=true;
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/prefetch-info.inc"); __prefetchCommonSettings($GLOBALS["CLASS_SOCKETS"]);
 include_once(dirname(__FILE__)."/ressources/class.squid.templates-simple.inc");
 include_once(dirname(__FILE__)."/ressources/class.snapshots.blacklists.inc");
 include_once(dirname(__FILE__)."/ressources/externals/class.aesCrypt.inc");

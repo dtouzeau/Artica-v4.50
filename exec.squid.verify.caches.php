@@ -8,7 +8,6 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once(
 include_once(dirname(__FILE__).'/framework/class.unix.inc');if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__).'/framework/frame.class.inc');
 include_once(dirname(__FILE__).'/ressources/class.squid.inc');
-include_once(dirname(__FILE__).'/ressources/class.squid.refresh_patterns.inc');
 if(preg_match("#--bywizard#",implode(" ",$argv))){$GLOBALS["BYWIZARD"]=true;}
 if(preg_match("#schedule-id=([0-9]+)#",implode(" ",$argv),$re)){$GLOBALS["SCHEDULE_ID"]=$re[1];}
 if(is_array($argv)){
@@ -78,8 +77,6 @@ function verifycaches(){
 	
 	build_progress("Listing caches....",15);
 	$caches=$cache->build();
-	$squid_refresh_pattern=new squid_refresh_pattern();
-	$squid_refresh_pattern->build();
 	$unix->CreateUnixUser("squid","squid");
 	@mkdir("/var/run/squid",0755,true);
 	@chown("/var/run/squid", "squid");

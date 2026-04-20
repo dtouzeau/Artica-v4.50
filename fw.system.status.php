@@ -4,6 +4,7 @@ include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.os.system.tools.inc");
 include_once(dirname(__FILE__)."/ressources/class.cpu.percent.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+include_once(dirname(__FILE__)."/ressources/prefetch-info.inc"); __prefetchCommonSettings($GLOBALS["CLASS_SOCKETS"]);
 $GLOBALS["PEITYCONF"]="{ width:255,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 $tpl=new template_admin();
@@ -22,6 +23,7 @@ if(isset($_GET["bandwidth"])){bandwidth();exit;}
 if(isset($_GET["docker-instances"])){docker_instances();exit;}
 if(isset($_GET["top-widget"])){top_widgets();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
+if(isset($_GET["top-cpu"])){echo top_cpus();exit;}
 die();
 function didyouknow_sshportal(){
     header("content-type: application/x-javascript");
@@ -625,7 +627,15 @@ function Cronos():string{
 
 }
 
-function top_cpus($Status):string{
+function top_cpus($Status=array()):string{
+    if(!is_array($Status)){
+        $Status=array();
+    }
+
+    if(is_array($Status) && count($Status)==0){
+        $Status=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/sysmonitor/stats"),true);
+    }
+
     if(!isset($Status["data"]["latest"])){return "";}
 
     $MEM_USED_PERC=floatval($Status["data"]["latest"]["mem_percent"]);
@@ -710,7 +720,7 @@ function top_widgets(): bool {
     if (strlen($FW_INDEX_PHP_HOSTNAME) > 10) {
         $payload["#widget-hostname"] = $tpl->_ENGINE_parse_body($FW_INDEX_PHP_HOSTNAME);
     }
-    $top_cpu_mem=top_cpus( $Status, $metrics);
+    $top_cpu_mem=top_cpus($Status);
 
     if (strlen($memory) > 10) {
         $payload["#sysmemory"] = $tpl->_ENGINE_parse_body($memory);

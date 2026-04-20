@@ -1,2 +1,0 @@
-dans /etc/apache2/apache2.conf
-AddType application/x-httpd-php5 .php5

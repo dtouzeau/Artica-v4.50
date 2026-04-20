@@ -74,8 +74,6 @@ function reset_rrd(){
     if(is_file("/etc/artica-postfix/pids/exec.rrd.php.scan_squid.pid")){
         @unlink("/etc/artica-postfix/pids/exec.rrd.php.scan_squid.pid");
     }
-    $unix->framework_exec("exec.rrd.php");
-    $unix->framework_exec("exec.webconsole.objects.php");
 }
 
 

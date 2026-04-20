@@ -56,8 +56,8 @@ function delete_js():bool{
     $ligne=$q->mysqli_fetch_array("SELECT serviceid FROM ngx_directories WHERE ID=$ID");
     $get_servicename=get_servicename($ID);
     $serviceid=$ligne["serviceid"];
-    $q->QUERY_SQL("DELETE FROM ngx_subdir_items WHERE directoryid=$ID");
-    $q->QUERY_SQL("DELETE FROM ngx_directories WHERE ID=$ID");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"ngx_subdir_items","where"=>array("directoryid"=>"$ID")));
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"ngx_directories","where"=>array("ID"=>"$ID")));
     header("content-type: application/x-javascript");
     echo "$('#$md5').remove();\n";
     echo "Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');\n";
@@ -82,15 +82,14 @@ function directory_enabled():bool{
     $q=new lib_sqlite(NginxGetDB());
     $ligne=$q->mysqli_fetch_array("SELECT serviceid,enabled FROM ngx_directories WHERE ID=$ID");
     $serviceid=$ligne["serviceid"];
-    $sql="UPDATE ngx_directories SET enabled=0 WHERE ID=$ID";
     $get_servicename=get_servicename($ID);
     if($ligne["enabled"]==1){
-        $q->QUERY_SQL($sql);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"ngx_directories","set"=>array("enabled"=>"0"),"where"=>array("ID"=>"$ID")));
         header("content-type: application/x-javascript");
         echo "Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');\n";
         return  admin_tracks("Disable path $ID from $get_servicename service");
     }
-    $q->QUERY_SQL("UPDATE ngx_directories SET enabled=1 WHERE ID=$ID");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"ngx_directories","set"=>array("enabled"=>"1"),"where"=>array("ID"=>"$ID")));
     header("content-type: application/x-javascript");
     echo "Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');\n";
     return admin_tracks("Enable path $ID from $get_servicename service");

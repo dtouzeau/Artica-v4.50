@@ -179,13 +179,6 @@ function xstart($md5){
 			system("$php /usr/share/artica-postfix/exec.squid.statistics.WWW_USERSGROUPS.build.php $md5");
 			exit;
 			break;			
-			
-			
-		case "IPAUDIT":
-			echo "Running exec.squid.statistics.IPAUDIT.build.php $md5\n";
-			system("$php /usr/share/artica-postfix/exec.squid.statistics.IPAUDIT.build.php $md5");
-			exit;
-			break;
 
 		case "DNS":
 			echo "Running exec.squid.statistics.DNS.build.php $md5\n";

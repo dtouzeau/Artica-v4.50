@@ -23,23 +23,6 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
 function hup_launch():bool{
     $id=$_GET["hub-launch"];
     $sock=new sockets();
@@ -81,16 +64,18 @@ function restart_js():bool{
     return true;
 }
 
-function popup(){
+function popup():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $ID=$_GET["popup"];
 
-
-    $fname="/usr/share/artica-postfix/ressources/databases/ReverseProxy/$ID.json";
-    $json=json_decode(file_get_contents($fname));
-    $FrontendErrDetail=base64_decode($json->FrontendErrDetail);
-    $servicename=$json->Servicename;
+    $sock=new socksngix($ID);
+    $FrontendErrDetail="";
+    $ligne=$sock->GetCache();
+    if(!is_null($ligne["frontend_err_detail"])) {
+        $FrontendErrDetail = base64_decode($ligne["frontend_err_detail"]);
+    }
+    $servicename=$sock->GetServiceName();
 
     $nginx_frontend_failed=$tpl->_ENGINE_parse_body("{nginx_frontend_failed}");
     $nginx_frontend_failed=str_replace("%s","<strong>$FrontendErrDetail</strong>",$nginx_frontend_failed);
@@ -101,5 +86,5 @@ function popup(){
     $html[]="</div>";
     $html[]="</div>";
     echo $tpl->_ENGINE_parse_body($html);
-
+    return true;
 }

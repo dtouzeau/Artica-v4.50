@@ -578,25 +578,8 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
 
 
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
 function filter_rule_reset():bool{
     $page=CurrentPageName();
     $function=$_GET["function"];
@@ -1221,10 +1204,14 @@ function get_disabled_ruleid($ruleid,$serviceid,$path){
         $ss[] = "AND spath='$path'";
     }
 
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $sql="SELECT ID FROM `modsecurity_whitelist` WHERE wfrule=$ruleid ". @implode(" ",$ss);
-    $ligne=$q->mysqli_fetch_array($sql);
-    return intval($ligne["ID"]);
+    $url="/modsec/whitelist?ruleid=$ruleid";
+    if($serviceid>0){$url.="&serviceid=$serviceid";}
+    if($path!=null){$url.="&path=".urlencode($path);}
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX($url),true);
+    if(is_array($json) && $json["Status"] && count($json["entries"])>0){
+        return intval($json["entries"][0]["ID"]);
+    }
+    return 0;
 
 }
 function active_save():bool{
@@ -1235,9 +1222,9 @@ function active_save():bool{
     $path=$_POST["path"];
     $ID=get_disabled_ruleid($ruleid,$serviceid,$path);
     if($ID>0){$tpl->post_error("{alreadyexists}");return false;}
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $q->QUERY_SQL("INSERT INTO modsecurity_whitelist (wfrule,serviceid,spath) VALUES($ruleid,$serviceid,'$path')");
-    if(!$q->ok){$tpl->post_error("$q->mysql_error");return false;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/modsec/whitelist", [
+        "action"=>"add","ruleid"=>intval($ruleid),"serviceid"=>$serviceid,"path"=>$path
+    ]);
     admin_tracks("Add WAF rule $ruleid with service[$serviceid] and path=$path To global whitelist");
 
     return true;
@@ -1253,14 +1240,14 @@ function active_remove():bool{
     $ID=intval($_GET["active-remove"]);
     $md=$_GET["md"];
     $function=$_GET["function"];
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-
-    $ligne=$q->QUERY_SQL("SELECT * FROM modsecurity_whitelist WHERE ID=$ID");
-    $serviceid=$ligne["serviceid"];
-
-
-    $q->QUERY_SQL("DELETE FROM modsecurity_whitelist WHERE ID=$ID");
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
+    $serviceid=0;
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist"),true);
+    if(is_array($json) && $json["Status"]){
+        foreach($json["entries"] as $e){if($e["ID"]==$ID){$serviceid=$e["serviceid"];break;}}
+    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+        "action"=>"delete","table"=>"modsecurity_whitelist","where"=>["ID"=>$ID]
+    ]);
     admin_tracks("DELETE WAF white-list Number $ID");
     echo "$('#$md').remove();\n$function();";
     echo reconfigure_js($serviceid);

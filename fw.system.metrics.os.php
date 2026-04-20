@@ -25,17 +25,18 @@ if(isset($_GET["verbose"])){
     ini_set('display_errors', 1);
     ini_set('error_reporting', E_ALL);
 }
-
 if(!$tpl->xPrivs()){ exit(); }
 clean_xss_deep();
-
+if(isset($_GET["purge-js"])){purge_js();exit;}
 if(isset($_GET["top-widgets"])){top_widgets();exit;}
 if(isset($_GET["api-status"])) { api_status(); exit; }
 if(isset($_GET["api-stats"])) { api_stats(); exit; }
 if(isset($_GET["api-metrics"])) { api_metrics(); exit; }
+if(isset($_GET["api-chart"])) { api_chart(); exit; }
 if(isset($_GET["api-latest"])) { api_latest(); exit; }
 if(isset($_GET["api-start"])) { api_start(); exit; }
 if(isset($_GET["api-stop"])) { api_stop(); exit; }
+if(isset($_POST["purge"])) { api_purge(); exit; }
 if(isset($_GET["system-metrics"])){system_metrics();exit;}
 if(isset($_GET["cpu-metrics"])){cpu_metrics();exit;}
 if(isset($_GET["memory-metrics"])){memory_metrics();exit;}
@@ -62,6 +63,13 @@ function page(){
 
     echo $tpl->_ENGINE_parse_body($html);
 }
+function purge_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_confirm_delete("{remove_database}",
+        "purge","yes","LoadAjaxSilent('os-widgets','$page?top-widgets=yes');");
+}
+
 function js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -69,9 +77,9 @@ function js(){
 }
 
 function top_widgets(){
-    $page=CurrentPageName();
     $tpl=new template_admin();
     $html=array();
+    $page=CurrentPageName();
     $status=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/sysmonitor/stats"),true);
 
     if(!isset($status["data"])){
@@ -104,20 +112,20 @@ function top_widgets(){
         $latest=$status["data"]["latest"];
         $cpu_percent=round($latest["cpu_percent"],1)."%";
         $mem_percent=round($latest["mem_percent"],1)."%";
-        $load_avg=round($latest["load1"],2)." / ".round($latest["load5"],2)." / ".round($latest["load15"],2);
-        $mem_used=formatMemory($latest["mem_used_mb"])." / ".formatMemory(isset($latest["mem_total_mb"]) ? $latest["mem_total_mb"] : 0);
+        $mem_used=formatMemory($latest["mem_used_mb"]);
     }
+
+    $btn = array();
+    $btn[0]["margin"] = 0;
+    $btn[0]["name"] = "{remove_database}";
+    $btn[0]["icon"] = ico_trash;
+    $btn[0]["js"] = "Loadjs('$page?purge-js=yes')";
 
     $html[]="<table style='width:100%;margin-top:15px'>";
     $html[]="<tr>";
-    $html[]="<td style='padding:2px'>".$tpl->widget_style1("lazur-bg","fas fa-microchip","CPU ($num_cpu cores)",$cpu_percent)."</td>";
-    $html[]="<td style='padding:2px'>".$tpl->widget_style1("yellow-bg","fas fa-memory","{memory}",$mem_percent)."</td>";
-    $html[]="<td style='padding:2px'>".$tpl->widget_style1("blue-bg","fas fa-tachometer-alt","{load_average}",$load_avg)."</td>";
+    $html[]="<td style='padding:2px'>".$tpl->widget_style1("navy-bg",ico_database,"{database_size}",$db_size_human,$btn)."</td>";
+    $html[]="<td style='padding:2px'>".$tpl->widget_style1("lazur-bg","fas fa-memory","CPU/{memory}","$cpu_percent $mem_percent <small style='color:white'>($mem_used)</small>")."</td>";
     $html[]="<td style='padding:2px'>$running_widget</td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td style='padding:2px'>".$tpl->widget_style1("navy-bg",ico_database,"{database_size}",$db_size_human)."</td>";
-    $html[]="<td style='padding:2px' colspan='3'>".$tpl->widget_style1("gray-bg","fas fa-hdd","{memory_usage}",$mem_used)."</td>";
     $html[]="</tr>";
     $html[]="</table>";
     echo $tpl->_ENGINE_parse_body($html);
@@ -159,105 +167,49 @@ function system_metrics():bool{
 
   function buildConfig(labels, cpu, mem, load1) {
     return {
-      type: \"line\",
+      type: 'line',
       data: {
         labels: labels,
         datasets: [
-          { label: \"CPU %\", data: cpu, borderColor: \"#1ab394\", backgroundColor: \"rgba(26,179,148,0.1)\", fill: true, tension: 0.4, yAxisID: 'y' },
-          { label: \"Memory %\", data: mem, borderColor: \"#ed5565\", backgroundColor: \"rgba(237,85,101,0.1)\", fill: true, tension: 0.4, yAxisID: 'y' },
-          { label: \"Load (1m)\", data: load1, borderColor: \"#f8ac59\", backgroundColor: \"rgba(248,172,89,0.1)\", fill: false, tension: 0.4, yAxisID: 'y1' }
+          { label: 'CPU %', data: cpu, borderColor: '#1ab394', backgroundColor: 'rgba(26,179,148,0.1)', fill: true, tension: 0.4, spanGaps: true, yAxisID: 'y' },
+          { label: 'Memory %', data: mem, borderColor: '#ed5565', backgroundColor: 'rgba(237,85,101,0.1)', fill: true, tension: 0.4, spanGaps: true, yAxisID: 'y' },
+          { label: 'Load (1m)', data: load1, borderColor: '#f8ac59', backgroundColor: 'rgba(248,172,89,0.1)', fill: false, tension: 0.4, spanGaps: true, yAxisID: 'y1' }
         ]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
+        responsive: true, maintainAspectRatio: false, animation: false,
         interaction: { mode: 'index', intersect: false },
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: function(ctx) {
-                if (ctx.dataset.label === 'Load (1m)') {
-                  return ctx.dataset.label + \": \" + ctx.raw.toFixed(2);
-                }
-                return ctx.dataset.label + \": \" + ctx.raw.toFixed(1) + \"%\";
-              }
-            }
-          }
-        },
+        plugins: { tooltip: { callbacks: { label: function(ctx) {
+          if (ctx.raw === null) return null;
+          if (ctx.dataset.label === 'Load (1m)') return ctx.dataset.label + ': ' + ctx.raw.toFixed(2);
+          return ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%';
+        }}}},
         scales: {
-          y: {
-            type: 'linear',
-            display: true,
-            position: 'left',
-            beginAtZero: true,
-            max: 100,
-            title: { display: true, text: 'Percentage (%)' },
-            ticks: { callback: function(v) { return v + '%'; } }
-          },
-          y1: {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            beginAtZero: true,
-            title: { display: true, text: 'Load Average' },
-            grid: { drawOnChartArea: false }
-          }
+          y:  { type:'linear', display:true, position:'left', beginAtZero:true, max:100, title:{display:true,text:'Percentage (%)'}, ticks:{callback:function(v){return v+'%';}} },
+          y1: { type:'linear', display:true, position:'right', beginAtZero:true, title:{display:true,text:'Load Average'}, grid:{drawOnChartArea:false} }
         }
       }
     };
   }
 
   async function renderChart(canvasId, hours, key) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) { console.error(\"Canvas not found: \" + canvasId); return; }
-
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
     try {
-      const r = await fetch(\"$page?api-metrics=yes&hours=\" + hours, { cache: \"no-store\" });
-      const data = await r.json();
-      if (!data.data || data.data.length === 0) {
-        console.log(\"No data for \" + hours + \"h\");
-        return;
-      }
-
-      const labels = [];
-      const cpu = [];
-      const mem = [];
-      const load1 = [];
-      const today = new Date();
-      today.setHours(0,0,0,0);
-
-      for (const p of data.data) {
-        const d = new Date(p.timestamp * 1000);
-        const dDay = new Date(d); dDay.setHours(0,0,0,0);
-        let label;
-        if (dDay.getTime() === today.getTime()) {
-          label = d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        } else {
-          label = d.toLocaleDateString([], {month: 'short', day: 'numeric'}) + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        }
-        labels.push(label);
-        cpu.push(Number(p.cpu_percent) || 0);
-        mem.push(Number(p.mem_percent) || 0);
-        load1.push(Number(p.load1) || 0);
-      }
-
-      if (window.__sysCharts[key]) {
-        try { window.__sysCharts[key].destroy(); } catch(e) {}
-      }
-
-      const ctx = canvas.getContext(\"2d\");
-      window.__sysCharts[key] = new Chart(ctx, buildConfig(labels, cpu, mem, load1));
-    } catch(e) {
-      console.error(\"Chart error:\", e);
-    }
+      var r = await fetch('$page?api-chart=yes&hours=' + hours, { cache: 'no-store' });
+      var json = await r.json();
+      if (!json.success || !json.data || !json.data.labels) return;
+      var d = json.data;
+      if (window.__sysCharts[key]) { try { window.__sysCharts[key].destroy(); } catch(e) {} }
+      window.__sysCharts[key] = new Chart(canvas.getContext('2d'), buildConfig(d.labels, d.cpu, d.mem, d.load1));
+    } catch(e) { console.error('Chart error:', e); }
   }
 
   setTimeout(function() {
-    renderChart(\"sysChart1\", 1, \"sys_1h\");
-    renderChart(\"sysChart6\", 6, \"sys_6h\");
-    renderChart(\"sysChart24\", 24, \"sys_24h\");
-    renderChart(\"sysChart168\", 168, \"sys_week\");
+    renderChart('sysChart1', 1, 'sys_1h');
+    renderChart('sysChart6', 6, 'sys_6h');
+    renderChart('sysChart24', 24, 'sys_24h');
+    renderChart('sysChart168', 168, 'sys_week');
   }, 100);
 })();
     </script>";
@@ -292,78 +244,34 @@ function cpu_metrics():bool{
 
   function buildConfig(labels, cpu) {
     return {
-      type: \"line\",
-      data: {
-        labels: labels,
-        datasets: [
-          { label: \"CPU %\", data: cpu, borderColor: \"#1ab394\", backgroundColor: \"rgba(26,179,148,0.3)\", fill: true, tension: 0.4 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: function(ctx) { return ctx.dataset.label + \": \" + ctx.raw.toFixed(1) + \"%\"; }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100,
-            ticks: { callback: function(v) { return v + '%'; } }
-          }
-        }
+      type: 'line', data: { labels: labels, datasets: [
+        { label: 'CPU %', data: cpu, borderColor: '#1ab394', backgroundColor: 'rgba(26,179,148,0.3)', fill: true, tension: 0.4, spanGaps: true }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: { tooltip: { callbacks: { label: function(ctx) { if (ctx.raw === null) return null; return ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%'; } }}},
+        scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } } } }
       }
     };
   }
 
   async function renderChart(canvasId, hours, key) {
-    const canvas = document.getElementById(canvasId);
+    var canvas = document.getElementById(canvasId);
     if (!canvas) return;
-
     try {
-      const r = await fetch(\"$page?api-metrics=yes&hours=\" + hours, { cache: \"no-store\" });
-      const data = await r.json();
-      if (!data.data || data.data.length === 0) return;
-
-      const labels = [];
-      const cpu = [];
-      const today = new Date();
-      today.setHours(0,0,0,0);
-
-      for (const p of data.data) {
-        const d = new Date(p.timestamp * 1000);
-        const dDay = new Date(d); dDay.setHours(0,0,0,0);
-        let label;
-        if (dDay.getTime() === today.getTime()) {
-          label = d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        } else {
-          label = d.toLocaleDateString([], {month: 'short', day: 'numeric'}) + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        }
-        labels.push(label);
-        cpu.push(Number(p.cpu_percent) || 0);
-      }
-
-      if (window.__cpuCharts[key]) {
-        try { window.__cpuCharts[key].destroy(); } catch(e) {}
-      }
-
-      const ctx = canvas.getContext(\"2d\");
-      window.__cpuCharts[key] = new Chart(ctx, buildConfig(labels, cpu));
-    } catch(e) {
-      console.error(\"CPU Chart error:\", e);
-    }
+      var r = await fetch('$page?api-chart=yes&hours=' + hours, { cache: 'no-store' });
+      var json = await r.json();
+      if (!json.success || !json.data || !json.data.labels) return;
+      var d = json.data;
+      if (window.__cpuCharts[key]) { try { window.__cpuCharts[key].destroy(); } catch(e) {} }
+      window.__cpuCharts[key] = new Chart(canvas.getContext('2d'), buildConfig(d.labels, d.cpu));
+    } catch(e) { console.error('CPU Chart error:', e); }
   }
 
   setTimeout(function() {
-    renderChart(\"cpuChart1\", 1, \"cpu_1h\");
-    renderChart(\"cpuChart6\", 6, \"cpu_6h\");
-    renderChart(\"cpuChart24\", 24, \"cpu_24h\");
-    renderChart(\"cpuChart168\", 168, \"cpu_week\");
+    renderChart('cpuChart1', 1, 'cpu_1h');
+    renderChart('cpuChart6', 6, 'cpu_6h');
+    renderChart('cpuChart24', 24, 'cpu_24h');
+    renderChart('cpuChart168', 168, 'cpu_week');
   }, 100);
 })();
     </script>";
@@ -396,107 +304,47 @@ function memory_metrics():bool{
 (function () {
   window.__memCharts = window.__memCharts || {};
 
-  function formatMB(mb) {
-    if (mb < 1024) return mb + ' MB';
-    return (mb / 1024).toFixed(1) + ' GB';
-  }
+  function formatMB(mb) { if (mb < 1024) return mb + ' MB'; return (mb / 1024).toFixed(1) + ' GB'; }
 
   function buildConfig(labels, memPercent, memUsed) {
     return {
-      type: \"line\",
-      data: {
-        labels: labels,
-        datasets: [
-          { label: \"Memory %\", data: memPercent, borderColor: \"#ed5565\", backgroundColor: \"rgba(237,85,101,0.3)\", fill: true, tension: 0.4, yAxisID: 'y' },
-          { label: \"Used (MB)\", data: memUsed, borderColor: \"#1c84c6\", backgroundColor: \"rgba(28,132,198,0.1)\", fill: false, tension: 0.4, yAxisID: 'y1' }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
+      type: 'line', data: { labels: labels, datasets: [
+        { label: 'Memory %', data: memPercent, borderColor: '#ed5565', backgroundColor: 'rgba(237,85,101,0.3)', fill: true, tension: 0.4, spanGaps: true, yAxisID: 'y' },
+        { label: 'Used (MB)', data: memUsed, borderColor: '#1c84c6', backgroundColor: 'rgba(28,132,198,0.1)', fill: false, tension: 0.4, spanGaps: true, yAxisID: 'y1' }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, animation: false,
         interaction: { mode: 'index', intersect: false },
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: function(ctx) {
-                if (ctx.dataset.label === 'Used (MB)') {
-                  return 'Used: ' + formatMB(ctx.raw);
-                }
-                return ctx.dataset.label + \": \" + ctx.raw.toFixed(1) + \"%\";
-              }
-            }
-          }
-        },
+        plugins: { tooltip: { callbacks: { label: function(ctx) {
+          if (ctx.raw === null) return null;
+          if (ctx.dataset.label === 'Used (MB)') return 'Used: ' + formatMB(ctx.raw);
+          return ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%';
+        }}}},
         scales: {
-          y: {
-            type: 'linear',
-            display: true,
-            position: 'left',
-            beginAtZero: true,
-            max: 100,
-            title: { display: true, text: 'Percentage (%)' },
-            ticks: { callback: function(v) { return v + '%'; } }
-          },
-          y1: {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            beginAtZero: true,
-            title: { display: true, text: 'Memory (MB)' },
-            grid: { drawOnChartArea: false },
-            ticks: { callback: function(v) { return formatMB(v); } }
-          }
+          y:  { type:'linear', display:true, position:'left', beginAtZero:true, max:100, title:{display:true,text:'Percentage (%)'}, ticks:{callback:function(v){return v+'%';}} },
+          y1: { type:'linear', display:true, position:'right', beginAtZero:true, title:{display:true,text:'Memory (MB)'}, grid:{drawOnChartArea:false}, ticks:{callback:function(v){return formatMB(v);}} }
         }
       }
     };
   }
 
   async function renderChart(canvasId, hours, key) {
-    const canvas = document.getElementById(canvasId);
+    var canvas = document.getElementById(canvasId);
     if (!canvas) return;
-
     try {
-      const r = await fetch(\"$page?api-metrics=yes&hours=\" + hours, { cache: \"no-store\" });
-      const data = await r.json();
-      if (!data.data || data.data.length === 0) return;
-
-      const labels = [];
-      const memPercent = [];
-      const memUsed = [];
-      const today = new Date();
-      today.setHours(0,0,0,0);
-
-      for (const p of data.data) {
-        const d = new Date(p.timestamp * 1000);
-        const dDay = new Date(d); dDay.setHours(0,0,0,0);
-        let label;
-        if (dDay.getTime() === today.getTime()) {
-          label = d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        } else {
-          label = d.toLocaleDateString([], {month: 'short', day: 'numeric'}) + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        }
-        labels.push(label);
-        memPercent.push(Number(p.mem_percent) || 0);
-        memUsed.push(Number(p.mem_used_mb) || 0);
-      }
-
-      if (window.__memCharts[key]) {
-        try { window.__memCharts[key].destroy(); } catch(e) {}
-      }
-
-      const ctx = canvas.getContext(\"2d\");
-      window.__memCharts[key] = new Chart(ctx, buildConfig(labels, memPercent, memUsed));
-    } catch(e) {
-      console.error(\"Memory Chart error:\", e);
-    }
+      var r = await fetch('$page?api-chart=yes&hours=' + hours, { cache: 'no-store' });
+      var json = await r.json();
+      if (!json.success || !json.data || !json.data.labels) return;
+      var d = json.data;
+      if (window.__memCharts[key]) { try { window.__memCharts[key].destroy(); } catch(e) {} }
+      window.__memCharts[key] = new Chart(canvas.getContext('2d'), buildConfig(d.labels, d.mem, d.mem_used_mb));
+    } catch(e) { console.error('Memory Chart error:', e); }
   }
 
   setTimeout(function() {
-    renderChart(\"memChart1\", 1, \"mem_1h\");
-    renderChart(\"memChart6\", 6, \"mem_6h\");
-    renderChart(\"memChart24\", 24, \"mem_24h\");
-    renderChart(\"memChart168\", 168, \"mem_week\");
+    renderChart('memChart1', 1, 'mem_1h');
+    renderChart('memChart6', 6, 'mem_6h');
+    renderChart('memChart24', 24, 'mem_24h');
+    renderChart('memChart168', 168, 'mem_week');
   }, 100);
 })();
     </script>";
@@ -531,84 +379,37 @@ function load_metrics():bool{
 
   function buildConfig(labels, load1, load5, load15) {
     return {
-      type: \"line\",
-      data: {
-        labels: labels,
-        datasets: [
-          { label: \"Load 1m\", data: load1, borderColor: \"#f8ac59\", backgroundColor: \"rgba(248,172,89,0.2)\", fill: true, tension: 0.4 },
-          { label: \"Load 5m\", data: load5, borderColor: \"#1c84c6\", backgroundColor: \"rgba(28,132,198,0.1)\", fill: false, tension: 0.4 },
-          { label: \"Load 15m\", data: load15, borderColor: \"#23c6c8\", backgroundColor: \"rgba(35,198,200,0.1)\", fill: false, tension: 0.4 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
+      type: 'line', data: { labels: labels, datasets: [
+        { label: 'Load 1m', data: load1, borderColor: '#f8ac59', backgroundColor: 'rgba(248,172,89,0.2)', fill: true, tension: 0.4, spanGaps: true },
+        { label: 'Load 5m', data: load5, borderColor: '#1c84c6', backgroundColor: 'rgba(28,132,198,0.1)', fill: false, tension: 0.4, spanGaps: true },
+        { label: 'Load 15m', data: load15, borderColor: '#23c6c8', backgroundColor: 'rgba(35,198,200,0.1)', fill: false, tension: 0.4, spanGaps: true }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, animation: false,
         interaction: { mode: 'index', intersect: false },
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: function(ctx) { return ctx.dataset.label + \": \" + ctx.raw.toFixed(2); }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: { display: true, text: 'Load Average' }
-          }
-        }
+        plugins: { tooltip: { callbacks: { label: function(ctx) { if (ctx.raw === null) return null; return ctx.dataset.label + ': ' + ctx.raw.toFixed(2); } }}},
+        scales: { y: { beginAtZero: true, title: { display: true, text: 'Load Average' } } }
       }
     };
   }
 
   async function renderChart(canvasId, hours, key) {
-    const canvas = document.getElementById(canvasId);
+    var canvas = document.getElementById(canvasId);
     if (!canvas) return;
-
     try {
-      const r = await fetch(\"$page?api-metrics=yes&hours=\" + hours, { cache: \"no-store\" });
-      const data = await r.json();
-      if (!data.data || data.data.length === 0) return;
-
-      const labels = [];
-      const load1 = [];
-      const load5 = [];
-      const load15 = [];
-      const today = new Date();
-      today.setHours(0,0,0,0);
-
-      for (const p of data.data) {
-        const d = new Date(p.timestamp * 1000);
-        const dDay = new Date(d); dDay.setHours(0,0,0,0);
-        let label;
-        if (dDay.getTime() === today.getTime()) {
-          label = d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        } else {
-          label = d.toLocaleDateString([], {month: 'short', day: 'numeric'}) + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-        }
-        labels.push(label);
-        load1.push(Number(p.load1) || 0);
-        load5.push(Number(p.load5) || 0);
-        load15.push(Number(p.load15) || 0);
-      }
-
-      if (window.__loadCharts[key]) {
-        try { window.__loadCharts[key].destroy(); } catch(e) {}
-      }
-
-      const ctx = canvas.getContext(\"2d\");
-      window.__loadCharts[key] = new Chart(ctx, buildConfig(labels, load1, load5, load15));
-    } catch(e) {
-      console.error(\"Load Chart error:\", e);
-    }
+      var r = await fetch('$page?api-chart=yes&hours=' + hours, { cache: 'no-store' });
+      var json = await r.json();
+      if (!json.success || !json.data || !json.data.labels) return;
+      var d = json.data;
+      if (window.__loadCharts[key]) { try { window.__loadCharts[key].destroy(); } catch(e) {} }
+      window.__loadCharts[key] = new Chart(canvas.getContext('2d'), buildConfig(d.labels, d.load1, d.load5, d.load15));
+    } catch(e) { console.error('Load Chart error:', e); }
   }
 
   setTimeout(function() {
-    renderChart(\"loadChart1\", 1, \"load_1h\");
-    renderChart(\"loadChart6\", 6, \"load_6h\");
-    renderChart(\"loadChart24\", 24, \"load_24h\");
-    renderChart(\"loadChart168\", 168, \"load_week\");
+    renderChart('loadChart1', 1, 'load_1h');
+    renderChart('loadChart6', 6, 'load_6h');
+    renderChart('loadChart24', 24, 'load_24h');
+    renderChart('loadChart168', 168, 'load_week');
   }, 100);
 })();
     </script>";
@@ -635,6 +436,12 @@ function api_metrics() {
     echo api_call("/sysmonitor/metrics?hours={$hours}");
 }
 
+function api_chart() {
+    header('Content-Type: application/json');
+    $hours = isset($_GET["hours"]) ? intval($_GET["hours"]) : 24;
+    echo api_call("/sysmonitor/chart?hours={$hours}");
+}
+
 function api_latest() {
     header('Content-Type: application/json');
     echo api_call("/sysmonitor/latest");
@@ -649,6 +456,13 @@ function api_stop() {
     header('Content-Type: application/json');
     echo api_call("/sysmonitor/stop");
 }
+
+function api_purge():bool {
+    header('Content-Type: application/json');
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_DELETE("/sysmonitor/purge");
+    return true;
+}
+
 function tabs():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();

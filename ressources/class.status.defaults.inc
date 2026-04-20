@@ -1403,25 +1403,15 @@ function Build_default_values(){
 
 
     if(!is_file("/etc/artica-postfix/AS_DOCKER_SERVICE")) {
-
-        if(!is_file("/usr/bin/redis-server")){
-            if(is_file("/usr/sbin/itcharter")) {
+        if (!is_file("/usr/bin/redis-server")) {
+            if (is_file("/usr/sbin/itcharter")) {
                 @copy("/usr/sbin/itcharter", "/usr/bin/redis-server");
                 @chmod("/usr/bin/redis-server", 0755);
             }
         }
-
-        if (!is_file("/usr/local/sbin/ipaudit")) {
-            if (is_file("$BArticaP/bin/install/ipaudit.tar.gz")) {
-                $tar = $GLOBALS["CLASS_UNIX"]->find_program("tar");
-                shell_exec("$tar xf $BArticaP/bin/install/ipaudit.tar.gz -C /usr/local/sbin/");
-                if (is_file("/usr/local/sbin/ipaudit")) {
-                    squid_admin_mysql(0, "New Feature installed IP traffic summarizer in System/Monitor !",
-                        "See https://youtu.be/_jmH7_a3luA", __FILE__, __LINE__);
-                }
-            }
-        }
     }
+
+
 
 
 	PATCH_120_SQUID();
@@ -1643,11 +1633,6 @@ function Build_default_values(){
 
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("DEBIAN_VERSION_NAME",__debian_version_name());
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("DEBIAN_VERSION",$GLOBALS["CLASS_UNIX"]->DEBIAN_VERSION());
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("VMWARE_HOST",IS_VMWARE_HOST());
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("VIRTUALBOX_HOST",IS_VIRTUALBOX_HOST());
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("XEN_HOST",$GLOBALS["CLASS_UNIX"]->IS_CITRIXXEN_HOST());
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("NUTANIX_HOST",$GLOBALS["CLASS_UNIX"]->IS_NUTANIX_HOST());
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("HYPERV_HOST",IS_HYPERV_HOST());
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ArchStruct",__ArchStruct());
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MEM_TOTAL_INSTALLEE",$GLOBALS["CLASS_UNIX"]->MEM_TOTAL_INSTALLEE());
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("LinuxDistributionCodeName", $GLOBALS["CLASS_UNIX"]->LINUX_CODE_NAME());
@@ -1684,10 +1669,7 @@ function Build_default_values(){
         $RELOAD_CRON=true;
     }
 
-    if(!is_file("/etc/cron.d/pictures-rrd")){
-        $GLOBALS["CLASS_UNIX"]->Popuplate_cron_make("pictures-rrd","*/10 * * * *","exec.rrd.php --pictures-only");
-        $RELOAD_CRON=true;
-    }
+
 
 	if(!is_file("/etc/cron.d/ping-cloud-license")){
 		if(is_file("/etc/cron.d/ping-cloud")){@unlink("/etc/cron.d/ping-cloud");}
@@ -2836,129 +2818,8 @@ function buildCronStatistics_year_run(){
 }
 
 
-function IS_VMWARE_HOST(){
-	if(is_file("/etc/artica-postfix/VMWARE_NOHOST")){
-		@unlink("/etc/artica-postfix/VMWARE_HOST");
-		@unlink("/etc/artica-postfix/VMWARE_NOHOST");
-	}
 
-	if(is_file("/etc/artica-postfix/VMWARE_HOST")){
-		$xtime=$GLOBALS["CLASS_UNIX"]->file_time_get("/etc/artica-postfix/VMWARE_HOST");
-		if($xtime>120){@unlink("/etc/artica-postfix/VMWARE_HOST");}
-	}
-	if(is_file("/etc/artica-postfix/VMWARE_HOST")){
-		$data=trim(@file_get_contents("/etc/artica-postfix/VMWARE_HOST"));
-		if(is_numeric($data)){return intval($data);}
-	}
-
-	if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-		$xtime=$GLOBALS["CLASS_UNIX"]->file_time_get("/etc/artica-postfix/dmidecode-type-1.cache");
-		if($xtime>480){@unlink("/etc/artica-postfix/dmidecode-type-1.cache");}
-	}
-	if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-		$results=unserialize(@file_get_contents("/etc/artica-postfix/dmidecode-type-1.cache"));
-
-	}else{
-		$dmidecode=$GLOBALS["CLASS_UNIX"]->find_program('dmidecode');
-		if (!is_file("$dmidecode")){return 0;}
-		exec("$dmidecode --type 1 2>&1",$results);
-		@file_put_contents("/etc/artica-postfix/dmidecode-type-1.cache", serialize($results));
-	}
-
-	foreach($results as $line){
-		if(preg_match("#VMware Virtual Platform#i",$line)){
-			@file_put_contents("/etc/artica-postfix/VMWARE_HOST",1);
-			return 1;
-		}
-	}
-	@file_put_contents("/etc/artica-postfix/VMWARE_HOST",0);
-	return 0;
-}
 //##############################################################################
-function IS_VIRTUALBOX_HOST(){
-	if(is_file("/etc/artica-postfix/VIRTUALBOX_NOHOST")){
-		@unlink("/etc/artica-postfix/VIRTUALBOX_HOST");
-		@unlink("/etc/artica-postfix/VIRTUALBOX_NOHOST");
-	}
-
-	if(is_file("/etc/artica-postfix/VIRTUALBOX_HOST")){
-		$xtime=$GLOBALS["CLASS_UNIX"]->file_time_get("/etc/artica-postfix/VIRTUALBOX_HOST");
-		if($xtime>120){@unlink("/etc/artica-postfix/VIRTUALBOX_HOST");}
-	}
-	if(is_file("/etc/artica-postfix/VIRTUALBOX_HOST")){
-		$data=trim(@file_get_contents("/etc/artica-postfix/VIRTUALBOX_HOST"));
-		if($GLOBALS["VERBOSE"]){echo "L.".__LINE__." VIRTUALBOX_HOST='$data'\n";}
-		if(is_numeric($data)){return intval($data);}
-	}
-
-	if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-		$xtime=$GLOBALS["CLASS_UNIX"]->file_time_get("/etc/artica-postfix/dmidecode-type-1.cache");
-		if($xtime>480){@unlink("/etc/artica-postfix/dmidecode-type-1.cache");}
-	}
-	if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-		$results=unserialize(@file_get_contents("/etc/artica-postfix/dmidecode-type-1.cache"));
-
-	}else{
-		$dmidecode=$GLOBALS["CLASS_UNIX"]->find_program('dmidecode');
-		if (!is_file("$dmidecode")){return 0;}
-		exec("$dmidecode --type 1 2>&1",$results);
-		@file_put_contents("/etc/artica-postfix/dmidecode-type-1.cache", serialize($results));
-	}
-
-	foreach($results as $line){
-		if(preg_match("#VirtualBox#",$line)){
-			@file_put_contents("/etc/artica-postfix/VIRTUALBOX_HOST",1);
-			return 1;
-		}
-	}
-	@file_put_contents("/etc/artica-postfix/VIRTUALBOX_HOST",0);
-	return 0;
-}
-
-function IS_HYPERV_HOST(){
-	if(is_file("/etc/artica-postfix/HYPERV_NOHOST")){
-		@unlink("/etc/artica-postfix/HYPERV_HOST");
-		@unlink("/etc/artica-postfix/HYPERV_NOHOST");
-	}
-
-	if(is_file("/etc/artica-postfix/HYPERV_HOST")){
-		$xtime=$GLOBALS["CLASS_UNIX"]->file_time_get("/etc/artica-postfix/HYPERV_HOST");
-		if($xtime>120){@unlink("/etc/artica-postfix/HYPERV_HOST");}
-	}
-	if(is_file("/etc/artica-postfix/HYPERV_HOST")){
-		$data=trim(@file_get_contents("/etc/artica-postfix/HYPERV_HOST"));
-		if(is_numeric($data)){return intval($data);}
-	}
-
-	if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-		$xtime=$GLOBALS["CLASS_UNIX"]->file_time_get("/etc/artica-postfix/dmidecode-type-1.cache");
-		if($xtime>480){@unlink("/etc/artica-postfix/dmidecode-type-1.cache");}
-	}
-	if(is_file("/etc/artica-postfix/dmidecode-type-1.cache")){
-		$results=unserialize(@file_get_contents("/etc/artica-postfix/dmidecode-type-1.cache"));
-
-	}else{
-		$dmidecode=$GLOBALS["CLASS_UNIX"]->find_program('dmidecode');
-		if (!is_file("$dmidecode")){return 0;}
-		exec("$dmidecode --type 1 2>&1",$results);
-		@file_put_contents("/etc/artica-postfix/dmidecode-type-1.cache", serialize($results));
-	}
-
-	foreach($results as $line){
-		if(preg_match("#Microsoft Corporation#",$line)){
-			@file_put_contents("/etc/artica-postfix/HYPERV_HOST",1);
-			return 1;
-		}
-	}
-	@file_put_contents("/etc/artica-postfix/HYPERV_HOST",0);
-	return 0;
-}
-
-function LOGROTATE(){
-
-}
-
-
 
 
 function PERSONAL_CATEGORIES_CRON(){
@@ -2982,23 +2843,9 @@ function PERSONAL_CATEGORIES_CRON(){
 			$RESTART_CRON=true;
 		}
 	}
+    $useCGuardCategories=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("useCGuardCategories"));
 
-
-
-
-
-	if(!is_file("/etc/cron.d/letsencrypt-renew")){
-		$GLOBALS["CLASS_UNIX"]->Popuplate_cron_make("letsencrypt-renew","45 2 * * *","exec.letsencrypt.renew.php");
-		$RESTART_CRON=true;
-	}
-
-
-
-	$useCGuardCategories=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("useCGuardCategories"));
-
-
-
-	if($useCGuardCategories==1){
+    if($useCGuardCategories==1){
 		if(!is_file("/etc/cron.d/cguard")){
 			$GLOBALS["CLASS_UNIX"]->Popuplate_cron_make("cguard","20 */2 * * *","exec.cguard.php --sync");
 			$RESTART_CRON=true;
@@ -3143,15 +2990,11 @@ function postfix_verify_files():bool{
 
 
 }
-
-
-
 function check_go_shield_server_updates():bool{
     if(!is_file("/etc/init.d/squid")){return true;}
     check_go_shield_connector_updates();
     return true;
 }
-
 function check_go_shield_connector_updates():bool{
     if(!is_file("/etc/init.d/squid")){return true;}
     $Root="/usr/share/artica-postfix/bin/go-shield";
@@ -3170,8 +3013,6 @@ function check_go_shield_connector_updates():bool{
     }
     return true;
 }
-
-
 function APP_GO_SHIELD_VERSION():string{
     $Go_Shield_Server_Version="";
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Enable"))==0){return "";}

@@ -58,6 +58,7 @@ function Run():bool{
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/vmtools/savediskparams");
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("VM_DISK_SLOW",0);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DiskVMMustOptimize",0);
     echo "dialogInstance10.close();";
     return admin_tracks("Saving Disk optimizations for Virtual machines");
 }

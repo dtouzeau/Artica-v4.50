@@ -1,11 +1,16 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+$GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dhcpd.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 
+if(isset($_POST["UfdbUsersTimeout"])){query_timeout_save();exit;}
+if(isset($_GET["query-timeout-js"])){query_timeout_js();exit;}
+if(isset($_GET["query-timeout-popup"])){query_timeout_popup();exit;}
 if(isset($_POST["WebFilteringCategoriesToLogRecipient"])){save();exit;}
 if(isset($_POST["UfdbReloadBySchedule"])){save();exit;}
 if(isset($_GET["parameters-js"])){parameters_js();exit;}
@@ -23,11 +28,39 @@ page();
 
 function tabs():bool{
     $page=CurrentPageName();
-
-
     echo "<div id='ufdbg-settings'></div>
     <script>LoadAjax('ufdbg-settings','$page?table=yes');</script>";
     return true;
+}
+function query_timeout_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog3("{WEB_FILTERING}: {refreshuserlist} {timeouts}","$page?query-timeout-popup=yes");
+}
+
+function query_timeout_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+
+    $UfdbUsersTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbUsersTimeout"));
+    $UFDBPerEntryTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UFDBPerEntryTimeout"));
+    if($UfdbUsersTimeout==0){$UfdbUsersTimeout=10;}
+    if($UFDBPerEntryTimeout==0){$UFDBPerEntryTimeout=10;}
+
+    $form[]=$tpl->field_numeric("UfdbUsersTimeout","{total_query_budget}",$UfdbUsersTimeout);
+    $form[]=$tpl->field_numeric("UFDBPerEntryTimeout","{per_connection_budget}",$UFDBPerEntryTimeout);
+    $html=$tpl->form_outside(null,
+        $form,
+        null,"{apply}",
+        "LoadAjax('ufdbg-settings','$page?table=yes');dialogInstance3.close();",
+        "AsDansGuardianAdministrator");
+    echo $html;
+    return true;
+}
+function query_timeout_save():bool{
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UfdbUsersTimeout",$_POST["UfdbUsersTimeout"]);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UFDBPerEntryTimeout",$_POST["UFDBPerEntryTimeout"]);
+    return admin_tracks("Save URL-Filter timeout service Total {$_POST["UfdbUsersTimeout"]}s, Per connection {$_POST["UFDBPerEntryTimeout"]}s");
 }
 
 function parameters_js():bool{
@@ -341,6 +374,10 @@ function table():bool{
     if($RefreshUserList==0){$RefreshUserList=15;}
     $RefreshDomainList=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RefreshDomainList"));
     $UfdbGuardMaxUrisize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbGuardMaxUrisize"));
+    $UFDMallocArenaMax=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UFDMallocArenaMax"));
+    if($UFDMallocArenaMax<2){
+        $UFDMallocArenaMax=4;
+    }
 
     $ssl=array();
 
@@ -370,11 +407,22 @@ function table():bool{
     if($RefreshUserList==0){$RefreshUserList=15;}
     if($RefreshDomainList==0){$RefreshDomainList=15;}
 
+    $UfdbUsersTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbUsersTimeout"));
+    $UFDBPerEntryTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UFDBPerEntryTimeout"));
+    if($UfdbUsersTimeout==0){$UfdbUsersTimeout=10;}
+    if($UFDBPerEntryTimeout==0){$UFDBPerEntryTimeout=10;}
+
     $tpl->table_form_field_js("Loadjs('$page?parameters-js=yes')","AsDansGuardianAdministrator");
     $tpl->table_form_field_bool("{verbose_mode}",$UfdbDebugAll,ico_bug);
-    $tpl->table_form_field_text("{listen}","$UfdbGuardInterface:$UfdbGuardPort - $UfdbGuardThreads Threads",ico_interface);
+    $tpl->table_form_field_text("{listen}","$UfdbGuardInterface:$UfdbGuardPort - $UfdbGuardThreads Threads - Malloc Arena:$UFDMallocArenaMax",ico_interface);
     $tpl->table_form_field_text("{options}","<small>".@implode(", ",$opts)."</small>",ico_ssl);
     $tpl->table_form_field_text("{refreshuserlist}","$RefreshUserList {minutes}",ico_timeout);
+
+    $tpl->table_form_field_js("Loadjs('$page?query-timeout-js=yes')","AsDansGuardianAdministrator");
+    $tpl->table_form_field_text("{total_query_budget}","$UfdbUsersTimeout {seconds}",ico_timeout);
+    $tpl->table_form_field_text("{per_connection_budget}","$UFDBPerEntryTimeout {seconds}",ico_timeout);
+
+    $tpl->table_form_field_js("Loadjs('$page?parameters-js=yes')","AsDansGuardianAdministrator");
     $tpl->table_form_field_text("{refreshdomainlist}","$RefreshDomainList {minutes}",ico_timeout);
     $tpl->table_form_field_text("{ssl_options}","<small>".@implode(", ",$ssl)."</small>",ico_ssl);
 
@@ -417,11 +465,12 @@ function parameters_popup():bool{
 	if($RefreshUserList==0){$RefreshUserList=15;}
 	$RefreshDomainList=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RefreshDomainList"));
 	$UfdbGuardMaxUrisize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbGuardMaxUrisize"));
-	
+    $UFDMallocArenaMax=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UFDMallocArenaMax"));
+    if($UFDMallocArenaMax<2){
+        $UFDMallocArenaMax=4;
+    }
 
-	
 	$form[]=$tpl->field_checkbox("UfdbReloadBySchedule","{reload_byschedule}",$UfdbReloadBySchedule,false,"{ufdb_reload_byschedule_explain}");
-
 	$form[]=$tpl->field_checkbox("EnforceHttpsWithHostname","{enforce-https-with-hostname}",$EnforceHttpsWithHostname,false,"{UFDBGUARD_SSL_OPTS}");
 	$form[]=$tpl->field_checkbox("EnforceHttpsOfficialCertificate","{enforce-https-official-certificate}",$EnforceHttpsOfficialCertificate,false,"{UFDBGUARD_SSL_OPTS}");
 	$form[]=$tpl->field_checkbox("HttpsProhibitInsecureSslv2","{https-prohibit-insecure-sslv2}",$HttpsProhibitInsecureSslv2,false,"{UFDBGUARD_SSL_OPTS}");
@@ -434,6 +483,7 @@ function parameters_popup():bool{
 	$form[]=$tpl->field_section("{UFDBGUARD_SERVICE_OPTS}");
 	$form[]=$tpl->field_interfaces("UfdbGuardInterface", "{interface}", $UfdbGuardInterface);
 	$form[]=$tpl->field_numeric("UfdbGuardPort","{listen_port}",$UfdbGuardPort);
+    $form[]=$tpl->field_numeric("UFDMallocArenaMax","Malloc Arena",$UFDMallocArenaMax);
 	
 	$form[]=$tpl->field_checkbox("UfdbDatabasesInMemory","{UfdbDatabasesInMemory}",$UfdbDatabasesInMemory,false,"{UfdbDatabasesInMemory_explain}");
 	$form[]=$tpl->field_checkbox("DisableExpressionList","{DisableExpressionLists}",$DisableExpressionList,false,"{DisableExpressionLists_explain}");
@@ -450,8 +500,8 @@ function parameters_popup():bool{
 
 
     $jsrestart=$tpl->framework_buildjs(
-        "/ufdb/recompile",
-        "ufdbguard.compile.progress",
+        "/ufdb/rescompile",
+        "ufdb.restart.progress",
         "ufdb.restart.log",
         "progress-ppcategories-restart",
         "LoadAjax('ufdbg-settings','$page?table=yes');");

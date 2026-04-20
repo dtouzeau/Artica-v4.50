@@ -10,6 +10,8 @@ if(isset($_GET["delete-js"])){delete_js();exit;}
 if(isset($_POST["delete"])){delete_rule();exit;}
 if(isset($_POST["rule-order"])){move_rule();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
+if(isset($_GET["zoom-errors-js"])){zoom_errors_js();exit;}
+if(isset($_GET["zoom-errors-popup"])){zoom_error_popup();exit;}
 if(isset($_GET["dynamics"])){dynamics();exit;}
 page();
 
@@ -19,8 +21,23 @@ function delete_js():bool{
     $tpl=new template_admin();
     $js="$('#{$_GET["md"]}').remove();";
     return $tpl->js_confirm_delete($_GET["rule"], "delete", $_GET["delete-js"],$js);
+}
+function zoom_errors_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $ID=intval($_GET["zoom-errors-js"]);
+    if($ID==0){$rulename="{default}";}
+    if($ID==-1){$rulename="{new_rule}";}
+    if($ID>0){
+        $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
+        $sql="SELECT groupname FROM webfilter_rules WHERE ID=$ID";
+        $ligne=$q->mysqli_fetch_array($sql);
+        $rulename=$ligne["groupname"];
+    }
+    return $tpl->js_dialog9($rulename. " {errors}", "$page?zoom-errors-popup=$ID");
 
 }
+
 function delete_rule():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
     $ID=$_POST["delete"];
@@ -147,7 +164,7 @@ function table():bool{
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' >$order</th>";
     $html[]="<th data-sortable=true class='text-capitalize' colspan='2'>{status}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'><span id='th-rules'>$rule_text</span></th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'><span id='th-rules'>$rule_text</span><span id='th-source'></span></th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$groups</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>". $tpl->_ENGINE_parse_body($blacklists)."</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>". $tpl->_ENGINE_parse_body($whitelists)."</th>";
@@ -255,7 +272,7 @@ function table():bool{
         $html[]="<td style='width:1%' nowrap class='center'><span id='td-status-$RuleID'>$status</span></td>";
         $html[]="<td style='width:1%' nowrap class='center'><span id='td-requests-$RuleID'>0</span></td>";
         $html[]="<td class='$text_class'>". $tpl->td_href($ligne["groupname"],null,"Loadjs('fw.ufdb.rules.edit.php?ID={$ligne['ID']}')")."&nbsp;&nbsp;$MAIN_EXPLAIN_TEXT</td>";
-        $html[]="<td style='width:1%' nowrap class='$text_class center'>$row_sources</td>";
+        $html[]="<td style='width:1%' nowrap class='$text_class center'><span id='td-sources-$RuleID'></span>$row_sources</td>";
 
         $blackRow="<strong><i class='$icon'></i>&nbsp;".$tpl->td_href($CountDeBlack,null,$jsCatBlack)."</strong>";
 
@@ -532,11 +549,94 @@ function missing_databases_alert():bool{
     return true;
 }
 
+function zoom_error_popup():bool{
+    $tpl=new template_admin();
+    $RequestedID=intval($_GET["zoom-errors-popup"]);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/usercur"),true);
+    if(!isset($json["Errors"])){
+        $html[]=$tpl->div_warning("{errors_was_disapears}");
+        echo $tpl->_ENGINE_parse_body( $html);
+        return true;
+    }
+    $jsError=array();
+    foreach ($json["Errors"] as $ID=>$jsonString){
+        if($RequestedID==$ID){
+            $jsError=json_decode($jsonString,true);
+        }
+    }
+    if(count($jsError)==0){
+        $html[]=$tpl->div_warning("#$RequestedID: <strong>{errors_was_disapears}</strong>");
+        echo $tpl->_ENGINE_parse_body( $html);
+        return true;
+    }
+    if(!isset($jsError["Errors"])){
+        $html[]=$tpl->div_warning("#$RequestedID/Errors: <strong>{errors_was_disapears}</strong>");
+        echo $tpl->_ENGINE_parse_body( $html);
+        return true;
+    }
+    if(count($jsError["Errors"])==0){
+        $html[]=$tpl->div_warning("#$RequestedID/Errors/Count: <strong>{errors_was_disapears}</strong>");
+        echo $tpl->_ENGINE_parse_body( $html);
+        return true;
+    }
+
+
+
+    $ico="<i class='".ico_bug."'></i>";
+    $TRCLASS="";
+
+    $times=array();
+    foreach ($jsError["Errors"] as $index=>$ligne){
+
+        $time=$tpl->time_to_date($ligne["Time"],true);
+        $times[$time]=true;
+        $subtext="";
+        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        if(is_array($ligne["Params"])){
+            $tt=array();
+            foreach ($ligne["Params"] as $key=>$value){
+                if(strlen($value)<1){continue;}
+                $tt[]="<li>$key: $value</li>";
+            }
+            if(count($tt)>0){
+                $subtext="<div style='margin-top:5px;padding-left: 10px'><small class='text-muted'><ul>".@implode(" ", $tt)."</ul></small></div>";
+            }
+        }
+
+        $tds[]="<tr>";
+        $tds[]="<td style='width:1%;vertical-align: top !important;font-weight:bold'>$ico</td>";
+        $tds[]="<td style='width:1%;vertical-align: top !important;font-weight:bold' nowrap>{$ligne["type"]}</td>";
+        $tds[]="<td style='width:99%;padding-left:5px'><span class='text-danger'>{$ligne["Error"]}</span>$subtext</td>";
+        $tds[]="</tr>";
+
+    }
+    foreach ($times as $tt=>$none){
+        $stimes[]=$tt;
+    }
+    $stimes_text="&nbsp;|&nbsp;<strong class='text-warning'>{time}: ".@implode(", ", $stimes)."</strong>";
+    $html[]="<table id='table-errors-$RequestedID' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<thead>";
+    $html[]="<tr>";
+    $html[]="<th class='text-capitalize' >&nbsp;</th>";
+    $html[]="<th class='text-capitalize' >{type}</th>";
+    $html[]="<th class='text-capitalize' data-type='text'>{error}$stimes_text</th>";
+    $html[]="</tr>";
+    $html[]="</thead>";
+    $html[]="<tbody>";
+    $html[]=@implode("\n", $tds);
+
+    $html[]="</tbody>";
+    $html[]="</table>";
+    echo $tpl->_ENGINE_parse_body( $html);
+    return true;
+}
+
 function dynamics(){
     $tpl=new template_admin();
 
     $f=array();
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/usercur"),true);
+   // print_r($json);
     if(isset($json["Users"])){
         $Users=json_decode($json["Users"],true);
         $records=$Users["records"];
@@ -560,10 +660,34 @@ function dynamics(){
             $rq=$tpl->FormatNumber($requests);
             $f[]="$('#td-requests-$ID').html('$rq');";
         }
+    }
+    $SourceErrors=0;
 
+    if(isset($json["Errors"])){
 
+        $page=CurrentPageName();
+        foreach ($json["Errors"] as $ID=>$jsonString){
+            $jsError=json_decode($jsonString,true);
+            if(isset($jsError["Errors"])){
+                if(count($jsError["Errors"])>0){
+                    $SourceErrors=$SourceErrors+count($jsError["Errors"]);
+                    // td-sources-$RuleID
+                    $CountOFerrors=count($jsError["Errors"]);
+                    $textErr=$tpl->td_href("$CountOFerrors {errors}","","Loadjs('$page?zoom-errors-js=$ID')");
+                    $errorinTD="<i class='text-danger ".ico_bug."'></i>&nbsp;<span class='text-danger'>$textErr</span>&nbsp;";
+                    $final=base64_encode($tpl->_ENGINE_parse_body($errorinTD));
+                    $f[]="$('#td-sources-$ID').html(base64_decode('$final'));";
+                }
+            }
+        }
+    }
+    if($SourceErrors>0){
+        $errorinTD="&nbsp;|&nbsp;<i class='text-danger ".ico_bug."'></i>&nbsp;<span class='text-danger'>$SourceErrors {errors}</span>&nbsp;";
+        $final=base64_encode($tpl->_ENGINE_parse_body($errorinTD));
+        $f[]="$('#th-source').html(base64_decode('$final'));";
     }
 
+//
 
 
  /*

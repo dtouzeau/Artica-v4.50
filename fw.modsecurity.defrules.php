@@ -33,11 +33,12 @@ function ruleid_popup(){
     $content=htmlspecialchars($content);
     $content=str_replace(",",",<br>",$content);
 
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $sql="SELECT ID FROM `modsecurity_whitelist` WHERE wfrule=$ruleid AND serviceid=0";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $NUM=intval($ligne["ID"]);
-    if($NUM==0){
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist?ruleid=$ruleid&serviceid=0"),true);
+    $isWhitelisted=false;
+    if(is_array($json) && $json["Status"]){
+        foreach($json["entries"] as $e){if(strlen($e["spath"])==0){$isWhitelisted=true;break;}}
+    }
+    if(!$isWhitelisted){
         $type="- {active2}";
         $panel="panel-primary";}
     else{
@@ -60,59 +61,27 @@ function ruleid_popup(){
 }
 
 function enable_whitelist(){
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $id=intval($_GET["enable-whitelist"]);
-    $sql="SELECT ID FROM `modsecurity_whitelist` WHERE wfrule=$id AND serviceid=0";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $NUM=intval($ligne["ID"]);
-    if($NUM>0){
-        $q->QUERY_SQL("DELETE FROM modsecurity_whitelist WHERE ID=$NUM");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist?ruleid=$id&serviceid=0"),true);
+    $isWhitelisted=false;
+    if(is_array($json) && $json["Status"]){
+        foreach($json["entries"] as $e){if(strlen($e["spath"])==0){$isWhitelisted=true;break;}}
+    }
+    if($isWhitelisted){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/modsec/whitelist", ["action"=>"delete","ruleid"=>$id,"serviceid"=>0]);
         admin_tracks("Remove WAF rule $id from global whitelist");
     }else{
-        $q->QUERY_SQL("INSERT INTO modsecurity_whitelist (wfrule,serviceid) VALUES($id,0)");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/modsec/whitelist", ["action"=>"add","ruleid"=>$id,"serviceid"=>0]);
         admin_tracks("Add WAF rule $id To global whitelist");
     }
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?modsecurity-default-white=yes");
+
     return true;
 }
 
 function page(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $sql="CREATE TABLE IF NOT EXISTS `mod_security_rules` (
-		`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-		`zorder` INTEGER,
-		`enabled` INTEGER,
-		`rulename` TEXT,
-		`description` TEXT
-	)";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error("$q->mysql_error (".__LINE__.")");}
 
-    $sql="CREATE TABLE IF NOT EXISTS `mod_security_patterns` (
-		`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-		`ruleid` INTEGER,
-		`zorder` INTEGER,
-		`enabled` INTEGER,
-		`variables` TEXT,
-		`operator` TEXT,
-		`phase` INTEGER,
-		`transformation` TEXT,
-		`action` TEXT,
-		`explain` TEXT,
-        `scope` TEXT NOT NULL DEFAULT 'QUERY_STRING',
-		`description` TEXT
-	)";
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error("$q->mysql_error (".__LINE__.")");}
-
-    $sql="CREATE TABLE IF NOT EXISTS `modsecurity_whitelist` 
-        ( `ID` INTEGER PRIMARY KEY AUTOINCREMENT, wfrule INTEGER,`serviceid` INTEGER, spath TEXT)";
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error("$q->mysql_error (".__LINE__.")");}
     $t=time();
 
     $html[]="<div class=\"row\" style='margin-top: 10px'>";
@@ -175,15 +144,14 @@ function table(){
 	if(!is_numeric($t)){$t=time();}
     $function=$_GET["function"];
 
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $sql="SELECT wfrule FROM modsecurity_whitelist WHERE serviceid=0 AND (spath IS NULL OR spath = '')";
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    $TRCLASS=null;
-
-    foreach ($results as $ligne){
-        $MAIN_WHITE[$ligne["wfrule"]]=true;
+    $MAIN_WHITE=array();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist?serviceid=0"),true);
+    if(is_array($json) && $json["Status"]){
+        foreach($json["entries"] as $e){
+            if(strlen($e["spath"])==0){$MAIN_WHITE[$e["wfrule"]]=true;}
+        }
     }
+    $TRCLASS=null;
 
     $html[]="<table id='table-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";

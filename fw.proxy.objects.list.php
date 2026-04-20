@@ -12,6 +12,7 @@ if(isset($_POST["delete"])){rule_delete_perform();exit;}
 if(isset($_GET["countItems"])){countItems();exit;}
 if(isset($_GET["remove-rules-js"])){remove_rules_js();exit;}
 if(isset($_POST["remove-rules-perform"])){remove_rules_perform();exit;}
+if(isset($_GET["notify-lb-js"])){notify_lb_js();exit;}
 page();
 
 
@@ -23,6 +24,19 @@ function countItems(){
     $items=intval($ligne2["tcount"]);
     echo $tpl->FormatNumber($items);
 }
+function notify_lb_js():bool{
+    $tpl=new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/lb/sqlite"),true);
+
+    if(!isset($json["Status"])){
+        return $tpl->js_error("{protocol_error}");
+    }
+    if(!$json["Status"]){
+        return $tpl->js_error($json["Error"]);
+    }
+    return $tpl->js_ok("{success}");
+}
+
 function remove_rules_perform():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tables[]="webfilters_sqitems";
@@ -88,12 +102,13 @@ function start(){
     $Explainenc         = base64_encode($explain);
     $firewall_query     = intval($_GET["firewall_query"]);
     $ProxyPac        = intval($_GET["ProxyPac"]);
+    $HaCluster= intval($_GET["hacluster"]);
     $addons  = array();
     $addons[]="title=$titleenc";
     $addons[]="explain=$Explainenc";
     $addons[]="links=$links";
     $addons[]="ProxyPac=$ProxyPac";
-
+    $addons[]="hacluster=$HaCluster";
 
     if($firewall_query==1){
         $addons[]="firewall=yes";
@@ -127,12 +142,22 @@ function page(){
         $addons="&firewall=yes";
         $firewall_query=1;
     }
+    if (!isset($_GET["hacluster"])) {
+        $_GET["hacluster"] = 0;
+    }
+    $hacluster="&hacluster={$_GET["hacluster"]}";
+
     $titleenc=urlencode($title);
     $Explainenc=urlencode($Explain);
     $error=null;
+    if($hacluster==1){
+        $links="hacluster-objects";
+    }
 
 
-    $html=$tpl->page_header($title,"fas fa-cubes",$Explain,"$page?start=yes&title=$titleenc&explain=$Explainenc&links=$links&firewall_query=$firewall_query",$links,"progress-pobjects-restart",false,"div-acls_objects-list");
+    $html=$tpl->page_header($title,"fas fa-cubes",
+        $Explain,"$page?start=yes&title=$titleenc&explain=$Explainenc&links=$links&firewall_query=$firewall_query$hacluster",
+        $links,"progress-pobjects-restart",false,"div-acls_objects-list");
 
 
 
@@ -214,6 +239,7 @@ function table(){
     $function       = $_GET["function"];
     $jsafter        = base64_encode("$function()");
     $ProxyPac       = intval($_GET["ProxyPac"]);
+    $hacluster       = intval($_GET["hacluster"]);
     $t=time();
     $qProxy->acl_GroupType["geoip"] = "{geoip_location}";
     $qProxy->acl_GroupType["dnsdynamic"]="{dnsdynamic}";
@@ -332,7 +358,7 @@ function table(){
         }
     }
 
-    $new_object="Loadjs('fw.proxy.acls.objects.php?new-object-js=yes&ID=0&direction=0&TableLink=&RefreshTable=$function&ProxyPac=0&firewall=$firewall_query')";
+    $new_object="Loadjs('fw.proxy.acls.objects.php?new-object-js=yes&ID=0&direction=0&TableLink=&RefreshTable=$function&ProxyPac=0&firewall=$firewall_query&hacluster=$hacluster')";
     $import3x="Loadjs('fw.proxy.acls.objects.import3x.php?func=$function')";
     $users=new usersMenus();
     $topbuttons=array();
@@ -340,11 +366,23 @@ function table(){
         $topbuttons[] = array($new_object, ico_plus, "{new_object}");
     }
     if($users->AsSquidAdministrator) {
-        $topbuttons[] = array($import3x, ico_download, "{import} 3.x");
+        if($hacluster==0) {
+            $topbuttons[] = array($import3x, ico_download, "{import} 3.x");
+        }
     }
     $topbuttons[] = array("Loadjs('$page?remove-rules-js=yes&function=$function')", ico_trash, "{delete_all}");
 
+    if($hacluster==1){
+        $links="hacluster-objects";
+    }
+    $HaClusterClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
+    if($HaClusterClient==1){
+        $PowerDNSEnableClusterMaster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterMaster"));
+        if($PowerDNSEnableClusterMaster==1){
+            $topbuttons[] = array("Loadjs('$page?notify-lb-js=yes&function=$function')", ico_refresh, "{notify}: {load_balancer}");
 
+        }
+    }
 
     $TINY_ARRAY["TITLE"]=$title;
     $TINY_ARRAY["ICO"]="fas fa-cubes";
@@ -365,8 +403,8 @@ function table(){
     $html[]="</tr>";
     $html[]="</tfoot>";
     $html[]="</table>";
-    $html[]="<div><small>$sql</small></div>
-	<script>
+
+    $html[]="<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	
 	$jstiny

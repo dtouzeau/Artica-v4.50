@@ -44,11 +44,8 @@ function compile_js_progress($ID,$final=null):string{
 function rule_remove():bool{
     $md=$_GET["md"];
     $ID=intval($_GET["pattern-remove"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne = $q->mysqli_fetch_array("SELECT * FROM nginx_clients_bans WHERE ID=$ID");
-    $CLientName=$ligne["ClientName"];
-    $serviceid=$ligne["serviceid"];
-    $q->QUERY_SQL("DELETE FROM nginx_clients_bans WHERE ID=$ID");
+    $serviceid=intval($_GET["serviceid"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"nginx_clients_bans","where"=>array("ID"=>"$ID")));
     $get_servicename=get_servicename($serviceid);
     echo "$('#$md').remove();\n";
     echo refresh_global_no_close($serviceid);
@@ -81,6 +78,7 @@ function NginxGetDB():string{
 function rule_enable():bool{
     $ID=intval($_GET["pattern-enable"]);
     $q=new lib_sqlite(NginxGetDB());
+    $q->QUERY_SQL("PRAGMA wal_autocheckpoint=0");
     $ligne = $q->mysqli_fetch_array("SELECT * FROM nginx_clients_bans WHERE ID=$ID");
     $enabled=intval($ligne["enabled"]);
     $CLientName=$ligne["ClientName"];
@@ -91,35 +89,28 @@ function rule_enable():bool{
     }else{
         $enabled=0;
     }
-    $q->QUERY_SQL("UPDATE nginx_clients_bans SET enabled=$enabled WHERE ID=$ID");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"nginx_clients_bans","set"=>array("enabled"=>"$enabled"),"where"=>array("ID"=>"$ID")));
     $get_servicename=get_servicename($serviceid);
     echo refresh_global_no_close($serviceid);
     admin_tracks("Enable=$enabled For reverse-proxy $get_servicename Client certificate ban rule $CLientName");
     return ReloadService($serviceid);
 }
 function servicesid_withcertificates():array{
-
-    $q=new lib_sqlite(NginxGetDB());
-    $tpl        = new template_admin();
-    $results=$q->QUERY_SQL("SELECT serviceid,zvalue FROM service_parameters WHERE zkey='ssl_client_certificate'");
     $array=array();
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
-    }
-    foreach ($results as $index=>$ligne){
-        $serviceid=intval($ligne["serviceid"]);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/sites/list"),true);
+    if(!is_array($json) || !isset($json["sites"])){return $array;}
+    foreach($json["sites"] as $site){
+        $serviceid=intval($site["ID"]);
         if($serviceid==0){continue;}
-        $zvalue=trim($ligne["zvalue"]);
+        $sock=new socksngix($serviceid);
+        $zvalue=trim($sock->GET_INFO("ssl_client_certificate"));
         if(strlen($zvalue)==0){continue;}
-        $servicename=get_servicename($serviceid);
-        $array[$serviceid]=$servicename;
+        $array[$serviceid]=$sock->GetServiceName();
     }
-
     return $array;
 }
 
 function rule_popup():bool{
-    $q=new lib_sqlite(NginxGetDB());
     $serviceid  = intval($_GET["serviceid"]);
     $ruleid     = intval($_GET["popup-rule"]);
     $tpl        = new template_admin();
@@ -127,10 +118,9 @@ function rule_popup():bool{
     $ligne=array();
 
     if($ruleid>0) {
+        $q=new lib_sqlite(NginxGetDB());
+        $q->QUERY_SQL("PRAGMA wal_autocheckpoint=0");
         $ligne = $q->mysqli_fetch_array("SELECT * FROM nginx_clients_bans WHERE ID=$ruleid");
-        if (!$q->ok) {
-            echo $tpl->div_error($q->mysql_error);
-        }
         $bt="{apply}";
     }
     $form[]=$tpl->field_hidden("ruleid",$ruleid);
@@ -158,15 +148,15 @@ function rule_save():bool{
     $edit[]="serviceid=$serviceid";
     $edit[]="ClientName='$ClientName'";
     if($ruleid==0){
-        $sql=sprintf("INSERT INTO nginx_clients_bans (%s) VALUES (%s)",@implode(",",$fields),@implode(",",$values));
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+            "action"=>"insert","table"=>"nginx_clients_bans",
+            "values"=>["serviceid"=>$serviceid,"ClientName"=>$ClientName,"enabled"=>1]
+        ]);
     }else{
-        $sql= "UPDATE nginx_clients_bans SET " . @implode(",", $edit) . " WHERE ID=" . $ruleid;
-    }
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
-        return false;
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+            "action"=>"update","table"=>"nginx_clients_bans",
+            "set"=>["serviceid"=>$serviceid,"ClientName"=>$ClientName],"where"=>["ID"=>$ruleid]
+        ]);
     }
     $get_servicename=get_servicename($serviceid);
 
@@ -306,6 +296,7 @@ function popup_table2():bool{
 ";
     $FILTER=false;
     $q=new lib_sqlite(NginxGetDB());
+    $q->QUERY_SQL("PRAGMA wal_autocheckpoint=0");
     $sq[]="SELECT * FROM nginx_clients_bans";
 
 

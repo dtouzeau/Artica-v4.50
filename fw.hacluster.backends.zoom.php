@@ -388,27 +388,29 @@ function backend_zoom_hacluster_client():bool{
 
     echo backend_zoom_hacluster_LBState();
 
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/nodes/status"));
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/nodes/status"),true);
     ExecTtime($start,__LINE__);
-    if(!$json->Status){
+
+
+    if(!isset($json["Status"])){
         echo $tpl->widget_rouge("{APP_HACLUSTER_CLIENT}: {protocol_error}","{error}");
         return false;
 
     }
-    if(!property_exists($json,"Backends")){
+    if(!isset($json["Backends"])){
         echo $tpl->widget_rouge("{APP_HACLUSTER_CLIENT}: {protocol_error}","{error}");
         return false;
     }
     
     
-    foreach ($json->Backends as $backend){
+    foreach ($json["Backends"] as $backend){
 
-        if($backend->ID==$ID){
-            $listen_ip=$backend->Ipstr;
-            $listen_port=$backend->Port;
-            $buffer=$backend->AgentStatus;
-            if(!$backend->Status){
-                $errstr=$backend->Error;
+        if($backend["ID"]==$ID){
+            $listen_ip=$backend["Ipstr"];
+            $listen_port=$backend["Port"];
+            $buffer=$backend["AgentStatus"];
+            if(!$backend["Status"]){
+                $errstr=$backend["Error"];
                 echo $tpl->widget_rouge("{APP_HACLUSTER_CLIENT} ($listen_ip:$listen_port) $errstr","{error}");
                 return false;
             }

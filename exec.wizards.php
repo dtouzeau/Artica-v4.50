@@ -271,7 +271,7 @@ function create_web_filtering_page(){
     $q->QUERY_SQL($sql);
 
 
-    system("$php5 /usr/share/artica-postfix/exec.nginx.single.php $SERVICE_ID");
+
     return true;
 }
 

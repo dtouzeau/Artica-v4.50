@@ -2,6 +2,7 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
 if(isset($_GET["template-import"])){template_import_js();exit;}
 if(isset($_GET["template-import-popup"])){template_import_popup();exit;}
@@ -77,7 +78,7 @@ function template_remove_perform():bool{
     $q=new lib_sqlite(NginxGetDB());
     $ligne=$q->mysqli_fetch_array("SELECT tpname FROM nginx_templates WHERE ID=$tplid");
     $tpname=$ligne["tpname"];
-    $q->QUERY_SQL("DELETE FROM nginx_templates WHERE ID=$tplid");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"nginx_templates","where"=>["ID"=>$tplid]]);
     return admin_tracks("Removed reverse-proxy template $tpname configuration");
 }
 
@@ -104,20 +105,12 @@ function template_import_uploaded():bool{
     if(!is_array($ligne)){
         return $tpl->js_error("{corrupted}",__FUNCTION__,__FILE__,__LINE__);
     }
-    $q                          = new lib_sqlite(NginxGetDB());
-
-    $Keys = array();
-    $vals = array();
     unset($ligne["ID"]);
+    $values = array();
     foreach ($ligne as $key => $value) {
-        $Keys[] = $key;
-        $vals[] = sprintf("'%s'", $value);
+        $values[$key] = $value;
     }
-    $sql = sprintf("INSERT INTO nginx_templates (%s) VALUES (%s)", implode(",", $Keys), implode(",", $vals));
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {
-        return $tpl->js_error($q->mysql_error,__FUNCTION__,__FILE__,__LINE__);
-    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"insert","table"=>"nginx_templates","values"=>$values]);
     header("content-type: application/x-javascript");
     echo "dialogInstance5.close();\n";
     echo "$function();\n";
@@ -298,25 +291,12 @@ function template_save():bool{
         if(strlen($templateData)<10){
             echo $tpl->post_error("Failed {$GLOBALS["GetTemplateData_ERROR"]}");
         }
-        $add_data[]="'".$q->sqlite_escape_string2($templateData)."'";
-        $add_data[]="'$serviceid'";
-        $add_data[]=sprintf("'%s'",time());
 
-        $sql="INSERT INTO nginx_templates (".implode(",",$add_fields).") VALUES (".implode(",",$add_data).")";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){
-            echo $tpl->post_error($q->mysql_error);
-            return false;
-        }
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"insert","table"=>"nginx_templates","values"=>["tpname"=>$tpname,"tpdesc"=>$tpdesc,"tpdata"=>$templateData,"serviceid"=>$serviceid,"tpdate"=>time()]]);
         return admin_tracks("Create a new template $tpname based on $get_servicename");
     }
 
-    $sql=sprintf("UPDATE nginx_templates SET %s WHERE ID=%s",@implode(",",$upd),$templateid);
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
-        return false;
-    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"nginx_templates","set"=>["tpname"=>$tpname,"tpdesc"=>$tpdesc],"where"=>["ID"=>$templateid]]);
     return admin_tracks("Update template #$templateid $tpname");
 }
 function download():bool{

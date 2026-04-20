@@ -92,9 +92,7 @@ function  delete(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$ID=$_POST["delete"];
-	$q=new lib_sqlite(NginxGetDB());
-	$q->QUERY_SQL("DELETE FROM `ngx_subdir_items` WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;}
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"ngx_subdir_items","where"=>array("ID"=>"$ID")));
 }
 
 
@@ -141,10 +139,9 @@ function id_save(){
 	$serviceid      = intval($_POST["serviceid"]);
     $directoryid    = intval($_POST["directoryid"]);
 
-	$q=new lib_sqlite(NginxGetDB());
 	if($serviceid==0){echo "Service ID missing or null\n";return;}
     if($directoryid==0){echo "Directory ID missing or null\n";return;}
-	
+
 	$item=trim($_POST["ipaddr"]);
 	if($item<>"*"){
 		$ipclass=new IP();
@@ -153,8 +150,7 @@ function id_save(){
 		}
 	}
 
-	$q->QUERY_SQL("INSERT OR IGNORE INTO ngx_subdir_items(directoryid,serviceid,item) VALUES ($directoryid,$serviceid,'$item')");
-	if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);}
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"insert","table"=>"ngx_subdir_items","values"=>array("directoryid"=>"$directoryid","serviceid"=>"$serviceid","item"=>"$item")));
 }
 
 function table(){

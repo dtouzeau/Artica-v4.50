@@ -71,99 +71,9 @@ class SquidCacheCenter{
 
 
 
-    private function cache_tweaks(){
-        $SquidMemoryCacheMode=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMemoryCacheMode"));
-        $SquidCacheSwapHigh=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidCacheSwapHigh"));
-        $SquidCacheSwapLow=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidCacheSwapLow"));
-        $SquidMiniMumObjectSize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMiniMumObjectSize"));
-        $max_filedesc=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("max_filedesc"));
-        $maximum_object_size_in_memory=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("maximum_object_size_in_memory"));
-        if($maximum_object_size_in_memory==0){$maximum_object_size_in_memory=512;}
-
-        if($SquidCacheSwapLow==0){$SquidCacheSwapLow=95;}
-        if($SquidCacheSwapHigh==0){$SquidCacheSwapHigh=97;}
-        if($max_filedesc==0){$max_filedesc=16384;}
-
-        $SquidDisableMemoryCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableMemoryCache"));
-
-        $CacheReplacementPolicyZ["lru"]="lru";
-        $CacheReplacementPolicyZ["heap_GDSF"]="heap GDSF";
-        $CacheReplacementPolicyZ["heap_LFUDA"]="heap LFUDA";
-        $CacheReplacementPolicyZ["heap_LRU"]="heap LRU";
-
-        $CacheReplacementPolicy=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CacheReplacementPolicy"));
-        $SquidMemoryReplacementPolicy=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMemoryReplacementPolicy"));
-        if($CacheReplacementPolicy==null){$CacheReplacementPolicy="heap_LFUDA";}
-        if($SquidMemoryReplacementPolicy==null){$SquidMemoryReplacementPolicy="heap_LFUDA";}
-
-        if(is_numeric($SquidMemoryReplacementPolicy)){$SquidMemoryReplacementPolicy="heap_LFUDA";}
-        if(is_numeric($CacheReplacementPolicy)){$CacheReplacementPolicy="heap_LFUDA";}
-
-        $CacheReplacementPolicyT=$CacheReplacementPolicyZ[$CacheReplacementPolicy];
-        $SquidMemoryReplacementPolicy=$CacheReplacementPolicyZ[$SquidMemoryReplacementPolicy];
-
-
-        if($CacheReplacementPolicyT==null){$CacheReplacementPolicyT="heap LFUDA";}
-        if($SquidMemoryReplacementPolicy==null){$SquidMemoryReplacementPolicy="heap LFUDA";}
-
-        $SquidReadAheadGap=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidReadAheadGap"));
-        if($SquidReadAheadGap==0){$SquidReadAheadGap=1024;}
-        $SquidMaximumObjectSize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMaximumObjectSize"));
-        if($SquidMaximumObjectSize==0){$SquidMaximumObjectSize="32768";}
-        if($SquidMiniMumObjectSize==0){$SquidMiniMumObjectSize=1;}
-        if($SquidMemoryCacheMode==null){$SquidMemoryCacheMode="always";}
-        if($max_filedesc>1024 ){$conf[]="max_filedescriptors $max_filedesc";}
-
-
-        $conf[]="memory_replacement_policy $SquidMemoryReplacementPolicy";
-        if($SquidDisableMemoryCache==0) {
-            $conf[] = "maximum_object_size_in_memory $maximum_object_size_in_memory KB";
-            $conf[] = "memory_cache_mode $SquidMemoryCacheMode";
-        }else{
-            $conf[] = "maximum_object_size_in_memory 1 bytes";
-            $conf[] = "memory_cache_mode disk";
-        }
-
-        if($this->DisableAnyCache==1) {
-            $conf[] = "# # # CACHES ARE DISABLED # # # [" . __LINE__ . "]";
-            $conf[] = "# SquidCachesProxyEnabled = $this->SquidCachesProxyEnabled [" . __LINE__ . "]";
-            return @implode("\n", $conf);
-        }
-
-        $this->global_conf_cache_array_defaults();
-        if($this->SquidCacheLevel==0){return "# # # LOW CACHE LEVEL # # # [".__LINE__."]\n";}
-
-
-        $conf[]="cache_swap_high {$SquidCacheSwapHigh}";
-        $conf[]="cache_swap_low {$SquidCacheSwapLow}";
-        $conf[]="read_ahead_gap {$SquidReadAheadGap} KB";
-        $conf[]="store_avg_object_size 64 KB";
-        $conf[]="store_objects_per_bucket 50";
-        $conf[]="cache_replacement_policy $CacheReplacementPolicyT";
-
-        $conf[]="maximum_object_size $SquidMaximumObjectSize MB";
-        $conf[]="minimum_object_size $SquidMiniMumObjectSize bytes";
-        return @implode("\n", $conf)."\n";
-
-    }
-
-
-    private function global_conf_cache_array_defaults(){
-
-        if(!isset($this->global_conf_array["request_header_max_size"])){$this->global_conf_array["request_header_max_size"]="64 KB";}
-        if(!isset($this->global_conf_array["reply_header_max_size"])){$this->global_conf_array["reply_header_max_size"]="64 KB";}
-
-
-        if(!isset($this->global_conf_array["reply_body_max_size"])){$this->global_conf_array["reply_body_max_size"]=0;}
-        if($this->global_conf_array["minimum_object_size"]==null){$this->global_conf_array["minimum_object_size"]="0 KB";}
-        if(!isset($this->global_conf_array["memory_cache_mode"])){$this->global_conf_array["memory_cache_mode"]="always";}
-        if($this->global_conf_array["memory_cache_mode"]==null){$this->global_conf_array["memory_cache_mode"]="always";}
-        if(!isset($this->global_conf_array["memory_replacement_policy"])){$this->global_conf_array["memory_replacement_policy"]="lru";}
-        if($this->global_conf_array["memory_replacement_policy"]==null){$this->global_conf_array["memory_replacement_policy"]="lru";}
 
 
 
-    }
 
 
 
@@ -310,7 +220,7 @@ class SquidCacheCenter{
 
 
 
-        $conf[]=$this->cache_tweaks();
+
         $conf[]="";
         $this->build_progress("Checking Rock cache");
 
